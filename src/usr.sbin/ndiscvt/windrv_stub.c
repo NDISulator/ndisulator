@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/usr.sbin/ndiscvt/windrv_stub.c 186507 2008-12-27 08:03:32Z weongyo $");
+__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -57,16 +57,16 @@ typedef struct ndis_cfg ndis_cfg;
 #include "windrv.h"
 
 struct ndis_pci_type {
-        uint16_t                ndis_vid;
-        uint16_t                ndis_did;
-        uint32_t                ndis_subsys;
-        char                    *ndis_name;
+	uint16_t	ndis_vid;
+	uint16_t	ndis_did;
+	uint32_t	ndis_subsys;
+	char		*ndis_name;
 };
 
 struct ndis_pccard_type {
-        const char              *ndis_vid;
-        const char              *ndis_did;
-        char                    *ndis_name;
+	const char	*ndis_vid;
+	const char	*ndis_did;
+	char		*ndis_name;
 };
 
 struct ndis_usb_type {
@@ -77,15 +77,15 @@ struct ndis_usb_type {
 
 #ifdef NDIS_PCI_DEV_TABLE
 static struct ndis_pci_type ndis_devs_pci[] = {
-        NDIS_PCI_DEV_TABLE
-        { 0, 0, 0, NULL }
+	NDIS_PCI_DEV_TABLE
+	{ 0, 0, 0, NULL }
 };
 #endif
 
 #ifdef NDIS_PCMCIA_DEV_TABLE
 static struct ndis_pccard_type ndis_devs_pccard[] = {
-        NDIS_PCMCIA_DEV_TABLE
-        { NULL, NULL, NULL }
+	NDIS_PCMCIA_DEV_TABLE
+	{ NULL, NULL, NULL }
 };
 #endif
 
@@ -137,7 +137,7 @@ extern struct kobjop_desc device_probe_desc;
 typedef int device_probe_t(device_t dev);
 
 extern int windrv_load(module_t, vm_offset_t, size_t,
-	interface_type, void *, void *);
+    interface_type, void *, void *);
 extern int windrv_unload(module_t, vm_offset_t, size_t);
 
 #ifndef DRV_DATA_START
@@ -162,21 +162,19 @@ extern uint8_t DRV_DATA_END;
  * reason we need this code is so that loading an ELF-ified Windows
  * driver module will trigger a bus reprobe.
  */
-
 #define MODULE_DECL(x)				\
 	MODULE_DEPEND(x, ndisapi, 1, 1, 1);	\
 	MODULE_DEPEND(x, ndis, 1, 1, 1)
 
 MODULE_DECL(DRV_NAME);
 
-static int windrv_probe(device_t);
 static int windrv_modevent(module_t, int, void *);
+static int windrv_probe(device_t);
 static int windrv_loaded = 0;
 
 static device_method_t windrv_methods[] = {
 	/* Device interface */
-	DEVMETHOD(device_probe,         windrv_probe),
-
+	DEVMETHOD(device_probe, windrv_probe),
 	{ 0, 0 }
 };
 
@@ -202,27 +200,22 @@ static devclass_t windrv_devclass;
 DRIVER_DECL(DRV_NAME);
 
 static int
-windrv_probe(dev)
-	device_t		dev;
+windrv_probe(device_t dev)
 {
+
 	return (ENXIO);
 }
 
 static int
-windrv_modevent(mod, cmd, arg)
-	module_t		mod;
-	int			cmd;
-	void			*arg;
+windrv_modevent(module_t mod, int cmd, void *arg)
 {
-	int			drv_data_len;
-	int			error = 0;
-	vm_offset_t		drv_data_start;
-	vm_offset_t		drv_data_end;
+	vm_offset_t drv_data_start, drv_data_end;
+	int drv_data_len, error = 0;
 
 	drv_data_start = (vm_offset_t)&DRV_DATA_START;
 	drv_data_end = (vm_offset_t)&DRV_DATA_END;
-
 	drv_data_len = drv_data_end - drv_data_start;
+
 	switch (cmd) {
 	case MOD_LOAD:
 		windrv_loaded++;

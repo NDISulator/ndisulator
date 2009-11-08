@@ -1,4 +1,4 @@
-# $FreeBSD: head/sys/modules/ndis/Makefile 189488 2009-03-07 07:26:22Z weongyo $
+# $FreeBSD$
 
 .PATH: ${.CURDIR}/../../compat/ndis
 

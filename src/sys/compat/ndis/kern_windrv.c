@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/compat/ndis/kern_windrv.c 198786 2009-11-02 11:07:42Z rpaulo $");
+__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -131,7 +131,7 @@ windrv_libfini(void)
 {
 	struct drvdb_ent	*d;
 
-	mtx_lock(&drvdb_mtx); 
+	mtx_lock(&drvdb_mtx);
 	while(STAILQ_FIRST(&drvdb_head) != NULL) {
 		d = STAILQ_FIRST(&drvdb_head);
 		STAILQ_REMOVE_HEAD(&drvdb_head, link);
@@ -175,7 +175,7 @@ windrv_lookup(img, name)
 			return (NULL);
 	}
 
-	mtx_lock(&drvdb_mtx); 
+	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(d, &drvdb_head, link) {
 		if (d->windrv_object->dro_driverstart == (void *)img ||
 		    (bcmp((char *)d->windrv_object->dro_drivername.us_buf,
@@ -202,7 +202,7 @@ windrv_match(matchfunc, ctx)
 	struct drvdb_ent	*d;
 	int			match;
 
-	mtx_lock(&drvdb_mtx); 
+	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(d, &drvdb_head, link) {
 		if (d->windrv_devlist == NULL)
 			continue;
@@ -245,7 +245,7 @@ windrv_unload(mod, img, len)
 	 * drivers.
 	 */
 
-	mtx_lock(&drvdb_mtx); 
+	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(db, &drvdb_head, link) {
 		/*
 		 * Fake bus drivers have no devlist info.
@@ -264,7 +264,7 @@ windrv_unload(mod, img, len)
 			}
 			dev = pdo->do_devext;
 			pdo = pdo->do_nextdev;
-			mtx_unlock(&drvdb_mtx); 
+			mtx_unlock(&drvdb_mtx);
 			device_detach(dev);
 			mtx_lock(&drvdb_mtx);
 		}
@@ -429,9 +429,9 @@ skipreloc:
 		return (ENODEV);
 	}
 
-	mtx_lock(&drvdb_mtx); 
+	mtx_lock(&drvdb_mtx);
 	STAILQ_INSERT_HEAD(&drvdb_head, new, link);
-	mtx_unlock(&drvdb_mtx); 
+	mtx_unlock(&drvdb_mtx);
 
 	return (0);
 }

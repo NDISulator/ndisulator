@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/dev/if_ndis/if_ndis_usb.c 198786 2009-11-02 11:07:42Z rpaulo $");
+__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -74,23 +74,23 @@ static device_attach_t ndisusb_attach;
 static device_detach_t ndisusb_detach;
 static bus_get_resource_list_t ndis_get_resource_list;
 
-extern int ndisdrv_modevent     (module_t, int, void *);
-extern int ndis_attach          (device_t);
-extern int ndis_shutdown        (device_t);
-extern int ndis_detach          (device_t);
-extern int ndis_suspend         (device_t);
-extern int ndis_resume          (device_t);
+extern int ndis_attach		(device_t);
+extern int ndis_detach		(device_t);
+extern int ndis_resume		(device_t);
+extern int ndis_shutdown	(device_t);
+extern int ndis_suspend		(device_t);
+extern int ndisdrv_modevent	(module_t, int, void *);
 
 extern unsigned char drv_data[];
 
 static device_method_t ndis_methods[] = {
-        /* Device interface */
+	/* Device interface */
 	DEVMETHOD(device_probe,		ndisusb_match),
 	DEVMETHOD(device_attach,	ndisusb_attach),
 	DEVMETHOD(device_detach,	ndisusb_detach),
 	DEVMETHOD(device_shutdown,	ndis_shutdown),
 
-        /* bus interface */
+	/* Bus interface */
 	DEVMETHOD(bus_print_child,	bus_generic_print_child),
 	DEVMETHOD(bus_driver_added,	bus_generic_driver_added),
 	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
@@ -109,7 +109,8 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, uhub, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndisusb_devcompare(interface_type bustype, struct ndis_usb_type *t, device_t dev)
+ndisusb_devcompare(interface_type bustype, struct ndis_usb_type *t,
+    device_t dev)
 {
 	struct usb_attach_arg *uaa;
 
@@ -117,7 +118,6 @@ ndisusb_devcompare(interface_type bustype, struct ndis_usb_type *t, device_t dev
 		return (FALSE);
 
 	uaa = device_get_ivars(dev);
-
 	while (t->ndis_name != NULL) {
 		if ((uaa->info.idVendor == t->ndis_vid) &&
 		    (uaa->info.idProduct == t->ndis_did)) {
@@ -133,16 +133,16 @@ ndisusb_devcompare(interface_type bustype, struct ndis_usb_type *t, device_t dev
 static int
 ndisusb_match(device_t self)
 {
+	struct usb_attach_arg *uaa;
 	struct drvdb_ent *db;
-	struct usb_attach_arg *uaa = device_get_ivars(self);
 
+	uaa = device_get_ivars(self);
 	if (uaa->usb_mode != USB_MODE_HOST)
 		return (ENXIO);
 	if (uaa->info.bConfigIndex != NDISUSB_CONFIG_NO)
 		return (ENXIO);
 	if (uaa->info.bIfaceIndex != NDISUSB_IFACE_INDEX)
 		return (ENXIO);
-
 	if (windrv_lookup(0, "USB Bus") == NULL)
 		return (ENXIO);
 
@@ -157,14 +157,16 @@ ndisusb_match(device_t self)
 static int
 ndisusb_attach(device_t self)
 {
-	const struct drvdb_ent	*db;
-	struct ndisusb_softc *dummy = device_get_softc(self);
-	struct usb_attach_arg *uaa = device_get_ivars(self);
-	struct ndis_softc	*sc;
-	struct ndis_usb_type	*t;
-	driver_object		*drv;
-	int			devidx = 0;
+	const struct drvdb_ent *db;
+	struct ndisusb_softc *dummy;
+	struct usb_attach_arg *uaa;
+	struct ndis_softc *sc;
+	struct ndis_usb_type *t;
+	driver_object *drv;
+	int devidx = 0;
 
+	dummy = device_get_softc(self);
+	uaa = device_get_ivars(self);
 	db = uaa->driver_ivar;
 	sc = (struct ndis_softc *)dummy;
 	sc->ndis_dev = self;
@@ -175,14 +177,11 @@ ndisusb_attach(device_t self)
 	sc->ndisusb_dev = uaa->device;
 
 	/* Create PDO for this device instance */
-
 	drv = windrv_lookup(0, "USB Bus");
 	windrv_create_pdo(drv, self);
 
 	/* Figure out exactly which device we matched. */
-
 	t = db->windrv_devlist;
-
 	while (t->ndis_name != NULL) {
 		if ((uaa->info.idVendor == t->ndis_vid) &&
 		    (uaa->info.idProduct == t->ndis_did)) {
@@ -202,10 +201,11 @@ ndisusb_attach(device_t self)
 static int
 ndisusb_detach(device_t self)
 {
+	struct ndis_softc *sc;
+	struct ndisusb_ep *ne;;
 	int i;
-	struct ndis_softc       *sc = device_get_softc(self);
-	struct ndisusb_ep	*ne;;
 
+	sc = device_get_softc(self);
 	sc->ndisusb_status |= NDISUSB_STATUS_DETACH;
 
 	ndis_pnpevent_nic(self, NDIS_PNP_EVENT_SURPRISE_REMOVED);
@@ -228,7 +228,7 @@ ndisusb_detach(device_t self)
 static struct resource_list *
 ndis_get_resource_list(device_t dev, device_t child)
 {
-	struct ndis_softc       *sc;
+	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
 	return (BUS_GET_RESOURCE_LIST(device_get_parent(sc->ndis_dev), dev));

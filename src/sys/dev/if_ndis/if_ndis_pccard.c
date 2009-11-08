@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/dev/if_ndis/if_ndis_pccard.c 194677 2009-06-23 02:19:59Z thompsa $");
+__FBSDID("$FreeBSD$");
 
 #include <sys/ctype.h>
 #include <sys/param.h>
@@ -68,18 +68,17 @@ __FBSDID("$FreeBSD: head/sys/dev/if_ndis/if_ndis_pccard.c 194677 2009-06-23 02:1
 
 MODULE_DEPEND(ndis, pccard, 1, 1, 1);
 
-static int ndis_probe_pccard	(device_t);
-static int ndis_attach_pccard	(device_t);
-static struct resource_list *ndis_get_resource_list
-				(device_t, device_t);
-static int ndis_devcompare	(interface_type,
-				 struct ndis_pccard_type *, device_t);
-extern int ndisdrv_modevent	(module_t, int, void *);
 extern int ndis_attach		(device_t);
-extern int ndis_shutdown	(device_t);
 extern int ndis_detach		(device_t);
-extern int ndis_suspend		(device_t);
 extern int ndis_resume		(device_t);
+extern int ndis_shutdown	(device_t);
+extern int ndis_suspend		(device_t);
+extern int ndisdrv_modevent	(module_t, int, void *);
+static int ndis_attach_pccard	(device_t);
+static int ndis_devcompare	(interface_type, struct ndis_pccard_type *,
+				device_t);
+static int ndis_probe_pccard	(device_t);
+static struct resource_list	*ndis_get_resource_list(device_t, device_t);
 
 extern unsigned char drv_data[];
 
@@ -98,7 +97,6 @@ static device_method_t ndis_methods[] = {
 	 * This is an awful kludge, but we need it becase pccard
 	 * does not implement a bus_get_resource_list() method.
 	 */
-
 	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
 
 	{ 0, 0 }
@@ -115,34 +113,31 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, pccard, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare(bustype, t, dev)
-	interface_type		bustype;
-	struct ndis_pccard_type	*t;
-	device_t		dev;
+ndis_devcompare(interface_type bustype, struct ndis_pccard_type *t,
+    device_t dev)
 {
-	const char		*prodstr, *vendstr;
-	int			error;
+	const char *prodstr, *vendstr;
+	int error;
 
 	if (bustype != PCMCIABus)
-		return(FALSE);
-
+		return (FALSE);
 	error = pccard_get_product_str(dev, &prodstr);
 	if (error)
-		return(FALSE);
+		return (FALSE);
 	error = pccard_get_vendor_str(dev, &vendstr);
 	if (error)
-		return(FALSE);
+		return (FALSE);
 
-	while(t->ndis_name != NULL) {
+	while (t->ndis_name != NULL) {
 		if (strcasecmp(vendstr, t->ndis_vid) == 0 &&
 		    strcasecmp(prodstr, t->ndis_did) == 0) {
 			device_set_desc(dev, t->ndis_name);
-			return(TRUE);
+			return (TRUE);
 		}
 		t++;
 	}
 
-	return(FALSE);
+	return (FALSE);
 }
 
 /*
@@ -150,25 +145,23 @@ ndis_devcompare(bustype, t, dev)
  * IDs against our list and return a device name if we find a match.
  */
 static int
-ndis_probe_pccard(dev)
-	device_t		dev;
+ndis_probe_pccard(device_t dev)
 {
-	driver_object		*drv;
-	struct drvdb_ent	*db;
+	struct drvdb_ent *db;
+	driver_object *drv;
 
-	drv = windrv_lookup(0, "PCCARD Bus"); 
+	drv = windrv_lookup(0, "PCCARD Bus");
 	if (drv == NULL)
-		return(ENXIO);
+		return (ENXIO);
 
 	db = windrv_match((matchfuncptr)ndis_devcompare, dev);
-
 	if (db != NULL) {
 		/* Create PDO for this device instance */
 		windrv_create_pdo(drv, dev);
-		return(0);
+		return (0);
 	}
 
-	return(ENXIO);
+	return (ENXIO);
 }
 
 /*
@@ -176,15 +169,13 @@ ndis_probe_pccard(dev)
  * setup and ethernet/BPF attach.
  */
 static int
-ndis_attach_pccard(dev)
-	device_t		dev;
+ndis_attach_pccard(device_t dev)
 {
-	struct ndis_softc	*sc;
-	int			unit, error = 0, rid;
-	struct ndis_pccard_type	*t;
-	int			devidx = 0;
-	const char		*prodstr, *vendstr;
-	struct drvdb_ent	*db;
+	struct ndis_softc *sc;
+	struct ndis_pccard_type *t;
+	struct drvdb_ent *db;
+	const char *prodstr, *vendstr;
+	int devidx = 0, unit, error = 0, rid;
 
 	sc = device_get_softc(dev);
 	unit = device_get_unit(dev);
@@ -202,8 +193,7 @@ ndis_attach_pccard(dev)
 	    SYS_RES_IOPORT, &sc->ndis_io_rid,
 	    0, ~0, 1, RF_ACTIVE);
 	if (sc->ndis_res_io == NULL) {
-		device_printf(dev,
-		    "couldn't map iospace\n");
+		device_printf(dev, "couldn't map iospace\n");
 		error = ENXIO;
 		goto fail;
 	}
@@ -217,67 +207,57 @@ ndis_attach_pccard(dev)
 	    SYS_RES_IRQ, &rid, 0, ~0, 1,
 	    RF_SHAREABLE | RF_ACTIVE);
 	if (sc->ndis_irq == NULL) {
-		device_printf(dev,
-		    "couldn't map interrupt\n");
+		device_printf(dev, "couldn't map interrupt\n");
 		error = ENXIO;
 		goto fail;
 	}
 	sc->ndis_rescnt++;
 	resource_list_add(&sc->ndis_rl, SYS_RES_IRQ, rid,
 	    rman_get_start(sc->ndis_irq), rman_get_start(sc->ndis_irq), 1);
-
 	sc->ndis_iftype = PCMCIABus;
 
 	/* Figure out exactly which device we matched. */
-
 	t = db->windrv_devlist;
-
 	error = pccard_get_product_str(dev, &prodstr);
 	if (error)
-		return(error);
+		return (error);
 	error = pccard_get_vendor_str(dev, &vendstr);
 	if (error)
-		return(error);
-
-	while(t->ndis_name != NULL) {
+		return (error);
+	while (t->ndis_name != NULL) {
 		if (strcasecmp(vendstr, t->ndis_vid) == 0 &&
 		    strcasecmp(prodstr, t->ndis_did) == 0)
 			break;
 		t++;
 		devidx++;
 	}
-
 	sc->ndis_devidx = devidx;
 
 	error = ndis_attach(dev);
-
 fail:
-	return(error);
+	return (error);
 }
 
 static struct resource_list *
-ndis_get_resource_list(dev, child)
-	device_t		dev;
-	device_t		child;
+ndis_get_resource_list(device_t dev, device_t child)
 {
-	struct ndis_softc	*sc;
+	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
+
 	return (&sc->ndis_rl);
 }
 
 #define NDIS_AM_RID 3
 
 int
-ndis_alloc_amem(arg)
-	void			*arg;
+ndis_alloc_amem(void *arg)
 {
-	struct ndis_softc	*sc;
-	int			error, rid;
+	struct ndis_softc *sc;
+	int error, rid;
 
 	if (arg == NULL)
-		return(EINVAL);
-
+		return (EINVAL);
 	sc = arg;
 	rid = NDIS_AM_RID;
 	sc->ndis_res_am = bus_alloc_resource(sc->ndis_dev, SYS_RES_MEMORY,
@@ -286,7 +266,7 @@ ndis_alloc_amem(arg)
 	if (sc->ndis_res_am == NULL) {
 		device_printf(sc->ndis_dev,
 		    "failed to allocate attribute memory\n");
-		return(ENXIO);
+		return (ENXIO);
 	}
 	sc->ndis_rescnt++;
 	resource_list_add(&sc->ndis_rl, SYS_RES_MEMORY, rid,
@@ -295,42 +275,35 @@ ndis_alloc_amem(arg)
 
 	error = CARD_SET_MEMORY_OFFSET(device_get_parent(sc->ndis_dev),
 	    sc->ndis_dev, rid, 0, NULL);
-
 	if (error) {
 		device_printf(sc->ndis_dev,
 		    "CARD_SET_MEMORY_OFFSET() returned 0x%x\n", error);
-		return(error);
+		return (error);
 	}
 
 	error = CARD_SET_RES_FLAGS(device_get_parent(sc->ndis_dev),
 	    sc->ndis_dev, SYS_RES_MEMORY, rid, PCCARD_A_MEM_ATTR);
-
 	if (error) {
 		device_printf(sc->ndis_dev,
 		    "CARD_SET_RES_FLAGS() returned 0x%x\n", error);
-		return(error);
+		return (error);
 	}
 
 	sc->ndis_am_rid = rid;
 
-	return(0);
+	return (0);
 }
 
 void
-ndis_free_amem(arg)
-	void			*arg;
+ndis_free_amem(void *arg)
 {
-	struct ndis_softc	*sc;
+	struct ndis_softc *sc;
 
 	if (arg == NULL)
 		return;
-
 	sc = arg;
-
 	if (sc->ndis_res_am != NULL)
 		bus_release_resource(sc->ndis_dev, SYS_RES_MEMORY,
 		    sc->ndis_am_rid, sc->ndis_res_am);
 	resource_list_free(&sc->ndis_rl);
-
-	return;
 }

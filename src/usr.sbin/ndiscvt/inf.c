@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/usr.sbin/ndiscvt/inf.c 186507 2008-12-27 08:03:32Z weongyo $");
+__FBSDID("$FreeBSD$");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,28 +52,23 @@ static struct section_head sh;
 static struct reg_head rh;
 static struct assign_head ah;
 
-static char	*sstrdup	(const char *);
-static struct assign
-		*find_assign	(const char *, const char *);
-static struct assign
-		*find_next_assign
-				(struct assign *);
-static struct section
-		*find_section	(const char *);
-static void	dump_deviceids_pci	(void);
-static void	dump_deviceids_pcmcia	(void);
-static void	dump_deviceids_usb	(void);
-static void	dump_pci_id	(const char *);
-static void	dump_pcmcia_id	(const char *);
-static void	dump_usb_id	(const char *);
-static void	dump_regvals	(void);
-static void	dump_paramreg	(const struct section *,
-				const struct reg *, int);
+static struct assign	*find_assign(const char *, const char *);
+static struct assign	*find_next_assign(struct assign *);
+static struct section	*find_section(const char *);
+static void	dump_deviceids_pci(void);
+static void	dump_deviceids_pcmcia (void);
+static void	dump_deviceids_usb(void);
+static void	dump_paramreg(const struct section *, const struct reg *, int);
+static void	dump_pci_id(const char *);
+static void	dump_pcmcia_id(const char *);
+static void	dump_regvals(void);
+static void	dump_usb_id(const char *);
+static char	*sstrdup(const char *);
 
 static FILE	*ofp;
 
 int
-inf_parse (FILE *fp, FILE *outfp)
+inf_parse(FILE *fp, FILE *outfp)
 {
 	TAILQ_INIT(&sh);
 	TAILQ_INIT(&rh);
@@ -94,7 +89,7 @@ inf_parse (FILE *fp, FILE *outfp)
 }
 
 void
-section_add (const char *s)
+section_add(const char *s)
 {
 	struct section *sec;
 
@@ -102,18 +97,15 @@ section_add (const char *s)
 	bzero(sec, sizeof(struct section));
 	sec->name = s;
 	TAILQ_INSERT_TAIL(&sh, sec, link);
-
-	return;
 }
 
 static struct assign *
-find_assign (const char *s, const char *k)
+find_assign(const char *s, const char *k)
 {
 	struct assign *assign;
 	char newkey[256];
 
 	/* Deal with string section lookups. */
-
 	if (k != NULL && k[0] == '%') {
 		bzero(newkey, sizeof(newkey));
 		strncpy(newkey, k + 1, strlen(k) - 2);
@@ -123,17 +115,17 @@ find_assign (const char *s, const char *k)
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (strcasecmp(assign->section->name, s) == 0) {
 			if (k == NULL)
-				return(assign);
+				return (assign);
 			else
 				if (strcasecmp(assign->key, k) == 0)
-					return(assign);
+					return (assign);
 		}
 	}
-	return(NULL);
+	return (NULL);
 }
 
 static struct assign *
-find_next_assign (struct assign *a)
+find_next_assign(struct assign *a)
 {
 	struct assign *assign;
 
@@ -145,7 +137,7 @@ find_next_assign (struct assign *a)
 	assign = assign->link.tqe_next;
 
 	if (assign == NULL || assign->section != a->section)
-		return(NULL);
+		return (NULL);
 
 	return (assign);
 }
@@ -157,27 +149,26 @@ stringcvt(const char *s)
 
 	manf = find_assign("strings", s);
 	if (manf == NULL)
-		return(s);
-	return(manf->vals[0]);
+		return (s);
+	return (manf->vals[0]);
 }
 
 struct section *
-find_section (const char *s)
+find_section(const char *s)
 {
 	struct section *section;
 
 	TAILQ_FOREACH(section, &sh, link) {
 		if (strcasecmp(section->name, s) == 0)
-			return(section);
+			return (section);
 	}
-	return(NULL);
+	return (NULL);
 }
 
 static void
 dump_pcmcia_id(const char *s)
 {
-	char *manstr, *devstr;
-	char *p0, *p;
+	char *manstr, *devstr, *p0, *p;
 
 	p0 = __DECONST(char *, s);
 
@@ -194,7 +185,6 @@ dump_pcmcia_id(const char *s)
 	manstr = p0;
 
 	/* Convert any underscores to spaces. */
-
 	while (*p0 != '\0') {
 		if (*p0 == '_')
 			*p0 = ' ';
@@ -210,7 +200,6 @@ dump_pcmcia_id(const char *s)
 	devstr = p0;
 
 	/* Convert any underscores to spaces. */
-
 	while (*p0 != '\0') {
 		if (*p0 == '_')
 			*p0 = ' ';
@@ -218,14 +207,12 @@ dump_pcmcia_id(const char *s)
 	}
 
 	fprintf(ofp, "\t\\\n\t{ \"%s\", \"%s\", ", manstr, devstr);
-	return;
 }
 
 static void
 dump_pci_id(const char *s)
 {
-	char *p;
-	char vidstr[7], didstr[7], subsysstr[14];
+	char *p, vidstr[7], didstr[7], subsysstr[14];
 
 	p = strcasestr(s, "VEN_");
 	if (p == NULL)
@@ -251,14 +238,12 @@ dump_pci_id(const char *s)
 	}
 
 	fprintf(ofp, "\t\\\n\t{ %s, %s, %s, ", vidstr, didstr, subsysstr);
-	return;
 }
 
 static void
 dump_usb_id(const char *s)
 {
-	char *p;
-	char vidstr[7], pidstr[7];
+	char *p, vidstr[7], pidstr[7];
 
 	p = strcasestr(s, "VID_");
 	if (p == NULL)
@@ -281,17 +266,14 @@ dump_usb_id(const char *s)
 static void
 dump_deviceids_pci()
 {
-	struct assign *manf, *dev;
+	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	struct assign *assign;
 	char xpsec[256];
 	int first = 1, found = 0;
 
 	/* Find manufacturer name */
 	manf = find_assign("Manufacturer", NULL);
-
 nextmanf:
-
 	/* Find manufacturer section */
 	if (manf->vals[1] != NULL &&
 	    (strcasecmp(manf->vals[1], "NT.5.1") == 0 ||
@@ -306,7 +288,6 @@ nextmanf:
 		sec = find_section(manf->vals[0]);
 
 	/* See if there are any PCI device definitions. */
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			dev = find_assign("strings", assign->key);
@@ -316,10 +297,8 @@ nextmanf:
 			}
 		}
 	}
-
 	if (found == 0)
 		goto done;
-
 	found = 0;
 
 	if (first == 1) {
@@ -327,15 +306,12 @@ nextmanf:
 		fprintf (ofp, "#define NDIS_PCI_DEV_TABLE");
 		first = 0;
 	}
-
 retry:
-
 	/*
 	 * Now run through all the device names listed
 	 * in the manufacturer section and dump out the
 	 * device descriptions and vendor/device IDs.
 	 */
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			dev = find_assign("strings", assign->key);
@@ -362,29 +338,22 @@ retry:
 
 	if (manf != NULL)
 		goto nextmanf;
-
 done:
 	/* Emit end of table */
-
 	fprintf(ofp, "\n\n");
-
-	return;
 }
 
 static void
-dump_deviceids_pcmcia()
+dump_deviceids_pcmcia(void)
 {
-	struct assign *manf, *dev;
+	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	struct assign *assign;
 	char xpsec[256];
 	int first = 1, found = 0;
 
 	/* Find manufacturer name */
 	manf = find_assign("Manufacturer", NULL);
-
 nextmanf:
-
 	/* Find manufacturer section */
 	if (manf->vals[1] != NULL &&
 	    (strcasecmp(manf->vals[1], "NT.5.1") == 0 ||
@@ -399,7 +368,6 @@ nextmanf:
 		sec = find_section(manf->vals[0]);
 
 	/* See if there are any PCMCIA device definitions. */
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			dev = find_assign("strings", assign->key);
@@ -412,7 +380,6 @@ nextmanf:
 
 	if (found == 0)
 		goto done;
-
 	found = 0;
 
 	if (first == 1) {
@@ -420,15 +387,12 @@ nextmanf:
 		fprintf (ofp, "#define NDIS_PCMCIA_DEV_TABLE");
 		first = 0;
 	}
-
 retry:
-
 	/*
 	 * Now run through all the device names listed
 	 * in the manufacturer section and dump out the
 	 * device descriptions and vendor/device IDs.
 	 */
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			dev = find_assign("strings", assign->key);
@@ -455,29 +419,22 @@ retry:
 
 	if (manf != NULL)
 		goto nextmanf;
-
 done:
 	/* Emit end of table */
-
 	fprintf(ofp, "\n\n");
-
-	return;
 }
 
 static void
-dump_deviceids_usb()
+dump_deviceids_usb(void)
 {
-	struct assign *manf, *dev;
+	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	struct assign *assign;
 	char xpsec[256];
 	int first = 1, found = 0;
 
 	/* Find manufacturer name */
 	manf = find_assign("Manufacturer", NULL);
-
 nextmanf:
-
 	/* Find manufacturer section */
 	if (manf->vals[1] != NULL &&
 	    (strcasecmp(manf->vals[1], "NT.5.1") == 0 ||
@@ -492,7 +449,6 @@ nextmanf:
 		sec = find_section(manf->vals[0]);
 
 	/* See if there are any USB device definitions. */
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			dev = find_assign("strings", assign->key);
@@ -505,7 +461,6 @@ nextmanf:
 
 	if (found == 0)
 		goto done;
-
 	found = 0;
 
 	if (first == 1) {
@@ -513,15 +468,12 @@ nextmanf:
 		fprintf (ofp, "#define NDIS_USB_DEV_TABLE");
 		first = 0;
 	}
-
 retry:
-
 	/*
 	 * Now run through all the device names listed
 	 * in the manufacturer section and dump out the
 	 * device descriptions and vendor/device IDs.
 	 */
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			dev = find_assign("strings", assign->key);
@@ -545,16 +497,11 @@ retry:
 
 	/* Handle Manufacturer sections with multiple entries. */
 	manf = find_next_assign(manf);
-
 	if (manf != NULL)
 		goto nextmanf;
-
 done:
 	/* Emit end of table */
-
 	fprintf(ofp, "\n\n");
-
-	return;
 }
 
 static void
@@ -588,8 +535,6 @@ dump_addreg(const char *s, int devidx)
 				dump_paramreg(sec, reg, devidx);
 		}
 	}
-
-	return;
 }
 
 static void
@@ -607,7 +552,6 @@ dump_enumreg(const struct section *s, const struct reg *r)
 		fprintf(ofp, " [%s=%s]", reg->key,
 		    stringcvt(reg->value));
 	}
-	return;
 }
 
 static void
@@ -628,7 +572,6 @@ dump_editreg(const struct section *s, const struct reg *r)
 		    strcmp(reg->value, "1") == 0)
 			fprintf(ofp, " [optional]");
 	}
-	return;
 }
 
 /* Use this for int too */
@@ -649,13 +592,13 @@ dump_dwordreg(const struct section *s, const struct reg *r)
 		if (strcasecmp(reg->key, "max") == 0)
 			fprintf(ofp, " [max=%s]", reg->value);
 	}
-	return;
 }
 
 static void
 dump_defaultinfo(const struct section *s, const struct reg *r, int devidx)
 {
 	struct reg *reg;
+
 	TAILQ_FOREACH(reg, &rh, link) {
 		if (reg->section != s)
 			continue;
@@ -669,13 +612,13 @@ dump_defaultinfo(const struct section *s, const struct reg *r, int devidx)
 	}
 	/* Default registry entry missing */
 	fprintf(ofp, "\n\t{ \"\" }, %d },", devidx);
-	return;
 }
 
 static void
 dump_paramdesc(const struct section *s, const struct reg *r)
 {
 	struct reg *reg;
+
 	TAILQ_FOREACH(reg, &rh, link) {
 		if (reg->section != s)
 			continue;
@@ -686,13 +629,13 @@ dump_paramdesc(const struct section *s, const struct reg *r)
 		fprintf(ofp, "\n\t\"%s", stringcvt(r->value));
 			break;
 	}
-	return;
 }
 
 static void
 dump_typeinfo(const struct section *s, const struct reg *r)
 {
 	struct reg *reg;
+
 	TAILQ_FOREACH(reg, &rh, link) {
 		if (reg->section != s)
 			continue;
@@ -710,7 +653,6 @@ dump_typeinfo(const struct section *s, const struct reg *r)
 		if (strcasecmp(reg->value, "edit") == 0)
 			dump_editreg(s, r);
 	}
-	return;
 }
 
 static void
@@ -724,18 +666,15 @@ dump_paramreg(const struct section *s, const struct reg *r, int devidx)
 	dump_typeinfo(s, r);
 	fprintf(ofp, "\",");
 	dump_defaultinfo(s, r, devidx);
-
-	return;
 }
 
 static void
 dump_regvals(void)
 {
-	struct assign *manf, *dev;
+	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	struct assign *assign;
 	char sname[256];
-	int found = 0, i, is_winxp = 0, is_winnt = 0, devidx = 0;
+	int i, found = 0, is_winxp = 0, is_winnt = 0, devidx = 0;
 
 	/* Find signature to check for special case of WinNT. */
 	assign = find_assign("version", "signature");
@@ -747,9 +686,7 @@ dump_regvals(void)
 
 	/* Find manufacturer name */
 	manf = find_assign("Manufacturer", NULL);
-
 nextmanf:
-
 	/* Find manufacturer section */
 	if (manf->vals[1] != NULL &&
 	    (strcasecmp(manf->vals[1], "NT.5.1") == 0 ||
@@ -763,9 +700,7 @@ nextmanf:
 		sec = find_section(sname);
 	} else
 		sec = find_section(manf->vals[0]);
-
 retry:
-
 	TAILQ_FOREACH(assign, &ah, link) {
 		if (assign->section == sec) {
 			found++;
@@ -774,7 +709,6 @@ retry:
 			 * Look for section names with .NT, unless
 			 * this is a WinXP .INF file.
 			 */
-
 			if (is_winxp) {
 				sprintf(sname, "%s.NTx86", assign->vals[0]);
 				dev = find_assign(sname, "AddReg");
@@ -812,17 +746,14 @@ retry:
 	}
 
 	manf = find_next_assign(manf);
-
 	if (manf != NULL)
 		goto nextmanf;
 
 	fprintf(ofp, "\n\t{ NULL, NULL, { 0 }, 0 }\n};\n\n");
-
-	return;
 }
 
 void
-assign_add (const char *a)
+assign_add(const char *a)
 {
 	struct assign *assign;
 	int i;
@@ -836,36 +767,36 @@ assign_add (const char *a)
 	TAILQ_INSERT_TAIL(&ah, assign, link);
 
 	clear_words();
-	return;
 }
 
 void
-define_add (const char *d __unused)
+define_add(const char *d __unused)
 {
 #ifdef notdef
 	fprintf(stderr, "define \"%s\"\n", d);
 #endif
-	return;
 }
 
 static char *
 sstrdup(const char *str)
 {
+
 	if (str != NULL && strlen(str))
 		return (strdup(str));
 	return (NULL);
 }
 
 static int
-satoi (const char *nptr)
+satoi(const char *nptr)
 {
+
 	if (nptr != NULL && strlen(nptr))
 		return (atoi(nptr));
 	return (0);
 }
 
 void
-regkey_add (const char *r)
+regkey_add(const char *r)
 {
 	struct reg *reg;
 
@@ -881,21 +812,20 @@ regkey_add (const char *r)
 
 	free(__DECONST(char *, r));
 	clear_words();
-	return;
 }
 
 void
-push_word (const char *w)
+push_word(const char *w)
 {
+
 	if (w && strlen(w))
 		words[idx++] = w;
 	else
 		words[idx++] = NULL;
-	return;
 }
 
 void
-clear_words (void)
+clear_words(void)
 {
 	int i;
 
@@ -906,5 +836,4 @@ clear_words (void)
 	}
 	idx = 0;
 	bzero(words, sizeof(words));
-	return;
 }

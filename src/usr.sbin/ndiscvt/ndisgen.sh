@@ -30,7 +30,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
 #
-# $FreeBSD: head/usr.sbin/ndiscvt/ndisgen.sh 178213 2008-04-15 04:17:13Z thompsa $
+# $FreeBSD$
 #
 
 header () {
@@ -199,7 +199,7 @@ if [ -z "$INFPATH" ]; then
 	read INFPATH
 fi
 
-if [ ${INFPATH} ] && [ -e ${INFPATH} ]; then 
+if [ ${INFPATH} ] && [ -e ${INFPATH} ]; then
 	INFTYPE=`${EGREP} -i -c "Signature|.S.i.g.n.a.t.u.r.e" ${INFPATH}`
 	if [ ${INFTYPE} -le 0 ]; then
 		echo ""
@@ -309,7 +309,7 @@ else
 	echo -n "	Press enter to try again, or ^C to quit. "
 	read KEYPRESS
 	SYSPATH=""
-fi 
+fi
 return
 }
 

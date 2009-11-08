@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/usr.sbin/ndiscvt/ndiscvt.c 178213 2008-04-15 04:17:13Z thompsa $");
+__FBSDID("$FreeBSD$");
 
 #include <sys/types.h>
 #include <sys/queue.h>
@@ -82,9 +82,9 @@ extern const char *__progname;
  * This way, we don't have to do the fixups inside the kernel.
  */
 
-#define ROUND_DOWN(n, align)    (((uintptr_t)n) & ~((align) - 1l))
-#define ROUND_UP(n, align)      ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
-                                (align))
+#define ROUND_DOWN(n, align)	(((uintptr_t)n) & ~((align) - 1l))
+#define ROUND_UP(n, align)	ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
+				(align))
 
 #define SET_HDRS(x)	\
 	dos_hdr = (image_dos_header *)x;				\
@@ -92,30 +92,28 @@ extern const char *__progname;
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
 static
-int insert_padding(imgbase, imglen)
-	void			**imgbase;
-	int			*imglen;
+int insert_padding(void **imgbase, int *imglen)
 {
-        image_section_header	*sect_hdr;
-        image_dos_header	*dos_hdr;
-        image_nt_header		*nt_hdr;
+	image_section_header	*sect_hdr;
+	image_dos_header	*dos_hdr;
+	image_nt_header		*nt_hdr;
 	image_optional_header	opt_hdr;
-        int			i = 0, sections, curlen = 0;
+	int			i = 0, sections, curlen = 0;
 	int			offaccum = 0, oldraddr, oldrlen;
 	uint8_t			*newimg, *tmp;
 
 	newimg = malloc(*imglen);
 
 	if (newimg == NULL)
-		return(ENOMEM);
+		return (ENOMEM);
 
 	bcopy(*imgbase, newimg, *imglen);
 	curlen = *imglen;
 
 	if (pe_get_optional_header((vm_offset_t)newimg, &opt_hdr))
-		return(0);
+		return (0);
 
-        sections = pe_numsections((vm_offset_t)newimg);
+	sections = pe_numsections((vm_offset_t)newimg);
 
 	SET_HDRS(newimg);
 
@@ -127,13 +125,13 @@ int insert_padding(imgbase, imglen)
 		    opt_hdr.ioh_filealign);
 		offaccum +=
 		    ROUND_UP(sect_hdr->ish_misc.ish_vsize,
-			     opt_hdr.ioh_filealign) -
+			opt_hdr.ioh_filealign) -
 		    ROUND_UP(sect_hdr->ish_rawdatasize,
-			     opt_hdr.ioh_filealign);
+			opt_hdr.ioh_filealign);
 		tmp = realloc(newimg, *imglen + offaccum);
 		if (tmp == NULL) {
 			free(newimg);
-			return(ENOMEM);
+			return (ENOMEM);
 		}
 		newimg = tmp;
 		SET_HDRS(newimg);
@@ -151,7 +149,7 @@ int insert_padding(imgbase, imglen)
 	*imgbase = newimg;
 	*imglen += offaccum;
 
-	return(0);
+	return (0);
 }
 
 static void
@@ -167,10 +165,8 @@ usage(void)
 static void
 bincvt(char *sysfile, char *outfile, void *img, int fsize)
 {
-	char			*ptr;
-	char			tname[] = "/tmp/ndiscvt.XXXXXX";
-	char			sysbuf[1024];
-	FILE			*binfp;
+	char *ptr, sysbuf[1024], tname[] = "/tmp/ndiscvt.XXXXXX";
+	FILE *binfp;
 
 	mkstemp(tname);
 
@@ -213,15 +209,12 @@ bincvt(char *sysfile, char *outfile, void *img, int fsize)
 	    tname, sysfile, tname, tname, sysfile, outfile, outfile);
 	printf("%s", sysbuf);
 	system(sysbuf);
-
-	return;
 }
-   
+
 static void
 firmcvt(char *firmfile)
 {
-	char			*basefile, *outfile, *ptr;
-	char			sysbuf[1024];
+	char *basefile, *outfile, *ptr, sysbuf[1024];
 
 	outfile = strdup(basename(firmfile));
 	basefile = strdup(outfile);
@@ -276,18 +269,16 @@ firmcvt(char *firmfile)
 int
 main(int argc, char *argv[])
 {
-	FILE			*fp, *outfp;
-	int			i, bin = 0;
-	void			*img;
-	int			n, fsize, cnt;
-	unsigned char		*ptr;
-	char			*inffile = NULL, *sysfile = NULL;
-	char			*outfile = NULL, *firmfile = NULL;
-	char			*dname = NULL;
-	int			ch;
+	FILE		*fp, *outfp;
+	int		i, bin = 0, n, fsize, cnt, ch;
+	unsigned char	*ptr;
+	char		*inffile = NULL, *sysfile = NULL;
+	char		*outfile = NULL, *firmfile = NULL;
+	char		*dname = NULL;
+	void		*img;
 
-	while((ch = getopt(argc, argv, "i:s:o:n:f:O")) != -1) {
-		switch(ch) {
+	while ((ch = getopt(argc, argv, "i:s:o:n:f:O")) != -1) {
+		switch (ch) {
 		case 'f':
 			firmfile = optarg;
 			break;
@@ -352,23 +343,20 @@ main(int argc, char *argv[])
 		if (strlen(dname) > IFNAMSIZ)
 			err(1, "selected device name '%s' is "
 			    "too long (max chars: %d)", dname, IFNAMSIZ);
-		fprintf (outfp, "#define NDIS_DEVNAME \"%s\"\n", dname);
-		fprintf (outfp, "#define NDIS_MODNAME %s\n\n", dname);
+		fprintf(outfp, "#define NDIS_DEVNAME \"%s\"\n", dname);
+		fprintf(outfp, "#define NDIS_MODNAME %s\n\n", dname);
 	}
 
 	if (inffile == NULL) {
-		fprintf (outfp, "#ifdef NDIS_REGVALS\n");
-		fprintf (outfp, "ndis_cfg ndis_regvals[] = {\n");
-        	fprintf (outfp, "\t{ NULL, NULL, { 0 }, 0 }\n");
-		fprintf (outfp, "#endif /* NDIS_REGVALS */\n");
-
-		fprintf (outfp, "};\n\n");
+		fprintf(outfp, "#ifdef NDIS_REGVALS\n");
+		fprintf(outfp, "ndis_cfg ndis_regvals[] = {\n");
+		fprintf(outfp, "\t{ NULL, NULL, { 0 }, 0 }\n");
+		fprintf(outfp, "#endif /* NDIS_REGVALS */\n");
+		fprintf(outfp, "};\n\n");
 	} else {
 		fp = fopen(inffile, "r");
 		if (fp == NULL)
 			err(1, "opening .INF file '%s' failed", inffile);
-
-
 		inf_parse(fp, outfp);
 		fclose(fp);
 	}
@@ -392,9 +380,7 @@ main(int argc, char *argv[])
 		goto done;
 	}
 
-
 	fprintf(outfp, "\nextern unsigned char drv_data[];\n\n");
-
 	fprintf(outfp, "__asm__(\".data\");\n");
 	fprintf(outfp, "__asm__(\".globl  drv_data\");\n");
 	fprintf(outfp, "__asm__(\".type   drv_data, @object\");\n");
@@ -403,8 +389,8 @@ main(int argc, char *argv[])
 
 	ptr = img;
 	cnt = 0;
-	while(cnt < fsize) {
-		fprintf (outfp, "__asm__(\".byte ");
+	while (cnt < fsize) {
+		fprintf(outfp, "__asm__(\".byte ");
 		for (i = 0; i < 10; i++) {
 			cnt++;
 			if (cnt == fsize) {
@@ -419,9 +405,7 @@ main(int argc, char *argv[])
 		}
 		ptr += 10;
 	}
-
 done:
-
 	fprintf(outfp, "#endif /* NDIS_IMAGE */\n");
 
 	if (fp != NULL)

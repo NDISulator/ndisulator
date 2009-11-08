@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/dev/if_ndis/if_ndis_pci.c 194677 2009-06-23 02:19:59Z thompsa $");
+__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -66,18 +66,17 @@ __FBSDID("$FreeBSD: head/sys/dev/if_ndis/if_ndis_pci.c 194677 2009-06-23 02:19:5
 
 MODULE_DEPEND(ndis, pci, 1, 1, 1);
 
-static int ndis_probe_pci	(device_t);
+extern int ndis_attach		(device_t);
+extern int ndis_detach		(device_t);
+extern int ndis_resume		(device_t);
+extern int ndis_shutdown	(device_t);
+extern int ndis_suspend		(device_t);
+extern int ndisdrv_modevent	(module_t, int, void *);
 static int ndis_attach_pci	(device_t);
-static struct resource_list *ndis_get_resource_list
-				(device_t, device_t);
 static int ndis_devcompare	(interface_type,
 				 struct ndis_pci_type *, device_t);
-extern int ndisdrv_modevent	(module_t, int, void *);
-extern int ndis_attach		(device_t);
-extern int ndis_shutdown	(device_t);
-extern int ndis_detach		(device_t);
-extern int ndis_suspend		(device_t);
-extern int ndis_resume		(device_t);
+static int ndis_probe_pci	(device_t);
+static struct resource_list	*ndis_get_resource_list(device_t, device_t);
 
 static device_method_t ndis_methods[] = {
 	/* Device interface */
@@ -105,26 +104,24 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, pci, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare(bustype, t, dev)
-	interface_type		bustype;
-	struct ndis_pci_type	*t;
-	device_t		dev;
+ndis_devcompare(interface_type bustype, struct ndis_pci_type *t, device_t dev)
 {
-	if (bustype != PCIBus)
-		return(FALSE);
 
-	while(t->ndis_name != NULL) {
+	if (bustype != PCIBus)
+		return (FALSE);
+
+	while (t->ndis_name != NULL) {
 		if ((pci_get_vendor(dev) == t->ndis_vid) &&
 		    (pci_get_device(dev) == t->ndis_did) &&
 		    ((pci_read_config(dev, PCIR_SUBVEND_0, 4) ==
 		    t->ndis_subsys) || t->ndis_subsys == 0)) {
 			device_set_desc(dev, t->ndis_name);
-			return(TRUE);
+			return (TRUE);
 		}
 		t++;
 	}
 
-	return(FALSE);
+	return (FALSE);
 }
 
 /*
@@ -132,26 +129,23 @@ ndis_devcompare(bustype, t, dev)
  * IDs against our list and return a device name if we find a match.
  */
 static int
-ndis_probe_pci(dev)
-	device_t		dev;
+ndis_probe_pci(device_t dev)
 {
-	driver_object		*drv;
-	struct drvdb_ent	*db;
+	struct drvdb_ent *db;
+	driver_object *drv;
 
 	drv = windrv_lookup(0, "PCI Bus");
-
 	if (drv == NULL)
-		return(ENXIO);
+		return (ENXIO);
 
 	db = windrv_match((matchfuncptr)ndis_devcompare, dev);
-
 	if (db != NULL) {
 		/* Create PDO for this device instance */
 		windrv_create_pdo(drv, dev);
-		return(0);
+		return (0);
 	}
 
-	return(ENXIO);
+	return (ENXIO);
 }
 
 /*
@@ -159,16 +153,14 @@ ndis_probe_pci(dev)
  * setup and ethernet/BPF attach.
  */
 static int
-ndis_attach_pci(dev)
-	device_t		dev;
+ndis_attach_pci(device_t dev)
 {
-	struct ndis_softc	*sc;
-	int			unit, error = 0, rid;
-	struct ndis_pci_type	*t;
-	int			devidx = 0, defidx = 0;
-	struct resource_list	*rl;
-	struct resource_list_entry	*rle;
-	struct drvdb_ent	*db;
+	struct ndis_softc *sc;
+	struct ndis_pci_type *t;
+	struct resource_list *rl;
+	struct resource_list_entry *rle;
+	struct drvdb_ent *db;
+	int devidx = 0, defidx = 0, error = 0, rid, unit;
 
 	sc = device_get_softc(dev);
 	unit = device_get_unit(dev);
@@ -183,9 +175,7 @@ ndis_attach_pci(dev)
 	/*
 	 * Map control/status registers.
 	 */
-
 	pci_enable_busmaster(dev);
-
 	rl = BUS_GET_RESOURCE_LIST(device_get_parent(dev), dev);
 	if (rl != NULL) {
 		STAILQ_FOREACH(rle, rl, link) {
@@ -215,7 +205,7 @@ ndis_attach_pci(dev)
 					sc->ndis_altmem_rid = rle->rid;
 					sc->ndis_res_altmem =
 					    bus_alloc_resource(dev,
-					        SYS_RES_MEMORY,
+						SYS_RES_MEMORY,
 						&sc->ndis_altmem_rid,
 						0, ~0, 1, RF_ACTIVE);
 					if (sc->ndis_res_altmem == NULL) {
@@ -229,7 +219,7 @@ ndis_attach_pci(dev)
 					sc->ndis_mem_rid = rle->rid;
 					sc->ndis_res_mem =
 					    bus_alloc_resource(dev,
-					        SYS_RES_MEMORY,
+						SYS_RES_MEMORY,
 						&sc->ndis_mem_rid,
 						0, ~0, 1, RF_ACTIVE);
 					if (sc->ndis_res_mem == NULL) {
@@ -245,7 +235,7 @@ ndis_attach_pci(dev)
 				rid = rle->rid;
 				sc->ndis_irq = bus_alloc_resource(dev,
 				    SYS_RES_IRQ, &rid, 0, ~0, 1,
-	    			    RF_SHAREABLE | RF_ACTIVE);
+				RF_SHAREABLE | RF_ACTIVE);
 				if (sc->ndis_irq == NULL) {
 					device_printf(dev,
 					    "couldn't map interrupt\n");
@@ -287,24 +277,21 @@ ndis_attach_pci(dev)
 	error = bus_dma_tag_create(NULL,	/* parent */
 			1, 0,			/* alignment, boundary */
 			BUS_SPACE_MAXADDR_32BIT,/* lowaddr */
-                        BUS_SPACE_MAXADDR,	/* highaddr */
+			BUS_SPACE_MAXADDR,	/* highaddr */
 			NULL, NULL,		/* filter, filterarg */
 			MAXBSIZE, NDIS_NSEG_NEW,/* maxsize, nsegments */
 			BUS_SPACE_MAXSIZE_32BIT,/* maxsegsize */
-			BUS_DMA_ALLOCNOW,       /* flags */
+			BUS_DMA_ALLOCNOW,	/* flags */
 			NULL, NULL,		/* lockfunc, lockarg */
 			&sc->ndis_parent_tag);
-
-        if (error)
-                goto fail;
+	if (error)
+		goto fail;
 
 	sc->ndis_iftype = PCIBus;
 
 	/* Figure out exactly which device we matched. */
-
 	t = db->windrv_devlist;
-
-	while(t->ndis_name != NULL) {
+	while (t->ndis_name != NULL) {
 		if ((pci_get_vendor(dev) == t->ndis_vid) &&
 		    (pci_get_device(dev) == t->ndis_did)) {
 			if (t->ndis_subsys == 0)
@@ -318,25 +305,22 @@ ndis_attach_pci(dev)
 		t++;
 		devidx++;
 	}
-
 	if (t->ndis_name == NULL)
 		sc->ndis_devidx = defidx;
 	else
 		sc->ndis_devidx = devidx;
 
 	error = ndis_attach(dev);
-
 fail:
-	return(error);
+	return (error);
 }
 
 static struct resource_list *
-ndis_get_resource_list(dev, child)
-	device_t		dev;
-	device_t		child;
+ndis_get_resource_list(device_t dev, device_t child)
 {
-	struct ndis_softc	*sc;
+	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
+
 	return (BUS_GET_RESOURCE_LIST(device_get_parent(sc->ndis_dev), dev));
 }
