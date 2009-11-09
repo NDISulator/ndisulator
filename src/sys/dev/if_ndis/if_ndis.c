@@ -87,7 +87,7 @@ __FBSDID("$FreeBSD$");
 #define NDIS_DEBUG
 #ifdef NDIS_DEBUG
 #define DPRINTF(x)	do { if (ndis_debug > 0) printf x; } while (0)
-int ndis_debug = 0;
+static int ndis_debug = 0;
 SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug, 0,
     "if_ndis debug level");
 #else
@@ -95,7 +95,7 @@ SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug, 0,
 #endif
 
 SYSCTL_DECL(_hw_ndisusb);
-int ndisusb_halt = 1;
+static int ndisusb_halt = 1;
 SYSCTL_INT(_hw_ndisusb, OID_AUTO, halt, CTLFLAG_RW, &ndisusb_halt, 0,
     "Halt NDIS USB driver when it's attached");
 
