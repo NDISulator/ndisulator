@@ -2494,13 +2494,10 @@ ndis_auth_and_assoc(sc, vap)
 	 * Note that some drivers seem to allow setting a BSSID
 	 * in ad-hoc mode, which has the effect of forcing the
 	 * NIC to create an ad-hoc cell with a specific BSSID,
-	 * instead of a randomly chosen one. However, the net80211
-	 * code makes the assumtion that the BSSID setting is invalid
-	 * when you're in ad-hoc mode, so we don't allow that here.
+	 * instead of a randomly chosen one.
 	 */
 	len = IEEE80211_ADDR_LEN;
-	if (vap->iv_flags & IEEE80211_F_DESBSSID &&
-	    vap->iv_opmode != IEEE80211_M_IBSS)
+	if (vap->iv_flags & IEEE80211_F_DESBSSID)
 		bcopy(ni->ni_bssid, bssid, len);
 	else
 		bcopy(ifp->if_broadcastaddr, bssid, len);
