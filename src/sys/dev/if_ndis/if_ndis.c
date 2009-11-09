@@ -189,6 +189,8 @@ static void ndis_getstate_80211	(struct ndis_softc *);
 static void ndis_setstate_80211	(struct ndis_softc *);
 static void ndis_auth_and_assoc	(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher	(struct ndis_softc *, int);
+static void ndis_set_ssid	(struct ndis_softc *, struct ieee80211vap *,
+					uint8_t);
 static int ndis_set_wpa		(struct ndis_softc *, void *, int);
 static int ndis_add_key		(struct ieee80211vap *,
 	const struct ieee80211_key *, const u_int8_t []);
@@ -504,8 +506,7 @@ ndis_nettype_chan(uint32_t type)
 	case NDIS_80211_NETTYPE_11OFDM5:	return (IEEE80211_CHAN_A);
 	case NDIS_80211_NETTYPE_11OFDM24:	return (IEEE80211_CHAN_G);
 	}
-	DPRINTF(("unknown channel nettype %d\n", type));
-	return (IEEE80211_CHAN_B);	/* Default to 11B chan */
+	return (IEEE80211_CHAN_ANY);
 }
 
 static int
@@ -517,7 +518,6 @@ ndis_nettype_mode(uint32_t type)
 	case NDIS_80211_NETTYPE_11OFDM5:	return (IEEE80211_MODE_11A);
 	case NDIS_80211_NETTYPE_11OFDM24:	return (IEEE80211_MODE_11G);
 	}
-	DPRINTF(("unknown mode nettype %d\n", type));
 	return (IEEE80211_MODE_AUTO);
 }
 
@@ -781,7 +781,6 @@ nonettypes:
 #define INCRATE(x)	\
 	ic->ic_sup_rates[x].rs_nrates++
 
-		ic->ic_curmode = IEEE80211_MODE_AUTO;
 		if (isset(ic->ic_modecaps, IEEE80211_MODE_11A))
 			ic->ic_sup_rates[IEEE80211_MODE_11A].rs_nrates = 0;
 		if (isset(ic->ic_modecaps, IEEE80211_MODE_11B))
@@ -2320,8 +2319,50 @@ ndis_setstate_80211(sc)
 	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
 	rval = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
 	if (rval)
-		device_printf(sc->ndis_dev,
-		    "setting BSSID failed: %d\n", rval);
+		DPRINTF(("setting BSSID failed: %d\n", rval));
+}
+
+static void
+ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
+{
+	struct ieee80211_node *ni;
+	ndis_80211_ssid	 ssid;
+	int len, rval;
+
+	ni = vap->iv_bss;
+	len = sizeof(ssid);
+	bzero((char *)&ssid, len);
+
+	if (scan == 0) {
+		ssid.ns_ssidlen = ni->ni_esslen;
+		if (ssid.ns_ssidlen == 0)
+			ssid.ns_ssidlen = 1;
+		else
+			bcopy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
+	} else { /* Hidden ssid */
+		if (sc->ndis_link == 0 || bcmp(ni->ni_essid,
+		    vap->iv_des_ssid[0].ssid, sizeof(ni->ni_essid)) != 0) {
+			if (vap->iv_des_nssid == 0)
+				ssid.ns_ssidlen = 1;
+			else {
+				ssid.ns_ssidlen = vap->iv_des_ssid[0].len;
+				bcopy(vap->iv_des_ssid[0].ssid, ssid.ns_ssid,
+				    ssid.ns_ssidlen);
+			}
+		} else
+			return;
+	}
+
+#ifdef NDIS_DEBUG
+	if (ndis_debug > 0) {
+		printf("Setting ESSID to ");
+		ieee80211_print_essid(ssid.ns_ssid, ssid.ns_ssidlen);
+		printf("\n");
+	}
+#endif
+	rval = ndis_set_info(sc, OID_802_11_SSID, &ssid, &len);
+	if (rval)
+		DPRINTF(("set ESSID failed: %d\n", rval));
 }
 
 static void
@@ -2331,7 +2372,6 @@ ndis_auth_and_assoc(sc, vap)
 {
 	struct ieee80211com	*ic;
 	struct ieee80211_node	*ni;
-	ndis_80211_ssid		ssid;
 	ndis_80211_macaddr	bssid;
 	ndis_80211_wep		wep;
 	int			i, rval = 0, len, error;
@@ -2454,28 +2494,7 @@ ndis_auth_and_assoc(sc, vap)
 		    "setting BSSID failed: %d\n", rval);
 
 	/* Set SSID -- always do this last. */
-
-#ifdef NDIS_DEBUG
-	if (ndis_debug > 0) {
-		printf("Setting ESSID to ");
-		ieee80211_print_essid(ni->ni_essid, ni->ni_esslen);
-		printf("\n");
-	}
-#endif
-
-	len = sizeof(ssid);
-	bzero((char *)&ssid, len);
-	ssid.ns_ssidlen = ni->ni_esslen;
-	if (ssid.ns_ssidlen == 0) {
-		ssid.ns_ssidlen = 1;
-	} else
-		bcopy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
-
-	rval = ndis_set_info(sc, OID_802_11_SSID, &ssid, &len);
-	if (rval)
-		device_printf (sc->ndis_dev, "set ssid failed: %d\n", rval);
-
-	return;
+	ndis_set_ssid(sc, vap, 0);
 }
 
 static int
@@ -3084,8 +3103,6 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	case IEEE80211_S_AUTH:
 		IEEE80211_UNLOCK(ic);
 		ndis_auth_and_assoc(sc, vap);
-		if (vap->iv_state == IEEE80211_S_AUTH) /* XXX */
-			ieee80211_new_state(vap, IEEE80211_S_ASSOC, 0);
 		IEEE80211_LOCK(ic);
 		break;
 	default:
@@ -3217,32 +3234,9 @@ ndis_scan_start(struct ieee80211com *ic)
 	struct ifnet *ifp = ic->ic_ifp;
 	struct ndis_softc *sc = ifp->if_softc;
 	struct ieee80211vap *vap;
-	struct ieee80211_scan_state *ss;
-	ndis_80211_ssid ssid;
 	int error, len;
 
-	ss = ic->ic_scan;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
-
-	if (!NDIS_INITIALIZED(sc)) {
-		DPRINTF(("%s: scan aborted\n", __func__));
-		ieee80211_cancel_scan(vap);
-		return;
-	}
-
-	len = sizeof(ssid);
-	bzero((char *)&ssid, len);
-	if (ss->ss_nssid == 0)
-		ssid.ns_ssidlen = 1;
-	else {
-		/* Perform a directed scan */
-		ssid.ns_ssidlen = ss->ss_ssid[0].len;
-		bcopy(ss->ss_ssid[0].ssid, ssid.ns_ssid, ssid.ns_ssidlen);
-	}
-
-	error = ndis_set_info(sc, OID_802_11_SSID, &ssid, &len);
-	if (error)
-		DPRINTF(("%s: set ESSID failed\n", __func__));
 
 	len = 0;
 	error = ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len);
