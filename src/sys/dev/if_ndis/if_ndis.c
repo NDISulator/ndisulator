@@ -2235,12 +2235,14 @@ ndis_setstate_80211(sc)
 		device_printf(sc->ndis_dev, "set infra failed: %d\n", rval);
 
 	/* Set power management */
-	len = sizeof(arg);
-	if (vap->iv_flags & IEEE80211_F_PMGTON)
-		arg = NDIS_80211_POWERMODE_FAST_PSP;
-	else
-		arg = NDIS_80211_POWERMODE_CAM;
-	ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len);
+	if (ic->ic_caps & IEEE80211_C_PMGT) {
+		if (vap->iv_flags & IEEE80211_F_PMGTON)
+			arg = NDIS_80211_POWERMODE_FAST_PSP;
+		else
+			arg = NDIS_80211_POWERMODE_CAM;
+		len = sizeof(arg);
+		ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len);
+	}
 
 	/* Set TX power */
 	if ((ic->ic_caps & IEEE80211_C_TXPMGT) &&
