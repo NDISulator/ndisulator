@@ -3011,6 +3011,9 @@ ndis_stop(sc)
 	NDIS_LOCK(sc);
 	sc->ndis_tx_timer = 0;
 	sc->ndis_link = 0;
+
+	if_link_state_change(sc->ifp, LINK_STATE_UNKNOWN);
+
 	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	NDIS_UNLOCK(sc);
 
