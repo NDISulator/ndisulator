@@ -1,0 +1,9 @@
+*.o
+inf-parse.c
+inf-token.c
+ndiscvt
+ndiscvt.8.gz
+ndisgen.8.gz
+y.output
+y.tab.c
+y.tab.h
