@@ -2200,11 +2200,13 @@ ndis_setstate_80211(sc)
 {
 	struct ieee80211com	*ic;
 	struct ieee80211vap	*vap;
+	const struct ieee80211_txparam	*tp;
 	ndis_80211_macaddr	bssid;
 	ndis_80211_config	config;
+	ndis_80211_rates	rates;
 	struct ifnet		*ifp;
 	uint32_t		arg;
-	int			rval = 0, len;
+	int			rval = 0, len, i;
 
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
@@ -2241,6 +2243,21 @@ ndis_setstate_80211(sc)
 	rval = ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
 	if (rval)
 		device_printf(sc->ndis_dev, "set infra failed: %d\n", rval);
+
+	/* Set transmission rate */
+	tp = &vap->iv_txparms[ieee80211_chan2mode(ic->ic_curchan)];
+	if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE) {
+		len = sizeof(rates);
+		bzero((uint8_t *)&rates, len);
+		if (ndis_get_info(sc, OID_802_11_DESIRED_RATES,
+		    (void *)rates, &len) == 0) {
+			for (i = 0; i < len; i++)
+				if (rates[i] > tp->ucastrate)
+					rates[i] = 0;
+			ndis_set_info(sc, OID_802_11_DESIRED_RATES,
+			    (void *)rates, &len);
+		}
+	}
 
 	/* Set power management */
 	if (ic->ic_caps & IEEE80211_C_PMGT) {
