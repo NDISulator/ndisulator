@@ -2665,11 +2665,7 @@ ndis_getstate_80211(sc)
 	/* Get power management */
 	if (ic->ic_caps & IEEE80211_C_PMGT) {
 		len = sizeof(arg);
-		rval = ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len);
-
-		if (rval)
-			device_printf(sc->ndis_dev,
-			    "get power mode failed: %d\n", rval);
+		ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len);
 		if (arg == NDIS_80211_POWERMODE_CAM)
 			vap->iv_flags &= ~IEEE80211_F_PMGTON;
 		else
