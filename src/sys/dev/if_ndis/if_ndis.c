@@ -2291,34 +2291,25 @@ ndis_setstate_80211(sc)
 	 * Some drivers expect us to initialize these values, so
 	 * provide some defaults.
 	 */
-
-	if (config.nc_beaconperiod == 0)
-		config.nc_beaconperiod = 100;
-	if (config.nc_atimwin == 0)
+	config.nc_beaconperiod = ic->ic_bintval;
+	if (vap->iv_opmode == IEEE80211_M_IBSS &&
+	    config.nc_atimwin == 0)
 		config.nc_atimwin = 100;
-	if (config.nc_fhconfig.ncf_dwelltime == 0)
+	if (config.nc_fhconfig.ncf_length != 0 &&
+	    config.nc_fhconfig.ncf_dwelltime == 0)
 		config.nc_fhconfig.ncf_dwelltime = 200;
-	if (rval == 0 && ic->ic_bsschan != IEEE80211_CHAN_ANYC) {
-		int chan, chanflag;
-
-		chan = ieee80211_chan2ieee(ic, ic->ic_bsschan);
-		chanflag = config.nc_dsconfig > 2500000 ? IEEE80211_CHAN_2GHZ :
-		    IEEE80211_CHAN_5GHZ;
-		if (chan != ieee80211_mhz2ieee(config.nc_dsconfig / 1000, 0)) {
-			config.nc_dsconfig =
-				ic->ic_bsschan->ic_freq * 1000;
-			len = sizeof(config);
-			config.nc_length = len;
-			config.nc_fhconfig.ncf_length =
-			    sizeof(ndis_80211_config_fh);
-			DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
-			rval = ndis_set_info(sc, OID_802_11_CONFIGURATION,
-			    &config, &len);
-			if (rval)
-				device_printf(sc->ndis_dev, "couldn't change "
-				    "DS config to %ukHz: %d\n",
-				    config.nc_dsconfig, rval);
-		}
+	if (rval == 0 && vap->iv_des_chan != IEEE80211_CHAN_ANYC) {
+		config.nc_dsconfig = vap->iv_des_chan->ic_freq * 1000;
+		len = sizeof(config);
+		config.nc_length = len;
+		config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
+		DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
+		rval = ndis_set_info(sc, OID_802_11_CONFIGURATION,
+		    &config, &len);
+		if (rval)
+			device_printf(sc->ndis_dev, "couldn't change "
+			    "DS config to %ukHz: %d\n",
+			    config.nc_dsconfig, rval);
 	} else if (rval)
 		device_printf(sc->ndis_dev, "couldn't retrieve "
 		    "channel info: %d\n", rval);
