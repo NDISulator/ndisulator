@@ -901,6 +901,10 @@ nonettypes:
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
 		i = sizeof(arg);
+		r = ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &i);
+		if (r == 0)
+			ic->ic_caps |= IEEE80211_C_TXFRAG;
+
 		r = ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &i);
 		if (r == 0)
 			ic->ic_caps |= IEEE80211_C_PMGT;
@@ -2224,6 +2228,19 @@ ndis_setstate_80211(sc)
 	len = 0;
 	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
 
+	/* Set fragmentation threshold */
+	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
+		arg = vap->iv_fragthreshold;
+		len = sizeof(arg);
+		ndis_set_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
+		    &arg, &len);
+	}
+
+	/* Set RTS threshold */
+	len = sizeof(arg);
+	arg = vap->iv_rtsthreshold;
+	ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
+
 	/* Set network infrastructure mode */
 	len = sizeof(arg);
 	if (vap->iv_opmode == IEEE80211_M_IBSS)
@@ -2349,16 +2366,6 @@ ndis_auth_and_assoc(sc, vap)
 
 	/* Initial setup */
 	ndis_setstate_80211(sc);
-
-	/* Set RTS threshold */
-	len = sizeof(arg);
-	arg = vap->iv_rtsthreshold;
-	ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
-
-	/* Set fragmentation threshold */
-	len = sizeof(arg);
-	arg = vap->iv_fragthreshold;
-	ndis_set_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len);
 
 	/* Set WEP */
 	if (vap->iv_flags & IEEE80211_F_PRIVACY &&
@@ -2642,6 +2649,20 @@ ndis_getstate_80211(sc)
 		    rval);
 	ni->ni_txrate = arg / 5000;
 
+	/* Get fragmentation threshold */
+	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
+		len = sizeof(arg);
+		ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
+		    &arg, &len);
+		vap->iv_fragthreshold = arg;
+	}
+
+	/* Get RTS threshold */
+	len = sizeof(arg);
+	ndis_get_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
+	vap->iv_rtsthreshold = arg;
+
+	/* Get power management */
 	if (ic->ic_caps & IEEE80211_C_PMGT) {
 		len = sizeof(arg);
 		rval = ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len);
