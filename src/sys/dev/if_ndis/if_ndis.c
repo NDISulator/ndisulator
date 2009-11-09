@@ -183,7 +183,6 @@ static int ndis_ifmedia_upd	(struct ifnet *);
 static void ndis_ifmedia_sts	(struct ifnet *, struct ifmediareq *);
 static int ndis_get_bssid_list	(struct ndis_softc *,
 					ndis_80211_bssid_list_ex **);
-static int ndis_get_assoc	(struct ndis_softc *, ndis_wlan_bssid_ex **);
 static int ndis_probe_offload	(struct ndis_softc *);
 static int ndis_set_offload	(struct ndis_softc *);
 static void ndis_getstate_80211	(struct ndis_softc *);
@@ -2519,58 +2518,6 @@ ndis_get_bssid_list(sc, bl)
 	return (0);
 }
 
-static int
-ndis_get_assoc(sc, assoc)
-	struct ndis_softc	*sc;
-	ndis_wlan_bssid_ex	**assoc;
-{
-	struct ifnet *ifp = sc->ifp;
-	struct ieee80211com *ic = ifp->if_l2com;
-	struct ieee80211vap     *vap;
-	struct ieee80211_node   *ni;
-	ndis_80211_bssid_list_ex	*bl;
-	ndis_wlan_bssid_ex	*bs;
-	ndis_80211_macaddr	bssid;
-	int			i, len, error;
-
-	if (!sc->ndis_link)
-		return (ENOENT);
-
-	len = sizeof(bssid);
-	error = ndis_get_info(sc, OID_802_11_BSSID, &bssid, &len);
-	if (error) {
-		device_printf(sc->ndis_dev, "failed to get bssid\n");
-		return (ENOENT);
-	}
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
-	ni = vap->iv_bss;
-
-	error = ndis_get_bssid_list(sc, &bl);
-	if (error)
-		return (error);
-
-	bs = (ndis_wlan_bssid_ex *)&bl->nblx_bssid[0];
-	for (i = 0; i < bl->nblx_items; i++) {
-		if (bcmp(bs->nwbx_macaddr, bssid, sizeof(bssid)) == 0) {
-			*assoc = malloc(bs->nwbx_len, M_TEMP, M_NOWAIT);
-			if (*assoc == NULL) {
-				free(bl, M_TEMP);
-				return (ENOMEM);
-			}
-			bcopy((char *)bs, (char *)*assoc, bs->nwbx_len);
-			free(bl, M_TEMP);
-			if (ic->ic_opmode == IEEE80211_M_STA)
-				ni->ni_associd = 1 | 0xc000; /* fake associd */
-			return (0);
-		}
-		bs = (ndis_wlan_bssid_ex *)((char *)bs + bs->nwbx_len);
-	}
-
-	free(bl, M_TEMP);
-	return (ENOENT);
-}
-
 static void
 ndis_getstate_80211(sc)
 	struct ndis_softc	*sc;
@@ -2578,32 +2525,37 @@ ndis_getstate_80211(sc)
 	struct ieee80211com	*ic;
 	struct ieee80211vap	*vap;
 	struct ieee80211_node	*ni;
-	ndis_wlan_bssid_ex	*bs;
-	int			rval, len, i = 0;
-	int			chanflag;
+	ndis_80211_config	config;
+	ndis_80211_macaddr	macaddr;
+	ndis_80211_ssid		ssid;
+	int			chanflag, rval, len, i = 0;
 	uint32_t		arg;
 	struct ifnet		*ifp;
+
+	if (!NDIS_INITIALIZED(sc))
+		return;
 
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	ni = vap->iv_bss;
 
-	if (!NDIS_INITIALIZED(sc))
+	/* Get BSSID */
+	len = sizeof(macaddr);
+	rval = ndis_get_info(sc, OID_802_11_BSSID, &macaddr, &len);
+	if (rval != 0)
 		return;
+	IEEE80211_ADDR_COPY(ni->ni_bssid, macaddr);
 
-	if ((rval = ndis_get_assoc(sc, &bs)) != 0)
+	/* Get SSID */
+	len = sizeof(ssid);
+	rval = ndis_get_info(sc, OID_802_11_SSID, &ssid, &len);
+	if (rval != 0 || ssid.ns_ssidlen == 0)
 		return;
-
-	/* We're associated, retrieve info on the current bssid. */
-	ic->ic_curmode = ndis_nettype_mode(bs->nwbx_nettype);
-	chanflag = ndis_nettype_chan(bs->nwbx_nettype);
-	IEEE80211_ADDR_COPY(ni->ni_bssid, bs->nwbx_macaddr);
-
-	/* Get SSID from current association info. */
-	bcopy(bs->nwbx_ssid.ns_ssid, ni->ni_essid,
-	    bs->nwbx_ssid.ns_ssidlen);
-	ni->ni_esslen = bs->nwbx_ssid.ns_ssidlen;
+	bcopy(ssid.ns_ssid, ni->ni_essid, ssid.ns_ssidlen);
+	ni->ni_esslen = ssid.ns_ssidlen;
+	if (vap->iv_opmode == IEEE80211_M_STA)
+		ni->ni_associd = 1 | 0xc000; /* fake associd */
 
 	len = sizeof(arg);
 	rval = ndis_get_info(sc, OID_GEN_LINK_SPEED, &arg, &len);
@@ -2645,18 +2597,22 @@ ndis_getstate_80211(sc)
 		ic->ic_txpowlimit = i;
 	}
 
-	/*
-	 * Use the current association information to reflect
-	 * what channel we're on.
-	 */
+	/* Get network mode */
+	len = sizeof(arg);
+	ndis_get_info(sc, OID_802_11_NETWORK_TYPE_IN_USE, &arg, &len);
+	chanflag = ndis_nettype_chan(arg);
+
+	/* Get current channel and beacon interval */
+	len = sizeof(config);
+	bzero((char *)&config, len);
+	ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len);
 	ic->ic_curchan = ieee80211_find_channel(ic,
-	    bs->nwbx_config.nc_dsconfig / 1000, chanflag);
+	    config.nc_dsconfig / 1000, chanflag);
 	if (ic->ic_curchan == NULL)
 		ic->ic_curchan = &ic->ic_channels[0];
 	ni->ni_chan = ic->ic_curchan;
 	ic->ic_bsschan = ic->ic_curchan;
-
-	free(bs, M_TEMP);
+	ni->ni_intval = config.nc_beaconperiod;
 
 	/* Determine current authentication mode */
 	len = sizeof(arg);
