@@ -2220,10 +2220,9 @@ ndis_setstate_80211(sc)
 		return;
 	}
 
-	/* Disassociate and turn off radio. */
-	len = sizeof(arg);
-	arg = 1;
-	ndis_set_info(sc, OID_802_11_DISASSOCIATE, &arg, &len);
+	/* Disassociate and turn off radio */
+	len = 0;
+	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
 
 	/* Set network infrastructure mode. */
 
