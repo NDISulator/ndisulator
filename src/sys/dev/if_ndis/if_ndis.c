@@ -1693,7 +1693,6 @@ ndis_ticktask(d, xsc)
 		sc->ndis_link = 1;
 		NDIS_UNLOCK(sc);
 		if (vap != NULL) {
-			ndis_getstate_80211(sc);
 			ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
 		}
 		NDIS_LOCK(sc);
@@ -3068,10 +3067,22 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	vap->iv_state = nstate;
 
 	switch (nstate) {
-	/* pass on to net80211 */
-	case IEEE80211_S_INIT:
 	case IEEE80211_S_SCAN:
+		IEEE80211_UNLOCK(ic);
+		ndis_set_ssid(sc, vap, 1);
+		IEEE80211_LOCK(ic);
+		/* FALLTHROUGH */
+	case IEEE80211_S_INIT:
+		/* pass on to net80211 */
 		return nvp->newstate(vap, nstate, arg);
+	case IEEE80211_S_RUN:
+		IEEE80211_UNLOCK(ic);
+		if (vap->iv_opmode == IEEE80211_M_IBSS) {
+			ndis_auth_and_assoc(sc, vap);
+		}
+		ndis_getstate_80211(sc);
+		IEEE80211_LOCK(ic);
+		break;
 	case IEEE80211_S_ASSOC:
 		if (ostate != IEEE80211_S_AUTH) {
 			IEEE80211_UNLOCK(ic);
