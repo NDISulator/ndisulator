@@ -2224,10 +2224,9 @@ ndis_setstate_80211(sc)
 	len = 0;
 	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
 
-	/* Set network infrastructure mode. */
-
+	/* Set network infrastructure mode */
 	len = sizeof(arg);
-	if (ic->ic_opmode == IEEE80211_M_IBSS)
+	if (vap->iv_opmode == IEEE80211_M_IBSS)
 		arg = NDIS_80211_NET_INFRA_IBSS;
 	else
 		arg = NDIS_80211_NET_INFRA_BSS;
@@ -2348,17 +2347,6 @@ ndis_auth_and_assoc(sc, vap)
 
 	/* Initial setup */
 	ndis_setstate_80211(sc);
-
-	/* Set network infrastructure mode. */
-	len = sizeof(arg);
-	if (vap->iv_opmode == IEEE80211_M_IBSS)
-		arg = NDIS_80211_NET_INFRA_IBSS;
-	else
-		arg = NDIS_80211_NET_INFRA_BSS;
-
-	rval = ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
-	if (rval)
-		device_printf (sc->ndis_dev, "set infra failed: %d\n", rval);
 
 	/* Set RTS threshold */
 	len = sizeof(arg);
