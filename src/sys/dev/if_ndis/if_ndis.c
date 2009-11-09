@@ -622,15 +622,11 @@ ndis_attach(dev)
 		goto fail;
 	}
 
-	/*
-	 * Get station address from the driver.
-	 */
+	/* Get station address from the driver */
 	len = sizeof(eaddr);
 	ndis_get_info(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, &len);
 
-	/*
-	 * Figure out how big to make the TX buffer pool.
-	 */
+	/* Figure out how big to make the TX buffer pool */
 	len = sizeof(sc->ndis_maxpkts);
 	if (ndis_get_info(sc, OID_GEN_MAXIMUM_SEND_PACKETS,
 		    &sc->ndis_maxpkts, &len)) {
@@ -1955,16 +1951,12 @@ ndis_init(xsc)
 	if (error)
 		device_printf(sc->ndis_dev, "set filter failed: %d\n", error);
 
-	/*
-	 * Set lookahead.
- 	 */
+	/* Set lookahead */
 	i = ifp->if_mtu;
 	len = sizeof(i);
 	ndis_set_info(sc, OID_GEN_CURRENT_LOOKAHEAD, &i, &len);
 
-	/*
-	 * Program the multicast filter, if necessary.
-	 */
+	/* Program the multicast filter, if necessary */
 	ndis_setmulti(sc);
 
 	/* Setup task offload. */
@@ -2277,22 +2269,17 @@ ndis_setstate_80211(sc)
 		ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len);
 	}
 
-	/*
-	 * Default encryption mode to off, authentication
-	 * to open and privacy to 'accept everything.'
-	 */
+	/* Default encryption mode to off */
 	len = sizeof(arg);
 	arg = NDIS_80211_WEPSTAT_DISABLED;
 	ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 
+	/* Authentication to open */
 	len = sizeof(arg);
 	arg = NDIS_80211_AUTHMODE_OPEN;
 	ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
 
-	/*
-	 * Note that OID_802_11_PRIVACY_FILTER is optional:
-	 * not all drivers implement it.
-	 */
+	/* Privacy to 'accept everything' */
 	len = sizeof(arg);
 	arg = NDIS_80211_PRIVFILT_8021XWEP;
 	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
@@ -2455,35 +2442,6 @@ ndis_auth_and_assoc(sc, vap)
 		if (error != 0)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
 	}
-
-#ifdef notyet
-	/* Set network type. */
-	arg = 0;
-
-	switch (vap->iv_curmode) {
-	case IEEE80211_MODE_11A:
-		arg = NDIS_80211_NETTYPE_11OFDM5;
-		break;
-	case IEEE80211_MODE_11B:
-		arg = NDIS_80211_NETTYPE_11DS;
-		break;
-	case IEEE80211_MODE_11G:
-		arg = NDIS_80211_NETTYPE_11OFDM24;
-		break;
-	default:
-		device_printf(sc->ndis_dev, "unknown mode: %d\n",
-		    vap->iv_curmode);
-	}
-	if (arg) {
-		DPRINTF(("Setting network type to %d\n", arg));
-		len = sizeof(arg);
-		rval = ndis_set_info(sc, OID_802_11_NETWORK_TYPE_IN_USE,
-		    &arg, &len);
-		if (rval)
-			device_printf(sc->ndis_dev,
-			    "set nettype failed: %d\n", rval);
-	}
-#endif
 
 	/*
 	 * If the user selected a specific BSSID, try
@@ -2700,9 +2658,7 @@ ndis_getstate_80211(sc)
 
 	free(bs, M_TEMP);
 
-	/*
-	 * Determine current authentication mode.
-	 */
+	/* Determine current authentication mode */
 	len = sizeof(arg);
 	rval = ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
 	if (rval)
@@ -2739,11 +2695,9 @@ ndis_getstate_80211(sc)
 
 	len = sizeof(arg);
 	rval = ndis_get_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
-
 	if (rval)
 		device_printf(sc->ndis_dev,
 		    "get wep status failed: %d\n", rval);
-
 	if (arg == NDIS_80211_WEPSTAT_ENABLED)
 		vap->iv_flags |= IEEE80211_F_PRIVACY|IEEE80211_F_DROPUNENC;
 	else
