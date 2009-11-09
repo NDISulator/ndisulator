@@ -1928,15 +1928,6 @@ ndis_init(xsc)
 	int			i, len, error;
 
 	/*
-	 * Avoid reintializing the link unnecessarily.
-	 * This should be dealt with in a better way by
-	 * fixing the upper layer modules so they don't
-	 * call ifp->if_init() quite as often.
-	 */
-	if (sc->ndis_link)
-		return;
-
-	/*
 	 * Cancel pending I/O and free all RX/TX buffers.
 	 */
 	ndis_stop(sc);
