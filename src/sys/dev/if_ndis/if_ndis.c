@@ -187,8 +187,10 @@ static int ndis_probe_offload	(struct ndis_softc *);
 static int ndis_set_offload	(struct ndis_softc *);
 static void ndis_getstate_80211	(struct ndis_softc *);
 static void ndis_setstate_80211	(struct ndis_softc *);
-static void ndis_auth_and_assoc	(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_assoc		(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_auth		(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher	(struct ndis_softc *, int);
+static void ndis_set_infra	(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_set_ssid	(struct ndis_softc *, struct ieee80211vap *,
 					uint8_t);
 static int ndis_set_wpa		(struct ndis_softc *, void *, int);
@@ -1708,6 +1710,15 @@ ndis_ticktask(d, xsc)
 		if_link_state_change(sc->ifp, LINK_STATE_DOWN);
 	}
 
+	if (sc->ndis_link == 0 &&
+	    sc->ndis_sts == NDIS_STATUS_MEDIA_DISCONNECT) {
+		NDIS_UNLOCK(sc);
+		if (vap != NULL)
+			if (vap->iv_state == IEEE80211_S_ASSOC)
+				ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
+		NDIS_LOCK(sc);
+	}
+
 	NDIS_UNLOCK(sc);
 }
 
@@ -2189,7 +2200,6 @@ ndis_setstate_80211(sc)
 	struct ieee80211com	*ic;
 	struct ieee80211vap	*vap;
 	const struct ieee80211_txparam	*tp;
-	ndis_80211_macaddr	bssid;
 	ndis_80211_config	config;
 	ndis_80211_rates	rates;
 	struct ifnet		*ifp;
@@ -2221,16 +2231,6 @@ ndis_setstate_80211(sc)
 	len = sizeof(arg);
 	arg = vap->iv_rtsthreshold;
 	ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
-
-	/* Set network infrastructure mode */
-	len = sizeof(arg);
-	if (vap->iv_opmode == IEEE80211_M_IBSS)
-		arg = NDIS_80211_NET_INFRA_IBSS;
-	else
-		arg = NDIS_80211_NET_INFRA_BSS;
-	rval = ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
-	if (rval)
-		device_printf(sc->ndis_dev, "set infra failed: %d\n", rval);
 
 	/* Set transmission rate */
 	tp = &vap->iv_txparms[ieee80211_chan2mode(ic->ic_curchan)];
@@ -2312,14 +2312,22 @@ ndis_setstate_80211(sc)
 	} else if (rval)
 		device_printf(sc->ndis_dev, "couldn't retrieve "
 		    "channel info: %d\n", rval);
+}
 
-	/* Set the BSSID to our value so the driver doesn't associate */
-	len = IEEE80211_ADDR_LEN;
-	bcopy(IF_LLADDR(ifp), bssid, len);
-	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
-	rval = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
+static void
+ndis_set_infra(struct ndis_softc *sc, struct ieee80211vap *vap)
+{
+	uint32_t arg;
+	int len, rval;
+
+	len = sizeof(arg);
+	if (vap->iv_opmode == IEEE80211_M_IBSS)
+		arg = NDIS_80211_NET_INFRA_IBSS;
+	else
+		arg = NDIS_80211_NET_INFRA_BSS;
+	rval = ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
 	if (rval)
-		DPRINTF(("setting BSSID failed: %d\n", rval));
+		device_printf(sc->ndis_dev, "set infra failed: %d\n", rval);
 }
 
 static void
@@ -2366,13 +2374,47 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 }
 
 static void
-ndis_auth_and_assoc(sc, vap)
-	struct ndis_softc	*sc;
-	struct ieee80211vap	*vap;
+ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
+{
+	struct ieee80211_node	*ni;
+	ndis_80211_macaddr	bssid;
+	int			rval, len;
+	struct ifnet		*ifp;
+
+	ifp = sc->ifp;
+	ni = vap->iv_bss;
+
+	/*
+	 * If the user selected a specific BSSID, try
+	 * to use that one. This is useful in the case where
+	 * there are several APs in range with the same network
+	 * name. To delete the BSSID, we use the broadcast
+	 * address as the BSSID.
+	 * Note that some drivers seem to allow setting a BSSID
+	 * in ad-hoc mode, which has the effect of forcing the
+	 * NIC to create an ad-hoc cell with a specific BSSID,
+	 * instead of a randomly chosen one.
+	 */
+	len = IEEE80211_ADDR_LEN;
+	if (vap->iv_flags & IEEE80211_F_DESBSSID)
+		bcopy(ni->ni_bssid, bssid, len);
+	else
+		bcopy(ifp->if_broadcastaddr, bssid, len);
+	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
+	rval = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
+	if (rval)
+		device_printf(sc->ndis_dev,
+		    "setting BSSID failed: %d\n", rval);
+
+	/* Set SSID -- always do this last. */
+	ndis_set_ssid(sc, vap, 0);
+}
+
+static void
+ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com	*ic;
 	struct ieee80211_node	*ni;
-	ndis_80211_macaddr	bssid;
 	ndis_80211_wep		wep;
 	int			i, rval = 0, len, error;
 	uint32_t		arg;
@@ -2381,11 +2423,6 @@ ndis_auth_and_assoc(sc, vap)
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
 	ni = vap->iv_bss;
-
-	if (!NDIS_INITIALIZED(sc)) {
-		DPRINTF(("%s: NDIS not initialized\n", __func__));
-		return;
-	}
 
 	/* Initial setup */
 	ndis_setstate_80211(sc);
@@ -2470,33 +2507,7 @@ ndis_auth_and_assoc(sc, vap)
 		if (error != 0)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
 	}
-
-	/*
-	 * If the user selected a specific BSSID, try
-	 * to use that one. This is useful in the case where
-	 * there are several APs in range with the same network
-	 * name. To delete the BSSID, we use the broadcast
-	 * address as the BSSID.
-	 * Note that some drivers seem to allow setting a BSSID
-	 * in ad-hoc mode, which has the effect of forcing the
-	 * NIC to create an ad-hoc cell with a specific BSSID,
-	 * instead of a randomly chosen one.
-	 */
-	len = IEEE80211_ADDR_LEN;
-	if (vap->iv_flags & IEEE80211_F_DESBSSID)
-		bcopy(ni->ni_bssid, bssid, len);
-	else
-		bcopy(ifp->if_broadcastaddr, bssid, len);
-	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
-	rval = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
-	if (rval)
-		device_printf(sc->ndis_dev,
-		    "setting BSSID failed: %d\n", rval);
-
-	/* Set SSID -- always do this last. */
-	ndis_set_ssid(sc, vap, 0);
 }
-
 static int
 ndis_get_bssid_list(sc, bl)
 	struct ndis_softc	*sc;
@@ -2540,9 +2551,6 @@ ndis_getstate_80211(sc)
 	uint32_t		arg;
 	struct ifnet		*ifp;
 
-	if (!NDIS_INITIALIZED(sc))
-		return;
-
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
@@ -2567,9 +2575,6 @@ ndis_getstate_80211(sc)
 
 	len = sizeof(arg);
 	rval = ndis_get_info(sc, OID_GEN_LINK_SPEED, &arg, &len);
-	if (rval)
-		device_printf(sc->ndis_dev, "get link speed failed: %d\n",
-		    rval);
 	ni->ni_txrate = arg / 5000;
 
 	/* Get fragmentation threshold */
@@ -2625,10 +2630,7 @@ ndis_getstate_80211(sc)
 	/* Determine current authentication mode */
 	len = sizeof(arg);
 	rval = ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
-	if (rval)
-		device_printf(sc->ndis_dev,
-		    "get authmode status failed: %d\n", rval);
-	else {
+	if (rval == 0) {
 		vap->iv_flags &= ~IEEE80211_F_WPA;
 		switch (arg) {
 		case NDIS_80211_AUTHMODE_OPEN:
@@ -2658,10 +2660,7 @@ ndis_getstate_80211(sc)
 	}
 
 	len = sizeof(arg);
-	rval = ndis_get_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
-	if (rval)
-		device_printf(sc->ndis_dev,
-		    "get wep status failed: %d\n", rval);
+	ndis_get_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
 	if (arg == NDIS_80211_WEPSTAT_ENABLED)
 		vap->iv_flags |= IEEE80211_F_PRIVACY|IEEE80211_F_DROPUNENC;
 	else
@@ -3076,38 +3075,33 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	ostate = vap->iv_state;
 	vap->iv_state = nstate;
 
+	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
-	case IEEE80211_S_SCAN:
-		IEEE80211_UNLOCK(ic);
-		ndis_set_ssid(sc, vap, 1);
-		IEEE80211_LOCK(ic);
-		/* FALLTHROUGH */
 	case IEEE80211_S_INIT:
+	case IEEE80211_S_SCAN:
+		if (ostate == IEEE80211_S_INIT)
+			ndis_set_infra(sc, vap);
+		ndis_set_ssid(sc, vap, 1);
 		/* pass on to net80211 */
+		IEEE80211_LOCK(ic);
 		return nvp->newstate(vap, nstate, arg);
 	case IEEE80211_S_RUN:
-		IEEE80211_UNLOCK(ic);
 		if (vap->iv_opmode == IEEE80211_M_IBSS) {
-			ndis_auth_and_assoc(sc, vap);
+			ndis_assoc(sc, vap);
 		}
 		ndis_getstate_80211(sc);
-		IEEE80211_LOCK(ic);
 		break;
 	case IEEE80211_S_ASSOC:
-		if (ostate != IEEE80211_S_AUTH) {
-			IEEE80211_UNLOCK(ic);
-			ndis_auth_and_assoc(sc, vap);
-			IEEE80211_LOCK(ic);
-		}
+		ndis_assoc(sc, vap);
 		break;
 	case IEEE80211_S_AUTH:
-		IEEE80211_UNLOCK(ic);
-		ndis_auth_and_assoc(sc, vap);
-		IEEE80211_LOCK(ic);
+		ndis_auth(sc, vap);
+		ieee80211_new_state(vap, IEEE80211_S_ASSOC, 0);
 		break;
 	default:
 		break;
 	}
+	IEEE80211_LOCK(ic);
 	return (0);
 }
 
