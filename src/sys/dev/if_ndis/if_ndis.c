@@ -166,6 +166,7 @@ static void ndis_resettask	(device_object *, void *);
 static void ndis_inputtask	(device_object *, void *);
 static int ndis_ioctl		(struct ifnet *, u_long, caddr_t);
 static int ndis_ioctl_80211	(struct ifnet *, u_long, caddr_t);
+static int ndis_send_mgmt	(struct ieee80211_node *, int, int);
 static int ndis_newstate	(struct ieee80211vap *, enum ieee80211_state,
 	int);
 static int ndis_nettype_chan	(uint32_t);
@@ -910,6 +911,7 @@ got_crypto:
 			ic->ic_caps |= IEEE80211_C_TXPMGT;
 
 		ieee80211_ifattach(ic, eaddr);
+		ic->ic_send_mgmt = ndis_send_mgmt;
 		ic->ic_raw_xmit = ndis_raw_xmit;
 		ic->ic_scan_start = ndis_scan_start;
 		ic->ic_scan_end = ndis_scan_end;
@@ -1744,6 +1746,13 @@ ndis_map_sclist(arg, segs, nseg, mapsize, error)
 		sclist->nsl_elements[i].nse_addr.np_quad = segs[i].ds_addr;
 		sclist->nsl_elements[i].nse_len = segs[i].ds_len;
 	}
+}
+
+static int
+ndis_send_mgmt(struct ieee80211_node *ni, int type, int arg)
+{
+	/* no support; just discard */
+	return (0);
 }
 
 static int
