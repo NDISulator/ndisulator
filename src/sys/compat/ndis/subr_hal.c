@@ -85,7 +85,7 @@ static void dummy (void);
 static struct mtx disp_lock[NDIS_MAXCPUS];
 
 int
-hal_libinit()
+hal_libinit(void)
 {
 	image_patch_table	*patch;
 	int			i;
@@ -106,7 +106,7 @@ hal_libinit()
 }
 
 int
-hal_libfini()
+hal_libfini(void)
 {
 	image_patch_table	*patch;
 	int			i;
@@ -370,7 +370,7 @@ KfReleaseSpinLock(kspin_lock *lock, uint8_t newirql)
 }
 
 uint8_t
-KeGetCurrentIrql()
+KeGetCurrentIrql(void)
 {
 	if (mtx_owned(&disp_lock[curthread->td_oncpu]))
 		return (DISPATCH_LEVEL);
@@ -435,7 +435,8 @@ _KeLowerIrql(uint8_t oldirql)
 	KeLowerIrql(oldirql);
 }
 
-static void dummy()
+static void
+dummy(void)
 {
 	printf("hal dummy called...\n");
 }

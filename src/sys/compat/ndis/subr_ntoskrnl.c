@@ -264,7 +264,7 @@ static struct kdpc_queue *wq_queues;
 static int wq_idx = 0;
 
 int
-ntoskrnl_libinit()
+ntoskrnl_libinit(void)
 {
 	image_patch_table	*patch;
 	int			error;
@@ -380,7 +380,7 @@ ntoskrnl_libinit()
 }
 
 int
-ntoskrnl_libfini()
+ntoskrnl_libfini(void)
 {
 	image_patch_table	*patch;
 	callout_entry		*e;
@@ -3539,7 +3539,7 @@ sysctl_show_timers(SYSCTL_HANDLER_ARGS)
 }
 
 static void
-ntoskrnl_show_timers()
+ntoskrnl_show_timers(void)
 {
 	int			i = 0;
 	list_entry		*l;
@@ -4092,7 +4092,7 @@ KeSetPriorityThread(td, pri)
 }
 
 static void
-dummy()
+dummy(void)
 {
 	printf("ntoskrnl dummy called...\n");
 }

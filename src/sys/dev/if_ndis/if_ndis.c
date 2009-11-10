@@ -121,7 +121,6 @@ int ndis_detach			(device_t);
 int ndis_suspend		(device_t);
 int ndis_resume			(device_t);
 void ndis_shutdown		(device_t);
-
 int ndisdrv_modevent		(module_t, int, void *);
 
 static void ndis_txeof		(ndis_handle, ndis_packet *, ndis_status);
@@ -157,7 +156,7 @@ static void ndis_vap_delete	(struct ieee80211vap *);
 static void ndis_tick		(void *);
 static void ndis_ticktask	(device_object *, void *);
 static int ndis_raw_xmit	(struct ieee80211_node *, struct mbuf *,
-	const struct ieee80211_bpf_params *);
+				const struct ieee80211_bpf_params *);
 static void ndis_update_mcast	(struct ifnet *ifp);
 static void ndis_update_promisc	(struct ifnet *ifp);
 static void ndis_start		(struct ifnet *);
@@ -167,8 +166,8 @@ static void ndis_inputtask	(device_object *, void *);
 static int ndis_ioctl		(struct ifnet *, u_long, caddr_t);
 static int ndis_ioctl_80211	(struct ifnet *, u_long, caddr_t);
 static int ndis_send_mgmt	(struct ieee80211_node *, int, int);
-static int ndis_newstate	(struct ieee80211vap *, enum ieee80211_state,
-	int);
+static int ndis_newstate	(struct ieee80211vap *,
+				enum ieee80211_state, int);
 static int ndis_nettype_chan	(uint32_t);
 static int ndis_nettype_mode	(uint32_t);
 static void ndis_scan		(void *);
@@ -183,7 +182,7 @@ static void ndis_stop		(struct ndis_softc *);
 static int ndis_ifmedia_upd	(struct ifnet *);
 static void ndis_ifmedia_sts	(struct ifnet *, struct ifmediareq *);
 static int ndis_get_bssid_list	(struct ndis_softc *,
-					ndis_80211_bssid_list_ex **);
+				ndis_80211_bssid_list_ex **);
 static int ndis_probe_offload	(struct ndis_softc *);
 static int ndis_set_offload	(struct ndis_softc *);
 static void ndis_getstate_80211	(struct ndis_softc *);
@@ -192,17 +191,17 @@ static void ndis_assoc		(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth		(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher	(struct ndis_softc *, int);
 static void ndis_set_infra	(struct ndis_softc *, struct ieee80211vap *);
-static void ndis_set_ssid	(struct ndis_softc *, struct ieee80211vap *,
-					uint8_t);
+static void ndis_set_ssid	(struct ndis_softc *,
+				struct ieee80211vap *, uint8_t);
 static int ndis_set_wpa		(struct ndis_softc *, void *, int);
 static int ndis_add_key		(struct ieee80211vap *,
-	const struct ieee80211_key *, const u_int8_t []);
+				const struct ieee80211_key *,
+				const u_int8_t []);
 static int ndis_del_key		(struct ieee80211vap *,
-	const struct ieee80211_key *);
-
+				const struct ieee80211_key *);
 static void ndis_setmulti	(struct ndis_softc *);
 static void ndis_map_sclist	(void *, bus_dma_segment_t *,
-	int, bus_size_t, int);
+				int, bus_size_t, int);
 
 static int ndisdrv_loaded = 0;
 
@@ -213,12 +212,9 @@ static int ndisdrv_loaded = 0;
  * saved in our driver database.
  */
 int
-ndisdrv_modevent(mod, cmd, arg)
-	module_t		mod;
-	int			cmd;
-	void			*arg;
+ndisdrv_modevent(module_t mod, int cmd, void *arg)
 {
-	int			error = 0;
+	int error = 0;
 
 	switch (cmd) {
 	case MOD_LOAD:
@@ -281,13 +277,12 @@ ndisdrv_modevent(mod, cmd, arg)
  * Program the 64-bit multicast hash filter.
  */
 static void
-ndis_setmulti(sc)
-	struct ndis_softc	*sc;
+ndis_setmulti(struct ndis_softc *sc)
 {
-	struct ifnet		*ifp;
-	struct ifmultiaddr	*ifma;
-	int			len, mclistsz, error;
-	uint8_t			*mclist;
+	struct ifnet *ifp;
+	struct ifmultiaddr *ifma;
+	int len, mclistsz, error;
+	uint8_t *mclist;
 
 	ifp = sc->ifp;
 
@@ -343,7 +338,6 @@ ndis_setmulti(sc)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
 		sc->ndis_filter &= ~NDIS_PACKET_TYPE_MULTICAST;
 	}
-
 out:
 	free(mclist, M_TEMP);
 
@@ -355,14 +349,13 @@ out:
 }
 
 static int
-ndis_set_offload(sc)
-	struct ndis_softc	*sc;
+ndis_set_offload(struct ndis_softc *sc)
 {
-	ndis_task_offload	*nto;
-	ndis_task_offload_hdr	*ntoh;
-	ndis_task_tcpip_csum	*nttc;
-	struct ifnet		*ifp;
-	int			len, error;
+	ndis_task_offload *nto;
+	ndis_task_offload_hdr *ntoh;
+	ndis_task_tcpip_csum *nttc;
+	struct ifnet *ifp;
+	int len, error;
 
 	ifp = sc->ifp;
 
@@ -373,7 +366,7 @@ ndis_set_offload(sc)
 	error = ndis_probe_offload(sc);
 	if (error)
 		return (error);
-		
+
 	if (sc->ndis_hwassist == 0 && ifp->if_capabilities == 0)
 		return (0);
 
@@ -416,14 +409,13 @@ ndis_set_offload(sc)
 }
 
 static int
-ndis_probe_offload(sc)
-	struct ndis_softc	*sc;
+ndis_probe_offload(struct ndis_softc *sc)
 {
-	ndis_task_offload	*nto;
-	ndis_task_offload_hdr	*ntoh;
-	ndis_task_tcpip_csum	*nttc = NULL;
-	struct ifnet		*ifp;
-	int			len, error, dummy;
+	ndis_task_offload *nto;
+	ndis_task_offload_hdr *ntoh;
+	ndis_task_tcpip_csum *nttc = NULL;
+	struct ifnet *ifp;
+	int len, error, dummy;
 
 	ifp = sc->ifp;
 
@@ -529,16 +521,15 @@ ndis_nettype_mode(uint32_t type)
  * setup and ethernet/BPF attach.
  */
 int
-ndis_attach(dev)
-	device_t		dev;
+ndis_attach(device_t dev)
 {
-	u_char			eaddr[ETHER_ADDR_LEN];
-	struct ndis_softc	*sc;
-	driver_object		*pdrv;
-	device_object		*pdo;
-	struct ifnet		*ifp = NULL;
-	int			error = 0, len, mode, i;
-	uint8_t			bands = 0;
+	u_char eaddr[ETHER_ADDR_LEN];
+	struct ndis_softc *sc;
+	driver_object *pdrv;
+	device_object *pdo;
+	struct ifnet *ifp = NULL;
+	int error = 0, len, mode, i;
+	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
 
@@ -711,11 +702,11 @@ ndis_attach(dev)
 
 	/* Do media setup */
 	if (sc->ndis_80211) {
-		struct ieee80211com	*ic = ifp->if_l2com;
-		ndis_80211_rates_ex	rates;
+		struct ieee80211com *ic = ifp->if_l2com;
+		ndis_80211_rates_ex rates;
 		struct ndis_80211_nettype_list *ntl;
-		uint32_t		arg;
-		int			r;
+		uint32_t arg;
+		int r;
 
 		callout_init(&sc->ndis_scan_callout, CALLOUT_MPSAFE);
 
@@ -723,8 +714,10 @@ ndis_attach(dev)
 		ic->ic_ifp = ifp;
 		ic->ic_opmode = IEEE80211_M_STA;
 		ic->ic_phytype = IEEE80211_T_DS;
-		ic->ic_caps = IEEE80211_C_8023ENCAP |
-			IEEE80211_C_STA | IEEE80211_C_IBSS;
+		ic->ic_caps =
+			IEEE80211_C_8023ENCAP |
+			IEEE80211_C_STA |
+			IEEE80211_C_IBSS;
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
 		len = 0;
 		r = ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
@@ -898,14 +891,13 @@ nonettypes:
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
 		i = sizeof(arg);
-		r = ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &i);
+		r = ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
+		    &arg, &i);
 		if (r == 0)
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
-
 		r = ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &i);
 		if (r == 0)
 			ic->ic_caps |= IEEE80211_C_PMGT;
-
 		r = ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &i);
 		if (r == 0)
 			ic->ic_caps |= IEEE80211_C_TXPMGT;
@@ -958,10 +950,9 @@ fail:
 }
 
 static struct ieee80211vap *
-ndis_vap_create(struct ieee80211com *ic,
-	const char name[IFNAMSIZ], int unit, int opmode, int flags,
-	const uint8_t bssid[IEEE80211_ADDR_LEN],
-	const uint8_t mac[IEEE80211_ADDR_LEN])
+ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
+    int opmode, int flags, const uint8_t bssid[IEEE80211_ADDR_LEN],
+    const uint8_t mac[IEEE80211_ADDR_LEN])
 {
 	struct ndis_vap *nvp;
 	struct ieee80211vap *vap;
@@ -1012,12 +1003,11 @@ ndis_vap_delete(struct ieee80211vap *vap)
  * allocated.
  */
 int
-ndis_detach(dev)
-	device_t		dev;
+ndis_detach(device_t dev)
 {
-	struct ndis_softc	*sc;
-	struct ifnet		*ifp;
-	driver_object		*drv;
+	struct ndis_softc *sc;
+	struct ifnet *ifp;
+	driver_object *drv;
 
 	sc = device_get_softc(dev);
 	NDIS_LOCK(sc);
@@ -1101,11 +1091,10 @@ ndis_detach(dev)
 }
 
 int
-ndis_suspend(dev)
-	device_t		dev;
+ndis_suspend(device_t dev)
 {
-	struct ndis_softc	*sc;
-	struct ifnet		*ifp;
+	struct ndis_softc *sc;
+	struct ifnet *ifp;
 
 	sc = device_get_softc(dev);
 	ifp = sc->ifp;
@@ -1119,11 +1108,10 @@ ndis_suspend(dev)
 }
 
 int
-ndis_resume(dev)
-	device_t		dev;
+ndis_resume(device_t dev)
 {
-	struct ndis_softc	*sc;
-	struct ifnet		*ifp;
+	struct ndis_softc *sc;
+	struct ifnet *ifp;
 
 	sc = device_get_softc(dev);
 	ifp = sc->ifp;
@@ -1142,23 +1130,16 @@ ndis_resume(dev)
  * miniports.
  */
 static void
-ndis_rxeof_eth(adapter, ctx, addr, hdr, hdrlen, lookahead, lookaheadlen, pktlen)
-	ndis_handle		adapter;
-	ndis_handle		ctx;
-	char			*addr;
-	void			*hdr;
-	uint32_t		hdrlen;
-	void			*lookahead;
-	uint32_t		lookaheadlen;
-	uint32_t		pktlen;
+ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
+    uint32_t hdrlen, void *lookahead, uint32_t lookaheadlen, uint32_t pktlen)
 {
-	ndis_miniport_block	*block;
-	uint8_t			irql = 0;
-	uint32_t		status;
-	ndis_buffer		*b;
-	ndis_packet		*p;
-	struct mbuf		*m;
-	ndis_ethpriv		*priv;
+	ndis_miniport_block *block;
+	uint8_t irql = 0;
+	uint32_t status;
+	ndis_buffer *b;
+	ndis_packet *p;
+	struct mbuf *m;
+	ndis_ethpriv *priv;
 
 	block = adapter;
 
@@ -1213,11 +1194,10 @@ ndis_rxeof_eth(adapter, ctx, addr, hdr, hdrlen, lookahead, lookaheadlen, pktlen)
  * miniports.
  */
 static void
-ndis_rxeof_done(adapter)
-	ndis_handle		adapter;
+ndis_rxeof_done(ndis_handle adapter)
 {
-	struct ndis_softc	*sc;
-	ndis_miniport_block	*block;
+	struct ndis_softc *sc;
+	ndis_miniport_block *block;
 
 	block = adapter;
 
@@ -1231,20 +1211,16 @@ ndis_rxeof_done(adapter)
  * MiniportTransferData() handler, runs at DISPATCH_LEVEL.
  */
 static void
-ndis_rxeof_xfr(dpc, adapter, sysarg1, sysarg2)
-	kdpc			*dpc;
-	ndis_handle		adapter;
-	void			*sysarg1;
-	void			*sysarg2;
+ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 {
-	ndis_miniport_block	*block;
-	struct ndis_softc	*sc;
-	ndis_packet		*p;
-	list_entry		*l;
-	uint32_t		status;
-	ndis_ethpriv		*priv;
-	struct ifnet		*ifp;
-	struct mbuf		*m;
+	ndis_miniport_block *block;
+	struct ndis_softc *sc;
+	ndis_packet *p;
+	list_entry *l;
+	uint32_t status;
+	ndis_ethpriv *priv;
+	struct ifnet *ifp;
+	struct mbuf *m;
 
 	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1275,7 +1251,7 @@ ndis_rxeof_xfr(dpc, adapter, sysarg1, sysarg2)
 		 * If status is NDIS_STATUS_PENDING, do nothing and
 		 * wait for a callback to the ndis_rxeof_xfr_done()
 		 * handler.
-	 	 */
+		 */
 		m->m_len = m->m_pkthdr.len;
 		m->m_pkthdr.rcvif = ifp;
 
@@ -1304,16 +1280,13 @@ ndis_rxeof_xfr(dpc, adapter, sysarg1, sysarg2)
  * NdisMTransferDataComplete() handler, runs at DISPATCH_LEVEL.
  */
 static void
-ndis_rxeof_xfr_done(adapter, packet, status, len)
-	ndis_handle		adapter;
-	ndis_packet		*packet;
-	uint32_t		status;
-	uint32_t		len;
+ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
+    uint32_t status, uint32_t len)
 {
-	ndis_miniport_block	*block;
-	struct ndis_softc	*sc;
-	struct ifnet		*ifp;
-	struct mbuf		*m;
+	ndis_miniport_block *block;
+	struct ndis_softc *sc;
+	struct ifnet *ifp;
+	struct mbuf *m;
 
 	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1358,19 +1331,16 @@ ndis_rxeof_xfr_done(adapter, packet, status, len)
  * packet.
  */
 static void
-ndis_rxeof(adapter, packets, pktcnt)
-	ndis_handle		adapter;
-	ndis_packet		**packets;
-	uint32_t		pktcnt;
+ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 {
-	struct ndis_softc	*sc;
-	ndis_miniport_block	*block;
-	ndis_packet		*p;
-	uint32_t		s;
-	ndis_tcpip_csum		*csum;
-	struct ifnet		*ifp;
-	struct mbuf		*m0, *m;
-	int			i;
+	struct ndis_softc *sc;
+	ndis_miniport_block *block;
+	ndis_packet *p;
+	uint32_t s;
+	ndis_tcpip_csum *csum;
+	struct ifnet *ifp;
+	struct mbuf *m0, *m;
+	int i;
 
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1439,7 +1409,7 @@ ndis_rxeof(adapter, packets, pktcnt)
 			if (ifp->if_capenable & IFCAP_RXCSUM &&
 			    p->np_ext.npe_info[ndis_tcpipcsum_info] != NULL) {
 				s = (uintptr_t)
-			 	    p->np_ext.npe_info[ndis_tcpipcsum_info];
+				    p->np_ext.npe_info[ndis_tcpipcsum_info];
 				csum = (ndis_tcpip_csum *)&s;
 				if (csum->u.ntc_rxflags &
 				    NDIS_RXCSUM_IP_PASSED)
@@ -1471,17 +1441,15 @@ ndis_rxeof(adapter, packets, pktcnt)
  * 'dispatch level' per-cpu sleep lock).
  */
 static void
-ndis_inputtask(dobj, arg)
-	device_object		*dobj;
-	void			*arg;
+ndis_inputtask(device_object *dobj, void *arg)
 {
-	ndis_miniport_block	*block;
-	struct ifnet		*ifp;
-	struct ndis_softc	*sc;
-	struct mbuf		*m;
-	struct ieee80211com	*ic;
-	struct ieee80211vap	*vap;
-	uint8_t			irql;
+	ndis_miniport_block *block;
+	struct ifnet *ifp;
+	struct ndis_softc *sc;
+	struct mbuf *m;
+	struct ieee80211com *ic;
+	struct ieee80211vap *vap;
+	uint8_t irql;
 
 	ifp = arg;
 	sc = ifp->if_softc;
@@ -1509,17 +1477,13 @@ ndis_inputtask(dobj, arg)
  * the list buffers.
  */
 static void
-ndis_txeof(adapter, packet, status)
-	ndis_handle		adapter;
-	ndis_packet		*packet;
-	ndis_status		status;
-
+ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 {
-	struct ndis_softc	*sc;
-	ndis_miniport_block	*block;
-	struct ifnet		*ifp;
-	int			idx;
-	struct mbuf		*m;
+	struct ndis_softc *sc;
+	ndis_miniport_block *block;
+	struct ifnet *ifp;
+	int idx;
+	struct mbuf *m;
 
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1553,14 +1517,11 @@ ndis_txeof(adapter, packet, status)
 }
 
 static void
-ndis_linksts(adapter, status, sbuf, slen)
-	ndis_handle		adapter;
-	ndis_status		status;
-	void			*sbuf;
-	uint32_t		slen;
+ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf,
+    uint32_t slen)
 {
-	ndis_miniport_block	*block;
-	struct ndis_softc	*sc;
+	ndis_miniport_block *block;
+	struct ndis_softc *sc;
 
 	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1592,12 +1553,11 @@ ndis_linksts(adapter, status, sbuf, slen)
 }
 
 static void
-ndis_linksts_done(adapter)
-	ndis_handle		adapter;
+ndis_linksts_done(ndis_handle adapter)
 {
-	ndis_miniport_block	*block;
-	struct ndis_softc	*sc;
-	struct ifnet		*ifp;
+	ndis_miniport_block *block;
+	struct ndis_softc *sc;
+	struct ifnet *ifp;
 
 	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1630,10 +1590,9 @@ ndis_linksts_done(adapter)
 }
 
 static void
-ndis_tick(xsc)
-	void			*xsc;
+ndis_tick(void *xsc)
 {
-	struct ndis_softc	*sc;
+	struct ndis_softc *sc;
 
 	sc = xsc;
 
@@ -1659,15 +1618,13 @@ ndis_tick(xsc)
 }
 
 static void
-ndis_ticktask(d, xsc)
-	device_object		*d;
-	void			*xsc;
+ndis_ticktask(device_object *d, void *xsc)
 {
-	struct ndis_softc	*sc;
-	struct ieee80211com	*ic;
-	struct ieee80211vap	*vap;
+	struct ndis_softc *sc;
+	struct ieee80211com *ic;
+	struct ieee80211vap *vap;
 	ndis_checkforhang_handler hangfunc;
-	uint8_t			rval;
+	uint8_t rval;
 
 	sc = xsc;
 	ic = sc->ifp->if_l2com;
@@ -1725,16 +1682,11 @@ ndis_ticktask(d, xsc)
 }
 
 static void
-ndis_map_sclist(arg, segs, nseg, mapsize, error)
-	void			*arg;
-	bus_dma_segment_t	*segs;
-	int			nseg;
-	bus_size_t		mapsize;
-	int			error;
-
+ndis_map_sclist(void *arg, bus_dma_segment_t *segs, int nseg,
+    bus_size_t mapsize, int error)
 {
-	struct ndis_sc_list	*sclist;
-	int			i;
+	struct ndis_sc_list *sclist;
+	int i;
 
 	if (error || arg == NULL)
 		return;
@@ -1757,7 +1709,7 @@ ndis_send_mgmt(struct ieee80211_node *ni, int type, int arg)
 
 static int
 ndis_raw_xmit(struct ieee80211_node *ni, struct mbuf *m,
-	const struct ieee80211_bpf_params *params)
+    const struct ieee80211_bpf_params *params)
 {
 	/* no support; just discard */
 	m_freem(m);
@@ -1768,7 +1720,7 @@ ndis_raw_xmit(struct ieee80211_node *ni, struct mbuf *m,
 static void
 ndis_update_mcast(struct ifnet *ifp)
 {
-	struct ndis_softc       *sc = ifp->if_softc;
+	struct ndis_softc *sc = ifp->if_softc;
 
 	ndis_setmulti(sc);
 }
@@ -1780,11 +1732,9 @@ ndis_update_promisc(struct ifnet *ifp)
 }
 
 static void
-ndis_starttask(d, arg)
-	device_object		*d;
-	void			*arg;
+ndis_starttask(device_object *d, void *arg)
 {
-	struct ifnet		*ifp;
+	struct ifnet *ifp;
 
 	ifp = arg;
 
@@ -1805,14 +1755,13 @@ ndis_starttask(d, arg)
  * will do the mapping themselves on a buffer by buffer basis.
  */
 static void
-ndis_start(ifp)
-	struct ifnet		*ifp;
+ndis_start(struct ifnet *ifp)
 {
-	struct ndis_softc	*sc;
-	struct mbuf		*m = NULL;
-	ndis_packet		**p0 = NULL, *p = NULL;
-	ndis_tcpip_csum		*csum;
-	int			pcnt = 0, status;
+	struct ndis_softc *sc;
+	struct mbuf *m = NULL;
+	ndis_packet **p0 = NULL, *p = NULL;
+	ndis_tcpip_csum *csum;
+	int pcnt = 0, status;
 
 	sc = ifp->if_softc;
 
@@ -1887,7 +1836,7 @@ ndis_start(ifp)
 		 * If there's a BPF listener, bounce a copy of this frame
 		 * to him.
 		 */
-		if (!sc->ndis_80211)	/* XXX handle 80211 */
+		if (sc->ndis_80211 == 0)
 			BPF_MTAP(ifp, m);
 
 		/*
@@ -1926,18 +1875,15 @@ ndis_start(ifp)
 		ndis_send_packets(sc, p0, pcnt);
 	else
 		ndis_send_packet(sc, p);
-
-	return;
 }
 
 static void
-ndis_init(xsc)
-	void			*xsc;
+ndis_init(void *xsc)
 {
-	struct ndis_softc	*sc = xsc;
-	struct ifnet		*ifp = sc->ifp;
-	struct ieee80211com	*ic = ifp->if_l2com;
-	int			i, len, error;
+	struct ndis_softc *sc = xsc;
+	struct ifnet *ifp = sc->ifp;
+	struct ieee80211com *ic = ifp->if_l2com;
+	int i, len, error;
 
 	/*
 	 * Cancel pending I/O and free all RX/TX buffers.
@@ -2003,7 +1949,6 @@ ndis_init(xsc)
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 	NDIS_UNLOCK(sc);
 
-	/* XXX force handling */
 	if (sc->ndis_80211)
 		ieee80211_start_all(ic);	/* start all vap's */
 }
@@ -2012,10 +1957,9 @@ ndis_init(xsc)
  * Set media options.
  */
 static int
-ndis_ifmedia_upd(ifp)
-	struct ifnet		*ifp;
+ndis_ifmedia_upd(struct ifnet *ifp)
 {
-	struct ndis_softc		*sc;
+	struct ndis_softc *sc;
 
 	sc = ifp->if_softc;
 
@@ -2029,14 +1973,12 @@ ndis_ifmedia_upd(ifp)
  * Report current media status.
  */
 static void
-ndis_ifmedia_sts(ifp, ifmr)
-	struct ifnet		*ifp;
-	struct ifmediareq	*ifmr;
+ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 {
-	struct ndis_softc	*sc;
-	uint32_t		media_info;
-	ndis_media_state	linkstate;
-	int			len;
+	struct ndis_softc *sc;
+	uint32_t media_info;
+	ndis_media_state linkstate;
+	int len;
 
 	ifmr->ifm_status = IFM_AVALID;
 	ifmr->ifm_active = IFM_ETHER;
@@ -2073,13 +2015,11 @@ ndis_ifmedia_sts(ifp, ifmr)
 }
 
 static int
-ndis_set_cipher(sc, cipher)
-	struct ndis_softc	*sc;
-	int			cipher;
+ndis_set_cipher(struct ndis_softc *sc, int cipher)
 {
-	struct ieee80211com	*ic;
-	int			rval = 0, len;
-	uint32_t		arg, save;
+	struct ieee80211com *ic;
+	int rval = 0, len;
+	uint32_t arg, save;
 
 	ic = sc->ifp->if_l2com;
 
@@ -2127,16 +2067,13 @@ ndis_set_cipher(sc, cipher)
  * might not permit the TKIP or AES ciphers to be selected.
  */
 static int
-ndis_set_wpa(sc, ie, ielen)
-	struct ndis_softc	*sc;
-	void			*ie;
-	int			ielen;
+ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 {
-	struct ieee80211_ie_wpa	*w;
-	struct ndis_ie		*n;
-	char			*pos;
-	uint32_t		arg;
-	int			i;
+	struct ieee80211_ie_wpa *w;
+	struct ndis_ie *n;
+	char *pos;
+	uint32_t arg;
+	int i;
 
 	/*
 	 * Apparently, the only way for us to know what ciphers
@@ -2203,17 +2140,16 @@ ndis_set_wpa(sc, ie, ielen)
 }
 
 static void
-ndis_setstate_80211(sc)
-	struct ndis_softc	*sc;
+ndis_setstate_80211(struct ndis_softc *sc)
 {
-	struct ieee80211com	*ic;
-	struct ieee80211vap	*vap;
-	const struct ieee80211_txparam	*tp;
-	ndis_80211_config	config;
-	ndis_80211_rates	rates;
-	struct ifnet		*ifp;
-	uint32_t		arg;
-	int			rval = 0, len, i;
+	struct ieee80211com *ic;
+	struct ieee80211vap *vap;
+	const struct ieee80211_txparam *tp;
+	ndis_80211_config config;
+	ndis_80211_rates rates;
+	struct ifnet *ifp;
+	uint32_t arg;
+	int rval = 0, len, i;
 
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
@@ -2338,7 +2274,7 @@ static void
 ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 {
 	struct ieee80211_node *ni;
-	ndis_80211_ssid	 ssid;
+	ndis_80211_ssid ssid;
 	int len, rval;
 
 	ni = vap->iv_bss;
@@ -2380,10 +2316,10 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 static void
 ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	struct ieee80211_node	*ni;
-	ndis_80211_macaddr	bssid;
-	int			rval, len;
-	struct ifnet		*ifp;
+	struct ieee80211_node *ni;
+	struct ifnet *ifp;
+	ndis_80211_macaddr bssid;
+	int rval, len;
 
 	ifp = sc->ifp;
 	ni = vap->iv_bss;
@@ -2417,12 +2353,12 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 static void
 ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	struct ieee80211com	*ic;
-	struct ieee80211_node	*ni;
-	ndis_80211_wep		wep;
-	int			i, rval = 0, len, error;
-	uint32_t		arg;
-	struct ifnet		*ifp;
+	struct ieee80211com *ic;
+	struct ieee80211_node *ni;
+	struct ifnet *ifp;
+	ndis_80211_wep wep;
+	int i, rval = 0, len, error;
+	uint32_t arg;
 
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
@@ -2460,10 +2396,10 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 				if (vap->iv_nw_keys[i].wk_keylen < 5)
 					wep.nw_keylen = 5;
 				else if (vap->iv_nw_keys[i].wk_keylen > 5 &&
-				     vap->iv_nw_keys[i].wk_keylen < 13)
+				    vap->iv_nw_keys[i].wk_keylen < 13)
 					wep.nw_keylen = 13;
 				else if (vap->iv_nw_keys[i].wk_keylen > 13 &&
-				     vap->iv_nw_keys[i].wk_keylen < 16)
+				    vap->iv_nw_keys[i].wk_keylen < 16)
 					wep.nw_keylen = 16;
 
 				wep.nw_keyidx = i;
@@ -2512,12 +2448,11 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
 	}
 }
+
 static int
-ndis_get_bssid_list(sc, bl)
-	struct ndis_softc	*sc;
-	ndis_80211_bssid_list_ex	**bl;
+ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 {
-	int	len, error;
+	int len, error;
 
 	len = sizeof(uint32_t) + (sizeof(ndis_wlan_bssid_ex) * 16);
 	*bl = malloc(len, M_DEVBUF, M_NOWAIT | M_ZERO);
@@ -2542,18 +2477,17 @@ ndis_get_bssid_list(sc, bl)
 }
 
 static void
-ndis_getstate_80211(sc)
-	struct ndis_softc	*sc;
+ndis_getstate_80211(struct ndis_softc *sc)
 {
-	struct ieee80211com	*ic;
-	struct ieee80211vap	*vap;
-	struct ieee80211_node	*ni;
-	ndis_80211_config	config;
-	ndis_80211_macaddr	macaddr;
-	ndis_80211_ssid		ssid;
-	int			chanflag, rval, len, i = 0;
-	uint32_t		arg;
-	struct ifnet		*ifp;
+	struct ieee80211com *ic;
+	struct ieee80211vap *vap;
+	struct ieee80211_node *ni;
+	struct ifnet *ifp;
+	ndis_80211_config config;
+	ndis_80211_macaddr macaddr;
+	ndis_80211_ssid ssid;
+	int chanflag, rval, len, i = 0;
+	uint32_t arg;
 
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
@@ -2672,14 +2606,11 @@ ndis_getstate_80211(sc)
 }
 
 static int
-ndis_ioctl(ifp, command, data)
-	struct ifnet		*ifp;
-	u_long			command;
-	caddr_t			data;
+ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 {
-	struct ndis_softc	*sc = ifp->if_softc;
-	struct ifreq		*ifr = (struct ifreq *) data;
-	int			i, error = 0;
+	struct ndis_softc *sc = ifp->if_softc;
+	struct ifreq *ifr = (struct ifreq *) data;
+	int i, error = 0;
 
 	/*NDIS_LOCK(sc);*/
 
@@ -2741,18 +2672,15 @@ ndis_ioctl(ifp, command, data)
 }
 
 static int
-ndis_ioctl_80211(ifp, command, data)
-	struct ifnet		*ifp;
-	u_long			command;
-	caddr_t			data;
+ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 {
-	struct ndis_softc	*sc = ifp->if_softc;
-	struct ieee80211com	*ic = ifp->if_l2com;
-	struct ifreq		*ifr = (struct ifreq *) data;
-	struct ndis_oid_data	oid;
-	struct ndis_evt		evt;
-	void			*oidbuf;
-	int			error = 0;
+	struct ndis_softc *sc = ifp->if_softc;
+	struct ieee80211com *ic = ifp->if_l2com;
+	struct ifreq *ifr = (struct ifreq *) data;
+	struct ndis_oid_data oid;
+	struct ndis_evt evt;
+	void *oidbuf;
+	int error = 0;
 
 	switch (command) {
 	case SIOCSIFFLAGS:
@@ -2880,14 +2808,12 @@ ndis_ioctl_80211(ifp, command, data)
 	return (error);
 }
 
-int
-ndis_del_key(vap, key)
-	struct ieee80211vap	*vap;
-	const struct ieee80211_key *key;
+static int
+ndis_del_key(struct ieee80211vap *vap, const struct ieee80211_key *key)
 {
-	struct ndis_softc	*sc;
-	ndis_80211_key		rkey;
-	int			len, error = 0;
+	struct ndis_softc *sc;
+	ndis_80211_key rkey;
+	int len, error = 0;
 
 	sc = vap->iv_ic->ic_ifp->if_softc;
 
@@ -2914,15 +2840,13 @@ ndis_del_key(vap, key)
  * set after initial authentication with the AP.
  */
 static int
-ndis_add_key(vap, key, mac)
-	struct ieee80211vap	*vap;
-	const struct ieee80211_key *key;
-	const uint8_t		mac[IEEE80211_ADDR_LEN];
+ndis_add_key(struct ieee80211vap *vap, const struct ieee80211_key *key,
+    const uint8_t mac[IEEE80211_ADDR_LEN])
 {
-	struct ndis_softc	*sc;
-	struct ifnet		*ifp;
-	ndis_80211_key		rkey;
-	int			len, error = 0;
+	struct ndis_softc *sc;
+	struct ifnet *ifp;
+	ndis_80211_key rkey;
+	int len, error = 0;
 
 	ifp = vap->iv_ic->ic_ifp;
 	sc = ifp->if_softc;
@@ -2994,11 +2918,9 @@ ndis_add_key(vap, key, mac)
 }
 
 static void
-ndis_resettask(d, arg)
-	device_object		*d;
-	void			*arg;
+ndis_resettask(device_object *d, void *arg)
 {
-	struct ndis_softc		*sc;
+	struct ndis_softc *sc;
 
 	sc = arg;
 	ndis_reset_nic(sc);
@@ -3009,11 +2931,10 @@ ndis_resettask(d, arg)
  * RX and TX lists.
  */
 static void
-ndis_stop(sc)
-	struct ndis_softc		*sc;
+ndis_stop(struct ndis_softc *sc)
 {
-	struct ifnet		*ifp;
-	int			i;
+	struct ifnet *ifp;
+	int i;
 
 	ifp = sc->ifp;
 	callout_drain(&sc->ndis_stat_callout);
@@ -3031,8 +2952,8 @@ ndis_stop(sc)
 
 	if (sc->ndis_iftype != PNPBus ||
 	    (sc->ndis_iftype == PNPBus &&
-	     !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) &&
-	     ndisusb_halt != 0))
+	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) &&
+	    ndisusb_halt != 0))
 		ndis_halt_nic(sc);
 
 	NDIS_LOCK(sc);
@@ -3054,10 +2975,9 @@ ndis_stop(sc)
  * get confused by errant DMAs when rebooting.
  */
 void
-ndis_shutdown(dev)
-	device_t		dev;
+ndis_shutdown(device_t dev)
 {
-	struct ndis_softc		*sc;
+	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
 	ndis_stop(sc);
@@ -3128,15 +3048,13 @@ ndis_scan_results(struct ndis_softc *sc)
 {
 	struct ieee80211com *ic;
 	struct ieee80211vap *vap;
-	ndis_80211_bssid_list_ex *bl;
-	ndis_wlan_bssid_ex	*wb;
 	struct ieee80211_scanparams sp;
 	struct ieee80211_frame wh;
 	struct ieee80211_channel *saved_chan;
-	int i, j;
-	int rssi, noise, freq, chanflag;
-	uint8_t ssid[2+IEEE80211_NWID_LEN];
-	uint8_t rates[2+IEEE80211_RATE_MAXSIZE];
+	ndis_80211_bssid_list_ex *bl;
+	ndis_wlan_bssid_ex *wb;
+	int i, j, rssi, noise, freq, chanflag;
+	uint8_t ssid[2+IEEE80211_NWID_LEN], rates[2+IEEE80211_RATE_MAXSIZE];
 	uint8_t *frm, *efrm;
 
 	ic = sc->ifp->if_l2com;

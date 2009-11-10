@@ -305,7 +305,7 @@ static void dummy(void);
 #define NDIS_POOL_EXTRA		16
 
 int
-ndis_libinit()
+ndis_libinit(void)
 {
 	image_patch_table	*patch;
 
@@ -323,7 +323,7 @@ ndis_libinit()
 }
 
 int
-ndis_libfini()
+ndis_libfini(void)
 {
 	image_patch_table	*patch;
 
@@ -2945,7 +2945,7 @@ NdisCloseFile(filehandle)
 }
 
 static uint8_t
-NdisSystemProcessorCount()
+NdisSystemProcessorCount(void)
 {
 	return (mp_ncpus);
 }
@@ -3185,7 +3185,7 @@ NdisMRegisterUnloadHandler(handle, func)
 }
 
 static void
-dummy()
+dummy(void)
 {
 	printf("NDIS dummy called...\n");
 }
