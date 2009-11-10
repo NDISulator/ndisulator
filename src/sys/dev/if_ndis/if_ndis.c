@@ -2210,11 +2210,6 @@ ndis_setstate_80211(sc)
 	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
-	if (!NDIS_INITIALIZED(sc)) {
-		DPRINTF(("%s: NDIS not initialized\n", __func__));
-		return;
-	}
-
 	/* Disassociate and turn off radio */
 	len = 0;
 	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
@@ -3077,11 +3072,11 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 
 	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
-	case IEEE80211_S_INIT:
 	case IEEE80211_S_SCAN:
 		if (ostate == IEEE80211_S_INIT)
 			ndis_set_infra(sc, vap);
 		ndis_set_ssid(sc, vap, 1);
+	case IEEE80211_S_INIT:
 		/* pass on to net80211 */
 		IEEE80211_LOCK(ic);
 		return nvp->newstate(vap, nstate, arg);
