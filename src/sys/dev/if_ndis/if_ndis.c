@@ -376,7 +376,6 @@ ndis_set_offload(struct ndis_softc *sc)
 	    sizeof(ndis_task_tcpip_csum);
 
 	ntoh = malloc(len, M_TEMP, M_NOWAIT|M_ZERO);
-
 	if (ntoh == NULL)
 		return (ENOMEM);
 
@@ -962,7 +961,7 @@ ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
 	if (!TAILQ_EMPTY(&ic->ic_vaps))		/* only one at a time */
 		return (NULL);
 	nvp = (struct ndis_vap *) malloc(sizeof(struct ndis_vap),
-	    M_80211_VAP, M_NOWAIT | M_ZERO);
+	    M_80211_VAP, M_NOWAIT|M_ZERO);
 	if (nvp == NULL)
 		return (NULL);
 	vap = &nvp->vap;
@@ -1676,7 +1675,7 @@ ndis_ticktask(device_object *d, void *xsc)
 		NDIS_UNLOCK(sc);
 		if (vap != NULL)
 			if (vap->iv_state == IEEE80211_S_ASSOC)
-				ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
+				ieee80211_new_state(vap, IEEE80211_S_SCAN, 1);
 		NDIS_LOCK(sc);
 	}
 
@@ -2144,6 +2143,7 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 static void
 ndis_setstate_80211(struct ndis_softc *sc)
 {
+	struct ieee80211_node *ni;
 	struct ieee80211com *ic;
 	struct ieee80211vap *vap;
 	const struct ieee80211_txparam *tp;
@@ -2156,6 +2156,7 @@ ndis_setstate_80211(struct ndis_softc *sc)
 	ifp = sc->ifp;
 	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
+	ni = vap->iv_bss;
 
 	/* Disassociate and turn off radio */
 	len = 0;
@@ -2236,9 +2237,8 @@ ndis_setstate_80211(struct ndis_softc *sc)
 	if (vap->iv_opmode == IEEE80211_M_IBSS &&
 	    config.nc_atimwin == 0)
 		config.nc_atimwin = 100;
-	if (config.nc_fhconfig.ncf_length != 0 &&
-	    config.nc_fhconfig.ncf_dwelltime == 0)
-		config.nc_fhconfig.ncf_dwelltime = 200;
+	if (config.nc_fhconfig.ncf_length != 0)
+		config.nc_fhconfig.ncf_dwelltime = ni->ni_fhdwell;
 	if (rval == 0 && vap->iv_des_chan != IEEE80211_CHAN_ANYC) {
 		config.nc_dsconfig = vap->iv_des_chan->ic_freq * 1000;
 		len = sizeof(config);
@@ -2457,14 +2457,14 @@ ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 	int len, error;
 
 	len = sizeof(uint32_t) + (sizeof(ndis_wlan_bssid_ex) * 16);
-	*bl = malloc(len, M_DEVBUF, M_NOWAIT | M_ZERO);
+	*bl = malloc(len, M_DEVBUF, M_NOWAIT|M_ZERO);
 	if (*bl == NULL)
 		return (ENOMEM);
 
 	error = ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
 	if (error == ENOSPC) {
 		free(*bl, M_DEVBUF);
-		*bl = malloc(len, M_DEVBUF, M_NOWAIT | M_ZERO);
+		*bl = malloc(len, M_DEVBUF, M_NOWAIT|M_ZERO);
 		if (*bl == NULL)
 			return (ENOMEM);
 		error = ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
@@ -3006,13 +3006,15 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	case IEEE80211_S_SCAN:
 		if (ostate == IEEE80211_S_INIT)
 			ndis_set_infra(sc, vap);
-		ndis_set_ssid(sc, vap, 1);
+		if (vap->iv_opmode == IEEE80211_M_STA)
+			ndis_set_ssid(sc, vap, 1);
 	case IEEE80211_S_INIT:
 		/* pass on to net80211 */
 		IEEE80211_LOCK(ic);
-		return nvp->newstate(vap, nstate, arg);
+		return (nvp->newstate(vap, nstate, arg));
 	case IEEE80211_S_RUN:
 		if (vap->iv_opmode == IEEE80211_M_IBSS) {
+			ndis_auth(sc, vap);
 			ndis_assoc(sc, vap);
 		}
 		ndis_getstate_80211(sc);
@@ -3071,7 +3073,6 @@ ndis_scan_results(struct ndis_softc *sc)
 	wb = &bl->nblx_bssid[0];
 	for (i = 0; i < bl->nblx_items; i++) {
 		memset(&sp, 0, sizeof(sp));
-
 		memcpy(wh.i_addr2, wb->nwbx_macaddr, sizeof(wh.i_addr2));
 		memcpy(wh.i_addr3, wb->nwbx_macaddr, sizeof(wh.i_addr3));
 		rssi = 100 * (wb->nwbx_rssi - noise) / (-32 - noise);
@@ -3079,6 +3080,8 @@ ndis_scan_results(struct ndis_softc *sc)
 		if (wb->nwbx_privacy)
 			sp.capinfo |= IEEE80211_CAPINFO_PRIVACY;
 		sp.bintval = wb->nwbx_config.nc_beaconperiod;
+		if (wb->nwbx_config.nc_fhconfig.ncf_length != 0)
+			sp.fhdwell = wb->nwbx_config.nc_fhconfig.ncf_dwelltime;
 		switch (wb->nwbx_netinfra) {
 			case NDIS_80211_NET_INFRA_IBSS:
 				sp.capinfo |= IEEE80211_CAPINFO_IBSS;
