@@ -2239,8 +2239,8 @@ ndis_setstate_80211(struct ndis_softc *sc)
 		config.nc_atimwin = 100;
 	if (config.nc_fhconfig.ncf_length != 0)
 		config.nc_fhconfig.ncf_dwelltime = ni->ni_fhdwell;
-	if (rval == 0 && vap->iv_des_chan != IEEE80211_CHAN_ANYC) {
-		config.nc_dsconfig = vap->iv_des_chan->ic_freq * 1000;
+	if (rval == 0 && ic->ic_bsschan != IEEE80211_CHAN_ANYC) {
+		config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
 		len = sizeof(config);
 		config.nc_length = len;
 		config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
@@ -2290,8 +2290,7 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 		else
 			bcopy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
 	} else { /* Hidden ssid */
-		if (sc->ndis_link == 0 || bcmp(ni->ni_essid,
-		    vap->iv_des_ssid[0].ssid, sizeof(ni->ni_essid)) != 0) {
+		if (sc->ndis_link == 0) {
 			if (vap->iv_des_nssid == 0)
 				ssid.ns_ssidlen = 1;
 			else {
