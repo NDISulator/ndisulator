@@ -3119,9 +3119,7 @@ ndis_scan_results(struct ndis_softc *sc)
 			if (efrm - frm < 12)
 				goto done;
 			sp.tstamp = frm;
-			frm += 8;
-			sp.bintval = le16toh(*(uint16_t *)frm);
-			frm += 2;
+			frm += 10;
 			sp.capinfo = le16toh(*(uint16_t *)frm);
 			frm += 2;
 
