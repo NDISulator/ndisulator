@@ -156,20 +156,16 @@ windrv_libfini(void)
  * Given the address of a driver image, find its corresponding
  * driver_object.
  */
-
 driver_object *
-windrv_lookup(img, name)
-	vm_offset_t		img;
-	char			*name;
+windrv_lookup(vm_offset_t img, char *name)
 {
-	struct drvdb_ent	*d;
-	unicode_string		us;
-	ansi_string		as;
+	struct drvdb_ent *d;
+	unicode_string us;
+	ansi_string as;
 
 	bzero((char *)&us, sizeof(us));
 
 	/* Damn unicode. */
-
 	if (name != NULL) {
 		RtlInitAnsiString(&as, name);
 		if (RtlAnsiStringToUnicodeString(&us, &as, TRUE))
@@ -442,42 +438,34 @@ skipreloc:
  * detected/plugged in. For us, the PDO is just a way to
  * get at the device_t.
  */
-
 int
-windrv_create_pdo(drv, bsddev)
-	driver_object		*drv;
-	device_t		bsddev;
+windrv_create_pdo(driver_object *drv, device_t bsddev)
 {
-	device_object		*dev;
+	device_object *dev;
 
 	/*
 	 * This is a new physical device object, which technically
 	 * is the "top of the stack." Consequently, we don't do
 	 * an IoAttachDeviceToDeviceStack() here.
 	 */
-
 	mtx_lock(&drvdb_mtx);
 	IoCreateDevice(drv, 0, NULL, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
 	mtx_unlock(&drvdb_mtx);
 
 	/* Stash pointer to our BSD device handle. */
-
 	dev->do_devext = bsddev;
 
 	return (STATUS_SUCCESS);
 }
 
 void
-windrv_destroy_pdo(drv, bsddev)
-	driver_object		*drv;
-	device_t		bsddev;
+windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 {
 	device_object		*pdo;
 
 	pdo = windrv_find_pdo(drv, bsddev);
 
 	/* Remove reference to device_t */
-
 	pdo->do_devext = NULL;
 
 	mtx_lock(&drvdb_mtx);
@@ -489,13 +477,10 @@ windrv_destroy_pdo(drv, bsddev)
  * Given a device_t, find the corresponding PDO in a driver's
  * device list.
  */
-
 device_object *
-windrv_find_pdo(drv, bsddev)
-	driver_object		*drv;
-	device_t		bsddev;
+windrv_find_pdo(driver_object *drv, device_t bsddev)
 {
-	device_object		*pdo;
+	device_object *pdo;
 
 	mtx_lock(&drvdb_mtx);
 	pdo = drv->dro_devobj;

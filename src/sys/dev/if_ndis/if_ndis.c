@@ -1065,7 +1065,7 @@ ndis_detach(device_t dev)
 	if (sc->ndis_sc)
 		ndis_destroy_dma(sc);
 
-	if (sc->ndis_txarray)
+	if (sc->ndis_txarray != NULL)
 		free(sc->ndis_txarray, M_DEVBUF);
 
 	if (!sc->ndis_80211)
@@ -1073,6 +1073,9 @@ ndis_detach(device_t dev)
 
 	if (sc->ndis_txpool != NULL)
 		NdisFreePacketPool(sc->ndis_txpool);
+
+	if (sc->ndis_oids != NULL)
+		free(sc->ndis_oids, M_NDIS_KERN);
 
 	/* Destroy the PDO for this device. */
 	if (sc->ndis_iftype == PCIBus)

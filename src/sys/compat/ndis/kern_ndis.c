@@ -348,9 +348,7 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
 	sc = arg;
 
 	cfg = malloc(sizeof(struct ndis_cfglist), M_NDIS_KERN, M_NOWAIT|M_ZERO);
-
 	if (cfg == NULL) {
-		printf("failed for %s\n", key);
 		return (ENOMEM);
 	}
 
@@ -512,7 +510,6 @@ ndis_convert_res(void *arg)
 	rl = malloc(sizeof(ndis_resource_list) +
 	    (sizeof(cm_partial_resource_desc) * (sc->ndis_rescnt - 1)),
 	    M_NDIS_KERN, M_NOWAIT|M_ZERO);
-
 	if (rl == NULL)
 		return (ENOMEM);
 
@@ -717,7 +714,6 @@ ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
 		return (ENOMEM);
 
 	rval = ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len);
-
 	if (rval) {
 		free(o, M_NDIS_KERN);
 		return (rval);
@@ -746,7 +742,6 @@ ndis_set_info(void *arg, ndis_oid oid, void *buf, int *buflen)
 	 * once one request has been issued, we must wait for it to
 	 * finish before allowing another request to proceed.
 	 */
-
 	sc = arg;
 
 	KeResetEvent(&sc->ndis_block->nmb_setevent);
@@ -791,14 +786,11 @@ ndis_set_info(void *arg, ndis_oid oid, void *buf, int *buflen)
 
 	if (rval == NDIS_STATUS_INVALID_LENGTH)
 		return (ENOSPC);
-
 	if (rval == NDIS_STATUS_INVALID_OID)
 		return (EINVAL);
-
 	if (rval == NDIS_STATUS_NOT_SUPPORTED ||
 	    rval == NDIS_STATUS_NOT_ACCEPTED)
 		return (ENOTSUP);
-
 	if (rval != NDIS_STATUS_SUCCESS)
 		return (ENODEV);
 
