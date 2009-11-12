@@ -36,7 +36,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/unistd.h>
-#include <sys/types.h>
 #include <sys/errno.h>
 #include <sys/callout.h>
 #include <sys/socket.h>
@@ -103,6 +102,8 @@ static image_patch_table kernndis_functbl[] = {
 };
 
 static struct nd_head ndis_devhead;
+
+MALLOC_DEFINE(M_NDIS_KERN, "ndis_kern", "ndis_kern buffers");
 
 /*
  * This allows us to export our symbols to other modules.
@@ -364,19 +365,19 @@ ndis_add_sysctl(arg, key, desc, val, flag)
 
 	sc = arg;
 
-	cfg = malloc(sizeof(struct ndis_cfglist), M_DEVBUF, M_NOWAIT|M_ZERO);
+	cfg = malloc(sizeof(struct ndis_cfglist), M_NDIS_KERN, M_NOWAIT|M_ZERO);
 
 	if (cfg == NULL) {
 		printf("failed for %s\n", key);
 		return (ENOMEM);
 	}
 
-	cfg->ndis_cfg.nc_cfgkey = strdup(key, M_DEVBUF);
+	cfg->ndis_cfg.nc_cfgkey = strdup(key, M_NDIS_KERN);
 	if (desc == NULL) {
 		snprintf(descstr, sizeof(descstr), "%s (dynamic)", key);
-		cfg->ndis_cfg.nc_cfgdesc = strdup(descstr, M_DEVBUF);
+		cfg->ndis_cfg.nc_cfgdesc = strdup(descstr, M_NDIS_KERN);
 	} else
-		cfg->ndis_cfg.nc_cfgdesc = strdup(desc, M_DEVBUF);
+		cfg->ndis_cfg.nc_cfgdesc = strdup(desc, M_NDIS_KERN);
 	strcpy(cfg->ndis_cfg.nc_val, val);
 
 	TAILQ_INSERT_TAIL(&sc->ndis_cfglist_head, cfg, link);
@@ -415,9 +416,9 @@ ndis_flush_sysctls(arg)
 		TAILQ_REMOVE(&sc->ndis_cfglist_head, cfg, link);
 		sysctl_ctx_entry_del(clist, cfg->ndis_oid);
 		sysctl_remove_oid(cfg->ndis_oid, 1, 0);
-		free(cfg->ndis_cfg.nc_cfgkey, M_DEVBUF);
-		free(cfg->ndis_cfg.nc_cfgdesc, M_DEVBUF);
-		free(cfg, M_DEVBUF);
+		free(cfg->ndis_cfg.nc_cfgkey, M_NDIS_KERN);
+		free(cfg->ndis_cfg.nc_cfgdesc, M_NDIS_KERN);
+		free(cfg, M_NDIS_KERN);
 	}
 
 	return (0);
@@ -537,7 +538,7 @@ ndis_convert_res(arg)
 
 	rl = malloc(sizeof(ndis_resource_list) +
 	    (sizeof(cm_partial_resource_desc) * (sc->ndis_rescnt - 1)),
-	    M_DEVBUF, M_NOWAIT|M_ZERO);
+	    M_NDIS_KERN, M_NOWAIT|M_ZERO);
 
 	if (rl == NULL)
 		return (ENOMEM);
@@ -749,14 +750,14 @@ ndis_get_supported_oids(arg, oids, oidcnt)
 	len = 0;
 	ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, NULL, &len);
 
-	o = malloc(len, M_DEVBUF, M_NOWAIT);
+	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
 	if (o == NULL)
 		return (ENOMEM);
 
 	rval = ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len);
 
 	if (rval) {
-		free(o, M_DEVBUF);
+		free(o, M_NDIS_KERN);
 		return (rval);
 	}
 
@@ -941,7 +942,7 @@ ndis_init_dma(arg)
 	sc = arg;
 
 	sc->ndis_tmaps = malloc(sizeof(bus_dmamap_t) * sc->ndis_maxpkts,
-	    M_DEVBUF, M_NOWAIT|M_ZERO);
+	    M_NDIS_KERN, M_NOWAIT|M_ZERO);
 
 	if (sc->ndis_tmaps == NULL)
 		return (ENOMEM);
@@ -950,7 +951,7 @@ ndis_init_dma(arg)
 		error = bus_dmamap_create(sc->ndis_ttag, 0,
 		    &sc->ndis_tmaps[i]);
 		if (error) {
-			free(sc->ndis_tmaps, M_DEVBUF);
+			free(sc->ndis_tmaps, M_NDIS_KERN);
 			return (ENODEV);
 		}
 	}
@@ -980,7 +981,7 @@ ndis_destroy_dma(arg)
 		bus_dmamap_destroy(sc->ndis_ttag, sc->ndis_tmaps[i]);
 	}
 
-	free(sc->ndis_tmaps, M_DEVBUF);
+	free(sc->ndis_tmaps, M_NDIS_KERN);
 
 	bus_dma_tag_destroy(sc->ndis_ttag);
 
@@ -1397,7 +1398,7 @@ ndis_unload_driver(arg)
 		    sc->ndis_irq, sc->ndis_intrhand);
 
 	if (sc->ndis_block->nmb_rlist != NULL)
-		free(sc->ndis_block->nmb_rlist, M_DEVBUF);
+		free(sc->ndis_block->nmb_rlist, M_NDIS_KERN);
 
 	ndis_flush_sysctls(sc);
 

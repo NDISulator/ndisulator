@@ -36,7 +36,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/unistd.h>
-#include <sys/types.h>
 
 #include <sys/kernel.h>
 #include <sys/malloc.h>
@@ -87,6 +86,8 @@ struct tid {
 static struct tid	*my_tids;
 #endif /* __i386__ */
 
+MALLOC_DEFINE(M_NDIS_WINDRV, "ndis_windrv", "ndis_windrv buffers");
+
 #define DUMMY_REGISTRY_PATH "\\\\some\\bogus\\path"
 
 int
@@ -135,7 +136,7 @@ windrv_libfini(void)
 	while(STAILQ_FIRST(&drvdb_head) != NULL) {
 		d = STAILQ_FIRST(&drvdb_head);
 		STAILQ_REMOVE_HEAD(&drvdb_head, link);
-		free(d, M_DEVBUF);
+		free(d, M_NDIS_WINDRV);
 	}
 	mtx_unlock(&drvdb_mtx);
 
@@ -295,16 +296,16 @@ windrv_unload(mod, img, len)
 	}
 
 	/* Free the driver extension */
-	free(drv->dro_driverext, M_DEVBUF);
+	free(drv->dro_driverext, M_NDIS_WINDRV);
 
 	/* Free the driver name */
 	RtlFreeUnicodeString(&drv->dro_drivername);
 
 	/* Free driver object */
-	free(drv, M_DEVBUF);
+	free(drv, M_NDIS_WINDRV);
 
 	/* Free our DB handle */
-	free(r, M_DEVBUF);
+	free(r, M_NDIS_WINDRV);
 
 	return (0);
 }
@@ -380,24 +381,24 @@ skipreloc:
 
 	/* Next step: allocate and store a driver object. */
 
-	new = malloc(sizeof(struct drvdb_ent), M_DEVBUF, M_NOWAIT|M_ZERO);
+	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (new == NULL)
 		return (ENOMEM);
 
-	drv = malloc(sizeof(driver_object), M_DEVBUF, M_NOWAIT|M_ZERO);
+	drv = malloc(sizeof(driver_object), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (drv == NULL) {
-		free (new, M_DEVBUF);
+		free (new, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
 	/* Allocate a driver extension structure too. */
 
 	drv->dro_driverext = malloc(sizeof(driver_extension),
-	    M_DEVBUF, M_NOWAIT|M_ZERO);
+	    M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 
 	if (drv->dro_driverext == NULL) {
-		free(new, M_DEVBUF);
-		free(drv, M_DEVBUF);
+		free(new, M_NDIS_WINDRV);
+		free(drv, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
@@ -408,8 +409,8 @@ skipreloc:
 
 	RtlInitAnsiString(&as, DUMMY_REGISTRY_PATH);
 	if (RtlAnsiStringToUnicodeString(&drv->dro_drivername, &as, TRUE)) {
-		free(new, M_DEVBUF);
-		free(drv, M_DEVBUF);
+		free(new, M_NDIS_WINDRV);
+		free(drv, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
@@ -424,8 +425,8 @@ skipreloc:
 
 	if (status != STATUS_SUCCESS) {
 		RtlFreeUnicodeString(&drv->dro_drivername);
-		free(drv, M_DEVBUF);
-		free(new, M_DEVBUF);
+		free(drv, M_NDIS_WINDRV);
+		free(new, M_NDIS_WINDRV);
 		return (ENODEV);
 	}
 
@@ -523,14 +524,14 @@ windrv_bus_attach(drv, name)
 	struct drvdb_ent	*new;
 	ansi_string		as;
 
-	new = malloc(sizeof(struct drvdb_ent), M_DEVBUF, M_NOWAIT|M_ZERO);
+	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (new == NULL)
 		return (ENOMEM);
 
 	RtlInitAnsiString(&as, name);
 	if (RtlAnsiStringToUnicodeString(&drv->dro_drivername, &as, TRUE))
 	{
-		free(new, M_DEVBUF);
+		free(new, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
@@ -574,7 +575,7 @@ windrv_wrap(func, wrap, argcnt, ftype)
 
 	/* Allocate a new wrapper instance. */
 
-	p = malloc((wrapend - wrapstart), M_DEVBUF, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
@@ -747,7 +748,7 @@ windrv_wrap_fastcall(func, wrap, argcnt)
 
 	/* Allocate a new wrapper instance. */
 
-	p = malloc((wrapend - wrapstart), M_DEVBUF, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
@@ -795,7 +796,7 @@ windrv_wrap_stdcall(func, wrap, argcnt)
 
 	/* Allocate a new wrapper instance. */
 
-	p = malloc((wrapend - wrapstart), M_DEVBUF, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
@@ -835,7 +836,7 @@ windrv_wrap_regparm(func, wrap)
 
 	/* Allocate a new wrapper instance. */
 
-	p = malloc((wrapend - wrapstart), M_DEVBUF, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
@@ -960,7 +961,7 @@ int
 windrv_unwrap(func)
 	funcptr			func;
 {
-	free(func, M_DEVBUF);
+	free(func, M_NDIS_WINDRV);
 
 	return (0);
 }

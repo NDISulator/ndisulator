@@ -50,7 +50,6 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/ctype.h>
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/errno.h>
 
 #include <sys/callout.h>
@@ -292,6 +291,8 @@ static ndis_status
 	NdisMQueryAdapterInstanceName(unicode_string *, ndis_handle);
 static void NdisMRegisterUnloadHandler(ndis_handle, void *);
 static void dummy(void);
+
+MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
 
 /*
  * Some really old drivers do not properly check the return value
@@ -1226,7 +1227,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 
 	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * physmapneeded,
-	    M_DEVBUF, M_NOWAIT|M_ZERO);
+	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 
 	if (sc->ndis_mmaps == NULL)
 		return (NDIS_STATUS_RESOURCES);
@@ -1244,7 +1245,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 			NULL,
 			&sc->ndis_mtag);
 	if (error) {
-		free(sc->ndis_mmaps, M_DEVBUF);
+		free(sc->ndis_mmaps, M_NDIS_SUBR);
 		return (NDIS_STATUS_RESOURCES);
 	}
 
@@ -1269,7 +1270,7 @@ NdisMFreeMapRegisters(ndis_handle adapter)
 	for (i = 0; i < sc->ndis_mmapcnt; i++)
 		bus_dmamap_destroy(sc->ndis_mtag, sc->ndis_mmaps[i]);
 
-	free(sc->ndis_mmaps, M_DEVBUF);
+	free(sc->ndis_mmaps, M_NDIS_SUBR);
 
 	bus_dma_tag_destroy(sc->ndis_mtag);
 }
@@ -1304,7 +1305,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 
-	sh = malloc(sizeof(struct ndis_shmem), M_DEVBUF, M_NOWAIT|M_ZERO);
+	sh = malloc(sizeof(struct ndis_shmem), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (sh == NULL)
 		return;
 
@@ -1336,7 +1337,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 			NULL,
 			&sh->ndis_stag);
 	if (error) {
-		free(sh, M_DEVBUF);
+		free(sh, M_NDIS_SUBR);
 		return;
 	}
 
@@ -1344,7 +1345,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	    BUS_DMA_NOWAIT | BUS_DMA_ZERO, &sh->ndis_smap);
 	if (error) {
 		bus_dma_tag_destroy(sh->ndis_stag);
-		free(sh, M_DEVBUF);
+		free(sh, M_NDIS_SUBR);
 		return;
 	}
 
@@ -1353,7 +1354,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	if (error) {
 		bus_dmamem_free(sh->ndis_stag, *vaddr, sh->ndis_smap);
 		bus_dma_tag_destroy(sh->ndis_stag);
-		free(sh, M_DEVBUF);
+		free(sh, M_NDIS_SUBR);
 		return;
 	}
 
@@ -1402,7 +1403,7 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	MSCALL5(donefunc, block, vaddr, &paddr, w->na_len, w->na_ctx);
 
 	IoFreeWorkItem(w->na_iw);
-	free(w, M_DEVBUF);
+	free(w, M_NDIS_SUBR);
 }
 
 static ndis_status
@@ -1488,7 +1489,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	bus_dmamem_free(sh->ndis_stag, sh->ndis_saddr, sh->ndis_smap);
 	bus_dma_tag_destroy(sh->ndis_stag);
 
-	free(sh, M_DEVBUF);
+	free(sh, M_NDIS_SUBR);
 }
 
 static ndis_status
@@ -2491,12 +2492,12 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 		return;
 	}
 
-	afilename = strdup(as.as_buf, M_DEVBUF);
+	afilename = strdup(as.as_buf, M_NDIS_SUBR);
 	RtlFreeAnsiString(&as);
 
 	fh = ExAllocatePoolWithTag(NonPagedPool, sizeof(ndis_fh), 0);
 	if (fh == NULL) {
-		free(afilename, M_DEVBUF);
+		free(afilename, M_NDIS_SUBR);
 		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
@@ -2537,14 +2538,14 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 		    afilename);
 		printf("NDIS: and no filesystems mounted yet, "
 		    "aborting NdisOpenFile()\n");
-		free(afilename, M_DEVBUF);
+		free(afilename, M_NDIS_SUBR);
 		return;
 	}
 
 	path = ExAllocatePoolWithTag(NonPagedPool, MAXPATHLEN, 0);
 	if (path == NULL) {
 		ExFreePool(fh);
-		free(afilename, M_DEVBUF);
+		free(afilename, M_NDIS_SUBR);
 		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
@@ -2565,7 +2566,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 		ExFreePool(fh);
 		printf("NDIS: open file %s failed: %d\n", path, error);
 		ExFreePool(path);
-		free(afilename, M_DEVBUF);
+		free(afilename, M_NDIS_SUBR);
 		return;
 	}
 	vfslocked = NDHASGIANT(&nd);
@@ -2687,7 +2688,7 @@ NdisCloseFile(ndis_handle filehandle)
 	}
 
 	fh->nf_vp = NULL;
-	free(fh->nf_name, M_DEVBUF);
+	free(fh->nf_name, M_NDIS_SUBR);
 	ExFreePool(fh);
 }
 

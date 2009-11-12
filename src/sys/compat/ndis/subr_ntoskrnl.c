@@ -36,7 +36,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/ctype.h>
 #include <sys/unistd.h>
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/errno.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
@@ -262,6 +261,8 @@ static uma_zone_t iw_zone;
 static struct kdpc_queue *kq_queues;
 static struct kdpc_queue *wq_queues;
 static int wq_idx = 0;
+
+MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 
 int
 ntoskrnl_libinit(void)
@@ -643,7 +644,7 @@ ExAllocatePoolWithTag(pooltype, len, tag)
 {
 	void			*buf;
 
-	buf = malloc(len, M_DEVBUF, M_NOWAIT|M_ZERO);
+	buf = malloc(len, M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (buf == NULL)
 		return (NULL);
 
@@ -654,7 +655,7 @@ void
 ExFreePool(buf)
 	void			*buf;
 {
-	free(buf, M_DEVBUF);
+	free(buf, M_NDIS_NTOSKRNL);
 }
 
 uint32_t
@@ -3277,7 +3278,7 @@ ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
 {
 	nt_objref		*nr;
 
-	nr = malloc(sizeof(nt_objref), M_DEVBUF, M_NOWAIT|M_ZERO);
+	nr = malloc(sizeof(nt_objref), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (nr == NULL)
 		return (STATUS_INSUFFICIENT_RESOURCES);
 
@@ -3301,7 +3302,7 @@ ObfDereferenceObject(object)
 
 	nr = object;
 	TAILQ_REMOVE(&ntoskrnl_reflist, nr, link);
-	free(nr, M_DEVBUF);
+	free(nr, M_NDIS_NTOSKRNL);
 }
 
 static uint32_t
