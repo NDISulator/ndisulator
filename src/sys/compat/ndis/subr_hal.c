@@ -58,24 +58,18 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/hal_var.h>
 
 static void KeStallExecutionProcessor(uint32_t);
-static void WRITE_PORT_BUFFER_ULONG(uint32_t *,
-	uint32_t *, uint32_t);
-static void WRITE_PORT_BUFFER_USHORT(uint16_t *,
-	uint16_t *, uint32_t);
-static void WRITE_PORT_BUFFER_UCHAR(uint8_t *,
-	uint8_t *, uint32_t);
+static void WRITE_PORT_BUFFER_ULONG(uint32_t *, uint32_t *, uint32_t);
+static void WRITE_PORT_BUFFER_USHORT(uint16_t *, uint16_t *, uint32_t);
+static void WRITE_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
 static void WRITE_PORT_ULONG(uint32_t *, uint32_t);
 static void WRITE_PORT_USHORT(uint16_t *, uint16_t);
 static void WRITE_PORT_UCHAR(uint8_t *, uint8_t);
 static uint32_t READ_PORT_ULONG(uint32_t *);
 static uint16_t READ_PORT_USHORT(uint16_t *);
 static uint8_t READ_PORT_UCHAR(uint8_t *);
-static void READ_PORT_BUFFER_ULONG(uint32_t *,
-	uint32_t *, uint32_t);
-static void READ_PORT_BUFFER_USHORT(uint16_t *,
-	uint16_t *, uint32_t);
-static void READ_PORT_BUFFER_UCHAR(uint8_t *,
-	uint8_t *, uint32_t);
+static void READ_PORT_BUFFER_ULONG(uint32_t *, uint32_t *, uint32_t);
+static void READ_PORT_BUFFER_USHORT(uint16_t *, uint16_t *, uint32_t);
+static void READ_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
 static uint64_t KeQueryPerformanceCounter(uint64_t *);
 static void _KeLowerIrql(uint8_t);
 static uint8_t KeRaiseIrqlToDpcLevel(void);
@@ -87,8 +81,8 @@ static struct mtx disp_lock[NDIS_MAXCPUS];
 int
 hal_libinit(void)
 {
-	image_patch_table	*patch;
-	int			i;
+	image_patch_table *patch;
+	int i;
 
 	for (i = 0; i < NDIS_MAXCPUS; i++)
 		mtx_init(&disp_lock[i], "HAL preemption lock",
@@ -108,8 +102,8 @@ hal_libinit(void)
 int
 hal_libfini(void)
 {
-	image_patch_table	*patch;
-	int			i;
+	image_patch_table *patch;
+	int i;
 
 	for (i = 0; i < NDIS_MAXCPUS; i++)
 		mtx_destroy(&disp_lock[i]);
@@ -124,16 +118,13 @@ hal_libfini(void)
 }
 
 static void
-KeStallExecutionProcessor(usecs)
-	uint32_t		usecs;
+KeStallExecutionProcessor(uint32_t usecs)
 {
 	DELAY(usecs);
 }
 
 static void
-WRITE_PORT_ULONG(port, val)
-	uint32_t		*port;
-	uint32_t		val;
+WRITE_PORT_ULONG(uint32_t *port, uint32_t val)
 {
 	bus_space_write_4(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, val);
 }
@@ -151,81 +142,60 @@ WRITE_PORT_UCHAR(uint8_t *port, uint8_t val)
 }
 
 static void
-WRITE_PORT_BUFFER_ULONG(port, val, cnt)
-	uint32_t		*port;
-	uint32_t		*val;
-	uint32_t		cnt;
+WRITE_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *val, uint32_t cnt)
 {
 	bus_space_write_multi_4(NDIS_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, val, cnt);
 }
 
 static void
-WRITE_PORT_BUFFER_USHORT(port, val, cnt)
-	uint16_t		*port;
-	uint16_t		*val;
-	uint32_t		cnt;
+WRITE_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *val, uint32_t cnt)
 {
 	bus_space_write_multi_2(NDIS_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, val, cnt);
 }
 
 static void
-WRITE_PORT_BUFFER_UCHAR(port, val, cnt)
-	uint8_t			*port;
-	uint8_t			*val;
-	uint32_t		cnt;
+WRITE_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *val, uint32_t cnt)
 {
 	bus_space_write_multi_1(NDIS_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, val, cnt);
 }
 
 static uint16_t
-READ_PORT_USHORT(port)
-	uint16_t		*port;
+READ_PORT_USHORT(uint16_t *port)
 {
 	return (bus_space_read_2(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port));
 }
 
 static uint32_t
-READ_PORT_ULONG(port)
-	uint32_t		*port;
+READ_PORT_ULONG(uint32_t *port)
 {
 	return (bus_space_read_4(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port));
 }
 
 static uint8_t
-READ_PORT_UCHAR(port)
-	uint8_t			*port;
+READ_PORT_UCHAR(uint8_t *port)
 {
 	return (bus_space_read_1(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port));
 }
 
 static void
-READ_PORT_BUFFER_ULONG(port, val, cnt)
-	uint32_t		*port;
-	uint32_t		*val;
-	uint32_t		cnt;
+READ_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *val, uint32_t cnt)
 {
 	bus_space_read_multi_4(NDIS_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, val, cnt);
 }
 
 static void
-READ_PORT_BUFFER_USHORT(port, val, cnt)
-	uint16_t		*port;
-	uint16_t		*val;
-	uint32_t		cnt;
+READ_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *val, uint32_t cnt)
 {
 	bus_space_read_multi_2(NDIS_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, val, cnt);
 }
 
 static void
-READ_PORT_BUFFER_UCHAR(port, val, cnt)
-	uint8_t			*port;
-	uint8_t			*val;
-	uint32_t		cnt;
+READ_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *val, uint32_t cnt)
 {
 	bus_space_read_multi_1(NDIS_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, val, cnt);
@@ -351,10 +321,9 @@ READ_PORT_BUFFER_UCHAR(port, val, cnt)
  */
 
 uint8_t
-KfAcquireSpinLock(lock)
-	kspin_lock		*lock;
+KfAcquireSpinLock(kspin_lock *lock)
 {
-	uint8_t			oldirql;
+	uint8_t oldirql;
 
 	KeRaiseIrql(DISPATCH_LEVEL, &oldirql);
 	KeAcquireSpinLockAtDpcLevel(lock);
@@ -378,8 +347,7 @@ KeGetCurrentIrql(void)
 }
 
 static uint64_t
-KeQueryPerformanceCounter(freq)
-	uint64_t		*freq;
+KeQueryPerformanceCounter(uint64_t *freq)
 {
 	if (freq != NULL)
 		*freq = hz;
@@ -390,7 +358,7 @@ KeQueryPerformanceCounter(freq)
 uint8_t
 KfRaiseIrql(uint8_t irql)
 {
-	uint8_t			oldirql;
+	uint8_t oldirql;
 
 	oldirql = KeGetCurrentIrql();
 
@@ -423,7 +391,7 @@ KfLowerIrql(uint8_t oldirql)
 static uint8_t
 KeRaiseIrqlToDpcLevel(void)
 {
-	uint8_t			irql;
+	uint8_t irql;
 
 	KeRaiseIrql(DISPATCH_LEVEL, &irql);
 	return (irql);
@@ -471,10 +439,7 @@ image_patch_table hal_functbl[] = {
 	 * use it for any function that doesn't have an explicit match
 	 * in this table.
 	 */
-
 	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
-
-	/* End of list. */
 
 	{ NULL, NULL, NULL }
 };
