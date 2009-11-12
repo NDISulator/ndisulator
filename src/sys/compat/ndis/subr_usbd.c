@@ -228,7 +228,7 @@ usbd_libfini(void)
 	windrv_unwrap(usbd_task_wrap);
 	windrv_unwrap(usbd_xfertask_wrap);
 
-	free(usbd_driver.dro_drivername.us_buf, M_DEVBUF);
+	ExFreePool(usbd_driver.dro_drivername.us_buf);
 
 	return (0);
 }
