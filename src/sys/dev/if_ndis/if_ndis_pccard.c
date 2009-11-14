@@ -253,12 +253,9 @@ ndis_get_resource_list(device_t dev, device_t child)
 int
 ndis_alloc_amem(void *arg)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = arg;
 	int error, rid;
 
-	if (arg == NULL)
-		return (EINVAL);
-	sc = arg;
 	rid = NDIS_AM_RID;
 	sc->ndis_res_am = bus_alloc_resource(sc->ndis_dev, SYS_RES_MEMORY,
 	    &rid, 0UL, ~0UL, 0x1000, RF_ACTIVE);
@@ -297,11 +294,8 @@ ndis_alloc_amem(void *arg)
 void
 ndis_free_amem(void *arg)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = arg;
 
-	if (arg == NULL)
-		return;
-	sc = arg;
 	if (sc->ndis_res_am != NULL)
 		bus_release_resource(sc->ndis_dev, SYS_RES_MEMORY,
 		    sc->ndis_am_rid, sc->ndis_res_am);

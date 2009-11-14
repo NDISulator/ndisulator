@@ -48,7 +48,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/proc.h>
 #include <sys/sched.h>
 #include <sys/smp.h>
-
 #include <sys/queue.h>
 
 #ifdef __i386__
@@ -68,27 +67,27 @@ __FBSDID("$FreeBSD$");
 static struct mtx drvdb_mtx;
 static STAILQ_HEAD(drvdb, drvdb_ent) drvdb_head;
 
-static driver_object	fake_pci_driver; /* serves both PCI and cardbus */
-static driver_object	fake_pccard_driver;
+static driver_object fake_pci_driver; /* serves both PCI and cardbus */
+static driver_object fake_pccard_driver;
 
 #ifdef __i386__
 static void x86_oldldt(void *);
 static void x86_newldt(void *);
 
 struct tid {
-	void			*tid_except_list;	/* 0x00 */
-	uint32_t		tid_oldfs;		/* 0x04 */
-	uint32_t		tid_selector;		/* 0x08 */
-	struct tid		*tid_self;		/* 0x0C */
-	int			tid_cpu;		/* 0x10 */
+	void		*tid_except_list;	/* 0x00 */
+	uint32_t	tid_oldfs;		/* 0x04 */
+	uint32_t	tid_selector;		/* 0x08 */
+	struct tid	*tid_self;		/* 0x0C */
+	int		tid_cpu;		/* 0x10 */
 };
 
-static struct tid	*my_tids;
+static struct tid *my_tids;
 #endif /* __i386__ */
 
 MALLOC_DEFINE(M_NDIS_WINDRV, "ndis_windrv", "ndis_windrv buffers");
 
-#define DUMMY_REGISTRY_PATH "\\\\some\\bogus\\path"
+#define	DUMMY_REGISTRY_PATH "\\\\some\\bogus\\path"
 
 int
 windrv_libinit(void)
@@ -106,18 +105,15 @@ windrv_libinit(void)
 	 * for that we need to provide emulator dispatcher
 	 * routines, which are in a separate module.
 	 */
-
 	windrv_bus_attach(&fake_pci_driver, "PCI Bus");
 	windrv_bus_attach(&fake_pccard_driver, "PCCARD Bus");
 
 #ifdef __i386__
-
 	/*
 	 * In order to properly support SMP machines, we have
 	 * to modify the GDT on each CPU, since we never know
 	 * on which one we'll end up running.
 	 */
-
 	my_tids = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(struct tid) * mp_ncpus, 0);
 	if (my_tids == NULL)
@@ -130,7 +126,7 @@ windrv_libinit(void)
 int
 windrv_libfini(void)
 {
-	struct drvdb_ent	*d;
+	struct drvdb_ent *d;
 
 	mtx_lock(&drvdb_mtx);
 	while(STAILQ_FIRST(&drvdb_head) != NULL) {
@@ -192,12 +188,10 @@ windrv_lookup(vm_offset_t img, char *name)
 }
 
 struct drvdb_ent *
-windrv_match(matchfunc, ctx)
-	matchfuncptr		matchfunc;
-	void			*ctx;
+windrv_match(matchfuncptr matchfunc, void *ctx)
 {
-	struct drvdb_ent	*d;
-	int			match;
+	struct drvdb_ent *d;
+	int match;
 
 	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(d, &drvdb_head, link) {
@@ -218,18 +212,14 @@ windrv_match(matchfunc, ctx)
  * Remove a driver_object from our datatabase and destroy it. Throw
  * away any custom driver extension info that may have been added.
  */
-
 int
-windrv_unload(mod, img, len)
-	module_t		mod;
-	vm_offset_t		img;
-	int			len;
+windrv_unload(module_t mod, vm_offset_t img, int len)
 {
-	struct drvdb_ent	*db, *r = NULL;
-	driver_object		*drv;
-	device_object		*d, *pdo;
-	device_t		dev;
-	list_entry		*e;
+	struct drvdb_ent *db, *r = NULL;
+	driver_object *drv;
+	device_object *d, *pdo;
+	device_t dev;
+	list_entry *e;
 
 	drv = windrv_lookup(img, NULL);
 
@@ -241,7 +231,6 @@ windrv_unload(mod, img, len)
 	 * have to walk the device lists of all our bus
 	 * drivers.
 	 */
-
 	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(db, &drvdb_head, link) {
 		/*
@@ -278,7 +267,6 @@ windrv_unload(mod, img, len)
 
 	if (r == NULL)
 		return (ENOENT);
-
 	if (drv == NULL)
 		return (ENOENT);
 
@@ -306,36 +294,29 @@ windrv_unload(mod, img, len)
 	return (0);
 }
 
-#define WINDRV_LOADED		htonl(0x42534F44)
+#define	WINDRV_LOADED		htonl(0x42534F44)
 
 /*
  * Loader routine for actual Windows driver modules, ultimately
  * calls the driver's DriverEntry() routine.
  */
-
 int
-windrv_load(mod, img, len, bustype, devlist, regvals)
-	module_t		mod;
-	vm_offset_t		img;
-	int			len;
-	interface_type		bustype;
-	void			*devlist;
-	ndis_cfg		*regvals;
+windrv_load(module_t mod, vm_offset_t img, int len, interface_type bustype,
+    void *devlist, ndis_cfg *regvals)
 {
-	image_import_descriptor	imp_desc;
-	image_optional_header	opt_hdr;
-	driver_entry		entry;
-	struct drvdb_ent	*new;
-	struct driver_object	*drv;
-	int			status;
-	uint32_t		*ptr;
-	ansi_string		as;
+	image_import_descriptor imp_desc;
+	image_optional_header opt_hdr;
+	driver_entry entry;
+	struct drvdb_ent *new;
+	struct driver_object *drv;
+	int status;
+	uint32_t *ptr;
+	ansi_string as;
 
 	/*
 	 * First step: try to relocate and dynalink the executable
 	 * driver image.
 	 */
-
 	ptr = (uint32_t *)(img + 8);
 	if (*ptr == WINDRV_LOADED)
 		goto skipreloc;
@@ -349,34 +330,27 @@ windrv_load(mod, img, len, bustype, devlist, regvals)
 		return (ENOEXEC);
 
 	/* Dynamically link the HAL.dll routines -- optional. */
-	if (pe_get_import_descriptor(img, &imp_desc, "HAL") == 0) {
+	if (pe_get_import_descriptor(img, &imp_desc, "HAL") == 0)
 		if (pe_patch_imports(img, "HAL", hal_functbl))
 			return (ENOEXEC);
-	}
 
 	/* Dynamically link ntoskrnl.exe -- optional. */
-	if (pe_get_import_descriptor(img, &imp_desc, "ntoskrnl") == 0) {
+	if (pe_get_import_descriptor(img, &imp_desc, "ntoskrnl") == 0)
 		if (pe_patch_imports(img, "ntoskrnl", ntoskrnl_functbl))
 			return (ENOEXEC);
-	}
 
 	/* Dynamically link USBD.SYS -- optional */
-	if (pe_get_import_descriptor(img, &imp_desc, "USBD") == 0) {
+	if (pe_get_import_descriptor(img, &imp_desc, "USBD") == 0)
 		if (pe_patch_imports(img, "USBD", usbd_functbl))
 			return (ENOEXEC);
-	}
 
 	*ptr = WINDRV_LOADED;
-
 skipreloc:
-
 	/* Next step: find the driver entry point. */
-
 	pe_get_optional_header(img, &opt_hdr);
 	entry = (driver_entry)pe_translate_addr(img, opt_hdr.ioh_entryaddr);
 
 	/* Next step: allocate and store a driver object. */
-
 	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (new == NULL)
 		return (ENOMEM);
@@ -388,10 +362,8 @@ skipreloc:
 	}
 
 	/* Allocate a driver extension structure too. */
-
 	drv->dro_driverext = malloc(sizeof(driver_extension),
 	    M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
-
 	if (drv->dro_driverext == NULL) {
 		free(new, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
@@ -416,9 +388,7 @@ skipreloc:
 	new->windrv_bustype = bustype;
 
 	/* Now call the DriverEntry() function. */
-
 	status = MSCALL2(entry, drv, &drv->dro_drivername);
-
 	if (status != STATUS_SUCCESS) {
 		RtlFreeUnicodeString(&drv->dro_drivername);
 		free(drv, M_NDIS_WINDRV);
@@ -461,7 +431,7 @@ windrv_create_pdo(driver_object *drv, device_t bsddev)
 void
 windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 {
-	device_object		*pdo;
+	device_object *pdo;
 
 	pdo = windrv_find_pdo(drv, bsddev);
 
@@ -474,8 +444,7 @@ windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 }
 
 /*
- * Given a device_t, find the corresponding PDO in a driver's
- * device list.
+ * Given a device_t, find the corresponding PDO in a driver's device list.
  */
 device_object *
 windrv_find_pdo(driver_object *drv, device_t bsddev)
@@ -500,14 +469,11 @@ windrv_find_pdo(driver_object *drv, device_t bsddev)
  * Add an internally emulated driver to the database. We need this
  * to set up an emulated bus driver so that it can receive IRPs.
  */
-
 int
-windrv_bus_attach(drv, name)
-	driver_object		*drv;
-	char			*name;
+windrv_bus_attach(driver_object *drv, char *name)
 {
-	struct drvdb_ent	*new;
-	ansi_string		as;
+	struct drvdb_ent *new;
+	ansi_string as;
 
 	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (new == NULL)
@@ -538,38 +504,29 @@ windrv_bus_attach(drv, name)
 }
 
 #ifdef __amd64__
-
-extern void	x86_64_wrap(void);
-extern void	x86_64_wrap_call(void);
-extern void	x86_64_wrap_end(void);
+extern void x86_64_wrap(void);
+extern void x86_64_wrap_call(void);
+extern void x86_64_wrap_end(void);
 
 int
-windrv_wrap(func, wrap, argcnt, ftype)
-	funcptr			func;
-	funcptr			*wrap;
-	int			argcnt;
-	int			ftype;
+windrv_wrap(funcptr func, funcptr *wrap, int8_t argcnt, int ftype)
 {
-	funcptr			p;
-	vm_offset_t		*calladdr;
-	vm_offset_t		wrapstart, wrapend, wrapcall;
+	funcptr p;
+	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall;
 
 	wrapstart = (vm_offset_t)&x86_64_wrap;
 	wrapend = (vm_offset_t)&x86_64_wrap_end;
 	wrapcall = (vm_offset_t)&x86_64_wrap_call;
 
 	/* Allocate a new wrapper instance. */
-
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
 	/* Copy over the code. */
-
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
 
 	/* Insert the function address into the new wrapper instance. */
-
 	calladdr = (uint64_t *)((char *)p + (wrapcall - wrapstart) + 2);
 	*calladdr = (vm_offset_t)func;
 
@@ -581,14 +538,13 @@ windrv_wrap(func, wrap, argcnt, ftype)
 
 
 #ifdef __i386__
-
 struct x86desc {
-	uint16_t		x_lolimit;
-	uint16_t		x_base0;
-	uint8_t			x_base1;
-	uint8_t			x_flags;
-	uint8_t			x_hilimit;
-	uint8_t			x_base2;
+	uint16_t	x_lolimit;
+	uint16_t	x_base0;
+	uint8_t		x_base1;
+	uint8_t		x_flags;
+	uint8_t		x_hilimit;
+	uint8_t		x_base2;
 };
 
 struct gdt {
@@ -596,7 +552,7 @@ struct gdt {
 	void			*base;
 } __attribute__((__packed__));
 
-extern uint16_t	x86_getfs(void);
+extern uint16_t x86_getfs(void);
 extern void x86_setfs(uint16_t);
 extern void *x86_gettid(void);
 extern void x86_critical_enter(void);
@@ -604,21 +560,13 @@ extern void x86_critical_exit(void);
 extern void x86_getldt(struct gdt *, uint16_t *);
 extern void x86_setldt(struct gdt *, uint16_t);
 
-#define SEL_LDT	4		/* local descriptor table */
-#define SEL_TO_FS(x)		(((x) << 3))
+#define	SEL_LDT	4		/* local descriptor table */
+#define	SEL_TO_FS(x)		(((x) << 3))
 
 /*
- * FreeBSD 6.0 and later has a special GDT segment reserved
- * specifically for us, so if GNDIS_SEL is defined, use that.
- * If not, use GTGATE_SEL, which is uninitialized and infrequently
- * used.
+ * FreeBSD has a special GDT segment reserved specifically for us.
  */
-
-#ifdef GNDIS_SEL
-#define FREEBSD_EMPTYSEL	GNDIS_SEL
-#else
-#define FREEBSD_EMPTYSEL	GTGATE_SEL	/* slot 7 */
-#endif
+#define	FREEBSD_EMPTYSEL	GNDIS_SEL
 
 /*
  * The meanings of various bits in a descriptor vary a little
@@ -628,17 +576,16 @@ extern void x86_setldt(struct gdt *, uint16_t);
  * We're only trying to create a data segment, so the definitions
  * below are the ones that apply to a data descriptor.
  */
+#define	SEGFLAGLO_PRESENT	0x80	/* segment is present */
+#define	SEGFLAGLO_PRIVLVL	0x60	/* privlevel needed for this seg */
+#define	SEGFLAGLO_CD		0x10	/* 1 = code/data, 0 = system */
+#define	SEGFLAGLO_MBZ		0x08	/* must be zero */
+#define	SEGFLAGLO_EXPANDDOWN	0x04	/* limit expands down */
+#define	SEGFLAGLO_WRITEABLE	0x02	/* segment is writeable */
+#define	SEGGLAGLO_ACCESSED	0x01	/* segment has been accessed */
 
-#define SEGFLAGLO_PRESENT	0x80	/* segment is present */
-#define SEGFLAGLO_PRIVLVL	0x60	/* privlevel needed for this seg */
-#define SEGFLAGLO_CD		0x10	/* 1 = code/data, 0 = system */
-#define SEGFLAGLO_MBZ		0x08	/* must be zero */
-#define SEGFLAGLO_EXPANDDOWN	0x04	/* limit expands down */
-#define SEGFLAGLO_WRITEABLE	0x02	/* segment is writeable */
-#define SEGGLAGLO_ACCESSED	0x01	/* segment has been accessed */
-
-#define SEGFLAGHI_GRAN		0x80	/* granularity, 1 = byte, 0 = page */
-#define SEGFLAGHI_BIG		0x40	/* 1 = 32 bit stack, 0 = 16 bit */
+#define	SEGFLAGHI_GRAN		0x80	/* granularity, 1 = byte, 0 = page */
+#define	SEGFLAGHI_BIG		0x40	/* 1 = 32 bit stack, 0 = 16 bit */
 
 /*
  * Context switch from UNIX to Windows. Save the existing value
@@ -650,11 +597,10 @@ extern void x86_setldt(struct gdt *, uint16_t);
  * scheduled onto another CPU as a result. So far, it doesn't
  * seem like this is what happens.
  */
-
 void
 ctxsw_utow(void)
 {
-	struct tid		*t;
+	struct tid *t;
 
 	t = &my_tids[curthread->td_oncpu];
 
@@ -667,7 +613,6 @@ ctxsw_utow(void)
 	 * hasn't, we need to do it right now or else things will
 	 * explode.
 	 */
-
 	if (t->tid_self != t)
 		x86_newldt(NULL);
 
@@ -686,11 +631,10 @@ ctxsw_utow(void)
  * its previous value. This always occurs after a call to
  * ctxsw_utow().
  */
-
 void
 ctxsw_wtou(void)
 {
-	struct tid		*t;
+	struct tid *t;
 
 	x86_critical_enter();
 	t = x86_gettid();
@@ -706,25 +650,21 @@ ctxsw_wtou(void)
 #endif
 }
 
-static int	windrv_wrap_stdcall(funcptr, funcptr *, int);
-static int	windrv_wrap_fastcall(funcptr, funcptr *, int);
-static int	windrv_wrap_regparm(funcptr, funcptr *);
+static int windrv_wrap_stdcall(funcptr, funcptr *, int8_t);
+static int windrv_wrap_fastcall(funcptr, funcptr *, int8_t);
+static int windrv_wrap_regparm(funcptr, funcptr *);
 
-extern void	x86_fastcall_wrap(void);
-extern void	x86_fastcall_wrap_call(void);
-extern void	x86_fastcall_wrap_arg(void);
-extern void	x86_fastcall_wrap_end(void);
+extern void x86_fastcall_wrap(void);
+extern void x86_fastcall_wrap_call(void);
+extern void x86_fastcall_wrap_arg(void);
+extern void x86_fastcall_wrap_end(void);
 
 static int
-windrv_wrap_fastcall(func, wrap, argcnt)
-	funcptr			func;
-	funcptr			*wrap;
-	int8_t			argcnt;
+windrv_wrap_fastcall(funcptr func, funcptr *wrap, int8_t argcnt)
 {
-	funcptr			p;
-	vm_offset_t		*calladdr;
-	uint8_t			*argaddr;
-	vm_offset_t		wrapstart, wrapend, wrapcall, wraparg;
+	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall, wraparg;
+	funcptr p;
+	uint8_t *argaddr;
 
 	wrapstart = (vm_offset_t)&x86_fastcall_wrap;
 	wrapend = (vm_offset_t)&x86_fastcall_wrap_end;
@@ -732,17 +672,14 @@ windrv_wrap_fastcall(func, wrap, argcnt)
 	wraparg = (vm_offset_t)&x86_fastcall_wrap_arg;
 
 	/* Allocate a new wrapper instance. */
-
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
 	/* Copy over the code. */
-
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
 
 	/* Insert the function address into the new wrapper instance. */
-
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
 	*calladdr = (vm_offset_t)func;
 
@@ -758,21 +695,17 @@ windrv_wrap_fastcall(func, wrap, argcnt)
 	return (0);
 }
 
-extern void	x86_stdcall_wrap(void);
-extern void	x86_stdcall_wrap_call(void);
-extern void	x86_stdcall_wrap_arg(void);
-extern void	x86_stdcall_wrap_end(void);
+extern void x86_stdcall_wrap(void);
+extern void x86_stdcall_wrap_call(void);
+extern void x86_stdcall_wrap_arg(void);
+extern void x86_stdcall_wrap_end(void);
 
 static int
-windrv_wrap_stdcall(func, wrap, argcnt)
-	funcptr			func;
-	funcptr			*wrap;
-	uint8_t			argcnt;
+windrv_wrap_stdcall(funcptr func, funcptr *wrap, int8_t argcnt)
 {
-	funcptr			p;
-	vm_offset_t		*calladdr;
-	uint8_t			*argaddr;
-	vm_offset_t		wrapstart, wrapend, wrapcall, wraparg;
+	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall, wraparg;
+	funcptr p;
+	uint8_t *argaddr;
 
 	wrapstart = (vm_offset_t)&x86_stdcall_wrap;
 	wrapend = (vm_offset_t)&x86_stdcall_wrap_end;
@@ -780,17 +713,14 @@ windrv_wrap_stdcall(func, wrap, argcnt)
 	wraparg = (vm_offset_t)&x86_stdcall_wrap_arg;
 
 	/* Allocate a new wrapper instance. */
-
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
 	/* Copy over the code. */
-
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
 
 	/* Insert the function address into the new wrapper instance. */
-
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
 	*calladdr = (vm_offset_t)func;
 
@@ -802,35 +732,29 @@ windrv_wrap_stdcall(func, wrap, argcnt)
 	return (0);
 }
 
-extern void	x86_regparm_wrap(void);
-extern void	x86_regparm_wrap_call(void);
-extern void	x86_regparm_wrap_end(void);
+extern void x86_regparm_wrap(void);
+extern void x86_regparm_wrap_call(void);
+extern void x86_regparm_wrap_end(void);
 
 static int
-windrv_wrap_regparm(func, wrap)
-	funcptr			func;
-	funcptr			*wrap;
+windrv_wrap_regparm(funcptr func, funcptr *wrap)
 {
-	funcptr			p;
-	vm_offset_t		*calladdr;
-	vm_offset_t		wrapstart, wrapend, wrapcall;
+	funcptr p;
+	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall;
 
 	wrapstart = (vm_offset_t)&x86_regparm_wrap;
 	wrapend = (vm_offset_t)&x86_regparm_wrap_end;
 	wrapcall = (vm_offset_t)&x86_regparm_wrap_call;
 
 	/* Allocate a new wrapper instance. */
-
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
 		return (ENOMEM);
 
 	/* Copy over the code. */
-
 	bcopy(x86_regparm_wrap, p, (wrapend - wrapstart));
 
 	/* Insert the function address into the new wrapper instance. */
-
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
 	*calladdr = (vm_offset_t)func;
 
@@ -840,11 +764,7 @@ windrv_wrap_regparm(func, wrap)
 }
 
 int
-windrv_wrap(func, wrap, argcnt, ftype)
-	funcptr			func;
-	funcptr			*wrap;
-	int			argcnt;
-	int			ftype;
+windrv_wrap(funcptr func, funcptr *wrap, int8_t argcnt, int ftype)
 {
 	switch(ftype) {
 	case WINDRV_WRAP_FASTCALL:
@@ -863,67 +783,56 @@ windrv_wrap(func, wrap, argcnt, ftype)
 }
 
 static void
-x86_oldldt(dummy)
-	void			*dummy;
+x86_oldldt(void *dummy)
 {
-	struct x86desc		*gdt;
-	struct gdt		gtable;
-	uint16_t		ltable;
+	struct x86desc *gdt;
+	struct gdt gtable;
+	uint16_t ltable;
 
 	mtx_lock_spin(&dt_lock);
 
 	/* Grab location of existing GDT. */
-
 	x86_getldt(&gtable, &ltable);
 
 	/* Find the slot we updated. */
-
 	gdt = gtable.base;
 	gdt += FREEBSD_EMPTYSEL;
 
 	/* Empty it out. */
-
 	bzero((char *)gdt, sizeof(struct x86desc));
 
 	/* Restore GDT. */
-
 	x86_setldt(&gtable, ltable);
 
 	mtx_unlock_spin(&dt_lock);
 }
 
 static void
-x86_newldt(dummy)
-	void			*dummy;
+x86_newldt(void *dummy)
 {
-	struct gdt		gtable;
-	uint16_t		ltable;
-	struct x86desc		*l;
-	struct thread		*t;
+	struct gdt gtable;
+	uint16_t ltable;
+	struct x86desc *l;
+	struct thread *t;
 
 	t = curthread;
 
 	mtx_lock_spin(&dt_lock);
 
 	/* Grab location of existing GDT. */
-
 	x86_getldt(&gtable, &ltable);
 
 	/* Get pointer to the GDT table. */
-
 	l = gtable.base;
 
 	/* Get pointer to empty slot */
-
 	l += FREEBSD_EMPTYSEL;
 
 	/* Initialize TID for this CPU. */
-
 	my_tids[t->td_oncpu].tid_selector = FREEBSD_EMPTYSEL;
 	my_tids[t->td_oncpu].tid_self = &my_tids[t->td_oncpu];
 
 	/* Set up new GDT entry. */
-
 	l->x_lolimit = sizeof(struct tid);
 	l->x_hilimit = SEGFLAGHI_GRAN|SEGFLAGHI_BIG;
 	l->x_base0 = (vm_offset_t)(&my_tids[t->td_oncpu]) & 0xFFFF;
@@ -932,19 +841,16 @@ x86_newldt(dummy)
 	l->x_flags = SEGFLAGLO_PRESENT|SEGFLAGLO_CD|SEGFLAGLO_WRITEABLE;
 
 	/* Update the GDT. */
-
 	x86_setldt(&gtable, ltable);
 
 	mtx_unlock_spin(&dt_lock);
 
 	/* Whew. */
 }
-
 #endif /* __i386__ */
 
 int
-windrv_unwrap(func)
-	funcptr			func;
+windrv_unwrap(funcptr func)
 {
 	free(func, M_NDIS_WINDRV);
 

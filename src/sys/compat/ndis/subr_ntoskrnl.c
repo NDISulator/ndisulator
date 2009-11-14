@@ -83,14 +83,14 @@ SYSCTL_PROC(_debug, OID_AUTO, ntoskrnl_timers, CTLFLAG_RW, 0, 0,
 #endif
 
 struct kdpc_queue {
-	list_entry		kq_disp;
-	struct thread		*kq_td;
-	int			kq_cpu;
-	int			kq_exit;
-	int			kq_running;
-	kspin_lock		kq_lock;
-	nt_kevent		kq_proc;
-	nt_kevent		kq_done;
+	list_entry	kq_disp;
+	struct thread	*kq_td;
+	int		kq_cpu;
+	int		kq_exit;
+	int		kq_running;
+	kspin_lock	kq_lock;
+	nt_kevent	kq_proc;
+	nt_kevent	kq_done;
 };
 
 typedef struct kdpc_queue kdpc_queue;
@@ -102,7 +102,7 @@ struct wb_ext {
 
 typedef struct wb_ext wb_ext;
 
-#define NTOSKRNL_TIMEOUTS	256
+#define	NTOSKRNL_TIMEOUTS	256
 #ifdef NTOSKRNL_DEBUG_TIMERS
 static uint64_t ntoskrnl_timer_fires;
 static uint64_t ntoskrnl_timer_sets;
@@ -125,15 +125,13 @@ static kspin_lock ntoskrnl_intlock;
 
 static uint8_t RtlEqualUnicodeString(unicode_string *,
 	unicode_string *, uint8_t);
-static void RtlCopyUnicodeString(unicode_string *,
-	unicode_string *);
+static void RtlCopyUnicodeString(unicode_string *, unicode_string *);
 static irp *IoBuildSynchronousFsdRequest(uint32_t, device_object *,
-	 void *, uint32_t, uint64_t *, nt_kevent *, io_status_block *);
+	void *, uint32_t, uint64_t *, nt_kevent *, io_status_block *);
 static irp *IoBuildAsynchronousFsdRequest(uint32_t,
 	device_object *, void *, uint32_t, uint64_t *, io_status_block *);
-static irp *IoBuildDeviceIoControlRequest(uint32_t,
-	device_object *, void *, uint32_t, void *, uint32_t,
-	uint8_t, nt_kevent *, io_status_block *);
+static irp *IoBuildDeviceIoControlRequest(uint32_t, device_object *, void *,
+	uint32_t, void *, uint32_t, uint8_t, nt_kevent *, io_status_block *);
 static irp *IoAllocateIrp(uint8_t, uint8_t);
 static void IoReuseIrp(irp *, uint32_t);
 static void IoFreeIrp(irp *);
@@ -179,37 +177,35 @@ static uint64_t _aullshl(uint64_t, uint8_t);
 static slist_entry *ntoskrnl_pushsl(slist_header *, slist_entry *);
 static slist_entry *ntoskrnl_popsl(slist_header *);
 static void ExInitializePagedLookasideList(paged_lookaside_list *,
-	lookaside_alloc_func *, lookaside_free_func *,
-	uint32_t, size_t, uint32_t, uint16_t);
+	lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t,
+	uint32_t, uint16_t);
 static void ExDeletePagedLookasideList(paged_lookaside_list *);
 static void ExInitializeNPagedLookasideList(npaged_lookaside_list *,
-	lookaside_alloc_func *, lookaside_free_func *,
-	uint32_t, size_t, uint32_t, uint16_t);
+	lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t,
+	uint32_t, uint16_t);
 static void ExDeleteNPagedLookasideList(npaged_lookaside_list *);
-static slist_entry
-	*ExInterlockedPushEntrySList(slist_header *,
+static slist_entry *ExInterlockedPushEntrySList(slist_header *,
 	slist_entry *, kspin_lock *);
-static slist_entry
-	*ExInterlockedPopEntrySList(slist_header *, kspin_lock *);
+static slist_entry *ExInterlockedPopEntrySList(slist_header *, kspin_lock *);
 static uint32_t InterlockedIncrement(volatile uint32_t *);
 static uint32_t InterlockedDecrement(volatile uint32_t *);
 static void ExInterlockedAddLargeStatistic(uint64_t *, uint32_t);
 static void *MmAllocateContiguousMemory(uint32_t, uint64_t);
-static void *MmAllocateContiguousMemorySpecifyCache(uint32_t,
-	uint64_t, uint64_t, uint64_t, uint32_t);
+static void *MmAllocateContiguousMemorySpecifyCache(uint32_t, uint64_t,
+	uint64_t, uint64_t, uint32_t);
 static void MmFreeContiguousMemory(void *);
 static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t, uint32_t);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(mdl *, uint8_t);
-static void *MmMapLockedPagesSpecifyCache(mdl *,
-	uint8_t, uint32_t, void *, uint32_t, uint32_t);
+static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t, uint32_t, void *,
+	uint32_t, uint32_t);
 static void MmUnmapLockedPages(void *, mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
 static void RtlZeroMemory(void *, size_t);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
-static ndis_status RtlUnicodeStringToInteger(unicode_string *,
-	uint32_t, uint32_t *);
+static ndis_status RtlUnicodeStringToInteger(unicode_string *, uint32_t,
+	uint32_t *);
 static int atoi (const char *);
 static long atol (const char *);
 static int rand(void);
@@ -218,22 +214,22 @@ static void KeQuerySystemTime(uint64_t *);
 static uint32_t KeTickCount(void);
 static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
 static void ntoskrnl_thrfunc(void *);
-static ndis_status PsCreateSystemThread(ndis_handle *,
-	uint32_t, void *, ndis_handle, void *, void *, void *);
+static ndis_status PsCreateSystemThread(ndis_handle *, uint32_t, void *,
+	ndis_handle, void *, void *, void *);
 static ndis_status PsTerminateSystemThread(ndis_status);
-static ndis_status IoGetDeviceObjectPointer(unicode_string *,
-	uint32_t, void *, device_object *);
+static ndis_status IoGetDeviceObjectPointer(unicode_string *, uint32_t,
+	void *, device_object *);
 static ndis_status IoGetDeviceProperty(device_object *, uint32_t,
 	uint32_t, void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
 static uint32_t KeReleaseMutex(kmutant *, uint8_t);
 static uint32_t KeReadStateMutex(kmutant *);
-static ndis_status ObReferenceObjectByHandle(ndis_handle,
-	uint32_t, void *, uint8_t, void **, void **);
+static ndis_status ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
+	uint8_t, void **, void **);
 static void ObfDereferenceObject(void *);
 static uint32_t ZwClose(ndis_handle);
-static uint32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t,
-	uint32_t, void *);
+static uint32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
+	void *);
 static uint32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static uint32_t IoWMIRegistrationControl(device_object *, uint32_t);
 static void *ntoskrnl_memset(void *, int, size_t);
@@ -638,7 +634,6 @@ IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
 
 	ce = ExAllocatePoolWithTag(NonPagedPool, sizeof(custom_extension)
 	    + extlen, 0);
-
 	if (ce == NULL)
 		return (STATUS_INSUFFICIENT_RESOURCES);
 
@@ -1553,7 +1548,6 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	nt_dispatch_header *obj;
 
 	obj = arg;
-
 	if (obj == NULL)
 		return (STATUS_INVALID_PARAMETER);
 
@@ -2009,11 +2003,9 @@ ExInitializePagedLookasideList(paged_lookaside_list *lookaside,
 		    ntoskrnl_findwrap((funcptr)ExFreePool);
 	else
 		lookaside->nll_l.gl_freefunc = freefunc;
-
 #ifdef __i386__
 	KeInitializeSpinLock(&lookaside->nll_obsoletelock);
 #endif
-
 	lookaside->nll_l.gl_type = NonPagedPool;
 	lookaside->nll_l.gl_depth = depth;
 	lookaside->nll_l.gl_maxdepth = LOOKASIDE_DEPTH;
@@ -2053,11 +2045,9 @@ ExInitializeNPagedLookasideList(npaged_lookaside_list *lookaside,
 		    ntoskrnl_findwrap((funcptr)ExFreePool);
 	else
 		lookaside->nll_l.gl_freefunc = freefunc;
-
 #ifdef __i386__
 	KeInitializeSpinLock(&lookaside->nll_obsoletelock);
 #endif
-
 	lookaside->nll_l.gl_type = NonPagedPool;
 	lookaside->nll_l.gl_depth = depth;
 	lookaside->nll_l.gl_maxdepth = LOOKASIDE_DEPTH;
@@ -2136,7 +2126,6 @@ KefAcquireSpinLockAtDpcLevel(kspin_lock *lock)
 #ifdef NTOSKRNL_DEBUG_SPINLOCKS
 	int i = 0;
 #endif
-
 	while (atomic_cmpset_acq_int((volatile u_int *)lock, 0, 1) == 0) {
 		/* sit and spin */;
 #ifdef NTOSKRNL_DEBUG_SPINLOCKS
@@ -2198,6 +2187,7 @@ static uint32_t
 InterlockedIncrement(volatile uint32_t *addend)
 {
 	atomic_add_long((volatile u_long *)addend, 1);
+
 	return (*addend);
 }
 
@@ -2205,6 +2195,7 @@ static uint32_t
 InterlockedDecrement(volatile uint32_t *addend)
 {
 	atomic_subtract_long((volatile u_long *)addend, 1);
+
 	return (*addend);
 }
 
@@ -2247,7 +2238,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 
 	if (iopkt != NULL) {
 		if (secondarybuf == TRUE) {
-			mdl			*last;
+			mdl *last;
 			last = iopkt->irp_mdl;
 			while (last->mdl_next != NULL)
 				last = last->mdl_next;
@@ -2468,13 +2459,13 @@ ntoskrnl_finddev(device_t dev, uint64_t paddr, struct resource **res)
 	for (i = 0; i < childcnt; i++) {
 		matching_dev = ntoskrnl_finddev(children[i], paddr, res);
 		if (matching_dev != NULL) {
-			free(children, M_TEMP);
+			free(children, M_NDIS_NTOSKRNL);
 			return (matching_dev);
 		}
 	}
 	/* Won't somebody please think of the children! */
 	if (children != NULL)
-		free(children, M_TEMP);
+		free(children, M_NDIS_NTOSKRNL);
 
 	return (NULL);
 }
@@ -3053,7 +3044,6 @@ KeReadStateEvent(nt_kevent *kevent)
  * dispatch header by using ObReferenceObjectByHandle() on the
  * handle returned by PsCreateSystemThread().
  */
-
 static ndis_status
 ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
     uint8_t accessmode, void **object, void **handleinfo)
@@ -3154,7 +3144,6 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	sprintf(tname, "windows kthread %d", ntoskrnl_kth);
 	error = kproc_create(ntoskrnl_thrfunc, tc, &p,
 	    RFHIGHPID, NDIS_KSTACK_PAGES, tname);
-
 	if (error) {
 		free(tc, M_NDIS_NTOSKRNL);
 		return (STATUS_INSUFFICIENT_RESOURCES);
@@ -3231,12 +3220,10 @@ ntoskrnl_timercall(void *arg)
 	mtx_lock(&ntoskrnl_dispatchlock);
 
 	timer = arg;
-
 #ifdef NTOSKRNL_DEBUG_TIMERS
 	ntoskrnl_timer_fires++;
 #endif
 	ntoskrnl_remove_timer(timer);
-
 	/*
 	 * This should never happen, but complain
 	 * if it does.
@@ -3429,7 +3416,6 @@ ntoskrnl_dpc_thread(void *arg)
 	 * handlers, and they should trigger as soon as possible
 	 * once scheduled by an ISR.
 	 */
-
 	thread_lock(curthread);
 #ifdef NTOSKRNL_MULTIPLE_DPCS
 	sched_bind(curthread, kq->kq_cpu);
@@ -3439,7 +3425,6 @@ ntoskrnl_dpc_thread(void *arg)
 
 	for (;;) {
 		KeWaitForSingleObject(&kq->kq_proc, 0, 0, TRUE, NULL);
-
 		KeAcquireSpinLock(&kq->kq_lock, &irql);
 
 		if (kq->kq_exit) {
@@ -3459,14 +3444,12 @@ ntoskrnl_dpc_thread(void *arg)
 			    d->k_sysarg1, d->k_sysarg2);
 			KeAcquireSpinLockAtDpcLevel(&kq->kq_lock);
 		}
-
 		kq->kq_running = FALSE;
 
 		KeReleaseSpinLock(&kq->kq_lock, irql);
 
 		KeSetEvent(&kq->kq_done, IO_NO_INCREMENT, FALSE);
 	}
-
 	kproc_exit(0);
 	/* notreached */
 }
@@ -3485,7 +3468,6 @@ ntoskrnl_destroy_dpc_threads(void)
 	for (i = 0; i < 1; i++) {
 #endif
 		kq += i;
-
 		kq->kq_exit = 1;
 		KeInitializeDpc(&dpc, NULL, NULL);
 		KeSetTargetProcessorDpc(&dpc, i);
@@ -3496,12 +3478,10 @@ ntoskrnl_destroy_dpc_threads(void)
 }
 
 static uint8_t
-ntoskrnl_insert_dpc(head, dpc)
-	list_entry		*head;
-	kdpc			*dpc;
+ntoskrnl_insert_dpc(list_entry *head, kdpc *dpc)
 {
-	list_entry		*l;
-	kdpc			*d;
+	list_entry *l;
+	kdpc *d;
 
 	l = head->nle_flink;
 	while (l != head) {
@@ -3520,12 +3500,8 @@ ntoskrnl_insert_dpc(head, dpc)
 }
 
 void
-KeInitializeDpc(dpc, dpcfunc, dpcctx)
-	kdpc			*dpc;
-	void			*dpcfunc;
-	void			*dpcctx;
+KeInitializeDpc(kdpc *dpc, void *dpcfunc, void *dpcctx)
 {
-
 	if (dpc == NULL)
 		return;
 
@@ -3563,7 +3539,6 @@ KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 #else
 	KeAcquireSpinLock(&kq->kq_lock, &irql);
 #endif
-
 	r = ntoskrnl_insert_dpc(&kq->kq_disp, dpc);
 	if (r == TRUE) {
 		dpc->k_sysarg1 = sysarg1;
@@ -3642,7 +3617,6 @@ KeFlushQueuedDpcs(void)
 	 * Poke each DPC queue and wait
 	 * for them to drain.
 	 */
-
 #ifdef NTOSKRNL_MULTIPLE_DPCS
 	for (i = 0; i < mp_ncpus; i++) {
 #else
@@ -3663,9 +3637,9 @@ KeGetCurrentProcessorNumber(void)
 uint8_t
 KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 {
-	struct timeval		tv;
-	uint64_t		curtime;
-	uint8_t			pending;
+	struct timeval tv;
+	uint64_t curtime;
+	uint8_t pending;
 
 	if (timer == NULL)
 		return (FALSE);
@@ -3796,7 +3770,6 @@ KeSetPriorityThread(struct thread *td, int32_t pri)
 
 	if (td == NULL)
 		return LOW_REALTIME_PRIORITY;
-
 	if (td->td_priority <= PRI_MIN_KERN)
 		old = HIGH_PRIORITY;
 	else if (td->td_priority >= PRI_MAX_KERN)

@@ -52,20 +52,20 @@ static struct section_head sh;
 static struct reg_head rh;
 static struct assign_head ah;
 
-static struct assign	*find_assign(const char *, const char *);
-static struct assign	*find_next_assign(struct assign *);
-static struct section	*find_section(const char *);
-static void	dump_deviceids_pci(void);
-static void	dump_deviceids_pcmcia (void);
-static void	dump_deviceids_usb(void);
-static void	dump_paramreg(const struct section *, const struct reg *, int);
-static void	dump_pci_id(const char *);
-static void	dump_pcmcia_id(const char *);
-static void	dump_regvals(void);
-static void	dump_usb_id(const char *);
-static char	*sstrdup(const char *);
+static struct assign *find_assign(const char *, const char *);
+static struct assign *find_next_assign(struct assign *);
+static struct section *find_section(const char *);
+static void dump_deviceids_pci(void);
+static void dump_deviceids_pcmcia (void);
+static void dump_deviceids_usb(void);
+static void dump_paramreg(const struct section *, const struct reg *, int);
+static void dump_pci_id(const char *);
+static void dump_pcmcia_id(const char *);
+static void dump_regvals(void);
+static void dump_usb_id(const char *);
+static char *sstrdup(const char *);
 
-static FILE	*ofp;
+static FILE *ofp;
 
 int
 inf_parse(FILE *fp, FILE *outfp)

@@ -207,6 +207,8 @@ static void ndis_map_sclist	(void *, bus_dma_segment_t *,
 
 static int ndisdrv_loaded = 0;
 
+MALLOC_DEFINE(M_NDIS_DEV, "ndis_dev", "if_ndis buffers");
+
 /*
  * This routine should call windrv_load() once for each driver
  * image. This will do the relocation and dynalinking for the
@@ -308,7 +310,7 @@ ndis_setmulti(struct ndis_softc *sc)
 	len = sizeof(mclistsz);
 	ndis_get_info(sc, OID_802_3_MAXIMUM_LIST_SIZE, &mclistsz, &len);
 
-	mclist = malloc(ETHER_ADDR_LEN * mclistsz, M_TEMP, M_NOWAIT|M_ZERO);
+	mclist = malloc(ETHER_ADDR_LEN * mclistsz, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (mclist == NULL) {
 		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
 		goto out;
@@ -341,7 +343,7 @@ ndis_setmulti(struct ndis_softc *sc)
 		sc->ndis_filter &= ~NDIS_PACKET_TYPE_MULTICAST;
 	}
 out:
-	free(mclist, M_TEMP);
+	free(mclist, M_NDIS_DEV);
 
 	len = sizeof(sc->ndis_filter);
 	error = ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
@@ -375,7 +377,7 @@ ndis_set_offload(struct ndis_softc *sc)
 	len = sizeof(ndis_task_offload_hdr) + sizeof(ndis_task_offload) +
 	    sizeof(ndis_task_tcpip_csum);
 
-	ntoh = malloc(len, M_TEMP, M_NOWAIT|M_ZERO);
+	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
 
@@ -404,7 +406,7 @@ ndis_set_offload(struct ndis_softc *sc)
 		nttc->nttc_v4rx = sc->ndis_v4rx;
 
 	error = ndis_set_info(sc, OID_TCP_TASK_OFFLOAD, ntoh, &len);
-	free(ntoh, M_TEMP);
+	free(ntoh, M_NDIS_DEV);
 
 	return (error);
 }
@@ -425,7 +427,7 @@ ndis_probe_offload(struct ndis_softc *sc)
 	if (error != ENOSPC)
 		return (error);
 
-	ntoh = malloc(len, M_TEMP, M_NOWAIT|M_ZERO);
+	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
 
@@ -437,12 +439,12 @@ ndis_probe_offload(struct ndis_softc *sc)
 
 	error = ndis_get_info(sc, OID_TCP_TASK_OFFLOAD, ntoh, &len);
 	if (error) {
-		free(ntoh, M_TEMP);
+		free(ntoh, M_NDIS_DEV);
 		return (error);
 	}
 
 	if (ntoh->ntoh_vers != NDIS_TASK_OFFLOAD_VERSION) {
-		free(ntoh, M_TEMP);
+		free(ntoh, M_NDIS_DEV);
 		return (EINVAL);
 	}
 
@@ -467,7 +469,7 @@ ndis_probe_offload(struct ndis_softc *sc)
 	}
 
 	if (nttc == NULL) {
-		free(ntoh, M_TEMP);
+		free(ntoh, M_NDIS_DEV);
 		return (ENOENT);
 	}
 
@@ -489,7 +491,7 @@ ndis_probe_offload(struct ndis_softc *sc)
 	if (nttc->nttc_v4rx & NDIS_TCPSUM_FLAGS_UDP_CSUM)
 		ifp->if_capabilities |= IFCAP_RXCSUM;
 
-	free(ntoh, M_TEMP);
+	free(ntoh, M_NDIS_DEV);
 	return (0);
 }
 
@@ -641,7 +643,7 @@ ndis_attach(device_t dev)
 		sc->ndis_maxpkts = 10;
 
 	sc->ndis_txarray = malloc(sizeof(ndis_packet *) *
-	    sc->ndis_maxpkts, M_DEVBUF, M_NOWAIT|M_ZERO);
+	    sc->ndis_maxpkts, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 
 	/* Allocate a pool of ndis_packets for TX encapsulation. */
 	NdisAllocatePacketPool(&i, &sc->ndis_txpool,
@@ -725,11 +727,11 @@ ndis_attach(device_t dev)
 		    NULL, &len);
 		if (r != ENOSPC)
 			goto nonettypes;
-		ntl = malloc(len, M_DEVBUF, M_NOWAIT|M_ZERO);
+		ntl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		r = ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
 		    ntl, &len);
 		if (r != 0) {
-			free(ntl, M_DEVBUF);
+			free(ntl, M_NDIS_DEV);
 			goto nonettypes;
 		}
 
@@ -742,7 +744,7 @@ ndis_attach(device_t dev)
 				device_printf(dev, "Unknown nettype %d\n",
 				    ntl->ntl_type[i]);
 		}
-		free(ntl, M_DEVBUF);
+		free(ntl, M_NDIS_DEV);
 nonettypes:
 		/* Default to 11b channels if the card did not supply any */
 		if (bands == 0) {
@@ -1066,7 +1068,7 @@ ndis_detach(device_t dev)
 		ndis_destroy_dma(sc);
 
 	if (sc->ndis_txarray != NULL)
-		free(sc->ndis_txarray, M_DEVBUF);
+		free(sc->ndis_txarray, M_NDIS_DEV);
 
 	if (!sc->ndis_80211)
 		ifmedia_removeall(&sc->ifmedia);
@@ -1541,7 +1543,7 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf,
 	/* Cache the event. */
 	if (slen) {
 		sc->ndis_evt[sc->ndis_evtpidx].ne_buf = malloc(slen,
-		    M_TEMP, M_NOWAIT);
+		    M_NDIS_DEV, M_NOWAIT);
 		if (sc->ndis_evt[sc->ndis_evtpidx].ne_buf == NULL) {
 			NDIS_UNLOCK(sc);
 			return;
@@ -2459,21 +2461,21 @@ ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 	int len, error;
 
 	len = sizeof(uint32_t) + (sizeof(ndis_wlan_bssid_ex) * 16);
-	*bl = malloc(len, M_DEVBUF, M_NOWAIT|M_ZERO);
+	*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (*bl == NULL)
 		return (ENOMEM);
 
 	error = ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
 	if (error == ENOSPC) {
-		free(*bl, M_DEVBUF);
-		*bl = malloc(len, M_DEVBUF, M_NOWAIT|M_ZERO);
+		free(*bl, M_NDIS_DEV);
+		*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (*bl == NULL)
 			return (ENOMEM);
 		error = ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
 	}
 	if (error) {
 		DPRINTF(("%s: failed to read\n", __func__));
-		free(*bl, M_DEVBUF);
+		free(*bl, M_NDIS_DEV);
 		return (error);
 	}
 
@@ -2706,28 +2708,28 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 		error =  copyin(ifr->ifr_data, &oid, sizeof(oid));
 		if (error)
 			break;
-		oidbuf = malloc(oid.len, M_TEMP, M_NOWAIT|M_ZERO);
+		oidbuf = malloc(oid.len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (oidbuf == NULL) {
 			error = ENOMEM;
 			break;
 		}
 		error =  copyin(ifr->ifr_data + sizeof(oid), oidbuf, oid.len);
 		if (error) {
-			free(oidbuf, M_TEMP);
+			free(oidbuf, M_NDIS_DEV);
 			break;
 		}
 		error = ndis_get_info(sc, oid.oid, oidbuf, &oid.len);
 		if (error) {
-			free(oidbuf, M_TEMP);
+			free(oidbuf, M_NDIS_DEV);
 			break;
 		}
 		error = copyout(&oid, ifr->ifr_data, sizeof(oid));
 		if (error) {
-			free(oidbuf, M_TEMP);
+			free(oidbuf, M_NDIS_DEV);
 			break;
 		}
 		error = copyout(oidbuf, ifr->ifr_data + sizeof(oid), oid.len);
-		free(oidbuf, M_TEMP);
+		free(oidbuf, M_NDIS_DEV);
 		break;
 	case SIOCSDRVSPEC:
 		if ((error = priv_check(curthread, PRIV_DRIVER)))
@@ -2735,28 +2737,28 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 		error =  copyin(ifr->ifr_data, &oid, sizeof(oid));
 		if (error)
 			break;
-		oidbuf = malloc(oid.len, M_TEMP, M_NOWAIT|M_ZERO);
+		oidbuf = malloc(oid.len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (oidbuf == NULL) {
 			error = ENOMEM;
 			break;
 		}
 		error =  copyin(ifr->ifr_data + sizeof(oid), oidbuf, oid.len);
 		if (error) {
-			free(oidbuf, M_TEMP);
+			free(oidbuf, M_NDIS_DEV);
 			break;
 		}
 		error = ndis_set_info(sc, oid.oid, oidbuf, &oid.len);
 		if (error) {
-			free(oidbuf, M_TEMP);
+			free(oidbuf, M_NDIS_DEV);
 			break;
 		}
 		error = copyout(&oid, ifr->ifr_data, sizeof(oid));
 		if (error) {
-			free(oidbuf, M_TEMP);
+			free(oidbuf, M_NDIS_DEV);
 			break;
 		}
 		error = copyout(oidbuf, ifr->ifr_data + sizeof(oid), oid.len);
-		free(oidbuf, M_TEMP);
+		free(oidbuf, M_NDIS_DEV);
 		break;
 	case SIOCGPRIVATE_0:
 		if ((error = priv_check(curthread, PRIV_DRIVER)))
@@ -2791,7 +2793,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 				NDIS_UNLOCK(sc);
 				break;
 			}
-			free(sc->ndis_evt[sc->ndis_evtcidx].ne_buf, M_TEMP);
+			free(sc->ndis_evt[sc->ndis_evtcidx].ne_buf, M_NDIS_DEV);
 			sc->ndis_evt[sc->ndis_evtcidx].ne_buf = NULL;
 		}
 		sc->ndis_evt[sc->ndis_evtcidx].ne_len = 0;
@@ -2924,9 +2926,8 @@ ndis_add_key(struct ieee80211vap *vap, const struct ieee80211_key *key,
 static void
 ndis_resettask(device_object *d, void *arg)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = arg;
 
-	sc = arg;
 	ndis_reset_nic(sc);
 }
 
@@ -2963,7 +2964,7 @@ ndis_stop(struct ndis_softc *sc)
 	NDIS_LOCK(sc);
 	for (i = 0; i < NDIS_EVENTS; i++) {
 		if (sc->ndis_evt[i].ne_sts && sc->ndis_evt[i].ne_buf != NULL) {
-			free(sc->ndis_evt[i].ne_buf, M_TEMP);
+			free(sc->ndis_evt[i].ne_buf, M_NDIS_DEV);
 			sc->ndis_evt[i].ne_buf = NULL;
 		}
 		sc->ndis_evt[i].ne_sts = 0;
@@ -3144,7 +3145,7 @@ done:
 		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, noise);
 		wb = (ndis_wlan_bssid_ex *)((char *)wb + wb->nwbx_len);
 	}
-	free(bl, M_DEVBUF);
+	free(bl, M_NDIS_DEV);
 	/* Restore the channel after messing with it */
 	ic->ic_curchan = saved_chan;
 }

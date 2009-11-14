@@ -33,7 +33,7 @@
  */
 
 #ifndef _USBD_VAR_H_
-#define _USBD_VAR_H_
+#define	_USBD_VAR_H_
 
 #define	IOCTL_INTERNAL_USB_SUBMIT_URB			0x00220003
 
@@ -80,11 +80,11 @@
 #define	USBD_STATUS_DEVICE_GONE				0xC0007000
 
 struct usbd_urb_header {
-	uint16_t		uuh_len;
-	uint16_t		uuh_func;
-	int32_t			uuh_status;
-	void			*uuh_handle;
-	uint32_t		uuh_flags;
+	uint16_t	uuh_len;
+	uint16_t	uuh_func;
+	int32_t		uuh_status;
+	void		*uuh_handle;
+	uint32_t	uuh_flags;
 };
 
 enum usbd_pipe_type {
@@ -106,29 +106,29 @@ struct usbd_pipe_information {
 };
 
 struct usbd_interface_information {
-	uint16_t		uii_len;
-	uint8_t			uii_intfnum;
-	uint8_t			uii_altset;
-	uint8_t			uii_intfclass;
-	uint8_t			uii_intfsubclass;
-	uint8_t			uii_intfproto;
-	uint8_t			uii_reserved;
-	void			*uii_handle;
-	uint32_t		uii_numeps;
+	uint16_t	uii_len;
+	uint8_t		uii_intfnum;
+	uint8_t		uii_altset;
+	uint8_t		uii_intfclass;
+	uint8_t		uii_intfsubclass;
+	uint8_t		uii_intfproto;
+	uint8_t		uii_reserved;
+	void		*uii_handle;
+	uint32_t	uii_numeps;
 	struct usbd_pipe_information uii_pipes[1];
 };
 
 struct usbd_urb_select_interface {
-	struct usbd_urb_header	usi_hdr;
-	void			*usi_handle;
-	struct usbd_interface_information uusi_intf;
+	struct usbd_urb_header			usi_hdr;
+	void					*usi_handle;
+	struct usbd_interface_information	uusi_intf;
 };
 
 struct usbd_urb_select_configuration {
-	struct usbd_urb_header	usc_hdr;
-	usb_config_descriptor_t *usc_conf;
-	void			*usc_handle;
-	struct usbd_interface_information usc_intf;
+	struct usbd_urb_header			usc_hdr;
+	usb_config_descriptor_t			*usc_conf;
+	void					*usc_handle;
+	struct usbd_interface_information	usc_intf;
 };
 
 struct usbd_urb_pipe_request {
@@ -191,23 +191,23 @@ struct usbd_interface_list_entry {
 };
 
 union usbd_urb {
-	struct usbd_urb_header			uu_hdr;
-	struct usbd_urb_select_configuration	uu_selconf;
-	struct usbd_urb_bulk_or_intr_transfer	uu_bulkintr;
+	struct usbd_urb_header				uu_hdr;
+	struct usbd_urb_select_configuration		uu_selconf;
+	struct usbd_urb_bulk_or_intr_transfer		uu_bulkintr;
 	struct usbd_urb_control_descriptor_request	uu_ctldesc;
-	struct usbd_urb_vendor_or_class_request	uu_vcreq;
-	struct usbd_urb_pipe_request		uu_pipe;
+	struct usbd_urb_vendor_or_class_request		uu_vcreq;
+	struct usbd_urb_pipe_request			uu_pipe;
 };
 
 #define	USBD_URB_STATUS(urb)	((urb)->uu_hdr.uuh_status)
 
-#define	USBDI_VERSION		0x00000500
-#define	USB_VER_1_1		0x00000110
-#define	USB_VER_2_0		0x00000200
+#define	USBDI_VERSION	0x00000500
+#define	USB_VER_1_1	0x00000110
+#define	USB_VER_2_0	0x00000200
 
 struct usbd_version_info {
-	uint32_t		uvi_usbdi_vers;
-	uint32_t		uvi_supported_vers;
+	uint32_t	uvi_usbdi_vers;
+	uint32_t	uvi_supported_vers;
 };
 
 typedef struct usbd_version_info usbd_version_info;

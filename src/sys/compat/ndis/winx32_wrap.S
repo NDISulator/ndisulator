@@ -104,7 +104,6 @@
  * ahead of time. We assume there will be 16 arguments. I don't
  * think there are any Windows APIs that require this many.
  */
- 
 	.globl x86_stdcall_wrap_call
 	.globl x86_stdcall_wrap_arg
 	.globl x86_stdcall_wrap_end
@@ -124,7 +123,7 @@ ENTRY(x86_stdcall_wrap)
 	call	*%eax           # unthunk
 
 x86_stdcall_wrap_call:
-        movl    $0,%eax
+        movl	$0,%eax
 	call	*%eax		# jump to routine
 	push	%eax		# preserve return val
 	push	%edx
@@ -148,7 +147,6 @@ x86_stdcall_wrap_end:
  * expects to be passed the function to be called, number of
  * args and the arguments for the Windows function on the stack.
  */
-
 ENTRY(x86_stdcall_call)
 	push	%esi		# must preserve %esi
 	push	%edi		# and %edi
@@ -185,9 +183,7 @@ ENTRY(x86_stdcall_call)
  * take more than three arguments. So to keep the code size
  * and complexity down, we only handle 3 arguments here.
  */
-
 /* Call _fastcall function going from Windows to UNIX. */
-
 	.globl x86_fastcall_wrap_call
 	.globl x86_fastcall_wrap_arg
 	.globl x86_fastcall_wrap_end
@@ -223,7 +219,6 @@ x86_fastcall_wrap_end:
  * only have _stdcall entry points, but it's provided anyway
  * to round out the API, and for testing purposes.
  */
-
 ENTRY(x86_fastcall_call)
 	mov	4(%esp),%eax
 	push	16(%esp)
@@ -250,7 +245,6 @@ ENTRY(x86_fastcall_call)
  * since the only regparm(3) routines we need to wrap never take
  * more than 3 arguments.
  */
-
 	.globl x86_regparm_wrap_call
 	.globl x86_regparm_wrap_end
 
@@ -283,7 +277,6 @@ x86_regparm_wrap_end:
  * only have _stdcall entry points, but it's provided anyway
  * to round out the API, and for testing purposes.
  */
-
 ENTRY(x86_regparm_call)
 	call	ctxsw_utow	# thunk
 
@@ -304,7 +297,7 @@ ENTRY(x86_regparm_call)
  * Ugly hack alert:
  *
  * On Win32/i386, using __try/__except results in code that tries to
- * manipulate what's supposed to be the Windows Threada Environment 
+ * manipulate what's supposed to be the Windows Threads Environment 
  * Block (TEB), which one accesses via the %fs register. In particular,
  * %fs:0 (the first DWORD in the TEB) points to the exception
  * registration list. Unfortunately, FreeBSD uses %fs for the
@@ -344,7 +337,6 @@ ENTRY(x86_regparm_call)
  * external to this module. This is done simply because it's easier 
  * to manipulate data structures in C rather than assembly.
  */
-
 ENTRY(x86_getldt)
 	movl	4(%esp),%eax
 	sgdtl	(%eax)
@@ -354,12 +346,12 @@ ENTRY(x86_getldt)
 	ret
 
 ENTRY(x86_setldt)
-	movl    4(%esp),%eax
+	movl	4(%esp),%eax
 	lgdt	(%eax)
 	jmp	1f
 	nop
 1:
-	movl    8(%esp),%eax
+	movl	8(%esp),%eax
 	lldt	%ax
 	xor	%eax,%eax
 	ret

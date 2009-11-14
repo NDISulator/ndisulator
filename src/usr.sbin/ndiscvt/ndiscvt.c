@@ -82,11 +82,10 @@ extern const char *__progname;
  * This way, we don't have to do the fixups inside the kernel.
  */
 
-#define ROUND_DOWN(n, align)	(((uintptr_t)n) & ~((align) - 1l))
-#define ROUND_UP(n, align)	ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
+#define	ROUND_DOWN(n, align)	(((uintptr_t)n) & ~((align) - 1l))
+#define	ROUND_UP(n, align)	ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
 				(align))
-
-#define SET_HDRS(x)	\
+#define	SET_HDRS(x)	\
 	dos_hdr = (image_dos_header *)x;				\
 	nt_hdr = (image_nt_header *)(x + dos_hdr->idh_lfanew);		\
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
@@ -343,8 +342,8 @@ main(int argc, char *argv[])
 		if (strlen(dname) > IFNAMSIZ)
 			err(1, "selected device name '%s' is "
 			    "too long (max chars: %d)", dname, IFNAMSIZ);
-		fprintf(outfp, "#define NDIS_DEVNAME \"%s\"\n", dname);
-		fprintf(outfp, "#define NDIS_MODNAME %s\n\n", dname);
+		fprintf(outfp, "#define\tNDIS_DEVNAME \"%s\"\n", dname);
+		fprintf(outfp, "#define\tNDIS_MODNAME %s\n\n", dname);
 	}
 
 	if (inffile == NULL) {

@@ -95,8 +95,8 @@ ENTRY(x86_64_wrap)
 	mov	%rsp,%rbp	# is 16-byte aligned
 	and	$-16,%rsp	#
 	subq	$96,%rsp	# allocate space on stack
-	mov     %rsi,96-8(%rsp)	# save %rsi
-	mov     %rdi,96-16(%rsp)# save %rdi
+	mov	%rsi,96-8(%rsp)	# save %rsi
+	mov	%rdi,96-16(%rsp)# save %rdi
 	mov	%rcx,%r10	# temporarily save %rcx in scratch
 	lea	56+8(%rbp),%rsi	# source == old stack top (stack+56)
 	mov	%rsp,%rdi	# destination == new stack top
@@ -104,9 +104,9 @@ ENTRY(x86_64_wrap)
 	rep
 	movsq			# copy old stack contents to new location
 	mov	%r10,%rdi	# set up arg0 (%rcx -> %rdi)
-	mov     %rdx,%rsi	# set up arg1 (%rdx -> %rsi)
-	mov     %r8,%rdx	# set up arg2 (%r8 -> %rdx)
-	mov     %r9,%rcx	# set up arg3 (%r9 -> %rcx)
+	mov	%rdx,%rsi	# set up arg1 (%rdx -> %rsi)
+	mov	%r8,%rdx	# set up arg2 (%r8 -> %rdx)
+	mov	%r9,%rcx	# set up arg3 (%r9 -> %rcx)
 	mov	40+8(%rbp),%r8	# set up arg4 (stack+40 -> %r8)
 	mov	48+8(%rbp),%r9	# set up arg5 (stack+48 -> %r9)
 	xor	%rax,%rax	# clear return value

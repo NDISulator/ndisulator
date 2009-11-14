@@ -75,7 +75,7 @@ static void _KeLowerIrql(uint8_t);
 static uint8_t KeRaiseIrqlToDpcLevel(void);
 static void dummy (void);
 
-#define NDIS_MAXCPUS 64
+#define	NDIS_MAXCPUS	64
 static struct mtx disp_lock[NDIS_MAXCPUS];
 
 int
@@ -371,7 +371,6 @@ KfRaiseIrql(uint8_t irql)
 		mtx_lock(&disp_lock[curthread->td_oncpu]);
 	}
 /*printf("RAISE IRQL: %d %d\n", irql, oldirql);*/
-
 	return (oldirql);
 }
 
@@ -440,6 +439,5 @@ image_patch_table hal_functbl[] = {
 	 * in this table.
 	 */
 	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
-
 	{ NULL, NULL, NULL }
 };

@@ -72,13 +72,10 @@ static vm_offset_t pe_functbl_match(image_patch_table *, char *);
  * have this header, in spite of the fact that you're can't actually
  * run them directly.
  */
-
 int
-pe_get_dos_header(imgbase, hdr)
-	vm_offset_t		imgbase;
-	image_dos_header	*hdr;
+pe_get_dos_header(vm_offset_t imgbase, image_dos_header *hdr)
 {
-	uint16_t		signature;
+	uint16_t signature;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -95,13 +92,11 @@ pe_get_dos_header(imgbase, hdr)
 /*
  * Verify that this image has a Windows NT PE signature.
  */
-
 int
-pe_is_nt_image(imgbase)
-	vm_offset_t		imgbase;
+pe_is_nt_image(vm_offset_t imgbase)
 {
-	uint32_t		signature;
-	image_dos_header	*dos_hdr;
+	uint32_t signature;
+	image_dos_header *dos_hdr;
 
 	if (imgbase == 0)
 		return (EINVAL);
@@ -122,14 +117,11 @@ pe_is_nt_image(imgbase)
  * executable entry point and the directory listing which we
  * need to find the relocations and imports later.
  */
-
 int
-pe_get_optional_header(imgbase, hdr)
-	vm_offset_t		imgbase;
-	image_optional_header	*hdr;
+pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
 {
-	image_dos_header	*dos_hdr;
-	image_nt_header		*nt_hdr;
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -150,14 +142,11 @@ pe_get_optional_header(imgbase, hdr)
  * Return a copy of the file header. Contains the number of
  * sections in this image.
  */
-
 int
-pe_get_file_header(imgbase, hdr)
-	vm_offset_t		imgbase;
-	image_file_header	*hdr;
+pe_get_file_header(vm_offset_t imgbase, image_file_header *hdr)
 {
-	image_dos_header	*dos_hdr;
-	image_nt_header		*nt_hdr;
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -175,7 +164,6 @@ pe_get_file_header(imgbase, hdr)
 	 * non-variant portion of the nt_header structure, so we don't
 	 * bother copying the optional parts here.
 	 */
-
 	bcopy ((char *)&nt_hdr->inh_filehdr, (char *)hdr,
 	    sizeof(image_file_header));
 
@@ -183,18 +171,14 @@ pe_get_file_header(imgbase, hdr)
 }
 
 /*
- * Return the header of the first section in this image (usually
- * .text).
+ * Return the header of the first section in this image (usually .text).
  */
-
 int
-pe_get_section_header(imgbase, hdr)
-	vm_offset_t		imgbase;
-	image_section_header	*hdr;
+pe_get_section_header(vm_offset_t imgbase, image_section_header *hdr)
 {
-	image_dos_header	*dos_hdr;
-	image_nt_header		*nt_hdr;
-	image_section_header	*sect_hdr;
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
+	image_section_header *sect_hdr;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -214,12 +198,10 @@ pe_get_section_header(imgbase, hdr)
 /*
  * Return the number of sections in this executable, or 0 on error.
  */
-
 int
-pe_numsections(imgbase)
-	vm_offset_t		imgbase;
+pe_numsections(vm_offset_t imgbase)
 {
-	image_file_header	file_hdr;
+	image_file_header file_hdr;
 
 	if (pe_get_file_header(imgbase, &file_hdr))
 		return (0);
@@ -231,12 +213,10 @@ pe_numsections(imgbase)
  * Return the base address that this image was linked for.
  * This helps us calculate relocation addresses later.
  */
-
 vm_offset_t
-pe_imagebase(imgbase)
-	vm_offset_t		imgbase;
+pe_imagebase(vm_offset_t imgbase)
 {
-	image_optional_header	optional_hdr;
+	image_optional_header optional_hdr;
 
 	if (pe_get_optional_header(imgbase, &optional_hdr))
 		return (0);
@@ -248,14 +228,11 @@ pe_imagebase(imgbase)
  * Return the offset of a given directory structure within the
  * image. Directories reside within sections.
  */
-
 vm_offset_t
-pe_directory_offset(imgbase, diridx)
-	vm_offset_t		imgbase;
-	uint32_t		diridx;
+pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 {
-	image_optional_header	opt_hdr;
-	vm_offset_t		dir;
+	image_optional_header opt_hdr;
+	vm_offset_t dir;
 
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (0);
@@ -269,15 +246,13 @@ pe_directory_offset(imgbase, diridx)
 }
 
 vm_offset_t
-pe_translate_addr(imgbase, rva)
-	vm_offset_t		imgbase;
-	vm_offset_t		rva;
+pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 {
-	image_optional_header	opt_hdr;
-	image_section_header	*sect_hdr;
-	image_dos_header	*dos_hdr;
-	image_nt_header		*nt_hdr;
-	int			i = 0, sections, fixedlen;
+	image_optional_header opt_hdr;
+	image_section_header *sect_hdr;
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
+	int i = 0, sections, fixedlen;
 
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (0);
@@ -321,18 +296,15 @@ pe_translate_addr(imgbase, rva)
  * section names can be anything, but there are some standard
  * ones (.text, .data, .rdata, .reloc).
  */
-
 int
-pe_get_section(imgbase, hdr, name)
-	vm_offset_t		imgbase;
-	image_section_header	*hdr;
-	const char		*name;
+pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
+    const char *name)
 {
-	image_dos_header	*dos_hdr;
-	image_nt_header		*nt_hdr;
-	image_section_header	*sect_hdr;
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
+	image_section_header *sect_hdr;
 
-	int			i, sections;
+	int i, sections;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -359,25 +331,21 @@ pe_get_section(imgbase, hdr, name)
 }
 
 /*
- * Apply the base relocations to this image. The relocation table
- * resides within the .reloc section. Relocations are specified in
- * blocks which refer to a particular page. We apply the relocations
- * one page block at a time.
+ * Apply the base relocations to this image. The relocation table resides
+ * within the .reloc section. Relocations are specified in blocks which refer
+ * to a particular page. We apply the relocations one page block at a time.
  */
-
 int
-pe_relocate(imgbase)
-	vm_offset_t		imgbase;
+pe_relocate(vm_offset_t imgbase)
 {
-	image_section_header	sect;
-	image_base_reloc	*relhdr;
-	uint16_t		rel, *sloc;
-	vm_offset_t		base;
-	vm_size_t		delta;
-	uint32_t		*lloc;
-	uint64_t		*qloc;
-	int			i, count;
-	vm_offset_t		txt;
+	image_section_header sect;
+	image_base_reloc *relhdr;
+	vm_offset_t base, txt;
+	vm_size_t delta;
+	uint64_t *qloc;
+	uint32_t *lloc;
+	uint16_t rel, *sloc;
+	int i, count;
 
 	base = pe_imagebase(imgbase);
 	pe_get_section(imgbase, &sect, ".text");
@@ -418,7 +386,6 @@ pe_relocate(imgbase)
 				*qloc = pe_translate_addr(imgbase,
 				    (*qloc - base));
 				break;
-
 			default:
 				printf("[%d]reloc type: %d\n",i,
 				    IMR_RELTYPE(rel));
@@ -440,16 +407,13 @@ pe_relocate(imgbase)
  *
  * Note: module names are case insensitive!
  */
-
 int
-pe_get_import_descriptor(imgbase, desc, module)
-	vm_offset_t		imgbase;
-	image_import_descriptor	*desc;
-	char			*module;
+pe_get_import_descriptor(vm_offset_t imgbase, image_import_descriptor *desc,
+    char *module)
 {
-	vm_offset_t		offset;
-	image_import_descriptor	*imp_desc;
-	char			*modname;
+	vm_offset_t offset;
+	image_import_descriptor *imp_desc;
+	char *modname;
 
 	if (imgbase == 0 || module == NULL || desc == NULL)
 		return (EINVAL);
@@ -475,15 +439,13 @@ pe_get_import_descriptor(imgbase, desc, module)
 }
 
 int
-pe_get_messagetable(imgbase, md)
-	vm_offset_t		imgbase;
-	message_resource_data	**md;
+pe_get_messagetable(vm_offset_t imgbase, message_resource_data **md)
 {
-	image_resource_directory	*rdir, *rtype;
-	image_resource_directory_entry	*dent, *dent2;
-	image_resource_data_entry	*rent;
-	vm_offset_t		offset;
-	int			i;
+	image_resource_directory *rdir, *rtype;
+	image_resource_directory_entry *dent, *dent2;
+	image_resource_data_entry *rent;
+	vm_offset_t offset;
+	int i;
 
 	if (imgbase == 0)
 		return (EINVAL);
@@ -497,8 +459,8 @@ pe_get_messagetable(imgbase, md)
 	dent = (image_resource_directory_entry *)(offset +
 	    sizeof(image_resource_directory));
 
-	for (i = 0; i < rdir->ird_id_entries; i++){
-		if (dent->irde_name != RT_MESSAGETABLE)	{
+	for (i = 0; i < rdir->ird_id_entries; i++) {
+		if (dent->irde_name != RT_MESSAGETABLE) {
 			dent++;
 			continue;
 		}
@@ -521,20 +483,15 @@ pe_get_messagetable(imgbase, md)
 }
 
 int
-pe_get_message(imgbase, id, str, len, flags)
-	vm_offset_t		imgbase;
-	uint32_t		id;
-	char			**str;
-	int			*len;
-	uint16_t		*flags;
+pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
+    uint16_t *flags)
 {
-	message_resource_data	*md = NULL;
-	message_resource_block	*mb;
-	message_resource_entry	*me;
-	uint32_t		i;
+	message_resource_data *md = NULL;
+	message_resource_block *mb;
+	message_resource_entry *me;
+	uint32_t i;
 
 	pe_get_messagetable(imgbase, &md);
-
 	if (md == NULL)
 		return (ENOENT);
 
@@ -564,17 +521,13 @@ pe_get_message(imgbase, id, str, len, flags)
  * need to be particularly speedy since it's only run when loading
  * a module for the first time.
  */
-
 static vm_offset_t
-pe_functbl_match(functbl, name)
-	image_patch_table	*functbl;
-	char			*name;
+pe_functbl_match(image_patch_table *functbl, char *name)
 {
-	image_patch_table	*p;
+	image_patch_table *p;
 
 	if (functbl == NULL || name == NULL)
 		return (0);
-
 	p = functbl;
 
 	while (p->ipt_name != NULL) {
@@ -602,17 +555,12 @@ pe_functbl_match(functbl, name)
  * copy is left alone. In a .SYS file, the jump tables are usually
  * merged into the INIT segment.
  */
-
 int
-pe_patch_imports(imgbase, module, functbl)
-	vm_offset_t		imgbase;
-	char			*module;
-	image_patch_table	*functbl;
+pe_patch_imports(vm_offset_t imgbase, char *module, image_patch_table *functbl)
 {
-	image_import_descriptor	imp_desc;
-	char			*fname;
-	vm_offset_t		*nptr, *fptr;
-	vm_offset_t		func;
+	image_import_descriptor imp_desc;
+	char *fname;
+	vm_offset_t *nptr, *fptr, func;
 
 	if (imgbase == 0 || module == NULL || functbl == NULL)
 		return (EINVAL);

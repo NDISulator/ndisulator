@@ -302,8 +302,7 @@ MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
  * a problem, we allocate a few extra buffers/packets beyond what
  * the driver asks for. This #define controls how many.
  */
-#define NDIS_POOL_EXTRA 16
-
+#define	NDIS_POOL_EXTRA	16
 int
 ndis_libinit(void)
 {
@@ -825,11 +824,10 @@ NdisReadPciSlotInformation(ndis_handle adapter, uint32_t slot,
 {
 	ndis_miniport_block *block;
 	int i;
-	char *dest;
+	char *dest = buf;
 	device_t dev;
 
 	block = (ndis_miniport_block *)adapter;
-	dest = buf;
 	if (block == NULL)
 		return (0);
 
@@ -863,12 +861,10 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
 {
 	ndis_miniport_block *block;
 	int i;
-	char *dest;
+	char *dest = buf;
 	device_t dev;
 
 	block = (ndis_miniport_block *)adapter;
-	dest = buf;
-
 	if (block == NULL)
 		return (0);
 
@@ -885,7 +881,7 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
  * The errorlog routine uses a variable argument list, so we
  * have to declare it this way.
  */
-#define ERRMSGLEN 512
+#define	ERRMSGLEN	512
 static void
 NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
     uint32_t numerrors, ...)
@@ -1682,18 +1678,14 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 		return;
 	}
 #endif
-
 	pkt = (ndis_packet *)InterlockedPopEntrySList(&p->np_head);
-
 #ifdef NDIS_DEBUG_PACKETS
 	KeReleaseSpinLock(&p->np_lock, irql);
 #endif
-
 	if (pkt == NULL) {
 		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
-
 
 	bzero((char *)pkt, sizeof(ndis_packet));
 
@@ -1749,10 +1741,8 @@ NdisUnchainBufferAtFront(ndis_packet *packet, ndis_buffer **buf)
 
 	if (packet == NULL || buf == NULL)
 		return;
-
 	priv = &packet->np_private;
 	priv->npp_validcounts = FALSE;
-
 	if (priv->npp_head == priv->npp_tail) {
 		*buf = priv->npp_head;
 		priv->npp_head = priv->npp_tail = NULL;
@@ -1770,10 +1760,8 @@ NdisUnchainBufferAtBack(ndis_packet *packet, ndis_buffer **buf)
 
 	if (packet == NULL || buf == NULL)
 		return;
-
 	priv = &packet->np_private;
 	priv->npp_validcounts = FALSE;
-
 	if (priv->npp_head == priv->npp_tail) {
 		*buf = priv->npp_head;
 		priv->npp_head = priv->npp_tail = NULL;
@@ -1828,7 +1816,6 @@ NdisAllocateBuffer(ndis_status *status, ndis_buffer **buffer, ndis_handle pool,
 		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
-
 	MmBuildMdlForNonPagedPool(buf);
 
 	*buffer = buf;
@@ -1983,7 +1970,6 @@ NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
 
 	if (adapter == NULL || list == NULL)
 		return (NDIS_STATUS_FAILURE);
-
 	block = (ndis_miniport_block *)adapter;
 	*list = block->nmb_rlist;
 
@@ -1993,14 +1979,12 @@ NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
 static uint8_t
 ndis_intr(kinterrupt *iobj, void *arg)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = arg;
 	uint8_t is_our_intr = FALSE;
 	int call_isr = 0;
 	ndis_miniport_interrupt *intr;
 
-	sc = arg;
 	intr = sc->ndis_block->nmb_interrupt;
-
 	if (intr == NULL || sc->ndis_block->nmb_miniportadapterctx == NULL)
 		return (FALSE);
 
@@ -2129,11 +2113,9 @@ NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
 
 	if (adapter == NULL)
 		return;
-
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	chars = sc->ndis_chars;
-
 	chars->nmc_shutdown_handler = shutdownfunc;
 	chars->nmc_rsvd0 = shutdownctx;
 }
@@ -2147,11 +2129,9 @@ NdisMDeregisterAdapterShutdownHandler(ndis_handle adapter)
 
 	if (adapter == NULL)
 		return;
-
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	chars = sc->ndis_chars;
-
 	chars->nmc_shutdown_handler = NULL;
 	chars->nmc_rsvd0 = NULL;
 }
@@ -2172,7 +2152,6 @@ NdisGetBufferPhysicalArraySize(ndis_buffer *buf, uint32_t *pages)
 {
 	if (buf == NULL)
 		return;
-
 	*pages = NDIS_BUFFER_TO_SPAN_PAGES(buf);
 }
 
@@ -2181,7 +2160,6 @@ NdisQueryBufferOffset(ndis_buffer *buf, uint32_t *off, uint32_t *len)
 {
 	if (buf == NULL)
 		return;
-
 	*off = MmGetMdlByteOffset(buf);
 	*len = MmGetMdlByteCount(buf);
 }
@@ -2218,7 +2196,6 @@ NdisReadPcmciaAttributeMemory(ndis_handle handle, uint32_t offset, void *buf,
 
 	if (handle == NULL)
 		return (0);
-
 	block = (ndis_miniport_block *)handle;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	dest = buf;
@@ -2245,7 +2222,6 @@ NdisWritePcmciaAttributeMemory(ndis_handle handle, uint32_t offset,
 
 	if (handle == NULL)
 		return (0);
-
 	block = (ndis_miniport_block *)handle;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	src = buf;
@@ -2491,7 +2467,6 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
-
 	afilename = strdup(as.as_buf, M_NDIS_SUBR);
 	RtlFreeAnsiString(&as);
 
@@ -2602,7 +2577,6 @@ NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
 		*status = NDIS_STATUS_FAILURE;
 		return;
 	}
-
 	fh = (ndis_fh *)filehandle;
 	if (fh->nf_vp == NULL) {
 		*status = NDIS_STATUS_FAILURE;
@@ -2625,7 +2599,6 @@ NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
 	}
 
 	fh->nf_map = ExAllocatePoolWithTag(NonPagedPool, fh->nf_maplen, 0);
-
 	if (fh->nf_map == NULL) {
 		*status = NDIS_STATUS_RESOURCES;
 		return;
@@ -2636,7 +2609,6 @@ NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
 	error = vn_rdwr(UIO_READ, vp, fh->nf_map, fh->nf_maplen, 0,
 	    UIO_SYSSPACE, 0, td->td_ucred, NOCRED, &resid, td);
 	VFS_UNLOCK_GIANT(vfslocked);
-
 	if (error)
 		*status = NDIS_STATUS_FAILURE;
 	else {
@@ -2669,24 +2641,20 @@ NdisCloseFile(ndis_handle filehandle)
 
 	if (filehandle == NULL)
 		return;
-
 	fh = (ndis_fh *)filehandle;
 	if (fh->nf_map != NULL) {
 		if (fh->nf_type == NDIS_FH_TYPE_VFS)
 			ExFreePool(fh->nf_map);
 		fh->nf_map = NULL;
 	}
-
 	if (fh->nf_vp == NULL)
 		return;
-
 	if (fh->nf_type == NDIS_FH_TYPE_VFS) {
 		vp = fh->nf_vp;
 		vfslocked = VFS_LOCK_GIANT(vp->v_mount);
 		vn_close(vp, FREAD, td->td_ucred, td);
 		VFS_UNLOCK_GIANT(vfslocked);
 	}
-
 	fh->nf_vp = NULL;
 	free(fh->nf_name, M_NDIS_SUBR);
 	ExFreePool(fh);
@@ -2806,7 +2774,7 @@ NdisCopyFromPacketToPacket(ndis_packet *dpkt, uint32_t doff, uint32_t reqlen,
 	resid = reqlen;
 	copied = 0;
 
-	while(1) {
+	for (;;) {
 		if (resid < scnt)
 			len = resid;
 		else

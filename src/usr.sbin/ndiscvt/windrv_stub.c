@@ -46,10 +46,10 @@ __FBSDID("$FreeBSD$");
 #define NDIS_REGVALS
 
 struct ndis_cfg {
-	char			*nc_cfgkey;
-	char			*nc_cfgdesc;
-	char			nc_val[256];
-	int			nc_idx;
+	char	*nc_cfgkey;
+	char	*nc_cfgdesc;
+	char	nc_val[256];
+	int	nc_idx;
 };
 
 typedef struct ndis_cfg ndis_cfg;
@@ -70,9 +70,9 @@ struct ndis_pccard_type {
 };
 
 struct ndis_usb_type {
-	uint16_t		ndis_vid;
-	uint16_t		ndis_did;
-	char			*ndis_name;
+	uint16_t	ndis_vid;
+	uint16_t	ndis_did;
+	char		*ndis_name;
 };
 
 #ifdef NDIS_PCI_DEV_TABLE
@@ -132,7 +132,6 @@ typedef enum interface_type interface_type;
  * that here, and let the build script create empty copies of
  * device_if.h and bus_if.h to make the compiler happy.
  */
-
 extern struct kobjop_desc device_probe_desc;
 typedef int device_probe_t(device_t dev);
 

@@ -56,7 +56,6 @@ typedef uint8_t ndis_kirql;
  * don't seem to fit the pattern are actually mapped to generic
  * NT status codes.
  */
-
 #define	NDIS_STATUS_SUCCESS		0
 #define	NDIS_STATUS_PENDING		0x00000103
 #define	NDIS_STATUS_NOT_RECOGNIZED	0x00010001
@@ -132,12 +131,11 @@ typedef uint8_t ndis_kirql;
 #define	NDIS_STATUS_NO_ROUTE_TO_DESTINATION	0xC0010029
 #define	NDIS_STATUS_TOKEN_RING_OPEN_ERROR	0xC0011000
 #define	NDIS_STATUS_INVALID_DEVICE_REQUEST	0xC0000010
-#define	NDIS_STATUS_NETWORK_UNREACHABLE         0xC000023C
+#define	NDIS_STATUS_NETWORK_UNREACHABLE		0xC000023C
 
 /*
  * NDIS event codes. They are usually reported to NdisWriteErrorLogEntry().
  */
-
 #define	EVENT_NDIS_RESOURCE_CONFLICT	0xC0001388
 #define	EVENT_NDIS_OUT_OF_RESOURCE	0xC0001389
 #define	EVENT_NDIS_HARDWARE_FAILURE	0xC000138A
@@ -499,23 +497,23 @@ typedef uint32_t ndis_80211_antenna;
 #define	NDIS_80211_PRIVFILT_ACCEPTALL	0x00000000
 #define	NDIS_80211_PRIVFILT_8021XWEP	0x00000001
 
-#define	NDIS_80211_WEPSTAT_ENABLED	0x00000000
-#define	NDIS_80211_WEPSTAT_ENC1ENABLED	NDIS_80211_WEPSTAT_ENABLED
-#define	NDIS_80211_WEPSTAT_DISABLED	0x00000001
-#define	NDIS_80211_WEPSTAT_ENCDISABLED	NDIS_80211_WEPSTAT_DISABLED
-#define	NDIS_80211_WEPSTAT_KEYABSENT	0x00000002
+#define	NDIS_80211_WEPSTAT_ENABLED		0x00000000
+#define	NDIS_80211_WEPSTAT_ENC1ENABLED		NDIS_80211_WEPSTAT_ENABLED
+#define	NDIS_80211_WEPSTAT_DISABLED		0x00000001
+#define	NDIS_80211_WEPSTAT_ENCDISABLED		NDIS_80211_WEPSTAT_DISABLED
+#define	NDIS_80211_WEPSTAT_KEYABSENT		0x00000002
 #define	NDIS_80211_WEPSTAT_ENC1KEYABSENT	NDIS_80211_WEPSTAT_KEYABSENT
-#define	NDIS_80211_WEPSTAT_NOTSUPPORTED	0x00000003
+#define	NDIS_80211_WEPSTAT_NOTSUPPORTED		0x00000003
 #define	NDIS_80211_WEPSTAT_ENCNOTSUPPORTED	NDIS_80211_WEPSTAT_NOTSUPPORTED
-#define	NDIS_80211_WEPSTAT_ENC2ENABLED	0x00000004
+#define	NDIS_80211_WEPSTAT_ENC2ENABLED		0x00000004
 #define	NDIS_80211_WEPSTAT_ENC2KEYABSENT	0x00000005
-#define	NDIS_80211_WEPSTAT_ENC3ENABLED	0x00000006
+#define	NDIS_80211_WEPSTAT_ENC3ENABLED		0x00000006
 #define	NDIS_80211_WEPSTAT_ENC3KEYABSENT	0x00000007
 
-#define	NDIS_80211_RELOADDEFAULT_WEP	0x00000000
+#define	NDIS_80211_RELOADDEFAULT_WEP		0x00000000
 
-#define	NDIS_80211_STATUSTYPE_AUTH	0x00000000
-#define	NDIS_80211_STATUSTYPE_PMKIDLIST	0x00000001
+#define	NDIS_80211_STATUSTYPE_AUTH		0x00000000
+#define	NDIS_80211_STATUSTYPE_PMKIDLIST		0x00000001
 
 struct ndis_80211_status_indication {
 	uint32_t		nsi_type;
@@ -523,10 +521,10 @@ struct ndis_80211_status_indication {
 
 typedef struct ndis_80211_status_indication ndis_80211_status_indication;
 
-#define	NDIS_802_11_AUTH_REQUEST_REAUTH		0x01
-#define	NDIS_802_11_AUTH_REQUEST_KEYUPDATE	0x02
-#define	NDIS_802_11_AUTH_REQUEST_PAIRWISE_ERROR	0x06
-#define	NDIS_802_11_AUTH_REQUEST_GROUP_ERROR	0x0E
+#define	NDIS_802_11_AUTH_REQUEST_REAUTH			0x01
+#define	NDIS_802_11_AUTH_REQUEST_KEYUPDATE		0x02
+#define	NDIS_802_11_AUTH_REQUEST_PAIRWISE_ERROR		0x06
+#define	NDIS_802_11_AUTH_REQUEST_GROUP_ERROR		0x0E
 
 struct ndis_80211_auth_request {
 	uint32_t		nar_len;
@@ -556,13 +554,13 @@ struct ndis_80211_remove_key {
 
 typedef struct ndis_80211_remove_key ndis_80211_remove_key;
 
-#define	NDIS_80211_AI_REQFI_CAPABILITIES	0x00000001
-#define	NDIS_80211_AI_REQFI_LISTENINTERVAL	0x00000002
-#define	NDIS_80211_AI_REQFI_CURRENTAPADDRESS	0x00000004
+#define	NDIS_80211_AI_REQFI_CAPABILITIES		0x00000001
+#define	NDIS_80211_AI_REQFI_LISTENINTERVAL		0x00000002
+#define	NDIS_80211_AI_REQFI_CURRENTAPADDRESS		0x00000004
 
-#define	NDIS_80211_AI_RESFI_CAPABILITIES	0x00000001
-#define	NDIS_80211_AI_RESFI_STATUSCODE		0x00000002
-#define	NDIS_80211_AI_RESFI_ASSOCIATIONID	0x00000004
+#define	NDIS_80211_AI_RESFI_CAPABILITIES		0x00000001
+#define	NDIS_80211_AI_RESFI_STATUSCODE			0x00000002
+#define	NDIS_80211_AI_RESFI_ASSOCIATIONID		0x00000004
 
 struct ndis_80211_ai_reqfi {
 	uint16_t		naq_caps;
@@ -674,7 +672,6 @@ typedef struct ndis_80211_enc_indication ndis_80211_enc_indication;
 #define	OID_TCP_TASK_IPSEC_DELETE_SA		0xFC010203
 #define	OID_TCP_SAN_SUPPORT			0xFC010204
 
-
 #define	NDIS_TASK_OFFLOAD_VERSION 1
 
 #define	NDIS_TASK_TCPIP_CSUM			0x00000000
@@ -772,10 +769,8 @@ struct ndis_task_ipsec {
 typedef struct ndis_task_ipsec ndis_task_ipsec;
 
 /*
- * Attribures of NDIS drivers. Not all drivers support
- * all attributes.
+ * Attribures of NDIS drivers. Not all drivers support all attributes.
  */
-
 #define	NDIS_ATTRIBUTE_IGNORE_PACKET_TIMEOUT		0x00000001
 #define	NDIS_ATTRIBUTE_IGNORE_REQUEST_TIMEOUT		0x00000002
 #define	NDIS_ATTRIBUTE_IGNORE_TOKEN_RING_ERRORS		0x00000004
@@ -787,7 +782,7 @@ typedef struct ndis_task_ipsec ndis_task_ipsec;
 #define	NDIS_ATTRIBUTE_NOT_CO_NDIS			0x00000100
 #define	NDIS_ATTRIBUTE_USES_SAFE_BUFFER_APIS		0x00000200
 
-#define	NDIS_SERIALIZED(block)		\
+#define	NDIS_SERIALIZED(block)	\
 	(((block)->nmb_flags & NDIS_ATTRIBUTE_DESERIALIZE) == 0)
 
 enum ndis_media_state {
@@ -798,7 +793,6 @@ enum ndis_media_state {
 typedef enum ndis_media_state ndis_media_state;
 
 /* Ndis Packet Filter Bits (OID_GEN_CURRENT_PACKET_FILTER). */
-
 #define	NDIS_PACKET_TYPE_DIRECTED               0x00000001
 #define	NDIS_PACKET_TYPE_MULTICAST              0x00000002
 #define	NDIS_PACKET_TYPE_ALL_MULTICAST          0x00000004
@@ -812,20 +806,18 @@ typedef enum ndis_media_state ndis_media_state;
 #define	NDIS_PACKET_TYPE_FUNCTIONAL             0x00004000
 #define	NDIS_PACKET_TYPE_MAC_FRAME              0x00008000
 
-
 /* Ndis MAC option bits (OID_GEN_MAC_OPTIONS). */
-
-#define	NDIS_MAC_OPTION_COPY_LOOKAHEAD_DATA             0x00000001
-#define	NDIS_MAC_OPTION_RECEIVE_SERIALIZED              0x00000002
-#define	NDIS_MAC_OPTION_TRANSFERS_NOT_PEND              0x00000004
-#define	NDIS_MAC_OPTION_NO_LOOPBACK                     0x00000008
-#define	NDIS_MAC_OPTION_FULL_DUPLEX                     0x00000010
-#define	NDIS_MAC_OPTION_EOTX_INDICATION                 0x00000020
-#define	NDIS_MAC_OPTION_8021P_PRIORITY                  0x00000040
-#define	NDIS_MAC_OPTION_SUPPORTS_MAC_ADDRESS_OVERWRITE  0x00000080
-#define	NDIS_MAC_OPTION_RECEIVE_AT_DPC                  0x00000100
-#define	NDIS_MAC_OPTION_8021Q_VLAN                      0x00000200
-#define	NDIS_MAC_OPTION_RESERVED                        0x80000000
+#define	NDIS_MAC_OPTION_COPY_LOOKAHEAD_DATA		0x00000001
+#define	NDIS_MAC_OPTION_RECEIVE_SERIALIZED		0x00000002
+#define	NDIS_MAC_OPTION_TRANSFERS_NOT_PEND		0x00000004
+#define	NDIS_MAC_OPTION_NO_LOOPBACK			0x00000008
+#define	NDIS_MAC_OPTION_FULL_DUPLEX			0x00000010
+#define	NDIS_MAC_OPTION_EOTX_INDICATION			0x00000020
+#define	NDIS_MAC_OPTION_8021P_PRIORITY			0x00000040
+#define	NDIS_MAC_OPTION_SUPPORTS_MAC_ADDRESS_OVERWRITE	0x00000080
+#define	NDIS_MAC_OPTION_RECEIVE_AT_DPC			0x00000100
+#define	NDIS_MAC_OPTION_8021Q_VLAN			0x00000200
+#define	NDIS_MAC_OPTION_RESERVED			0x80000000
 
 #define	NDIS_DMA_24BITS		0x00
 #define	NDIS_DMA_32BITS		0x01
@@ -904,7 +896,6 @@ struct ndis_config_parm {
  * Not part of Windows NDIS spec; we uses this to keep a
  * list of ndis_config_parm structures that we've allocated.
  */
-
 typedef struct ndis_config_parm ndis_config_parm;
 
 struct ndis_parmlist_entry {
@@ -962,7 +953,6 @@ struct ndis_event {
 typedef struct ndis_event ndis_event;
 
 /* Kernel defered procedure call (i.e. timer callback) */
-
 struct ndis_kdpc;
 typedef void (*ndis_kdpc_func)(struct ndis_kdpc *, void *, void *, void *);
 
@@ -1125,8 +1115,8 @@ struct ndis_sc_element {
 
 typedef struct ndis_sc_element ndis_sc_element;
 
-#define	NDIS_MAXSEG		32
-#define	NDIS_BUS_SPACE_SHARED_MAXADDR	0x3E7FFFFF
+#define	NDIS_MAXSEG 32
+#define	NDIS_BUS_SPACE_SHARED_MAXADDR 0x3E7FFFFF
 
 struct ndis_sc_list {
 	uint32_t		nsl_frags;
@@ -1270,7 +1260,6 @@ typedef struct ndis_packet_oob ndis_packet_oob;
  * We need this to stash some of the things returned
  * by NdisMEthIndicateReceive().
  */
-
 struct ndis_ethpriv {
 	void			*nep_ctx;	/* packet context */
 	long			nep_offset;	/* residual data to transfer */
@@ -1298,8 +1287,8 @@ struct ndis_packet {
 			uint8_t		np_mac_rsvd[4 * sizeof(void *)];
 		} np_macrsvd;
 	} u;
-	uint32_t		*np_rsvd[2];
-	uint8_t			np_protocolreserved[PROTOCOL_RESERVED_SIZE_IN_PACKET];
+	uint32_t	*np_rsvd[2];
+	uint8_t		np_protocolreserved[PROTOCOL_RESERVED_SIZE_IN_PACKET];
 
 	/*
 	 * This next part is probably wrong, but we need some place
@@ -1310,7 +1299,6 @@ struct ndis_packet {
 	ndis_sc_list		np_sclist;
 
 	/* BSD-specific stuff which should be invisible to drivers. */
-
 	uint32_t		np_refcnt;
 	void			*np_softc;
 	void			*np_m0;
@@ -1334,7 +1322,7 @@ struct ndis_packet_pool {
 typedef struct ndis_packet_pool ndis_packet_pool;
 
 /* mbuf ext type for NDIS */
-#define	EXT_NDIS		EXT_NET_DRV
+#define	EXT_NDIS EXT_NET_DRV
 
 /* mtx type for NDIS */
 #define	MTX_NDIS_LOCK "NDIS lock"
@@ -1423,11 +1411,8 @@ struct ndis_map_arg {
  * Miniport characteristics were originally defined in the NDIS 3.0
  * spec and then extended twice, in NDIS 4.0 and 5.0.
  */
-
 struct ndis_miniport_characteristics {
-
 	/* NDIS 3.0 */
-
 	uint8_t			nmc_version_major;
 	uint8_t			nmc_version_minor;
 	uint16_t		nmc_pad;
@@ -1447,13 +1432,11 @@ struct ndis_miniport_characteristics {
 	void *			nmc_transferdata_func;
 
 	/* NDIS 4.0 extentions */
-
 	void *			nmc_return_packet_func;
 	void *			nmc_sendmulti_func;
 	void *			nmc_allocate_complete_func;
 
 	/* NDIS 5.0 extensions */
-
 	void *			nmc_cocreatevc_func;
 	void *			nmc_codeletevc_func;
 	void *			nmc_coactivatevc_func;
@@ -1462,7 +1445,6 @@ struct ndis_miniport_characteristics {
 	void *			nmc_corequest_func;
 
 	/* NDIS 5.1 extentions */
-
 	void *			nmc_canceltxpkts_handler;
 	void *			nmc_pnpevent_handler;
 	void *			nmc_shutdown_handler;
@@ -1498,8 +1480,8 @@ struct ndis_timer_entry {
 
 TAILQ_HEAD(nte_head, ndis_timer_entry);
 
-#define	NDIS_FH_TYPE_VFS	0
-#define	NDIS_FH_TYPE_MODULE	1
+#define	NDIS_FH_TYPE_VFS 0
+#define	NDIS_FH_TYPE_MODULE 1
 
 struct ndis_fh {
 	int			nf_type;
@@ -1532,7 +1514,6 @@ typedef struct ndis_fh ndis_fh;
  * for the second part. Instead, we replace them with a few BSD-specific
  * things.
  */
-
 struct ndis_miniport_block {
 	/*
 	 * Windows-specific portion -- DO NOT MODIFY OR NDIS
@@ -1643,15 +1624,15 @@ struct ndis_miniport_block {
 TAILQ_HEAD(nd_head, ndis_miniport_block);
 
 typedef ndis_status (*ndis_init_handler)(ndis_status *, uint32_t *,
-		ndis_medium *, uint32_t, ndis_handle, ndis_handle);
-typedef ndis_status (*ndis_queryinfo_handler)(ndis_handle, ndis_oid,
-		void *, uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_setinfo_handler)(ndis_handle, ndis_oid,
-		void *, uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_sendsingle_handler)(ndis_handle,
-		ndis_packet *, uint32_t);
-typedef ndis_status (*ndis_sendmulti_handler)(ndis_handle,
-		ndis_packet **, uint32_t);
+    ndis_medium *, uint32_t, ndis_handle, ndis_handle);
+typedef ndis_status (*ndis_queryinfo_handler)(ndis_handle, ndis_oid, void *,
+    uint32_t, uint32_t *, uint32_t *);
+typedef ndis_status (*ndis_setinfo_handler)(ndis_handle, ndis_oid, void *,
+    uint32_t, uint32_t *, uint32_t *);
+typedef ndis_status (*ndis_sendsingle_handler)(ndis_handle, ndis_packet *,
+    uint32_t);
+typedef ndis_status (*ndis_sendmulti_handler)(ndis_handle, ndis_packet **,
+    uint32_t);
 typedef void (*ndis_isr_handler)(uint8_t *, uint8_t *, ndis_handle);
 typedef void (*ndis_interrupt_handler)(ndis_handle);
 typedef int (*ndis_reset_handler)(uint8_t *, ndis_handle);
@@ -1661,19 +1642,17 @@ typedef void (*ndis_enable_interrupts_handler)(ndis_handle);
 typedef void (*ndis_disable_interrupts_handler)(ndis_handle);
 typedef void (*ndis_shutdown_handler)(void *);
 typedef void (*ndis_pnpevent_handler)(void *, int, void *, uint32_t);
-typedef void (*ndis_allocdone_handler)(ndis_handle, void *,
-		ndis_physaddr *, uint32_t, void *);
+typedef void (*ndis_allocdone_handler)(ndis_handle, void *, ndis_physaddr *,
+    uint32_t, void *);
 typedef uint8_t (*ndis_checkforhang_handler)(ndis_handle);
-
 typedef ndis_status (*driver_entry)(void *, unicode_string *);
-
 extern image_patch_table ndis_functbl[];
 
-#define	NDIS_TASKQUEUE	1
-#define	NDIS_SWI	2
+#define	NDIS_TASKQUEUE 1
+#define	NDIS_SWI 2
 
-#define	NDIS_PSTATE_RUNNING	1
-#define	NDIS_PSTATE_SLEEPING	2
+#define	NDIS_PSTATE_RUNNING 1
+#define	NDIS_PSTATE_SLEEPING 2
 
 #define	NdisQueryPacket(p, pbufcnt, bufcnt, firstbuf, plen)		\
 	do {								\
@@ -1752,14 +1731,13 @@ extern int ndis_add_sysctl(void *, char *, char *, char *, int);
 extern int ndis_flush_sysctls(void *);
 
 extern uint32_t NdisAddDevice(driver_object *, device_object *);
-extern void NdisAllocatePacketPool(ndis_status *,
-    ndis_handle *, uint32_t, uint32_t);
-extern void NdisAllocatePacketPoolEx(ndis_status *,
-    ndis_handle *, uint32_t, uint32_t, uint32_t);
+extern void NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
+    uint32_t);
+extern void NdisAllocatePacketPoolEx(ndis_status *, ndis_handle *, uint32_t,
+    uint32_t, uint32_t);
 extern uint32_t NdisPacketPoolUsage(ndis_handle);
 extern void NdisFreePacketPool(ndis_handle);
-extern void NdisAllocatePacket(ndis_status *,
-	ndis_packet **, ndis_handle);
+extern void NdisAllocatePacket(ndis_status *, ndis_packet **, ndis_handle);
 extern void NdisFreePacket(ndis_packet *);
 extern ndis_status NdisScheduleWorkItem(ndis_work_item *);
 extern void NdisMSleep(uint32_t);
