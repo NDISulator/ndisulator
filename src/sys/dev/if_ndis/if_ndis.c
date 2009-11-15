@@ -2915,7 +2915,6 @@ ndis_add_key(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		error = ENOTTY;
 		break;
 	}
-
 	/* We need to return 1 for success, 0 for failure. */
 	if (error)
 		return (0);

@@ -254,12 +254,10 @@ int
 ndis_alloc_amem(void *arg)
 {
 	struct ndis_softc *sc = arg;
-	int error, rid;
+	int error, rid = NDIS_AM_RID;
 
-	rid = NDIS_AM_RID;
 	sc->ndis_res_am = bus_alloc_resource(sc->ndis_dev, SYS_RES_MEMORY,
 	    &rid, 0UL, ~0UL, 0x1000, RF_ACTIVE);
-
 	if (sc->ndis_res_am == NULL) {
 		device_printf(sc->ndis_dev,
 		    "failed to allocate attribute memory\n");

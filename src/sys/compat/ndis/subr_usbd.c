@@ -484,7 +484,7 @@ usbd_func_getdesc(irp *ip)
 exit:
 	if (status != USB_ERR_NORMAL_COMPLETION) {
 		ctldesc->ucd_trans_buflen = 0;
-		return usbd_usb2urb(status);
+		return (usbd_usb2urb(status));
 	}
 	ctldesc->ucd_trans_buflen = actlen;
 	ip->irp_iostat.isb_info = actlen;
@@ -518,7 +518,7 @@ usbd_func_selconf(irp *ip)
 	conf = selconf->usc_conf;
 	if (conf == NULL) {
 		device_printf(dev, "select configuration is NULL\n");
-		return usbd_usb2urb(USB_ERR_NORMAL_COMPLETION);
+		return (usbd_usb2urb(USB_ERR_NORMAL_COMPLETION));
 	}
 
 	intf = &selconf->usc_intf;
@@ -529,7 +529,7 @@ usbd_func_selconf(irp *ip)
 			device_printf(dev,
 			    "setting alternate interface failed: %s\n",
 			    usbd_errstr(ret));
-			return usbd_usb2urb(ret);
+			return (usbd_usb2urb(ret));
 		}
 
 		for (j = 0; (ep = usb_endpoint_foreach(udev, ep)); j++) {
@@ -548,7 +548,7 @@ usbd_func_selconf(irp *ip)
 
 			ret = usbd_setup_endpoint(ip, intf->uii_intfnum, edesc);
 			if (ret != USB_ERR_NORMAL_COMPLETION)
-				return usbd_usb2urb(ret);
+				return (usbd_usb2urb(ret));
 
 			if (pipe->upi_type != UE_INTERRUPT)
 				continue;
@@ -733,7 +733,7 @@ usbd_func_vendorclass(irp *ip)
 		 */
 		error = usbd_setup_endpoint_default(ip, 0);
 		if (error != USB_ERR_NORMAL_COMPLETION)
-			return usbd_usb2urb(error);
+			return (usbd_usb2urb(error));
 		sc->ndisusb_status |= NDISUSB_STATUS_SETUP_EP;
 	}
 

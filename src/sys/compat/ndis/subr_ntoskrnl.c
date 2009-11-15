@@ -288,13 +288,11 @@ ntoskrnl_libinit(void)
 #else
 	    sizeof(kdpc_queue), 0);
 #endif
-
 	if (kq_queues == NULL)
 		return (ENOMEM);
 
 	wq_queues = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(kdpc_queue) * WORKITEM_THREADS, 0);
-
 	if (wq_queues == NULL)
 		return (ENOMEM);
 
@@ -443,6 +441,7 @@ ntoskrnl_memchr(void *buf, unsigned char ch, size_t len)
 				return (p - 1);
 		} while (--len != 0);
 	}
+
 	return (NULL);
 }
 
@@ -462,6 +461,7 @@ ntoskrnl_strstr(char *s, char *find)
 		} while (strncmp(s, find, len) != 0);
 		s--;
 	}
+
 	return ((char *)s);
 }
 
@@ -482,6 +482,7 @@ ntoskrnl_strncat(char *dst, char *src, size_t n)
 		} while (--n != 0);
 		*d = 0;
 	}
+
 	return (dst);
 }
 
@@ -578,7 +579,6 @@ RtlUnicodeStringToAnsiString(ansi_string *dest, unicode_string *src,
 		if (dest->as_maxlen < dest->as_len)
 			dest->as_len = dest->as_maxlen;
 	}
-
 	ntoskrnl_unicode_to_ascii(src->us_buf, dest->as_buf,
 	    dest->as_len * 2);
 
@@ -603,7 +603,6 @@ RtlAnsiStringToUnicodeString(unicode_string *dest, ansi_string *src,
 		if (dest->us_maxlen < dest->us_len)
 			dest->us_len = dest->us_maxlen;
 	}
-
 	ntoskrnl_ascii_to_unicode(src->as_buf, dest->us_buf,
 	    dest->us_len / 2);
 
@@ -689,7 +688,6 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	if (devextlen) {
 		dev->do_devext = ExAllocatePoolWithTag(NonPagedPool,
 		    devextlen, 0);
-
 		if (dev->do_devext == NULL) {
 			ExFreePool(dev);
 			return (STATUS_INSUFFICIENT_RESOURCES);
@@ -717,7 +715,6 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 
 	dev->do_devobj_ext = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(devobj_extension), 0);
-
 	if (dev->do_devobj_ext == NULL) {
 		if (dev->do_devext != NULL)
 			ExFreePool(dev->do_devext);
@@ -743,7 +740,6 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 		dev->do_nextdev = drv->dro_devobj;
 		drv->dro_devobj = dev;
 	}
-
 	*newdev = dev;
 
 	return (STATUS_SUCCESS);
@@ -779,13 +775,10 @@ IoDeleteDevice(device_object *dev)
 device_object *
 IoGetAttachedDevice(device_object *dev)
 {
-	device_object *d;
+	device_object *d = dev;
 
-	if (dev == NULL)
+	if (d == NULL)
 		return (NULL);
-
-	d = dev;
-
 	while (d->do_attacheddev != NULL)
 		d = d->do_attacheddev;
 
@@ -951,7 +944,6 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 	default:
 		break;
 	}
-
 	/*
 	 * Ideally, we should associate this IRP with the calling
 	 * thread here.
@@ -967,7 +959,6 @@ IoAllocateIrp(uint8_t stsize, uint8_t chargequota)
 	i = ExAllocatePoolWithTag(NonPagedPool, IoSizeOfIrp(stsize), 0);
 	if (i == NULL)
 		return (NULL);
-
 	IoInitializeIrp(i, IoSizeOfIrp(stsize), stsize);
 
 	return (i);
@@ -1048,6 +1039,7 @@ IoCancelIrp(irp *ip)
 	}
 	ip->irp_cancelirql = cancelirql;
 	MSCALL2(cfunc, IoGetCurrentIrpStackLocation(ip)->isl_devobj, ip);
+
 	return (uint8_t)IoSetCancelValue(ip, TRUE);
 }
 
@@ -1143,7 +1135,6 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 			IoCompleteRequest(masterirp, IO_NO_INCREMENT);
 		return;
 	}
-
 	/* With any luck, these conditions will never arise. */
 	if (ip->irp_flags & IRP_PAGING_IO) {
 		if (ip->irp_mdl != NULL)
@@ -1178,6 +1169,7 @@ KeAcquireInterruptSpinLock(kinterrupt *iobj)
 	uint8_t irql;
 
 	KeAcquireSpinLock(&ntoskrnl_intlock, &irql);
+
 	return (irql);
 }
 
@@ -1320,9 +1312,9 @@ ntoskrnl_is_signalled(nt_dispatch_header *obj, struct thread *td)
 			return (TRUE);
 		return (FALSE);
 	}
-
 	if (obj->dh_sigstate > 0)
 		return (TRUE);
+
 	return (FALSE);
 }
 
@@ -1361,10 +1353,9 @@ ntoskrnl_satisfy_wait(nt_dispatch_header *obj, struct thread *td)
 static void
 ntoskrnl_satisfy_multiple_waits(wait_block *wb)
 {
-	wait_block *cur;
+	wait_block *cur = wb;
 	struct thread *td;
 
-	cur = wb;
 	td = wb->wb_kthread;
 
 	do {
@@ -1481,7 +1472,7 @@ KeTickCount(void)
 
 	getmicrouptime(&tv);
 
-	return tvtohz(&tv);
+	return (tvtohz(&tv));
 }
 
 /*
@@ -1542,12 +1533,11 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	wait_block w;
 	struct thread *td = curthread;
 	struct timeval tv;
-	int error = 0;
+	nt_dispatch_header *obj = arg;
 	uint64_t curtime;
+	int error = 0;
 	wb_ext we;
-	nt_dispatch_header *obj;
 
-	obj = arg;
 	if (obj == NULL)
 		return (STATUS_INVALID_PARAMETER);
 
@@ -1630,7 +1620,6 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 		mtx_unlock(&ntoskrnl_dispatchlock);
 		return (STATUS_TIMEOUT);
 	}
-
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
 	return (STATUS_SUCCESS);
@@ -2221,10 +2210,8 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 		m = uma_zalloc(mdl_zone, M_NOWAIT | M_ZERO);
 		zone++;
 	}
-
 	if (m == NULL)
 		return (NULL);
-
 	MmInitializeMdl(m, vaddr, len);
 
 	/*
@@ -2343,6 +2330,7 @@ static void *
 MmMapLockedPages(mdl *buf, uint8_t accessmode)
 {
 	buf->mdl_flags |= MDL_MAPPED_TO_SYSTEM_VA;
+
 	return (MmGetMdlVirtualAddress(buf));
 }
 
@@ -2478,12 +2466,10 @@ ntoskrnl_finddev(device_t dev, uint64_t paddr, struct resource **res)
 static void
 ntoskrnl_workitem_thread(void *arg)
 {
-	kdpc_queue *kq;
+	kdpc_queue *kq = arg;
 	list_entry *l;
 	io_workitem *iw;
 	uint8_t irql;
-
-	kq = arg;
 
 	InitializeListHead(&kq->kq_disp);
 	kq->kq_td = curthread;
@@ -2601,11 +2587,10 @@ IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func, uint32_t qtype,
 static void
 ntoskrnl_workitem(device_object *dobj, void *arg)
 {
-	io_workitem *iw;
+	io_workitem *iw = arg;
 	work_queue_item *w;
 	work_item_func f;
 
-	iw = arg;
 	w = (work_queue_item *)dobj;
 	f = (work_item_func)w->wqi_func;
 	uma_zfree(iw_zone, iw);
@@ -2702,6 +2687,7 @@ RtlCompareMemory(const void *s1, const void *s2, size_t len)
 		if (m1[i] == m2[i])
 			total++;
 	}
+
 	return (total);
 }
 
@@ -2821,7 +2807,7 @@ atoi(const char *str)
 static long
 atol(const char *str)
 {
-	return strtol(str, (char **)NULL, 10);
+	return (strtol(str, (char **)NULL, 10));
 }
 
 static int
@@ -2831,6 +2817,7 @@ rand(void)
 
 	microtime(&tv);
 	srandom(tv.tv_usec);
+
 	return ((int)random());
 }
 
@@ -2845,6 +2832,7 @@ IoIsWdmVersionAvailable(uint8_t major, uint8_t minor)
 {
 	if (major == WDM_MAJOR && minor == WDM_MINOR_WINXP)
 		return (TRUE);
+
 	return (FALSE);
 }
 
@@ -3109,12 +3097,11 @@ IoWMIRegistrationControl(device_object *dobj, uint32_t action)
 static void
 ntoskrnl_thrfunc(void *arg)
 {
-	thread_context *thrctx;
+	thread_context *thrctx = arg;
 	uint32_t (*tfunc)(void *);
 	void *tctx;
 	uint32_t rval;
 
-	thrctx = arg;
 	tfunc = thrctx->tc_thrfunc;
 	tctx = thrctx->tc_thrctx;
 	free(thrctx, M_NDIS_NTOSKRNL);
@@ -3181,6 +3168,7 @@ PsTerminateSystemThread(ndis_status status)
 	ntoskrnl_kth--;
 
 	kproc_exit(0);
+
 	return (0);	/* notreached */
 }
 
@@ -3273,10 +3261,10 @@ ntoskrnl_timercall(void *arg)
 static int
 sysctl_show_timers(SYSCTL_HANDLER_ARGS)
 {
-	int ret;
+	int ret = 0;
 
-	ret = 0;
 	ntoskrnl_show_timers();
+
 	return (sysctl_handle_int(oidp, &ret, 0, req));
 }
 
@@ -3396,12 +3384,10 @@ KeInitializeTimerEx(ktimer *timer, uint32_t type)
 static void
 ntoskrnl_dpc_thread(void *arg)
 {
-	kdpc_queue *kq;
+	kdpc_queue *kq = arg;
 	kdpc *d;
 	list_entry *l;
 	uint8_t irql;
-
-	kq = arg;
 
 	InitializeListHead(&kq->kq_disp);
 	kq->kq_td = curthread;
@@ -3675,7 +3661,6 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 			    (tv.tv_sec * 1000000);
 		}
 	}
-
 	timer->k_header.dh_inserted = TRUE;
 	ntoskrnl_insert_timer(timer, tvtohz(&tv));
 #ifdef NTOSKRNL_DEBUG_TIMERS
@@ -3717,7 +3702,6 @@ KeCancelTimer(ktimer *timer)
 		ntoskrnl_timer_cancels++;
 #endif
 	}
-
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
 	return (pending);
@@ -3741,7 +3725,7 @@ KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 	KeSetTimer(&timer, *interval, NULL);
 	KeWaitForSingleObject(&timer, 0, 0, alertable, NULL);
 
-	return STATUS_SUCCESS;
+	return (STATUS_SUCCESS);
 }
 
 static uint64_t
@@ -3751,16 +3735,15 @@ KeQueryInterruptTime(void)
 	struct timeval tv;
 
 	getmicrouptime(&tv);
-
 	ticks = tvtohz(&tv);
 
-	return ticks * ((10000000 + hz - 1) / hz);
+	return (ticks * ((10000000 + hz - 1) / hz));
 }
 
 static struct thread *
 KeGetCurrentThread(void)
 {
-	return curthread;
+	return (curthread);
 }
 
 static int32_t
@@ -3769,7 +3752,7 @@ KeSetPriorityThread(struct thread *td, int32_t pri)
 	int32_t old;
 
 	if (td == NULL)
-		return LOW_REALTIME_PRIORITY;
+		return (LOW_REALTIME_PRIORITY);
 	if (td->td_priority <= PRI_MIN_KERN)
 		old = HIGH_PRIORITY;
 	else if (td->td_priority >= PRI_MAX_KERN)
@@ -3787,7 +3770,7 @@ KeSetPriorityThread(struct thread *td, int32_t pri)
 		sched_prio(td, PRI_MAX_KERN);
 	thread_unlock(td);
 
-	return old;
+	return (old);
 }
 
 static void
