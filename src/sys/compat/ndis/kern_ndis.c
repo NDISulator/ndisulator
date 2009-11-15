@@ -464,7 +464,7 @@ ndis_free_bufs(ndis_buffer *b0)
 	if (b0 == NULL)
 		return;
 
-	while(b0 != NULL) {
+	while (b0 != NULL) {
 		next = b0->mdl_next;
 		IoFreeMdl(b0);
 		b0 = next;

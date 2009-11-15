@@ -124,22 +124,21 @@ static struct list_entry ntoskrnl_intlist;
 static kspin_lock ntoskrnl_intlock;
 
 static uint8_t RtlEqualUnicodeString(unicode_string *,
-	unicode_string *, uint8_t);
+    unicode_string *, uint8_t);
 static void RtlCopyUnicodeString(unicode_string *, unicode_string *);
-static irp *IoBuildSynchronousFsdRequest(uint32_t, device_object *,
-	void *, uint32_t, uint64_t *, nt_kevent *, io_status_block *);
-static irp *IoBuildAsynchronousFsdRequest(uint32_t,
-	device_object *, void *, uint32_t, uint64_t *, io_status_block *);
+static irp *IoBuildSynchronousFsdRequest(uint32_t, device_object *, void *,
+    uint32_t, uint64_t *, nt_kevent *, io_status_block *);
+static irp *IoBuildAsynchronousFsdRequest(uint32_t, device_object *, void *,
+    uint32_t, uint64_t *, io_status_block *);
 static irp *IoBuildDeviceIoControlRequest(uint32_t, device_object *, void *,
-	uint32_t, void *, uint32_t, uint8_t, nt_kevent *, io_status_block *);
+    uint32_t, void *, uint32_t, uint8_t, nt_kevent *, io_status_block *);
 static irp *IoAllocateIrp(uint8_t, uint8_t);
 static void IoReuseIrp(irp *, uint32_t);
 static void IoFreeIrp(irp *);
 static void IoInitializeIrp(irp *, uint16_t, uint8_t);
 static irp *IoMakeAssociatedIrp(irp *, uint8_t);
-static uint32_t KeWaitForMultipleObjects(uint32_t,
-	nt_dispatch_header **, uint32_t, uint32_t, uint32_t, uint8_t,
-	int64_t *, wait_block *);
+static uint32_t KeWaitForMultipleObjects(uint32_t, nt_dispatch_header **,
+    uint32_t, uint32_t, uint32_t, uint8_t, int64_t *, wait_block *);
 static void ntoskrnl_waittest(nt_dispatch_header *, uint32_t);
 static void ntoskrnl_satisfy_wait(nt_dispatch_header *, struct thread *);
 static void ntoskrnl_satisfy_multiple_waits(wait_block *);
@@ -177,35 +176,35 @@ static uint64_t _aullshl(uint64_t, uint8_t);
 static slist_entry *ntoskrnl_pushsl(slist_header *, slist_entry *);
 static slist_entry *ntoskrnl_popsl(slist_header *);
 static void ExInitializePagedLookasideList(paged_lookaside_list *,
-	lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t,
-	uint32_t, uint16_t);
+    lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
+    uint16_t);
 static void ExDeletePagedLookasideList(paged_lookaside_list *);
 static void ExInitializeNPagedLookasideList(npaged_lookaside_list *,
-	lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t,
-	uint32_t, uint16_t);
+    lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
+    uint16_t);
 static void ExDeleteNPagedLookasideList(npaged_lookaside_list *);
-static slist_entry *ExInterlockedPushEntrySList(slist_header *,
-	slist_entry *, kspin_lock *);
+static slist_entry *ExInterlockedPushEntrySList(slist_header *, slist_entry *,
+    kspin_lock *);
 static slist_entry *ExInterlockedPopEntrySList(slist_header *, kspin_lock *);
 static uint32_t InterlockedIncrement(volatile uint32_t *);
 static uint32_t InterlockedDecrement(volatile uint32_t *);
 static void ExInterlockedAddLargeStatistic(uint64_t *, uint32_t);
 static void *MmAllocateContiguousMemory(uint32_t, uint64_t);
 static void *MmAllocateContiguousMemorySpecifyCache(uint32_t, uint64_t,
-	uint64_t, uint64_t, uint32_t);
+    uint64_t, uint64_t, uint32_t);
 static void MmFreeContiguousMemory(void *);
 static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t, uint32_t);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(mdl *, uint8_t);
 static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t, uint32_t, void *,
-	uint32_t, uint32_t);
+    uint32_t, uint32_t);
 static void MmUnmapLockedPages(void *, mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
 static void RtlZeroMemory(void *, size_t);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
 static ndis_status RtlUnicodeStringToInteger(unicode_string *, uint32_t,
-	uint32_t *);
+    uint32_t *);
 static int atoi (const char *);
 static long atol (const char *);
 static int rand(void);
@@ -215,21 +214,21 @@ static uint32_t KeTickCount(void);
 static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
 static void ntoskrnl_thrfunc(void *);
 static ndis_status PsCreateSystemThread(ndis_handle *, uint32_t, void *,
-	ndis_handle, void *, void *, void *);
+    ndis_handle, void *, void *, void *);
 static ndis_status PsTerminateSystemThread(ndis_status);
 static ndis_status IoGetDeviceObjectPointer(unicode_string *, uint32_t,
-	void *, device_object *);
-static ndis_status IoGetDeviceProperty(device_object *, uint32_t,
-	uint32_t, void *, uint32_t *);
+    void *, device_object *);
+static ndis_status IoGetDeviceProperty(device_object *, uint32_t, uint32_t,
+    void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
 static uint32_t KeReleaseMutex(kmutant *, uint8_t);
 static uint32_t KeReadStateMutex(kmutant *);
 static ndis_status ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
-	uint8_t, void **, void **);
+    uint8_t, void **, void **);
 static void ObfDereferenceObject(void *);
 static uint32_t ZwClose(ndis_handle);
 static uint32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
-	void *);
+    void *);
 static uint32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static uint32_t IoWMIRegistrationControl(device_object *, uint32_t);
 static void *ntoskrnl_memset(void *, int, size_t);
@@ -396,7 +395,7 @@ ntoskrnl_libfini(void)
 	uma_zdestroy(iw_zone);
 
 	mtx_lock_spin(&ntoskrnl_calllock);
-	while(!IsListEmpty(&ntoskrnl_calllist)) {
+	while (!IsListEmpty(&ntoskrnl_calllist)) {
 		l = RemoveHeadList(&ntoskrnl_calllist);
 		e = CONTAINING_RECORD(l, callout_entry, ce_list);
 		mtx_unlock_spin(&ntoskrnl_calllock);
@@ -894,7 +893,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 	sl->isl_parameters.isl_ioctl.isl_ibuflen = ilen;
 	sl->isl_parameters.isl_ioctl.isl_obuflen = olen;
 
-	switch(IO_METHOD(iocode)) {
+	switch (IO_METHOD(iocode)) {
 	case METHOD_BUFFERED:
 		if (ilen > olen)
 			buflen = ilen;
@@ -2007,7 +2006,7 @@ ExDeletePagedLookasideList(paged_lookaside_list *lookaside)
 	void (*freefunc)(void *);
 
 	freefunc = lookaside->nll_l.gl_freefunc;
-	while((buf = ntoskrnl_popsl(&lookaside->nll_l.gl_listhead)) != NULL)
+	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.gl_listhead)) != NULL)
 		MSCALL1(freefunc, buf);
 }
 
@@ -2049,7 +2048,7 @@ ExDeleteNPagedLookasideList(npaged_lookaside_list *lookaside)
 	void (*freefunc)(void *);
 
 	freefunc = lookaside->nll_l.gl_freefunc;
-	while((buf = ntoskrnl_popsl(&lookaside->nll_l.gl_listhead)) != NULL)
+	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.gl_listhead)) != NULL)
 		MSCALL1(freefunc, buf);
 }
 
@@ -2722,7 +2721,7 @@ RtlInitUnicodeString(unicode_string *dst, uint16_t *src)
 		u->us_buf = NULL;
 	} else {
 		i = 0;
-		while(src[i] != 0)
+		while (src[i] != 0)
 			i++;
 		u->us_buf = src;
 		u->us_len = u->us_maxlen = i * 2;
@@ -3276,7 +3275,7 @@ ntoskrnl_show_timers(void)
 
 	mtx_lock_spin(&ntoskrnl_calllock);
 	l = ntoskrnl_calllist.nle_flink;
-	while(l != &ntoskrnl_calllist) {
+	while (l != &ntoskrnl_calllist) {
 		i++;
 		l = l->nle_flink;
 	}

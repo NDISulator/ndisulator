@@ -91,7 +91,7 @@ update_lineno(const char *cp)
 					switch (yytext[i + 1]) {
 					case '\n':
 						i += 2;
-						while(isspace(yytext[i]))
+						while (isspace(yytext[i]))
 							i++;
 						break;
 					case '\"':

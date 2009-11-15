@@ -994,7 +994,7 @@ typedef struct irp irp;
 	do {								\
 		irp->irp_currentstackloc--;				\
 		irp->irp_tail.irp_overlay.irp_csl--;			\
-	} while(0)
+	} while (0)
 
 #define	IoSetCompletionRoutine(irp, func, ctx, ok, err, cancel)		\
 	do {								\
@@ -1006,7 +1006,7 @@ typedef struct irp irp;
 		if (ok) s->isl_ctl = SL_INVOKE_ON_SUCCESS;		\
 		if (err) s->isl_ctl |= SL_INVOKE_ON_ERROR;		\
 		if (cancel) s->isl_ctl |= SL_INVOKE_ON_CANCEL;		\
-	} while(0)
+	} while (0)
 
 #define	IoMarkIrpPending(irp)						\
 	IoGetCurrentIrpStackLocation(irp)->isl_ctl |= SL_PENDING_RETURNED
@@ -1020,13 +1020,13 @@ typedef struct irp irp;
 		dst = IoGetNextIrpStackLocation(irp);			\
 		bcopy((char *)src, (char *)dst,				\
 		    offsetof(io_stack_location, isl_completionfunc));	\
-	} while(0)
+	} while (0)
 
 #define	IoSkipCurrentIrpStackLocation(irp)				\
 	do {								\
 		(irp)->irp_currentstackloc++;				\
 		(irp)->irp_tail.irp_overlay.irp_csl++;			\
-	} while(0)
+	} while (0)
 
 #define	IoInitializeDpcRequest(dobj, dpcfunc)				\
 	KeInitializeDpc(&(dobj)->do_dpc, dpcfunc, dobj)

@@ -129,7 +129,7 @@ windrv_libfini(void)
 	struct drvdb_ent *d;
 
 	mtx_lock(&drvdb_mtx);
-	while(STAILQ_FIRST(&drvdb_head) != NULL) {
+	while (STAILQ_FIRST(&drvdb_head) != NULL) {
 		d = STAILQ_FIRST(&drvdb_head);
 		STAILQ_REMOVE_HEAD(&drvdb_head, link);
 		free(d, M_NDIS_WINDRV);
@@ -766,7 +766,7 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 int
 windrv_wrap(funcptr func, funcptr *wrap, int8_t argcnt, int ftype)
 {
-	switch(ftype) {
+	switch (ftype) {
 	case WINDRV_WRAP_FASTCALL:
 		return (windrv_wrap_fastcall(func, wrap, argcnt));
 	case WINDRV_WRAP_STDCALL:
