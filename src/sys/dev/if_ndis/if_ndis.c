@@ -1013,13 +1013,9 @@ ndis_detach(device_t dev)
 	driver_object *drv;
 
 	sc = device_get_softc(dev);
-	NDIS_LOCK(sc);
 	ifp = sc->ifp;
-	if (ifp != NULL)
-		ifp->if_flags &= ~IFF_UP;
 
 	if (device_is_attached(dev)) {
-		NDIS_UNLOCK(sc);
 		ndis_stop(sc);
 		if (ifp != NULL) {
 			if (sc->ndis_80211)
@@ -1027,8 +1023,7 @@ ndis_detach(device_t dev)
 			else
 				ether_ifdetach(ifp);
 		}
-	} else
-		NDIS_UNLOCK(sc);
+	}
 
 	if (sc->ndis_tickitem != NULL)
 		IoFreeWorkItem(sc->ndis_tickitem);
