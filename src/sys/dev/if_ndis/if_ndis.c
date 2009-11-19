@@ -1308,8 +1308,7 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
 	_IF_ENQUEUE(&sc->ndis_rxqueue, m);
 	KeReleaseSpinLockFromDpcLevel(&sc->ndis_rxlock);
 	IoQueueWorkItem(sc->ndis_inputitem,
-	    (io_workitem_func)ndis_inputtask_wrap,
-	    WORKQUEUE_CRITICAL, ifp);
+	    (io_workitem_func)ndis_inputtask_wrap, WORKQUEUE_CRITICAL, ifp);
 }
 
 /*
@@ -1513,8 +1512,7 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 	NDIS_UNLOCK(sc);
 
 	IoQueueWorkItem(sc->ndis_startitem,
-	    (io_workitem_func)ndis_starttask_wrap,
-	    WORKQUEUE_CRITICAL, ifp);
+	    (io_workitem_func)ndis_starttask_wrap, WORKQUEUE_CRITICAL, ifp);
 }
 
 static void
@@ -1781,7 +1779,6 @@ ndis_start(struct ifnet *ifp)
 
 		NdisAllocatePacket(&status,
 		    &sc->ndis_txarray[sc->ndis_txidx], sc->ndis_txpool);
-
 		if (status != NDIS_STATUS_SUCCESS)
 			break;
 
@@ -1792,8 +1789,7 @@ ndis_start(struct ifnet *ifp)
 		}
 
 		/*
-		 * Save pointer to original mbuf
-		 * so we can free it later.
+		 * Save pointer to original mbuf so we can free it later.
 		 */
 		p = sc->ndis_txarray[sc->ndis_txidx];
 		p->np_txidx = sc->ndis_txidx;
