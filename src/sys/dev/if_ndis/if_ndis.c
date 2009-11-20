@@ -715,13 +715,12 @@ ndis_attach(device_t dev)
 
 		ifp->if_ioctl = ndis_ioctl_80211;
 		ic->ic_ifp = ifp;
-		ic->ic_opmode = IEEE80211_M_STA;
-		ic->ic_phytype = IEEE80211_T_DS;
 		ic->ic_caps =
 			IEEE80211_C_8023ENCAP |
 			IEEE80211_C_STA |
 			IEEE80211_C_IBSS;
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
+
 		len = 0;
 		r = ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
 		    NULL, &len);
@@ -734,15 +733,12 @@ ndis_attach(device_t dev)
 			free(ntl, M_NDIS_DEV);
 			goto nonettypes;
 		}
-
 		for (i = 0; i < ntl->ntl_items; i++) {
 			mode = ndis_nettype_mode(ntl->ntl_type[i]);
 			if (mode) {
 				setbit(ic->ic_modecaps, mode);
 				setbit(&bands, mode);
-			} else
-				device_printf(dev, "Unknown nettype %d\n",
-				    ntl->ntl_type[i]);
+			}
 		}
 		free(ntl, M_NDIS_DEV);
 nonettypes:
@@ -2256,16 +2252,14 @@ static void
 ndis_set_infra(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	uint32_t arg;
-	int len, rval;
+	int len;
 
 	len = sizeof(arg);
 	if (vap->iv_opmode == IEEE80211_M_IBSS)
 		arg = NDIS_80211_NET_INFRA_IBSS;
 	else
 		arg = NDIS_80211_NET_INFRA_BSS;
-	rval = ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
-	if (rval)
-		device_printf(sc->ndis_dev, "set infra failed: %d\n", rval);
+	ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
 }
 
 static void
