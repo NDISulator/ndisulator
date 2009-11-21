@@ -235,8 +235,7 @@ static uint32_t IoWMIRegistrationControl(device_object *, uint32_t);
 static void *ntoskrnl_memset(void *, int, size_t);
 static void *ntoskrnl_memmove(void *, void *, size_t);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
-static char *ntoskrnl_strstr(char *, char *);
-static char *ntoskrnl_strncat(char *, char *, size_t);
+static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
 static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(funcptr);
@@ -445,29 +444,9 @@ ntoskrnl_memchr(void *buf, unsigned char ch, size_t len)
 	return (NULL);
 }
 
-static char *
-ntoskrnl_strstr(char *s, char *find)
-{
-	char c, sc;
-	size_t len;
-
-	if ((c = *find++) != 0) {
-		len = strlen(find);
-		do {
-			do {
-				if ((sc = *s++) == 0)
-					return (NULL);
-			} while (sc != c);
-		} while (strncmp(s, find, len) != 0);
-		s--;
-	}
-
-	return ((char *)s);
-}
-
 /* Taken from libc */
 static char *
-ntoskrnl_strncat(char *dst, char *src, size_t n)
+ntoskrnl_strncat(char *dst, const char *src, size_t n)
 {
 	if (n != 0) {
 		char *d = dst;
@@ -3814,7 +3793,7 @@ image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC(strlen, 0),
 	IMPORT_CFUNC_MAP(toupper, ntoskrnl_toupper, 0),
 	IMPORT_CFUNC_MAP(tolower, ntoskrnl_tolower, 0),
-	IMPORT_CFUNC_MAP(strstr, ntoskrnl_strstr, 0),
+	IMPORT_CFUNC(strstr, 0),
 	IMPORT_CFUNC_MAP(strncat, ntoskrnl_strncat, 0),
 	IMPORT_CFUNC_MAP(strchr, index, 0),
 	IMPORT_CFUNC_MAP(strrchr, rindex, 0),
