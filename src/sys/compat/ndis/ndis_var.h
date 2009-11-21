@@ -44,7 +44,7 @@ typedef struct ndis_miniport_block ndis_miniport_block;
 typedef struct ndis_mdriver_block ndis_mdriver_block;
 
 /* Base types */
-typedef uint32_t ndis_status;
+typedef int32_t ndis_status;
 typedef void *ndis_handle;
 typedef uint32_t ndis_oid;
 typedef uint32_t ndis_error_code;
@@ -896,30 +896,11 @@ struct ndis_parmlist_entry {
 };
 typedef struct ndis_parmlist_entry ndis_parmlist_entry;
 
-#ifdef notdef
-struct ndis_list_entry {
-	struct ndis_list_entry *nle_flink;
-	struct ndis_list_entry *nle_blink;
-};
-typedef struct ndis_list_entry ndis_list_entry;
-#endif
-
 struct ndis_bind_paths {
 	uint32_t		nbp_number;
 	ndis_unicode_string	nbp_paths[1];
 };
 typedef struct ndis_bind_paths ndis_bind_paths;
-
-#ifdef notdef
-struct dispatch_header {
-	uint8_t		dh_type;
-	uint8_t		dh_abs;
-	uint8_t		dh_size;
-	uint8_t		dh_inserted;
-	uint32_t	dh_sigstate;
-	list_entry	dh_waitlisthead;
-};
-#endif
 
 #define	dispatch_header nt_dispatch_header
 
@@ -1071,20 +1052,6 @@ typedef struct ndis_work_item ndis_work_item;
 		(w)->nwi_ctx = c;	\
 		(w)->nwi_func = f;	\
 	} while (0)
-
-#ifdef notdef
-struct ndis_buffer {
-	struct ndis_buffer	*nb_next;
-	uint16_t		nb_size;
-	uint16_t		nb_flags;
-	void			*nb_process;
-	void			*nb_mappedsystemva;
-	void			*nb_startva;
-	uint32_t		nb_bytecount;
-	uint32_t		nb_byteoffset;
-};
-typedef struct ndis_buffer ndis_buffer;
-#endif
 
 struct ndis_sc_element {
 	ndis_physaddr		nse_addr;
@@ -1688,7 +1655,7 @@ extern int ndis_destroy_dma(void *);
 extern int ndis_create_sysctls(void *);
 extern int ndis_add_sysctl(void *, char *, char *, char *, int);
 extern int ndis_flush_sysctls(void *);
-extern uint32_t NdisAddDevice(driver_object *, device_object *);
+extern int32_t NdisAddDevice(driver_object *, device_object *);
 extern void NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
     uint32_t);
 extern void NdisAllocatePacketPoolEx(ndis_status *, ndis_handle *, uint32_t,

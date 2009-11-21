@@ -239,7 +239,7 @@ static list_entry *NdisInterlockedInsertTailList(list_entry *, list_entry *,
     ndis_spin_lock *);
 static uint8_t NdisMSynchronizeWithInterrupt(ndis_miniport_interrupt *,
     void *, void *);
-static void NdisGetCurrentSystemTime(uint64_t *);
+static void NdisGetCurrentSystemTime(int64_t *);
 static void NdisGetSystemUpTime(uint32_t *);
 static void NdisInitializeString(unicode_string *, char *);
 static void NdisInitAnsiString(ansi_string *, char *);
@@ -2269,7 +2269,7 @@ NdisMSynchronizeWithInterrupt(ndis_miniport_interrupt *intr, void *syncfunc,
 }
 
 static void
-NdisGetCurrentSystemTime(uint64_t *tval)
+NdisGetCurrentSystemTime(int64_t *tval)
 {
 	ntoskrnl_time(tval);
 }

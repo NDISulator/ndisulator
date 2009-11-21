@@ -1290,9 +1290,9 @@ extern void ntoskrnl_time(uint64_t *);
 extern uint16_t ExQueryDepthSList(slist_header *);
 extern slist_entry *InterlockedPushEntrySList(slist_header *, slist_entry *);
 extern slist_entry *InterlockedPopEntrySList(slist_header *);
-extern uint32_t RtlUnicodeStringToAnsiString(ansi_string *, unicode_string *,
+extern int32_t RtlUnicodeStringToAnsiString(ansi_string *, unicode_string *,
     uint8_t);
-extern uint32_t RtlAnsiStringToUnicodeString(unicode_string *, ansi_string *,
+extern int32_t RtlAnsiStringToUnicodeString(unicode_string *, ansi_string *,
     uint8_t);
 extern void RtlInitAnsiString(ansi_string *, char *);
 extern void RtlInitUnicodeString(unicode_string *, uint16_t *);
@@ -1311,13 +1311,13 @@ extern uint8_t KeSetTimer(ktimer *, int64_t, kdpc *);
 extern uint8_t KeSetTimerEx(ktimer *, int64_t, uint32_t, kdpc *);
 extern uint8_t KeCancelTimer(ktimer *);
 extern uint8_t KeReadStateTimer(ktimer *);
-extern uint32_t KeWaitForSingleObject(void *, uint32_t, uint32_t, uint8_t,
+extern int32_t KeWaitForSingleObject(void *, uint32_t, uint32_t, uint8_t,
     int64_t *);
 extern void KeInitializeEvent(nt_kevent *, uint32_t, uint8_t);
 extern void KeClearEvent(nt_kevent *);
-extern uint32_t KeReadStateEvent(nt_kevent *);
-extern uint32_t KeSetEvent(nt_kevent *, uint32_t, uint8_t);
-extern uint32_t KeResetEvent(nt_kevent *);
+extern int32_t KeReadStateEvent(nt_kevent *);
+extern int32_t KeSetEvent(nt_kevent *, int32_t, uint8_t);
+extern int32_t KeResetEvent(nt_kevent *);
 #ifdef __i386__
 extern void KefAcquireSpinLockAtDpcLevel(kspin_lock *);
 extern void KefReleaseSpinLockFromDpcLevel(kspin_lock *);
@@ -1340,14 +1340,14 @@ extern void *MmMapIoSpace(uint64_t, uint32_t, uint32_t);
 extern void MmUnmapIoSpace(void *, size_t);
 extern void MmBuildMdlForNonPagedPool(mdl *);
 extern void IoDisconnectInterrupt(kinterrupt *);
-extern uint32_t IoAllocateDriverObjectExtension(driver_object *, void *,
+extern int32_t IoAllocateDriverObjectExtension(driver_object *, void *,
     uint32_t, void **);
 extern void *IoGetDriverObjectExtension(driver_object *, void *);
-extern uint32_t IoCreateDevice(driver_object *, uint32_t,
+extern int32_t IoCreateDevice(driver_object *, uint32_t,
     unicode_string *, uint32_t, uint32_t, uint8_t, device_object **);
 extern void IoDeleteDevice(device_object *);
 extern device_object *IoGetAttachedDevice(device_object *);
-extern uint32_t IofCallDriver(device_object *, irp *);
+extern int32_t IofCallDriver(device_object *, irp *);
 extern void IofCompleteRequest(irp *, uint8_t);
 extern void IoAcquireCancelSpinLock(uint8_t *);
 extern void IoReleaseCancelSpinLock(uint8_t);

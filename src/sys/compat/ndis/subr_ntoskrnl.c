@@ -137,7 +137,7 @@ static void IoReuseIrp(irp *, uint32_t);
 static void IoFreeIrp(irp *);
 static void IoInitializeIrp(irp *, uint16_t, uint8_t);
 static irp *IoMakeAssociatedIrp(irp *, uint8_t);
-static uint32_t KeWaitForMultipleObjects(uint32_t, nt_dispatch_header **,
+static int32_t KeWaitForMultipleObjects(uint32_t, nt_dispatch_header **,
     uint32_t, uint32_t, uint32_t, uint8_t, int64_t *, wait_block *);
 static void ntoskrnl_waittest(nt_dispatch_header *, uint32_t);
 static void ntoskrnl_satisfy_wait(nt_dispatch_header *, struct thread *);
@@ -210,7 +210,7 @@ static int atoi (const char *);
 static long atol (const char *);
 static int rand(void);
 static void srand(unsigned int);
-static void KeQuerySystemTime(uint64_t *);
+static void KeQuerySystemTime(int64_t *);
 static uint32_t KeTickCount(void);
 static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
 static void ntoskrnl_thrfunc(void *);
@@ -222,18 +222,17 @@ static ndis_status IoGetDeviceObjectPointer(unicode_string *, uint32_t,
 static ndis_status IoGetDeviceProperty(device_object *, uint32_t, uint32_t,
     void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
-static uint32_t KeReleaseMutex(kmutant *, uint8_t);
-static uint32_t KeReadStateMutex(kmutant *);
+static int32_t KeReleaseMutex(kmutant *, uint8_t);
+static int32_t KeReadStateMutex(kmutant *);
 static ndis_status ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
     uint8_t, void **, void **);
 static void ObfDereferenceObject(void *);
-static uint32_t ZwClose(ndis_handle);
-static uint32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
+static int32_t ZwClose(ndis_handle);
+static int32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
     void *);
-static uint32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
+static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static uint32_t IoWMIRegistrationControl(device_object *, uint32_t);
 static void *ntoskrnl_memset(void *, int, size_t);
-static void *ntoskrnl_memmove(void *, void *, size_t);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
@@ -422,14 +421,6 @@ ntoskrnl_memset(void *buf, int ch, size_t size)
 }
 
 static void *
-ntoskrnl_memmove(void *src, void *dst, size_t size)
-{
-	bcopy(src, dst, size);
-
-	return (dst);
-}
-
-static void *
 ntoskrnl_memchr(void *buf, unsigned char ch, size_t len)
 {
 	if (len != 0) {
@@ -536,7 +527,7 @@ ntoskrnl_unicode_to_ascii(uint16_t *unicode, char *ascii, int len)
 	}
 }
 
-uint32_t
+int32_t
 RtlUnicodeStringToAnsiString(ansi_string *dest, unicode_string *src,
     uint8_t allocate)
 {
@@ -564,7 +555,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dest, unicode_string *src,
 	return (STATUS_SUCCESS);
 }
 
-uint32_t
+int32_t
 RtlAnsiStringToUnicodeString(unicode_string *dest, ansi_string *src,
     uint8_t allocate)
 {
@@ -610,7 +601,7 @@ ExFreePool(void *buf)
 	free(buf, M_NDIS_NTOSKRNL);
 }
 
-uint32_t
+int32_t
 IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
     uint32_t extlen, void **ext)
 {
@@ -654,7 +645,7 @@ IoGetDriverObjectExtension(driver_object *drv, void *clid)
 }
 
 
-uint32_t
+int32_t
 IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
     uint32_t devtype, uint32_t devchars, uint8_t exclusive,
     device_object **newdev)
@@ -737,10 +728,8 @@ IoDeleteDevice(device_object *dev)
 
 	if (dev == NULL)
 		return;
-
 	if (dev->do_devobj_ext != NULL)
 		ExFreePool(dev->do_devobj_ext);
-
 	if (dev->do_devext != NULL)
 		ExFreePool(dev->do_devext);
 
@@ -1028,12 +1017,12 @@ IoCancelIrp(irp *ip)
 	return (uint8_t)IoSetCancelValue(ip, TRUE);
 }
 
-uint32_t
+int32_t
 IofCallDriver(device_object *dobj, irp *ip)
 {
 	driver_object *drvobj;
 	io_stack_location *sl;
-	uint32_t status;
+	int32_t status;
 	driver_dispatch disp;
 
 	drvobj = dobj->do_drvobj;
@@ -1055,7 +1044,7 @@ IofCallDriver(device_object *dobj, irp *ip)
 void
 IofCompleteRequest(irp *ip, uint8_t prioboost)
 {
-	uint32_t status;
+	int32_t status;
 	device_object *dobj;
 	io_stack_location *sl;
 	completion_func cf;
@@ -1445,7 +1434,7 @@ ntoskrnl_time(uint64_t *tval)
 }
 
 static void
-KeQuerySystemTime(uint64_t *current_time)
+KeQuerySystemTime(int64_t *current_time)
 {
 	ntoskrnl_time(current_time);
 }
@@ -1511,7 +1500,7 @@ KeTickCount(void)
  * is auto-clearing, which means we automatically set the event back to
  * the non-signalled state once the wakeup is done.
  */
-uint32_t
+int32_t
 KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
     uint8_t alertable, int64_t *duetime)
 {
@@ -1614,7 +1603,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 */
 }
 
-static uint32_t
+static int32_t
 KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
     uint32_t wtype, uint32_t reason, uint32_t mode, uint8_t alertable,
     int64_t *duetime, wait_block *wb_array)
@@ -1627,7 +1616,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 	int i, wcnt = 0, error = 0;
 	uint64_t curtime;
 	struct timespec t1, t2;
-	uint32_t status = STATUS_SUCCESS;
+	ndis_status status = STATUS_SUCCESS;
 	wb_ext we;
 
 	if (cnt > MAX_WAIT_OBJECTS)
@@ -2863,10 +2852,10 @@ KeInitializeMutex(kmutant *kmutex, uint32_t level)
 	kmutex->km_ownerthread = NULL;
 }
 
-static uint32_t
+static int32_t
 KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
 {
-	uint32_t prevstate;
+	int32_t prevstate;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 	prevstate = kmutex->km_header.dh_sigstate;
@@ -2888,7 +2877,7 @@ KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
 	return (prevstate);
 }
 
-static uint32_t
+static int32_t
 KeReadStateMutex(kmutant *kmutex)
 {
 	return (kmutex->km_header.dh_sigstate);
@@ -2906,10 +2895,10 @@ KeInitializeEvent(nt_kevent *kevent, uint32_t type, uint8_t state)
 	kevent->k_header.dh_size = sizeof(nt_kevent) / sizeof(uint32_t);
 }
 
-uint32_t
+int32_t
 KeResetEvent(nt_kevent *kevent)
 {
-	uint32_t prevstate;
+	int32_t prevstate;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 	prevstate = kevent->k_header.dh_sigstate;
@@ -2919,10 +2908,10 @@ KeResetEvent(nt_kevent *kevent)
 	return (prevstate);
 }
 
-uint32_t
-KeSetEvent(nt_kevent *kevent, uint32_t increment, uint8_t kwait)
+int32_t
+KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 {
-	uint32_t prevstate;
+	int32_t prevstate;
 	wait_block *w;
 	nt_dispatch_header *dh;
 	struct thread *td;
@@ -2978,7 +2967,7 @@ KeClearEvent(nt_kevent *kevent)
 	kevent->k_header.dh_sigstate = FALSE;
 }
 
-uint32_t
+int32_t
 KeReadStateEvent(nt_kevent *kevent)
 {
 	return (kevent->k_header.dh_sigstate);
@@ -3049,20 +3038,20 @@ ObfDereferenceObject(void *object)
 	free(nr, M_NDIS_NTOSKRNL);
 }
 
-static uint32_t
+static int32_t
 ZwClose(ndis_handle handle)
 {
 	return (STATUS_SUCCESS);
 }
 
-static uint32_t
+static int32_t
 WmiQueryTraceInformation(uint32_t traceclass, void *traceinfo,
     uint32_t infolen, uint32_t reqlen, void *buf)
 {
 	return (STATUS_NOT_FOUND);
 }
 
-static uint32_t
+static int32_t
 WmiTraceMessage(uint64_t loghandle, uint32_t messageflags,
     void *guid, uint16_t messagenum, ...)
 {
@@ -3798,7 +3787,7 @@ image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC_MAP(strchr, index, 0),
 	IMPORT_CFUNC_MAP(strrchr, rindex, 0),
 	IMPORT_CFUNC(memcpy, 0),
-	IMPORT_CFUNC_MAP(memmove, ntoskrnl_memmove, 0),
+	IMPORT_CFUNC(memmove, 0),
 	IMPORT_CFUNC_MAP(memset, ntoskrnl_memset, 0),
 	IMPORT_CFUNC_MAP(memchr, ntoskrnl_memchr, 0),
 	IMPORT_SFUNC(IoAllocateDriverObjectExtension, 4),

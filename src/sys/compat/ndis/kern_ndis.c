@@ -226,8 +226,8 @@ ndis_setdone_func(ndis_handle adapter, ndis_status status)
 	ndis_miniport_block *block;
 
 	block = adapter;
-
 	block->nmb_setstat = status;
+
 	KeSetEvent(&block->nmb_setevent, IO_NO_INCREMENT, FALSE);
 }
 
@@ -237,8 +237,8 @@ ndis_getdone_func(ndis_handle adapter, ndis_status status)
 	ndis_miniport_block *block;
 
 	block = adapter;
-
 	block->nmb_getstat = status;
+
 	KeSetEvent(&block->nmb_getevent, IO_NO_INCREMENT, FALSE);
 }
 
@@ -408,7 +408,6 @@ ndis_return(device_object *dobj, void *arg)
 
 	p = arg;
 	adapter = block->nmb_miniportadapterctx;
-
 	if (adapter == NULL)
 		return;
 
@@ -1176,13 +1175,13 @@ ndis_get_info(void *arg, ndis_oid oid, void *buf, int *buflen)
 	return (0);
 }
 
-uint32_t
+int32_t
 NdisAddDevice(driver_object *drv, device_object *pdo)
 {
 	device_object *fdo;
 	ndis_miniport_block *block;
 	struct ndis_softc *sc;
-	uint32_t status;
+	int32_t status;
 	int error;
 
 	sc = device_get_softc(pdo->do_devext);
