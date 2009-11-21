@@ -93,16 +93,14 @@ extern const char *__progname;
 static
 int insert_padding(void **imgbase, int *imglen)
 {
-	image_section_header	*sect_hdr;
-	image_dos_header	*dos_hdr;
-	image_nt_header		*nt_hdr;
-	image_optional_header	opt_hdr;
-	int			i = 0, sections, curlen = 0;
-	int			offaccum = 0, oldraddr, oldrlen;
-	uint8_t			*newimg, *tmp;
+	image_section_header *sect_hdr;
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
+	image_optional_header opt_hdr;
+	int i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
+	uint8_t *newimg, *tmp;
 
 	newimg = malloc(*imglen);
-
 	if (newimg == NULL)
 		return (ENOMEM);
 
@@ -268,13 +266,12 @@ firmcvt(char *firmfile)
 int
 main(int argc, char *argv[])
 {
-	FILE		*fp, *outfp;
-	int		i, bin = 0, n, fsize, cnt, ch;
-	unsigned char	*ptr;
-	char		*inffile = NULL, *sysfile = NULL;
-	char		*outfile = NULL, *firmfile = NULL;
-	char		*dname = NULL;
-	void		*img;
+	FILE *fp, *outfp;
+	int i, bin = 0, n, fsize, cnt, ch;
+	unsigned char *ptr;
+	char *inffile = NULL, *sysfile = NULL, *outfile = NULL;
+	char *firmfile = NULL, *dname = NULL;
+	void *img;
 
 	while ((ch = getopt(argc, argv, "i:s:o:n:f:O")) != -1) {
 		switch (ch) {

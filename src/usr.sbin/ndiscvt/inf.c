@@ -303,7 +303,7 @@ nextmanf:
 
 	if (first == 1) {
 		/* Emit start of PCI device table */
-		fprintf (ofp, "#define NDIS_PCI_DEV_TABLE");
+		fprintf(ofp, "#define NDIS_PCI_DEV_TABLE");
 		first = 0;
 	}
 retry:
@@ -321,7 +321,7 @@ retry:
 			else
 				continue;
 			/* Emit device description */
-			fprintf (ofp, "\t\\\n\t\"%s\" },", dev->vals[0]);
+			fprintf(ofp, "\t\\\n\t\"%s\" },", dev->vals[0]);
 			found++;
 		}
 	}
@@ -384,7 +384,7 @@ nextmanf:
 
 	if (first == 1) {
 		/* Emit start of PCMCIA device table */
-		fprintf (ofp, "#define NDIS_PCMCIA_DEV_TABLE");
+		fprintf(ofp, "#define NDIS_PCMCIA_DEV_TABLE");
 		first = 0;
 	}
 retry:
@@ -402,7 +402,7 @@ retry:
 			else
 				continue;
 			/* Emit device description */
-			fprintf (ofp, "\t\\\n\t\"%s\" },", dev->vals[0]);
+			fprintf(ofp, "\t\\\n\t\"%s\" },", dev->vals[0]);
 			found++;
 		}
 	}
@@ -465,7 +465,7 @@ nextmanf:
 
 	if (first == 1) {
 		/* Emit start of USB device table */
-		fprintf (ofp, "#define NDIS_USB_DEV_TABLE");
+		fprintf(ofp, "#define NDIS_USB_DEV_TABLE");
 		first = 0;
 	}
 retry:
@@ -483,7 +483,7 @@ retry:
 			else
 				continue;
 			/* Emit device description */
-			fprintf (ofp, "\t\\\n\t\"%s\" },", dev->vals[0]);
+			fprintf(ofp, "\t\\\n\t\"%s\" },", dev->vals[0]);
 			found++;
 		}
 	}
@@ -682,7 +682,7 @@ dump_regvals(void)
 		is_winnt++;
 
 	/* Emit start of block */
-	fprintf (ofp, "ndis_cfg ndis_regvals[] = {");
+	fprintf(ofp, "ndis_cfg ndis_regvals[] = {");
 
 	/* Find manufacturer name */
 	manf = find_assign("Manufacturer", NULL);
