@@ -175,6 +175,7 @@ static uint64_t _aullshr(uint64_t, uint8_t);
 static uint64_t _aullshl(uint64_t, uint8_t);
 static slist_entry *ntoskrnl_pushsl(slist_header *, slist_entry *);
 static slist_entry *ntoskrnl_popsl(slist_header *);
+static void ExFreePoolWithTag(void *, uint32_t);
 static void ExInitializePagedLookasideList(paged_lookaside_list *,
     lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
     uint16_t);
@@ -616,6 +617,12 @@ ExAllocatePoolWithTag(uint32_t pooltype, size_t len, uint32_t tag)
 	buf = malloc(len, M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 
 	return (buf);
+}
+
+static void
+ExFreePoolWithTag(void *buf, uint32_t tag)
+{
+	ExFreePool(buf);
 }
 
 void
@@ -3876,6 +3883,7 @@ image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_FFUNC(ExInterlockedPopEntrySList, 2),
 	IMPORT_FFUNC(ExInterlockedPushEntrySList, 3),
 	IMPORT_SFUNC(ExAllocatePoolWithTag, 3),
+	IMPORT_SFUNC(ExFreePoolWithTag, 2),
 	IMPORT_SFUNC(ExFreePool, 1),
 #ifdef __i386__
 	IMPORT_FFUNC(KefAcquireSpinLockAtDpcLevel, 1),
