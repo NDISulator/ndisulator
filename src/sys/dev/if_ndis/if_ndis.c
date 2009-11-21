@@ -2475,7 +2475,7 @@ ndis_getstate_80211(struct ndis_softc *sc)
 	struct ieee80211_node *ni;
 	struct ifnet *ifp;
 	ndis_80211_config config;
-	ndis_80211_macaddr macaddr;
+	ndis_80211_macaddr bssid;
 	ndis_80211_ssid ssid;
 	int chanflag, rval, len, i = 0;
 	uint32_t arg;
@@ -2486,11 +2486,11 @@ ndis_getstate_80211(struct ndis_softc *sc)
 	ni = vap->iv_bss;
 
 	/* Get BSSID */
-	len = sizeof(macaddr);
-	rval = ndis_get_info(sc, OID_802_11_BSSID, &macaddr, &len);
+	len = sizeof(bssid);
+	rval = ndis_get_info(sc, OID_802_11_BSSID, &bssid, &len);
 	if (rval != 0)
 		return;
-	IEEE80211_ADDR_COPY(ni->ni_bssid, macaddr);
+	IEEE80211_ADDR_COPY(ni->ni_bssid, bssid);
 
 	/* Get SSID */
 	len = sizeof(ssid);
