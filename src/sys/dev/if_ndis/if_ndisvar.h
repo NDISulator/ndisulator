@@ -95,7 +95,6 @@ TAILQ_HEAD(nch, ndis_cfglist);
 #define NDIS_INC(x)		\
 	(x)->ndis_txidx = ((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
 
-
 #define NDIS_EVENTS 4
 #define NDIS_EVTINC(x)	(x) = ((x) + 1) % NDIS_EVENTS
 
@@ -121,7 +120,7 @@ struct ndis_vap {
 #define	NDISUSB_TX_TIMEOUT			10000
 struct ndisusb_xfer;
 struct ndisusb_ep {
-	struct usb_xfer	*ne_xfer[1];
+	struct usb_xfer		*ne_xfer[1];
 	list_entry		ne_active;
 	list_entry		ne_pending;
 	kspin_lock		ne_lock;
@@ -176,7 +175,6 @@ struct ndis_softc {
 	struct mtx		ndis_mtx;
 	uint8_t			ndis_irql;
 	device_t		ndis_dev;
-	int			ndis_unit;
 	ndis_miniport_block	*ndis_block;
 	ndis_miniport_characteristics	*ndis_chars;
 	interface_type		ndis_type;
@@ -192,12 +190,11 @@ struct ndis_softc {
 	int			ndis_sc;
 	ndis_cfg		*ndis_regvals;
 	struct nch		ndis_cfglist_head;
-	int			ndis_80211;
-	int			ndis_link;
-	uint32_t		ndis_sts;
+	uint8_t			ndis_80211;
+	uint8_t			ndis_link;
+	int32_t			ndis_sts;
 	uint32_t		ndis_filter;
 	int			ndis_if_flags;
-	int			ndis_skip;
 
 	int			ndis_devidx;
 	interface_type		ndis_iftype;
