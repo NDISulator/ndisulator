@@ -1670,7 +1670,8 @@ ndis_ticktask(device_object *d, void *xsc)
 		NDIS_UNLOCK(sc);
 		if (vap != NULL)
 			if (vap->iv_roaming != IEEE80211_ROAMING_MANUAL &&
-			    vap->iv_state == IEEE80211_S_ASSOC)
+			    (vap->iv_state == IEEE80211_S_AUTH ||
+			     vap->iv_state == IEEE80211_S_ASSOC))
 				ieee80211_new_state(vap, IEEE80211_S_SCAN, 1);
 		NDIS_LOCK(sc);
 	}
