@@ -3030,7 +3030,6 @@ ndis_scan(void *arg)
 	ic = sc->ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
-	ndis_scan_results(sc);
 	ieee80211_scan_done(vap);
 }
 
@@ -3137,8 +3136,7 @@ done:
 static void
 ndis_scan_start(struct ieee80211com *ic)
 {
-	struct ifnet *ifp = ic->ic_ifp;
-	struct ndis_softc *sc = ifp->if_softc;
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
 	int error, len;
 
@@ -3176,5 +3174,7 @@ ndis_scan_mindwell(struct ieee80211_scan_state *ss)
 static void
 ndis_scan_end(struct ieee80211com *ic)
 {
-	/* ignore */
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
+
+	ndis_scan_results(sc);
 }
