@@ -354,8 +354,7 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
 
 	TAILQ_INSERT_TAIL(&sc->ndis_cfglist_head, cfg, link);
 
-	cfg->ndis_oid =
-	SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
+	cfg->ndis_oid = SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
 	    SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
 	    OID_AUTO, cfg->ndis_cfg.nc_cfgkey, flag,
 	    cfg->ndis_cfg.nc_val, sizeof(cfg->ndis_cfg.nc_val),

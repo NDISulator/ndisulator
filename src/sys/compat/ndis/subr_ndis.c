@@ -1397,7 +1397,6 @@ NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
 
 	if (adapter == NULL)
 		return (NDIS_STATUS_FAILURE);
-
 	block = adapter;
 
 	iw = IoAllocateWorkItem(block->nmb_deviceobj);
@@ -2811,7 +2810,6 @@ NdisMRegisterDevice(ndis_handle handle, unicode_string *devname,
 
 	status = IoCreateDevice(handle, 0, devname,
 	    FILE_DEVICE_UNKNOWN, 0, FALSE, &dobj);
-
 	if (status == STATUS_SUCCESS) {
 		*devobj = dobj;
 		*devhandle = dobj;
