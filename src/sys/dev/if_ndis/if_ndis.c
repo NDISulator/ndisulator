@@ -2998,7 +2998,6 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 			ndis_set_infra(sc, vap);
 		if (vap->iv_opmode == IEEE80211_M_STA)
 			ndis_set_ssid(sc, vap, 1);
-	case IEEE80211_S_INIT:
 		break;
 	case IEEE80211_S_RUN:
 		if (vap->iv_opmode == IEEE80211_M_IBSS) {
@@ -3144,7 +3143,6 @@ ndis_scan_start(struct ieee80211com *ic)
 	len = 0;
 	error = ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len);
 	if (error) {
-		DPRINTF(("%s: scan command failed\n", __func__));
 		ieee80211_cancel_scan(vap);
 		return;
 	}
