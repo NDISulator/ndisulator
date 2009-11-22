@@ -1659,7 +1659,8 @@ ndis_ticktask(device_object *d, void *xsc)
 		sc->ndis_link = 0;
 		NDIS_UNLOCK(sc);
 		if (vap != NULL)
-			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
+			if (vap->iv_roaming != IEEE80211_ROAMING_MANUAL)
+				ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
 		NDIS_LOCK(sc);
 		if_link_state_change(sc->ifp, LINK_STATE_DOWN);
 	}
@@ -1668,7 +1669,8 @@ ndis_ticktask(device_object *d, void *xsc)
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_DISCONNECT) {
 		NDIS_UNLOCK(sc);
 		if (vap != NULL)
-			if (vap->iv_state == IEEE80211_S_ASSOC)
+			if (vap->iv_roaming != IEEE80211_ROAMING_MANUAL &&
+			    vap->iv_state == IEEE80211_S_ASSOC)
 				ieee80211_new_state(vap, IEEE80211_S_SCAN, 1);
 		NDIS_LOCK(sc);
 	}
