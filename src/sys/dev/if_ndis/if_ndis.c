@@ -985,9 +985,7 @@ static void
 ndis_vap_delete(struct ieee80211vap *vap)
 {
 	struct ndis_vap *nvp = NDIS_VAP(vap);
-	struct ieee80211com *ic = vap->iv_ic;
-	struct ifnet *ifp = ic->ic_ifp;
-	struct ndis_softc *sc = ifp->if_softc;
+	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
 
 	ndis_stop(sc);
 	ieee80211_vap_detach(vap);

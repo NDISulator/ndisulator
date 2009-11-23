@@ -219,8 +219,8 @@ struct ndis_softc {
 
 	int			(*ndis_newstate)(struct ieee80211com *,
 				    enum ieee80211_state, int);
-	int			ndis_tx_timer;
-	int			ndis_hang_timer;
+	uint8_t			ndis_tx_timer;
+	uint32_t		ndis_hang_timer;
 
 	struct usb_device	*ndisusb_dev;
 	struct mtx		ndisusb_mtx;
@@ -237,14 +237,13 @@ struct ndis_softc {
 	list_entry		ndisusb_tasklist;
 	kspin_lock		ndisusb_tasklock;
 	int			ndisusb_status;
-#define NDISUSB_STATUS_DETACH	0x1
+#define	NDISUSB_STATUS_DETACH	0x1
 #define	NDISUSB_STATUS_SETUP_EP	0x2
 };
 
-#define	NDIS_LOCK(_sc)		mtx_lock(&(_sc)->ndis_mtx)
-#define	NDIS_UNLOCK(_sc)	mtx_unlock(&(_sc)->ndis_mtx)
+#define	NDIS_LOCK(_sc)			mtx_lock(&(_sc)->ndis_mtx)
+#define	NDIS_UNLOCK(_sc)		mtx_unlock(&(_sc)->ndis_mtx)
 #define	NDIS_LOCK_ASSERT(_sc, t)	mtx_assert(&(_sc)->ndis_mtx, t)
-#define	NDISUSB_LOCK(_sc)	mtx_lock(&(_sc)->ndisusb_mtx)
-#define	NDISUSB_UNLOCK(_sc)	mtx_unlock(&(_sc)->ndisusb_mtx)
+#define	NDISUSB_LOCK(_sc)		mtx_lock(&(_sc)->ndisusb_mtx)
+#define	NDISUSB_UNLOCK(_sc)		mtx_unlock(&(_sc)->ndisusb_mtx)
 #define	NDISUSB_LOCK_ASSERT(_sc, t)	mtx_assert(&(_sc)->ndisusb_mtx, t)
-
