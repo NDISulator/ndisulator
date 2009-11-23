@@ -1659,8 +1659,7 @@ ndis_ticktask(device_object *d, void *xsc)
 		sc->ndis_link = 0;
 		NDIS_UNLOCK(sc);
 		if (vap != NULL)
-			if (vap->iv_roaming != IEEE80211_ROAMING_MANUAL)
-				ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
+			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
 		NDIS_LOCK(sc);
 		if_link_state_change(sc->ifp, LINK_STATE_DOWN);
 	}
