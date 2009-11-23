@@ -2108,8 +2108,6 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 	i = sizeof(arg);
 	if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i))
 		return (ENOTSUP);
-	i = sizeof(arg);
-	ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i);
 
 	/* Now configure the desired ciphers. */
 
