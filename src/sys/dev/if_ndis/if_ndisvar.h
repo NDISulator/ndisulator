@@ -36,40 +36,39 @@
 #define NDIS_NODENAME_LEN	32
 
 /* For setting/getting OIDs from userspace. */
-
 struct ndis_oid_data {
-	uint32_t		oid;
-	uint32_t		len;
+	uint32_t	oid;
+	uint32_t	len;
 #ifdef notdef
-	uint8_t			data[1];
+	uint8_t		data[1];
 #endif
 };
 
 struct ndis_pci_type {
-	uint16_t		ndis_vid;
-	uint16_t		ndis_did;
-	uint32_t		ndis_subsys;
-	char			*ndis_name;
+	uint16_t	ndis_vid;
+	uint16_t	ndis_did;
+	uint32_t	ndis_subsys;
+	char		*ndis_name;
 };
 
 struct ndis_pccard_type {
-	const char		*ndis_vid;
-	const char		*ndis_did;
-	char			*ndis_name;
+	const char	*ndis_vid;
+	const char	*ndis_did;
+	char		*ndis_name;
 };
 
 struct ndis_usb_type {
-	uint16_t		ndis_vid;
-	uint16_t		ndis_did;
-	char			*ndis_name;
+	uint16_t	ndis_vid;
+	uint16_t	ndis_did;
+	char		*ndis_name;
 };
 
 struct ndis_shmem {
-	list_entry		ndis_list;
-	bus_dma_tag_t		ndis_stag;
-	bus_dmamap_t		ndis_smap;
-	void			*ndis_saddr;
-	ndis_physaddr		ndis_paddr;
+	list_entry	ndis_list;
+	bus_dma_tag_t	ndis_stag;
+	bus_dmamap_t	ndis_smap;
+	void		*ndis_saddr;
+	ndis_physaddr	ndis_paddr;
 };
 
 struct ndis_cfglist {
@@ -89,26 +88,24 @@ struct ndis_ie {
 
 TAILQ_HEAD(nch, ndis_cfglist);
 
-#define NDIS_INITIALIZED(sc)	(sc->ndis_block->nmb_devicectx != NULL)
+#define	NDIS_INITIALIZED(sc)	(sc->ndis_block->nmb_devicectx != NULL)
 
-#define NDIS_TXPKTS 64
-#define NDIS_INC(x)		\
+#define	NDIS_TXPKTS	64
+#define	NDIS_INC(x)		\
 	(x)->ndis_txidx = ((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
 
-#define NDIS_EVENTS 4
-#define NDIS_EVTINC(x)	(x) = ((x) + 1) % NDIS_EVENTS
+#define	NDIS_EVENTS	4
+#define	NDIS_EVTINC(x)	(x) = ((x) + 1) % NDIS_EVENTS
 
 struct ndis_evt {
-	uint32_t		ne_sts;
-	uint32_t		ne_len;
-	char			*ne_buf;
+	uint32_t	ne_sts;
+	uint32_t	ne_len;
+	char		*ne_buf;
 };
 
 struct ndis_vap {
 	struct ieee80211vap	vap;
-
-	int			(*newstate)(struct ieee80211vap *,
-				    enum ieee80211_state, int);
+	int	(*newstate)(struct ieee80211vap *, enum ieee80211_state, int);
 };
 #define	NDIS_VAP(vap)	((struct ndis_vap *)(vap))
 

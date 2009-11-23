@@ -74,26 +74,26 @@ static device_attach_t ndisusb_attach;
 static device_detach_t ndisusb_detach;
 static bus_get_resource_list_t ndis_get_resource_list;
 
-extern int ndis_attach		(device_t);
-extern int ndis_detach		(device_t);
-extern int ndis_resume		(device_t);
-extern int ndis_shutdown	(device_t);
-extern int ndis_suspend		(device_t);
-extern int ndisdrv_modevent	(module_t, int, void *);
+extern int ndis_attach(device_t);
+extern int ndis_detach(device_t);
+extern int ndis_resume(device_t);
+extern int ndis_shutdown(device_t);
+extern int ndis_suspend(device_t);
+extern int ndisdrv_modevent(module_t, int, void *);
 
 extern unsigned char drv_data[];
 
 static device_method_t ndis_methods[] = {
 	/* Device interface */
-	DEVMETHOD(device_probe,		ndisusb_match),
-	DEVMETHOD(device_attach,	ndisusb_attach),
-	DEVMETHOD(device_detach,	ndisusb_detach),
-	DEVMETHOD(device_shutdown,	ndis_shutdown),
+	DEVMETHOD(device_probe,			ndisusb_match),
+	DEVMETHOD(device_attach,		ndisusb_attach),
+	DEVMETHOD(device_detach,		ndisusb_detach),
+	DEVMETHOD(device_shutdown,		ndis_shutdown),
 
 	/* Bus interface */
-	DEVMETHOD(bus_print_child,	bus_generic_print_child),
-	DEVMETHOD(bus_driver_added,	bus_generic_driver_added),
-	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
+	DEVMETHOD(bus_print_child,		bus_generic_print_child),
+	DEVMETHOD(bus_driver_added,		bus_generic_driver_added),
+	DEVMETHOD(bus_get_resource_list,	ndis_get_resource_list),
 
 	{ 0, 0 }
 };
@@ -222,6 +222,7 @@ ndisusb_detach(device_t self)
 	(void)ndis_detach(self);
 
 	mtx_destroy(&sc->ndisusb_mtx);
+
 	return (0);
 }
 
@@ -231,5 +232,6 @@ ndis_get_resource_list(device_t dev, device_t child)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
+
 	return (BUS_GET_RESOURCE_LIST(device_get_parent(sc->ndis_dev), dev));
 }

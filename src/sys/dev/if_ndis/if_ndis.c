@@ -118,23 +118,22 @@ MODULE_DEPEND(ndis, ndisapi, 1, 1, 1);
 
 MODULE_VERSION(ndis, 1);
 
-int ndis_attach			(device_t);
-int ndis_detach			(device_t);
-int ndis_suspend		(device_t);
-int ndis_resume			(device_t);
-void ndis_shutdown		(device_t);
-int ndisdrv_modevent		(module_t, int, void *);
+int ndis_attach(device_t);
+int ndis_detach(device_t);
+int ndis_suspend(device_t);
+int ndis_resume(device_t);
+void ndis_shutdown(device_t);
+int ndisdrv_modevent(module_t, int, void *);
 
-static void ndis_txeof		(ndis_handle, ndis_packet *, ndis_status);
-static void ndis_rxeof		(ndis_handle, ndis_packet **, uint32_t);
-static void ndis_rxeof_eth	(ndis_handle, ndis_handle, char *, void *,
-				 uint32_t, void *, uint32_t, uint32_t);
-static void ndis_rxeof_done	(ndis_handle);
-static void ndis_rxeof_xfr	(kdpc *, ndis_handle, void *, void *);
-static void ndis_rxeof_xfr_done	(ndis_handle, ndis_packet *,
-				 uint32_t, uint32_t);
-static void ndis_linksts	(ndis_handle, ndis_status, void *, uint32_t);
-static void ndis_linksts_done	(ndis_handle);
+static void ndis_txeof(ndis_handle, ndis_packet *, ndis_status);
+static void ndis_rxeof(ndis_handle, ndis_packet **, uint32_t);
+static void ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *, uint32_t,
+    void *, uint32_t, uint32_t);
+static void ndis_rxeof_done(ndis_handle);
+static void ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
+static void ndis_rxeof_xfr_done(ndis_handle, ndis_packet *, uint32_t, uint32_t);
+static void ndis_linksts(ndis_handle, ndis_status, void *, uint32_t);
+static void ndis_linksts_done(ndis_handle);
 
 /* We need to wrap these functions for amd64. */
 static funcptr ndis_txeof_wrap;
@@ -150,60 +149,55 @@ static funcptr ndis_starttask_wrap;
 static funcptr ndis_resettask_wrap;
 static funcptr ndis_inputtask_wrap;
 
-static struct	ieee80211vap *ndis_vap_create(struct ieee80211com *,
-		    const char name[IFNAMSIZ], int unit, int opmode,
-		    int flags, const uint8_t bssid[IEEE80211_ADDR_LEN],
-		    const uint8_t mac[IEEE80211_ADDR_LEN]);
-static void ndis_vap_delete	(struct ieee80211vap *);
-static void ndis_tick		(void *);
-static void ndis_ticktask	(device_object *, void *);
-static int ndis_raw_xmit	(struct ieee80211_node *, struct mbuf *,
-				const struct ieee80211_bpf_params *);
-static void ndis_update_mcast	(struct ifnet *ifp);
-static void ndis_update_promisc	(struct ifnet *ifp);
-static void ndis_start		(struct ifnet *);
-static void ndis_starttask	(device_object *, void *);
-static void ndis_resettask	(device_object *, void *);
-static void ndis_inputtask	(device_object *, void *);
-static int ndis_ioctl		(struct ifnet *, u_long, caddr_t);
-static int ndis_ioctl_80211	(struct ifnet *, u_long, caddr_t);
-static int ndis_send_mgmt	(struct ieee80211_node *, int, int);
-static int ndis_newstate	(struct ieee80211vap *,
-				enum ieee80211_state, int);
-static int ndis_nettype_chan	(uint32_t);
-static int ndis_nettype_mode	(uint32_t);
-static void ndis_scan		(void *);
-static void ndis_scan_results	(struct ndis_softc *);
-static void ndis_scan_start	(struct ieee80211com *);
-static void ndis_scan_end	(struct ieee80211com *);
-static void ndis_set_channel	(struct ieee80211com *);
-static void ndis_scan_curchan	(struct ieee80211_scan_state *, unsigned long);
-static void ndis_scan_mindwell	(struct ieee80211_scan_state *);
-static void ndis_init		(void *);
-static void ndis_stop		(struct ndis_softc *);
-static int ndis_ifmedia_upd	(struct ifnet *);
-static void ndis_ifmedia_sts	(struct ifnet *, struct ifmediareq *);
-static int ndis_get_bssid_list	(struct ndis_softc *,
-				ndis_80211_bssid_list_ex **);
-static int ndis_probe_offload	(struct ndis_softc *);
-static int ndis_set_offload	(struct ndis_softc *);
-static void ndis_getstate_80211	(struct ndis_softc *);
-static void ndis_setstate_80211	(struct ndis_softc *);
-static void ndis_assoc		(struct ndis_softc *, struct ieee80211vap *);
-static void ndis_auth		(struct ndis_softc *, struct ieee80211vap *);
-static int ndis_set_cipher	(struct ndis_softc *, int);
-static void ndis_set_infra	(struct ndis_softc *, struct ieee80211vap *);
-static void ndis_set_ssid	(struct ndis_softc *,
-				struct ieee80211vap *, uint8_t);
-static int ndis_set_wpa		(struct ndis_softc *, void *, int);
-static int ndis_add_key		(struct ieee80211vap *,
-				const struct ieee80211_key *,
-				const u_int8_t []);
-static int ndis_del_key		(struct ieee80211vap *,
-				const struct ieee80211_key *);
-static void ndis_setmulti	(struct ndis_softc *);
-static void ndis_map_sclist	(void *, bus_dma_segment_t *,
-				int, bus_size_t, int);
+static struct ieee80211vap *ndis_vap_create(struct ieee80211com *,
+    const char name[IFNAMSIZ], int unit, int opmode, int flags,
+    const uint8_t bssid[IEEE80211_ADDR_LEN],
+    const uint8_t mac[IEEE80211_ADDR_LEN]);
+static void ndis_vap_delete(struct ieee80211vap *);
+static void ndis_tick(void *);
+static void ndis_ticktask(device_object *, void *);
+static int ndis_raw_xmit(struct ieee80211_node *, struct mbuf *,
+    const struct ieee80211_bpf_params *);
+static void ndis_update_mcast(struct ifnet *ifp);
+static void ndis_update_promisc(struct ifnet *ifp);
+static void ndis_start(struct ifnet *);
+static void ndis_starttask(device_object *, void *);
+static void ndis_resettask(device_object *, void *);
+static void ndis_inputtask(device_object *, void *);
+static int ndis_ioctl(struct ifnet *, u_long, caddr_t);
+static int ndis_ioctl_80211(struct ifnet *, u_long, caddr_t);
+static int ndis_send_mgmt(struct ieee80211_node *, int, int);
+static int ndis_newstate(struct ieee80211vap *, enum ieee80211_state, int);
+static int ndis_nettype_chan(uint32_t);
+static int ndis_nettype_mode(uint32_t);
+static void ndis_scan(void *);
+static void ndis_scan_results(struct ndis_softc *);
+static void ndis_scan_start(struct ieee80211com *);
+static void ndis_scan_end(struct ieee80211com *);
+static void ndis_set_channel(struct ieee80211com *);
+static void ndis_scan_curchan(struct ieee80211_scan_state *, unsigned long);
+static void ndis_scan_mindwell(struct ieee80211_scan_state *);
+static void ndis_init(void *);
+static void ndis_stop(struct ndis_softc *);
+static int ndis_ifmedia_upd(struct ifnet *);
+static void ndis_ifmedia_sts(struct ifnet *, struct ifmediareq *);
+static int ndis_get_bssid_list(struct ndis_softc *,
+    ndis_80211_bssid_list_ex **);
+static int ndis_probe_offload(struct ndis_softc *);
+static int ndis_set_offload(struct ndis_softc *);
+static void ndis_getstate_80211(struct ndis_softc *);
+static void ndis_setstate_80211(struct ndis_softc *);
+static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
+static int ndis_set_cipher(struct ndis_softc *, int);
+static void ndis_set_infra(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
+static int ndis_set_wpa(struct ndis_softc *, void *, int);
+static int ndis_add_key(struct ieee80211vap *, const struct ieee80211_key *,
+    const u_int8_t []);
+static int ndis_del_key(struct ieee80211vap *, const struct ieee80211_key *);
+static void ndis_setmulti(struct ndis_softc *);
+static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 
 static int ndisdrv_loaded = 0;
 
@@ -2914,8 +2908,7 @@ ndis_resettask(device_object *d, void *arg)
 }
 
 /*
- * Stop the adapter and free any mbufs allocated to the
- * RX and TX lists.
+ * Stop the adapter and free any mbufs allocated to the RX and TX lists.
  */
 static void
 ndis_stop(struct ndis_softc *sc)
@@ -3002,6 +2995,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		break;
 	case IEEE80211_S_AUTH:
 		ndis_auth(sc, vap);
+		/* fallthrough */
 	case IEEE80211_S_ASSOC:
 		ndis_assoc(sc, vap);
 		break;

@@ -499,15 +499,15 @@ struct ndis_80211_bssid_list_ex {
 typedef struct ndis_80211_bssid_list_ex ndis_80211_bssid_list_ex;
 
 struct ndis_80211_fixed_ies {
-	uint8_t			nfi_tstamp[8];
-	uint16_t		nfi_beaconint;
-	uint16_t		nfi_caps;
+	uint8_t		nfi_tstamp[8];
+	uint16_t	nfi_beaconint;
+	uint16_t	nfi_caps;
 };
 
 struct ndis_80211_variable_ies {
-	uint8_t			nvi_elemid;
-	uint8_t			nvi_len;
-	uint8_t			nvi_data[1];
+	uint8_t		nvi_elemid;
+	uint8_t		nvi_len;
+	uint8_t		nvi_data[1];
 };
 
 typedef uint32_t ndis_80211_fragthresh;
@@ -586,9 +586,9 @@ struct ndis_80211_ai_reqfi {
 typedef struct ndis_80211_ai_reqfi ndis_80211_ai_reqfi;
 
 struct ndis_80211_ai_resfi {
-	uint16_t		nas_caps;
-	uint16_t		nas_statuscode;
-	uint16_t		nas_associd;
+	uint16_t	nas_caps;
+	uint16_t	nas_statuscode;
+	uint16_t	nas_associd;
 };
 typedef struct ndis_80211_ai_resfi ndis_80211_ai_resfi;
 
@@ -612,8 +612,8 @@ struct ndis_80211_auth_event {
 typedef struct ndis_80211_auth_event ndis_80211_auth_event;
 
 struct ndis_80211_test {
-	uint32_t		nt_len;
-	uint32_t		nt_type;
+	uint32_t	nt_len;
+	uint32_t	nt_type;
 	union {
 		ndis_80211_auth_event	nt_authevent;
 		uint32_t		nt_rssitrigger;
@@ -622,8 +622,8 @@ struct ndis_80211_test {
 typedef struct ndis_80211_test ndis_80211_test;
 
 struct ndis_80211_auth_encrypt {
-	uint32_t		ne_authmode;
-	uint32_t		ne_cryptstat;
+	uint32_t	ne_authmode;
+	uint32_t	ne_cryptstat;
 };
 typedef struct ndis_80211_auth_encrypt ndis_80211_auth_encrypt;
 
@@ -946,11 +946,11 @@ typedef struct ndis_timer ndis_timer;
 typedef void (*ndis_timer_function)(void *, void *, void *, void *);
 
 struct ndis_miniport_timer {
-	struct ktimer		nmt_ktimer;
-	struct kdpc		nmt_kdpc;
-	ndis_timer_function	nmt_timerfunc;
-	void			*nmt_timerctx;
-	ndis_miniport_block	*nmt_block;
+	struct ktimer			nmt_ktimer;
+	struct kdpc			nmt_kdpc;
+	ndis_timer_function		nmt_timerfunc;
+	void				*nmt_timerctx;
+	ndis_miniport_block		*nmt_block;
 	struct ndis_miniport_timer	*nmt_nexttimer;
 };
 typedef struct ndis_miniport_timer ndis_miniport_timer;
@@ -1000,12 +1000,12 @@ struct ndis_request {
 		} ndis_set_information;
 	} ndis_data;
 	/* NDIS 5.0 extentions */
-	uint8_t			nr_ndis_rsvd[9 * sizeof(void *)];
+	uint8_t		nr_ndis_rsvd[9 * sizeof(void *)];
 	union {
 		uint8_t		nr_callmgr_rsvd[2 * sizeof(void *)];
 		uint8_t		nr_protocol_rsvd[2 * sizeof(void *)];
 	} u;
-	uint8_t			nr_miniport_rsvd[2 * sizeof(void *)];
+	uint8_t		nr_miniport_rsvd[2 * sizeof(void *)];
 };
 typedef struct ndis_request ndis_request;
 
@@ -1054,9 +1054,9 @@ typedef struct ndis_work_item ndis_work_item;
 	} while (0)
 
 struct ndis_sc_element {
-	ndis_physaddr		nse_addr;
-	uint32_t		nse_len;
-	uint32_t		*nse_rsvd;
+	ndis_physaddr	nse_addr;
+	uint32_t	nse_len;
+	uint32_t	*nse_rsvd;
 };
 
 typedef struct ndis_sc_element ndis_sc_element;
@@ -1065,9 +1065,9 @@ typedef struct ndis_sc_element ndis_sc_element;
 #define	NDIS_BUS_SPACE_SHARED_MAXADDR 0x3E7FFFFF
 
 struct ndis_sc_list {
-	uint32_t		nsl_frags;
-	uint32_t		*nsl_rsvd;
-	ndis_sc_element		nsl_elements[NDIS_MAXSEG];
+	uint32_t	nsl_frags;
+	uint32_t	*nsl_rsvd;
+	ndis_sc_element	nsl_elements[NDIS_MAXSEG];
 };
 typedef struct ndis_sc_list ndis_sc_list;
 
@@ -1121,7 +1121,7 @@ enum ndis_perpkt_info {
 typedef enum ndis_perpkt_info ndis_perpkt_info;
 
 struct ndis_packet_extension {
-	void			*npe_info[ndis_maxpkt_info];
+	void	*npe_info[ndis_maxpkt_info];
 };
 typedef struct ndis_packet_extension ndis_packet_extension;
 
@@ -1183,11 +1183,11 @@ struct ndis_packet_oob {
 		uint64_t	npo_timetotx;
 		uint64_t	npo_timetxed;
 	} u;
-	uint64_t		npo_timerxed;
-	uint32_t		npo_hdrlen;
-	uint32_t		npo_mediaspecific_len;
-	void			*npo_mediaspecific;
-	ndis_status		npo_status;
+	uint64_t	npo_timerxed;
+	uint32_t	npo_hdrlen;
+	uint32_t	npo_mediaspecific_len;
+	void		*npo_mediaspecific;
+	ndis_status	npo_status;
 };
 typedef struct ndis_packet_oob ndis_packet_oob;
 
@@ -1231,14 +1231,14 @@ struct ndis_packet {
 	 */
 	ndis_packet_oob		np_oob;
 	ndis_packet_extension	np_ext;
-	ndis_sc_list		np_sclist;
+	ndis_sc_list	np_sclist;
 
 	/* BSD-specific stuff which should be invisible to drivers. */
-	uint32_t		np_refcnt;
-	void			*np_softc;
-	void			*np_m0;
-	int			np_txidx;
-	list_entry		np_list;
+	uint32_t	np_refcnt;
+	void		*np_softc;
+	void		*np_m0;
+	int		np_txidx;
+	list_entry	np_list;
 };
 typedef struct ndis_packet ndis_packet;
 
@@ -1331,9 +1331,9 @@ struct ndis_paddr_unit {
 typedef struct ndis_paddr_unit ndis_paddr_unit;
 
 struct ndis_map_arg {
-	ndis_paddr_unit		*nma_fraglist;
-	int			nma_cnt;
-	int			nma_max;
+	ndis_paddr_unit	*nma_fraglist;
+	int		nma_cnt;
+	int		nma_max;
 };
 
 /*
@@ -1392,9 +1392,9 @@ struct ndis_driver_object {
 typedef struct ndis_driver_object ndis_driver_object;
 
 struct ndis_reference {
-	ndis_kspin_lock		nr_spinlock;
-	uint16_t		nr_refcnt;
-	uint8_t			nr_closing;
+	ndis_kspin_lock	nr_spinlock;
+	uint16_t	nr_refcnt;
+	uint8_t		nr_closing;
 };
 typedef struct ndis_reference ndis_reference;
 
