@@ -947,10 +947,6 @@ fail:
 		return (error);
 	DPRINTF(("attach done.\n"));
 
-	/* We're done talking to the NIC for now; halt it. */
-	ndis_halt_nic(sc);
-	DPRINTF(("halting done.\n"));
-
 	return (error);
 }
 
@@ -1014,6 +1010,10 @@ ndis_detach(device_t dev)
 
 	sc = device_get_softc(dev);
 	ifp = sc->ifp;
+
+	if (sc->ndis_iftype != PNPBus || (sc->ndis_iftype == PNPBus &&
+	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) && ndisusb_halt != 0))
+		ndis_halt_nic(sc);
 
 	if (device_is_attached(dev)) {
 		ndis_stop(sc);
@@ -1879,22 +1879,6 @@ ndis_init(void *xsc)
 	struct ieee80211com *ic = ifp->if_l2com;
 	int i, len, error;
 
-	/*
-	 * Cancel pending I/O and free all RX/TX buffers.
-	 */
-	ndis_stop(sc);
-
-	if (!(sc->ndis_iftype == PNPBus && ndisusb_halt == 0)) {
-		error = ndis_init_nic(sc);
-		if (error != 0) {
-			device_printf(sc->ndis_dev,
-			    "failed to initialize the device: %d\n", error);
-			return;
-		}
-	}
-
-	/* Init our MAC address */
-
 	/* Program the packet filter */
 	sc->ndis_filter = NDIS_PACKET_TYPE_DIRECTED;
 	if (ifp->if_flags & IFF_BROADCAST)
@@ -1957,8 +1941,10 @@ ndis_ifmedia_upd(struct ifnet *ifp)
 
 	sc = ifp->if_softc;
 
-	if (NDIS_INITIALIZED(sc))
+	if (NDIS_INITIALIZED(sc)) {
+		ndis_stop(sc);
 		ndis_init(sc);
+	}
 
 	return (0);
 }
@@ -2817,13 +2803,6 @@ ndis_stop(struct ndis_softc *sc)
 	if_link_state_change(sc->ifp, LINK_STATE_UNKNOWN);
 
 	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
-	NDIS_UNLOCK(sc);
-
-	if (sc->ndis_iftype != PNPBus || (sc->ndis_iftype == PNPBus &&
-	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) && ndisusb_halt != 0))
-		ndis_halt_nic(sc);
-
-	NDIS_LOCK(sc);
 	for (i = 0; i < NDIS_EVENTS; i++) {
 		if (sc->ndis_evt[i].ne_sts && sc->ndis_evt[i].ne_buf != NULL) {
 			free(sc->ndis_evt[i].ne_buf, M_NDIS_DEV);
