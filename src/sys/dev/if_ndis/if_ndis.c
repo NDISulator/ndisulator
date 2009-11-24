@@ -2896,10 +2896,9 @@ static void
 ndis_scan(void *arg)
 {
 	struct ndis_softc *sc = arg;
-	struct ieee80211com *ic;
+	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211vap *vap;
 
-	ic = sc->ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	ieee80211_scan_done(vap);
