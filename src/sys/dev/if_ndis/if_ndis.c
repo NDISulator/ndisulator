@@ -2193,6 +2193,14 @@ ndis_setstate_80211(struct ndis_softc *sc)
 		ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len);
 	}
 
+	/* Drop unencrypted? */
+	if (vap->iv_flags & IEEE80211_F_DROPUNENC)
+		arg = NDIS_80211_PRIVFILT_8021XWEP;
+	else
+		arg = NDIS_80211_PRIVFILT_ACCEPTALL;
+	len = sizeof(arg);
+	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
+
 	/* Default encryption mode to off */
 	len = sizeof(arg);
 	arg = NDIS_80211_WEPSTAT_DISABLED;
@@ -2202,11 +2210,6 @@ ndis_setstate_80211(struct ndis_softc *sc)
 	len = sizeof(arg);
 	arg = NDIS_80211_AUTHMODE_OPEN;
 	ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
-
-	/* Privacy to 'accept everything' */
-	len = sizeof(arg);
-	arg = NDIS_80211_PRIVFILT_8021XWEP;
-	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 
 	len = sizeof(config);
 	bzero((char *)&config, len);
@@ -2348,12 +2351,6 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 		error = ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
 		if (error != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
-		if (vap->iv_flags & IEEE80211_F_DROPUNENC)
-			arg = NDIS_80211_PRIVFILT_8021XWEP;
-		else
-			arg = NDIS_80211_PRIVFILT_ACCEPTALL;
-		len = sizeof(arg);
-		ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 	}
 
 	/* Set up WPA */
@@ -2479,17 +2476,18 @@ ndis_getstate_80211(struct ndis_softc *sc)
 	ic->ic_bsschan = ic->ic_curchan;
 	ni->ni_intval = config.nc_beaconperiod;
 
-	/* Determine current authentication mode */
+	/* Get current authentication mode */
 	len = sizeof(arg);
 	ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
 	ni->ni_authmode = ndis_auth_mode(arg);
 
+	/* Get current privacy filter */
 	len = sizeof(arg);
-	ndis_get_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
-	if (arg == NDIS_80211_WEPSTAT_ENABLED)
-		vap->iv_flags |= IEEE80211_F_PRIVACY|IEEE80211_F_DROPUNENC;
+	ndis_get_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
+	if (arg == NDIS_80211_PRIVFILT_8021XWEP)
+		vap->iv_flags |= IEEE80211_F_DROPUNENC;
 	else
-		vap->iv_flags &= ~(IEEE80211_F_PRIVACY|IEEE80211_F_DROPUNENC);
+		vap->iv_flags &= ~IEEE80211_F_DROPUNENC;
 }
 
 static int
