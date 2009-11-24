@@ -193,9 +193,9 @@ static int ndis_set_cipher(struct ndis_softc *, int);
 static void ndis_set_infra(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
 static int ndis_set_wpa(struct ndis_softc *, void *, int);
-static int ndis_add_key(struct ieee80211vap *, const struct ieee80211_key *,
+static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
     const u_int8_t []);
-static int ndis_del_key(struct ieee80211vap *, const struct ieee80211_key *);
+static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
 static void ndis_setmulti(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 
@@ -959,18 +959,18 @@ ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
 	vap = &nvp->vap;
 	ieee80211_vap_setup(ic, vap, name, unit, opmode, flags, bssid, mac);
 
-	/* override with driver methods */
+	/* Override with driver methods */
 	nvp->newstate = vap->iv_newstate;
 	vap->iv_newstate = ndis_newstate;
 
-	/* complete setup */
+	/* Complete setup */
 	ieee80211_vap_attach(vap, ieee80211_media_change,
 	    ieee80211_media_status);
 	ic->ic_opmode = opmode;
 
-	/* install key handing routines */
-	vap->iv_key_set = ndis_add_key;
-	vap->iv_key_delete = ndis_del_key;
+	/* Install key handing routines */
+	vap->iv_key_set = ndis_key_set;
+	vap->iv_key_delete = ndis_key_delete;
 
 	return (vap);
 }
@@ -2339,8 +2339,7 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	struct ieee80211com *ic;
 	struct ieee80211_node *ni;
 	struct ifnet *ifp;
-	ndis_80211_wep wep;
-	int i, rval = 0, len, error;
+	int len, error;
 	uint32_t arg;
 
 	ifp = sc->ifp;
@@ -2350,79 +2349,25 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	/* Initial setup */
 	ndis_setstate_80211(sc);
 
-	/* Set WEP */
+	/* Set up WEP */
 	if (vap->iv_flags & IEEE80211_F_PRIVACY &&
 	    !(vap->iv_flags & IEEE80211_F_WPA)) {
-		int keys_set = 0;
+		DPRINTF(("Setting WEP on\n"));
+		arg = NDIS_80211_WEPSTAT_ENABLED;
+		len = sizeof(arg);
+		error = ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
+		if (error != 0)
+			device_printf(sc->ndis_dev, "WEP setup failed\n");
+		if (vap->iv_flags & IEEE80211_F_DROPUNENC)
+			arg = NDIS_80211_PRIVFILT_8021XWEP;
+		else
+			arg = NDIS_80211_PRIVFILT_ACCEPTALL;
 
-		if (ni->ni_authmode == IEEE80211_AUTH_SHARED) {
-			len = sizeof(arg);
-			arg = NDIS_80211_AUTHMODE_SHARED;
-			DPRINTF(("Setting shared auth\n"));
-			ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
-			    &arg, &len);
-		}
-		for (i = 0; i < IEEE80211_WEP_NKID; i++) {
-			if (vap->iv_nw_keys[i].wk_keylen) {
-				if (vap->iv_nw_keys[i].wk_cipher->ic_cipher !=
-				    IEEE80211_CIPHER_WEP)
-					continue;
-				bzero((char *)&wep, sizeof(wep));
-				wep.nw_keylen = vap->iv_nw_keys[i].wk_keylen;
-
-				/*
-				 * 5, 13 and 16 are the only valid
-				 * key lengths. Anything in between
-				 * will be zero padded out to the
-				 * next highest boundary.
-				 */
-				if (vap->iv_nw_keys[i].wk_keylen < 5)
-					wep.nw_keylen = 5;
-				else if (vap->iv_nw_keys[i].wk_keylen > 5 &&
-				    vap->iv_nw_keys[i].wk_keylen < 13)
-					wep.nw_keylen = 13;
-				else if (vap->iv_nw_keys[i].wk_keylen > 13 &&
-				    vap->iv_nw_keys[i].wk_keylen < 16)
-					wep.nw_keylen = 16;
-
-				wep.nw_keyidx = i;
-				wep.nw_length = (sizeof(uint32_t) * 3)
-				    + wep.nw_keylen;
-				if (i == vap->iv_def_txkey)
-					wep.nw_keyidx |= NDIS_80211_WEPKEY_TX;
-				bcopy(vap->iv_nw_keys[i].wk_key,
-				    wep.nw_keydata, wep.nw_length);
-				len = sizeof(wep);
-				DPRINTF(("Setting WEP key %d\n", i));
-				rval = ndis_set_info(sc,
-				    OID_802_11_ADD_WEP, &wep, &len);
-				if (rval)
-					device_printf(sc->ndis_dev,
-					    "set wepkey failed: %d\n", rval);
-				keys_set++;
-			}
-		}
-		if (keys_set) {
-			DPRINTF(("Setting WEP on\n"));
-			arg = NDIS_80211_WEPSTAT_ENABLED;
-			len = sizeof(arg);
-			rval = ndis_set_info(sc,
-			    OID_802_11_WEP_STATUS, &arg, &len);
-			if (rval)
-				device_printf(sc->ndis_dev,
-				    "enable WEP failed: %d\n", rval);
-			if (vap->iv_flags & IEEE80211_F_DROPUNENC)
-				arg = NDIS_80211_PRIVFILT_8021XWEP;
-			else
-				arg = NDIS_80211_PRIVFILT_ACCEPTALL;
-
-			len = sizeof(arg);
-			ndis_set_info(sc,
-			    OID_802_11_PRIVACY_FILTER, &arg, &len);
-		}
+		len = sizeof(arg);
+		ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 	}
 
-	/* Set up WPA. */
+	/* Set up WPA */
 	if ((vap->iv_flags & IEEE80211_F_WPA) &&
 	    vap->iv_appie_assocreq != NULL) {
 		struct ieee80211_appie *ie = vap->iv_appie_assocreq;
@@ -2792,43 +2737,38 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 }
 
 static int
-ndis_del_key(struct ieee80211vap *vap, const struct ieee80211_key *key)
+ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 {
 	struct ndis_softc *sc;
-	ndis_80211_key rkey;
+	ndis_80211_key nkey;
 	int len, error = 0;
 
 	sc = vap->iv_ic->ic_ifp->if_softc;
 
-	bzero((char *)&rkey, sizeof(rkey));
-	len = sizeof(rkey);
+	bzero((char *)&nkey, sizeof(nkey));
+	len = sizeof(nkey);
 
-	rkey.nk_len = len;
-	rkey.nk_keyidx = key->wk_keyix;
+	nkey.nk_len = len;
+	nkey.nk_keyidx = key->wk_keyix;
 
 	bcopy(vap->iv_ifp->if_broadcastaddr,
-	    rkey.nk_bssid, IEEE80211_ADDR_LEN);
+	    nkey.nk_bssid, IEEE80211_ADDR_LEN);
 
-	error = ndis_set_info(sc, OID_802_11_REMOVE_KEY, &rkey, &len);
-
-	if (error)
+	error = ndis_set_info(sc, OID_802_11_REMOVE_KEY, &nkey, &len);
+	if (error != 0)
 		return (0);
 
 	return (1);
 }
 
-/*
- * In theory this could be called for any key, but we'll
- * only use it for WPA TKIP or AES keys. These need to be
- * set after initial authentication with the AP.
- */
 static int
-ndis_add_key(struct ieee80211vap *vap, const struct ieee80211_key *key,
+ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
     const uint8_t mac[IEEE80211_ADDR_LEN])
 {
 	struct ndis_softc *sc;
+	ndis_80211_key nkey;
+	ndis_80211_wep wep;
 	struct ifnet *ifp;
-	ndis_80211_key rkey;
 	int len, error = 0;
 
 	ifp = vap->iv_ic->ic_ifp;
@@ -2836,52 +2776,56 @@ ndis_add_key(struct ieee80211vap *vap, const struct ieee80211_key *key,
 
 	switch (key->wk_cipher->ic_cipher) {
 	case IEEE80211_CIPHER_TKIP:
-
 		len = sizeof(ndis_80211_key);
-		bzero((char *)&rkey, sizeof(rkey));
-
-		rkey.nk_len = len;
-		rkey.nk_keylen = key->wk_keylen;
+		bzero((char *)&nkey, sizeof(nkey));
+		nkey.nk_len = len;
+		nkey.nk_keylen = key->wk_keylen;
 
 		if (key->wk_flags & IEEE80211_KEY_SWMIC)
-			rkey.nk_keylen += 16;
+			nkey.nk_keylen += 16;
 
 		/* key index - gets weird in NDIS */
 		if (key->wk_keyix != IEEE80211_KEYIX_NONE)
-			rkey.nk_keyidx = key->wk_keyix;
+			nkey.nk_keyidx = key->wk_keyix;
 		else
-			rkey.nk_keyidx = 0;
+			nkey.nk_keyidx = 0;
 
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
-			rkey.nk_keyidx |= 1 << 31;
+			nkey.nk_keyidx |= 1 << 31;
 
 		if (key->wk_flags & IEEE80211_KEY_GROUP) {
 			bcopy(ifp->if_broadcastaddr,
-			    rkey.nk_bssid, IEEE80211_ADDR_LEN);
+			    nkey.nk_bssid, IEEE80211_ADDR_LEN);
 		} else {
 			bcopy(vap->iv_bss->ni_bssid,
-			    rkey.nk_bssid, IEEE80211_ADDR_LEN);
+			    nkey.nk_bssid, IEEE80211_ADDR_LEN);
 			/* pairwise key */
-			rkey.nk_keyidx |= 1 << 30;
+			nkey.nk_keyidx |= 1 << 30;
 		}
 
 		/* need to set bit 29 based on keyrsc */
-		rkey.nk_keyrsc = key->wk_keyrsc[0];	/* XXX need tid */
-
-		if (rkey.nk_keyrsc)
-			rkey.nk_keyidx |= 1 << 29;
+		nkey.nk_keyrsc = key->wk_keyrsc[0];	/* XXX need tid */
+		if (nkey.nk_keyrsc)
+			nkey.nk_keyidx |= 1 << 29;
 
 		if (key->wk_flags & IEEE80211_KEY_SWMIC) {
-			bcopy(key->wk_key, rkey.nk_keydata, 16);
-			bcopy(key->wk_key + 24, rkey.nk_keydata + 16, 8);
-			bcopy(key->wk_key + 16, rkey.nk_keydata + 24, 8);
+			bcopy(key->wk_key, nkey.nk_keydata, 16);
+			bcopy(key->wk_key + 24, nkey.nk_keydata + 16, 8);
+			bcopy(key->wk_key + 16, nkey.nk_keydata + 24, 8);
 		} else
-			bcopy(key->wk_key, rkey.nk_keydata, key->wk_keylen);
+			bcopy(key->wk_key, nkey.nk_keydata, key->wk_keylen);
 
-		error = ndis_set_info(sc, OID_802_11_ADD_KEY, &rkey, &len);
+		error = ndis_set_info(sc, OID_802_11_ADD_KEY, &nkey, &len);
 		break;
 	case IEEE80211_CIPHER_WEP:
-		error = 0;
+		len = sizeof(ndis_80211_wep);
+		bzero((char *)&wep, sizeof(wep));
+		wep.nw_keylen = key->wk_keylen;
+		wep.nw_keyidx = key->wk_keyix;
+		wep.nw_length = (sizeof(uint32_t) * 3) + wep.nw_keylen;
+		wep.nw_keyidx |= NDIS_80211_WEPKEY_TX;
+		bcopy(key->wk_key, wep.nw_keydata, wep.nw_length);
+		error = ndis_set_info(sc, OID_802_11_ADD_WEP, &wep, &len);
 		break;
 	/*
 	 * I don't know how to set up keys for the AES
@@ -2892,7 +2836,6 @@ ndis_add_key(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		error = ENOTTY;
 		break;
 	}
-	/* We need to return 1 for success, 0 for failure. */
 	if (error)
 		return (0);
 
@@ -2930,10 +2873,8 @@ ndis_stop(struct ndis_softc *sc)
 	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	NDIS_UNLOCK(sc);
 
-	if (sc->ndis_iftype != PNPBus ||
-	    (sc->ndis_iftype == PNPBus &&
-	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) &&
-	    ndisusb_halt != 0))
+	if (sc->ndis_iftype != PNPBus || (sc->ndis_iftype == PNPBus &&
+	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) && ndisusb_halt != 0))
 		ndis_halt_nic(sc);
 
 	NDIS_LOCK(sc);
@@ -2968,8 +2909,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 {
 	struct ndis_vap *nvp = NDIS_VAP(vap);
 	struct ieee80211com *ic = vap->iv_ic;
-	struct ifnet *ifp = ic->ic_ifp;
-	struct ndis_softc *sc = ifp->if_softc;
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	enum ieee80211_state ostate;
 
 	DPRINTF(("%s: %s -> %s\n", __func__,
@@ -3022,7 +2962,7 @@ ndis_scan(void *arg)
 static void
 ndis_scan_results(struct ndis_softc *sc)
 {
-	struct ieee80211com *ic;
+	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211vap *vap;
 	struct ieee80211_scanparams sp;
 	struct ieee80211_frame wh;
@@ -3033,7 +2973,6 @@ ndis_scan_results(struct ndis_softc *sc)
 	uint8_t ssid[2+IEEE80211_NWID_LEN], rates[2+IEEE80211_RATE_MAXSIZE];
 	uint8_t *frm, *efrm;
 
-	ic = sc->ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	saved_chan = ic->ic_curchan;
 	noise = -96;
