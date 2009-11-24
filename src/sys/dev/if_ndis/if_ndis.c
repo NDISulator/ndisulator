@@ -168,6 +168,7 @@ static int ndis_ioctl(struct ifnet *, u_long, caddr_t);
 static int ndis_ioctl_80211(struct ifnet *, u_long, caddr_t);
 static int ndis_send_mgmt(struct ieee80211_node *, int, int);
 static int ndis_newstate(struct ieee80211vap *, enum ieee80211_state, int);
+static int ndis_auth_mode(uint32_t);
 static int ndis_nettype_chan(uint32_t);
 static int ndis_nettype_mode(uint32_t);
 static void ndis_scan(void *);
@@ -507,6 +508,22 @@ ndis_nettype_mode(uint32_t type)
 	case NDIS_80211_NETTYPE_11OFDM24:	return (IEEE80211_MODE_11G);
 	}
 	return (IEEE80211_MODE_AUTO);
+}
+
+static int
+ndis_auth_mode(uint32_t type)
+{
+	switch (type) {
+	case NDIS_80211_AUTHMODE_OPEN:		return (IEEE80211_AUTH_OPEN);
+	case NDIS_80211_AUTHMODE_SHARED:	return (IEEE80211_AUTH_SHARED);
+	case NDIS_80211_AUTHMODE_AUTO:		return (IEEE80211_AUTH_AUTO);
+	case NDIS_80211_AUTHMODE_WPA:
+	case NDIS_80211_AUTHMODE_WPAPSK:
+	case NDIS_80211_AUTHMODE_WPANONE:
+	case NDIS_80211_AUTHMODE_WPA2:
+	case NDIS_80211_AUTHMODE_WPA2PSK:	return (IEEE80211_AUTH_WPA);
+	}
+	return (IEEE80211_AUTH_NONE);
 }
 
 /*
@@ -2291,13 +2308,10 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 static void
 ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	struct ieee80211_node *ni;
-	struct ifnet *ifp;
+	struct ieee80211_node *ni = vap->iv_bss;
+	struct ifnet *ifp = sc->ifp;
 	ndis_80211_macaddr bssid;
-	int rval, len;
-
-	ifp = sc->ifp;
-	ni = vap->iv_bss;
+	int r, len;
 
 	/*
 	 * If the user selected a specific BSSID, try
@@ -2316,10 +2330,9 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 	else
 		bcopy(ifp->if_broadcastaddr, bssid, len);
 	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
-	rval = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
-	if (rval)
-		device_printf(sc->ndis_dev,
-		    "setting BSSID failed: %d\n", rval);
+	r = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
+	if (r != 0)
+		device_printf(sc->ndis_dev, "setting BSSID failed\n");
 
 	/* Set SSID -- always do this last. */
 	ndis_set_ssid(sc, vap, 0);
@@ -2328,15 +2341,8 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 static void
 ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	struct ieee80211com *ic;
-	struct ieee80211_node *ni;
-	struct ifnet *ifp;
 	int len, error;
 	uint32_t arg;
-
-	ifp = sc->ifp;
-	ic = ifp->if_l2com;
-	ni = vap->iv_bss;
 
 	/* Initial setup */
 	ndis_setstate_80211(sc);
@@ -2354,7 +2360,6 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 			arg = NDIS_80211_PRIVFILT_8021XWEP;
 		else
 			arg = NDIS_80211_PRIVFILT_ACCEPTALL;
-
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 	}
@@ -2484,35 +2489,8 @@ ndis_getstate_80211(struct ndis_softc *sc)
 
 	/* Determine current authentication mode */
 	len = sizeof(arg);
-	rval = ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
-	if (rval == 0) {
-		vap->iv_flags &= ~IEEE80211_F_WPA;
-		switch (arg) {
-		case NDIS_80211_AUTHMODE_OPEN:
-			ni->ni_authmode = IEEE80211_AUTH_OPEN;
-			break;
-		case NDIS_80211_AUTHMODE_SHARED:
-			ni->ni_authmode = IEEE80211_AUTH_SHARED;
-			break;
-		case NDIS_80211_AUTHMODE_AUTO:
-			ni->ni_authmode = IEEE80211_AUTH_AUTO;
-			break;
-		case NDIS_80211_AUTHMODE_WPA:
-		case NDIS_80211_AUTHMODE_WPAPSK:
-		case NDIS_80211_AUTHMODE_WPANONE:
-			ni->ni_authmode = IEEE80211_AUTH_WPA;
-			vap->iv_flags |= IEEE80211_F_WPA1;
-			break;
-		case NDIS_80211_AUTHMODE_WPA2:
-		case NDIS_80211_AUTHMODE_WPA2PSK:
-			ni->ni_authmode = IEEE80211_AUTH_WPA;
-			vap->iv_flags |= IEEE80211_F_WPA2;
-			break;
-		default:
-			ni->ni_authmode = IEEE80211_AUTH_NONE;
-			break;
-		}
-	}
+	ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
+	ni->ni_authmode = ndis_auth_mode(arg);
 
 	len = sizeof(arg);
 	ndis_get_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
