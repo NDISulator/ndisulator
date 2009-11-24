@@ -374,7 +374,6 @@ ndis_set_offload(struct ndis_softc *sc)
 	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
-
 	ntoh->ntoh_vers = NDIS_TASK_OFFLOAD_VERSION;
 	ntoh->ntoh_len = sizeof(ndis_task_offload_hdr);
 	ntoh->ntoh_offset_firsttask = sizeof(ndis_task_offload_hdr);
@@ -384,7 +383,6 @@ ndis_set_offload(struct ndis_softc *sc)
 
 	nto = (ndis_task_offload *)((char *)ntoh +
 	    ntoh->ntoh_offset_firsttask);
-
 	nto->nto_vers = NDIS_TASK_OFFLOAD_VERSION;
 	nto->nto_len = sizeof(ndis_task_offload);
 	nto->nto_task = NDIS_TASK_TCPIP_CSUM;
@@ -424,7 +422,6 @@ ndis_probe_offload(struct ndis_softc *sc)
 	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
-
 	ntoh->ntoh_vers = NDIS_TASK_OFFLOAD_VERSION;
 	ntoh->ntoh_len = sizeof(ndis_task_offload_hdr);
 	ntoh->ntoh_encapfmt.nef_encaphdrlen = sizeof(struct ether_header);
@@ -444,7 +441,6 @@ ndis_probe_offload(struct ndis_softc *sc)
 
 	nto = (ndis_task_offload *)((char *)ntoh +
 	    ntoh->ntoh_offset_firsttask);
-
 	for (;;) {
 		switch (nto->nto_task) {
 		case NDIS_TASK_TCPIP_CSUM:
@@ -846,8 +842,7 @@ nonettypes:
 		 */
 		i = sizeof(arg);
 		arg = NDIS_80211_AUTHMODE_WPA;
-		r = ndis_set_info(sc,
-		    OID_802_11_AUTHENTICATION_MODE, &arg, &i);
+		r = ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i);
 		if (r == 0) {
 			r = ndis_get_info(sc,
 			    OID_802_11_AUTHENTICATION_MODE, &arg, &i);
@@ -2004,11 +1999,9 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 static int
 ndis_set_cipher(struct ndis_softc *sc, int cipher)
 {
-	struct ieee80211com *ic;
+	struct ieee80211com *ic = sc->ifp->if_l2com;
 	int rval = 0, len;
 	uint32_t arg, save;
-
-	ic = sc->ifp->if_l2com;
 
 	len = sizeof(arg);
 
@@ -2033,11 +2026,10 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 	DPRINTF(("Setting cipher to %d\n", arg));
 	save = arg;
 	rval = ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
-	if (rval)
+	if (rval != 0)
 		return (rval);
 
 	/* Check that the cipher was set correctly. */
-	len = sizeof(save);
 	rval = ndis_get_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 	if (rval != 0 || arg != save)
 		return (ENODEV);
@@ -2407,18 +2399,15 @@ ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 static void
 ndis_getstate_80211(struct ndis_softc *sc)
 {
-	struct ieee80211com *ic;
+	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211vap *vap;
 	struct ieee80211_node *ni;
-	struct ifnet *ifp;
 	ndis_80211_config config;
 	ndis_80211_macaddr bssid;
 	ndis_80211_ssid ssid;
 	int chanflag, rval, len, i = 0;
 	uint32_t arg;
 
-	ifp = sc->ifp;
-	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	ni = vap->iv_bss;
 
