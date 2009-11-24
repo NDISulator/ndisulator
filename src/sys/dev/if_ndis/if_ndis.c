@@ -2399,7 +2399,7 @@ ndis_getstate_80211(struct ndis_softc *sc)
 	ndis_80211_config config;
 	ndis_80211_macaddr bssid;
 	ndis_80211_ssid ssid;
-	int chanflag, rval, len, i = 0;
+	int chanflag = 0, len, i = 0;
 	uint32_t arg;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
@@ -2407,15 +2407,13 @@ ndis_getstate_80211(struct ndis_softc *sc)
 
 	/* Get BSSID */
 	len = sizeof(bssid);
-	rval = ndis_get_info(sc, OID_802_11_BSSID, &bssid, &len);
-	if (rval != 0)
+	if (ndis_get_info(sc, OID_802_11_BSSID, &bssid, &len) != 0)
 		return;
 	IEEE80211_ADDR_COPY(ni->ni_bssid, bssid);
 
 	/* Get SSID */
 	len = sizeof(ssid);
-	rval = ndis_get_info(sc, OID_802_11_SSID, &ssid, &len);
-	if (rval != 0 || ssid.ns_ssidlen == 0)
+	if (ndis_get_info(sc, OID_802_11_SSID, &ssid, &len) != 0)
 		return;
 	bcopy(ssid.ns_ssid, ni->ni_essid, ssid.ns_ssidlen);
 	ni->ni_esslen = ssid.ns_ssidlen;
@@ -2423,8 +2421,8 @@ ndis_getstate_80211(struct ndis_softc *sc)
 		ni->ni_associd = 1 | 0xc000; /* fake associd */
 
 	len = sizeof(arg);
-	rval = ndis_get_info(sc, OID_GEN_LINK_SPEED, &arg, &len);
-	ni->ni_txrate = arg / 5000;
+	if (ndis_get_info(sc, OID_GEN_LINK_SPEED, &arg, &len) == 0)
+		ni->ni_txrate = arg / 5000;
 
 	/* Get fragmentation threshold */
 	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
@@ -2436,8 +2434,8 @@ ndis_getstate_80211(struct ndis_softc *sc)
 
 	/* Get RTS threshold */
 	len = sizeof(arg);
-	ndis_get_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
-	vap->iv_rtsthreshold = arg;
+	if (ndis_get_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len) == 0)
+		vap->iv_rtsthreshold = arg;
 
 	/* Get power management */
 	if (ic->ic_caps & IEEE80211_C_PMGT) {
@@ -2461,33 +2459,35 @@ ndis_getstate_80211(struct ndis_softc *sc)
 
 	/* Get network mode */
 	len = sizeof(arg);
-	ndis_get_info(sc, OID_802_11_NETWORK_TYPE_IN_USE, &arg, &len);
-	chanflag = ndis_nettype_chan(arg);
+	if (ndis_get_info(sc, OID_802_11_NETWORK_TYPE_IN_USE, &arg, &len) == 0)
+		chanflag = ndis_nettype_chan(arg);
 
 	/* Get current channel and beacon interval */
 	len = sizeof(config);
 	bzero((char *)&config, len);
-	ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len);
-	ic->ic_curchan = ieee80211_find_channel(ic,
-	    config.nc_dsconfig / 1000, chanflag);
-	if (ic->ic_curchan == NULL)
-		ic->ic_curchan = &ic->ic_channels[0];
-	ni->ni_chan = ic->ic_curchan;
-	ic->ic_bsschan = ic->ic_curchan;
-	ni->ni_intval = config.nc_beaconperiod;
+	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) == 0) {
+		ic->ic_curchan = ieee80211_find_channel(ic,
+		    config.nc_dsconfig / 1000, chanflag);
+		if (ic->ic_curchan == NULL)
+			ic->ic_curchan = &ic->ic_channels[0];
+		ni->ni_chan = ic->ic_curchan;
+		ic->ic_bsschan = ic->ic_curchan;
+		ni->ni_intval = config.nc_beaconperiod;
+	}
 
 	/* Get current authentication mode */
 	len = sizeof(arg);
-	ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
-	ni->ni_authmode = ndis_auth_mode(arg);
+	if (ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
+		ni->ni_authmode = ndis_auth_mode(arg);
 
 	/* Get current privacy filter */
 	len = sizeof(arg);
-	ndis_get_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
-	if (arg == NDIS_80211_PRIVFILT_8021XWEP)
-		vap->iv_flags |= IEEE80211_F_DROPUNENC;
-	else
-		vap->iv_flags &= ~IEEE80211_F_DROPUNENC;
+	if (ndis_get_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len) == 0) {
+		if (arg == NDIS_80211_PRIVFILT_8021XWEP)
+			vap->iv_flags |= IEEE80211_F_DROPUNENC;
+		else
+			vap->iv_flags &= ~IEEE80211_F_DROPUNENC;
+	}
 }
 
 static int
