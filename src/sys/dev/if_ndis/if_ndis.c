@@ -1015,10 +1015,6 @@ ndis_detach(device_t dev)
 	sc = device_get_softc(dev);
 	ifp = sc->ifp;
 
-	if (sc->ndis_iftype != PNPBus || (sc->ndis_iftype == PNPBus &&
-	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) && ndisusb_halt != 0))
-		ndis_halt_nic(sc);
-
 	if (device_is_attached(dev)) {
 		ndis_stop(sc);
 		if (ifp != NULL) {
@@ -1028,6 +1024,10 @@ ndis_detach(device_t dev)
 				ether_ifdetach(ifp);
 		}
 	}
+
+	if (sc->ndis_iftype != PNPBus || (sc->ndis_iftype == PNPBus &&
+	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) && ndisusb_halt != 0))
+		ndis_halt_nic(sc);
 
 	if (sc->ndis_tickitem != NULL)
 		IoFreeWorkItem(sc->ndis_tickitem);
