@@ -2876,11 +2876,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 static void
 ndis_scan(void *arg)
 {
-	struct ndis_softc *sc = arg;
-	struct ieee80211com *ic = sc->ifp->if_l2com;
-	struct ieee80211vap *vap;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
+	struct ieee80211vap *vap = arg;
 
 	ieee80211_scan_done(vap);
 }
@@ -3000,7 +2996,7 @@ ndis_scan_start(struct ieee80211com *ic)
 		return;
 	}
 	/* Set a timer to collect the results */
-	callout_reset(&sc->ndis_scan_callout, hz * 3, ndis_scan, sc);
+	callout_reset(&sc->ndis_scan_callout, hz * 3, ndis_scan, vap);
 }
 
 static void
