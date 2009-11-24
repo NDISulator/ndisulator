@@ -278,12 +278,10 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 static void
 ndis_setmulti(struct ndis_softc *sc)
 {
-	struct ifnet *ifp;
+	struct ifnet *ifp = sc->ifp;
 	struct ifmultiaddr *ifma;
 	int len, mclistsz, error;
 	uint8_t *mclist;
-
-	ifp = sc->ifp;
 
 	if (!NDIS_INITIALIZED(sc))
 		return;
@@ -350,13 +348,11 @@ out:
 static int
 ndis_set_offload(struct ndis_softc *sc)
 {
+	struct ifnet *ifp = sc->ifp;
 	ndis_task_offload *nto;
 	ndis_task_offload_hdr *ntoh;
 	ndis_task_tcpip_csum *nttc;
-	struct ifnet *ifp;
 	int len, error;
-
-	ifp = sc->ifp;
 
 	if (!NDIS_INITIALIZED(sc))
 		return (EINVAL);
@@ -407,13 +403,11 @@ ndis_set_offload(struct ndis_softc *sc)
 static int
 ndis_probe_offload(struct ndis_softc *sc)
 {
+	struct ifnet *ifp = sc->ifp;
 	ndis_task_offload *nto;
 	ndis_task_offload_hdr *ntoh;
 	ndis_task_tcpip_csum *nttc = NULL;
-	struct ifnet *ifp;
 	int len, error, dummy;
-
-	ifp = sc->ifp;
 
 	len = sizeof(dummy);
 	error = ndis_get_info(sc, OID_TCP_TASK_OFFLOAD, &dummy, &len);
@@ -778,9 +772,9 @@ nonettypes:
 		}							\
 	} while (0)
 
-#define SETRATE(x, y)	\
+#define SETRATE(x, y)							\
 	ic->ic_sup_rates[x].rs_rates[ic->ic_sup_rates[x].rs_nrates] = (y)
-#define INCRATE(x)	\
+#define INCRATE(x)							\
 	ic->ic_sup_rates[x].rs_nrates++
 
 		if (isset(ic->ic_modecaps, IEEE80211_MODE_11A))
@@ -1134,15 +1128,13 @@ static void
 ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
     uint32_t hdrlen, void *lookahead, uint32_t lookaheadlen, uint32_t pktlen)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 	uint8_t irql = 0;
 	uint32_t status;
 	ndis_buffer *b;
 	ndis_packet *p;
 	struct mbuf *m;
 	ndis_ethpriv *priv;
-
-	block = adapter;
 
 	m = m_getcl(M_DONTWAIT, MT_DATA, M_PKTHDR);
 	if (m == NULL) {
@@ -1196,14 +1188,12 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 static void
 ndis_rxeof_done(ndis_handle adapter)
 {
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
-	ndis_miniport_block *block;
 
-	block = adapter;
-
-	/* Schedule transfer/RX of queued packets. */
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 
+	/* Schedule transfer/RX of queued packets. */
 	KeInsertQueueDpc(&sc->ndis_rxdpc, NULL, NULL);
 }
 
@@ -1213,7 +1203,7 @@ ndis_rxeof_done(ndis_handle adapter)
 static void
 ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	ndis_packet *p;
 	list_entry *l;
@@ -1222,7 +1212,6 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	ifp = sc->ifp;
 
@@ -1283,12 +1272,11 @@ static void
 ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
     uint32_t status, uint32_t len)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	ifp = sc->ifp;
 
@@ -1442,19 +1430,14 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 static void
 ndis_inputtask(device_object *dobj, void *arg)
 {
-	ndis_miniport_block *block;
-	struct ifnet *ifp;
-	struct ndis_softc *sc;
-	struct mbuf *m;
-	struct ieee80211com *ic;
+	struct ifnet *ifp = arg;
+	struct ndis_softc *sc = ifp->if_softc;
+	struct ieee80211com *ic = ifp->if_l2com;
 	struct ieee80211vap *vap;
+	struct mbuf *m;
 	uint8_t irql;
 
-	ifp = arg;
-	sc = ifp->if_softc;
-	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
-	block = dobj->do_devext;
 
 	KeAcquireSpinLock(&sc->ndis_rxlock, &irql);
 	for (;;) {
@@ -1518,10 +1501,9 @@ static void
 ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf,
     uint32_t slen)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	sc->ndis_sts = status;
 
@@ -1553,11 +1535,10 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf,
 static void
 ndis_linksts_done(ndis_handle adapter)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ifnet *ifp;
 
-	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	ifp = sc->ifp;
 
@@ -1590,9 +1571,7 @@ ndis_linksts_done(ndis_handle adapter)
 static void
 ndis_tick(void *xsc)
 {
-	struct ndis_softc *sc;
-
-	sc = xsc;
+	struct ndis_softc *sc = xsc;
 
 	if (sc->ndis_hang_timer && --sc->ndis_hang_timer == 0) {
 		IoQueueWorkItem(sc->ndis_tickitem,
@@ -1618,14 +1597,12 @@ ndis_tick(void *xsc)
 static void
 ndis_ticktask(device_object *d, void *xsc)
 {
-	struct ndis_softc *sc;
-	struct ieee80211com *ic;
+	struct ndis_softc *sc = xsc;
+	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211vap *vap;
 	ndis_checkforhang_handler hangfunc;
-	uint8_t rval;
+	uint8_t r;
 
-	sc = xsc;
-	ic = sc->ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	NDIS_LOCK(sc);
@@ -1637,9 +1614,8 @@ ndis_ticktask(device_object *d, void *xsc)
 
 	hangfunc = sc->ndis_chars->nmc_checkhang_func;
 	if (hangfunc != NULL) {
-		rval = MSCALL1(hangfunc,
-		    sc->ndis_block->nmb_miniportadapterctx);
-		if (rval == TRUE) {
+		r = MSCALL1(hangfunc, sc->ndis_block->nmb_miniportadapterctx);
+		if (r == TRUE) {
 			ndis_reset_nic(sc);
 			return;
 		}
@@ -1734,9 +1710,7 @@ ndis_update_promisc(struct ifnet *ifp)
 static void
 ndis_starttask(device_object *d, void *arg)
 {
-	struct ifnet *ifp;
-
-	ifp = arg;
+	struct ifnet *ifp = arg;
 
 	if (!IFQ_DRV_IS_EMPTY(&ifp->if_snd))
 		ndis_start(ifp);
@@ -1757,13 +1731,11 @@ ndis_starttask(device_object *d, void *arg)
 static void
 ndis_start(struct ifnet *ifp)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = ifp->if_softc;
 	struct mbuf *m = NULL;
 	ndis_packet **p0 = NULL, *p = NULL;
 	ndis_tcpip_csum *csum;
 	int pcnt = 0, status;
-
-	sc = ifp->if_softc;
 
 	NDIS_LOCK(sc);
 	if (!sc->ndis_link || ifp->if_drv_flags & IFF_DRV_OACTIVE) {
@@ -1907,7 +1879,6 @@ ndis_init(void *xsc)
 	ndis_set_offload(sc);
 
 	NDIS_LOCK(sc);
-
 	sc->ndis_txidx = 0;
 	sc->ndis_txpending = sc->ndis_maxpkts;
 	sc->ndis_link = 0;
@@ -1941,9 +1912,7 @@ ndis_init(void *xsc)
 static int
 ndis_ifmedia_upd(struct ifnet *ifp)
 {
-	struct ndis_softc *sc;
-
-	sc = ifp->if_softc;
+	struct ndis_softc *sc = ifp->if_softc;
 
 	if (NDIS_INITIALIZED(sc)) {
 		ndis_stop(sc);
@@ -1959,14 +1928,13 @@ ndis_ifmedia_upd(struct ifnet *ifp)
 static void
 ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = ifp->if_softc;
 	uint32_t media_info;
 	ndis_media_state linkstate;
 	int len;
 
 	ifmr->ifm_status = IFM_AVALID;
 	ifmr->ifm_active = IFM_ETHER;
-	sc = ifp->if_softc;
 
 	if (!NDIS_INITIALIZED(sc))
 		return;
@@ -1974,13 +1942,11 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 	len = sizeof(linkstate);
 	ndis_get_info(sc, OID_GEN_MEDIA_CONNECT_STATUS,
 	    (void *)&linkstate, &len);
-
-	len = sizeof(media_info);
-	ndis_get_info(sc, OID_GEN_LINK_SPEED,
-	    (void *)&media_info, &len);
-
 	if (linkstate == nmc_connected)
 		ifmr->ifm_status |= IFM_ACTIVE;
+
+	len = sizeof(media_info);
+	ndis_get_info(sc, OID_GEN_LINK_SPEED, (void *)&media_info, &len);
 
 	switch (media_info) {
 	case 100000:
@@ -2251,11 +2217,10 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 static void
 ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 {
-	struct ieee80211_node *ni;
+	struct ieee80211_node *ni = vap->iv_bss;
 	ndis_80211_ssid ssid;
 	int len, rval;
 
-	ni = vap->iv_bss;
 	len = sizeof(ssid);
 	bzero((char *)&ssid, len);
 
@@ -2296,7 +2261,7 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 	struct ieee80211_node *ni = vap->iv_bss;
 	struct ifnet *ifp = sc->ifp;
 	ndis_80211_macaddr bssid;
-	int r, len;
+	int len;
 
 	/*
 	 * If the user selected a specific BSSID, try
@@ -2315,8 +2280,7 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 	else
 		bcopy(ifp->if_broadcastaddr, bssid, len);
 	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
-	r = ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len);
-	if (r != 0)
+	if (ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len) != 0)
 		device_printf(sc->ndis_dev, "setting BSSID failed\n");
 
 	/* Set SSID -- always do this last. */
@@ -2679,11 +2643,9 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 static int
 ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 {
-	struct ndis_softc *sc;
+	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
 	ndis_80211_key nkey;
-	int len, error = 0;
-
-	sc = vap->iv_ic->ic_ifp->if_softc;
+	int len;
 
 	bzero((char *)&nkey, sizeof(nkey));
 	len = sizeof(nkey);
@@ -2694,8 +2656,7 @@ ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 	bcopy(vap->iv_ifp->if_broadcastaddr,
 	    nkey.nk_bssid, IEEE80211_ADDR_LEN);
 
-	error = ndis_set_info(sc, OID_802_11_REMOVE_KEY, &nkey, &len);
-	if (error != 0)
+	if (ndis_set_info(sc, OID_802_11_REMOVE_KEY, &nkey, &len) != 0)
 		return (0);
 
 	return (1);
