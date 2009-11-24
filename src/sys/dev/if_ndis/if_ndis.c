@@ -2497,8 +2497,6 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 	struct ifreq *ifr = (struct ifreq *) data;
 	int i, error = 0;
 
-	/*NDIS_LOCK(sc);*/
-
 	switch (command) {
 	case SIOCSIFFLAGS:
 		if (ifp->if_flags & IFF_UP) {
@@ -2551,8 +2549,6 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 		break;
 	}
 
-	/*NDIS_UNLOCK(sc);*/
-
 	return (error);
 }
 
@@ -2569,7 +2565,6 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 
 	switch (command) {
 	case SIOCSIFFLAGS:
-		/*NDIS_LOCK(sc);*/
 		if (ifp->if_flags & IFF_UP) {
 			if (!(ifp->if_drv_flags & IFF_DRV_RUNNING))
 				ndis_init(sc);
@@ -2577,9 +2572,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
 				ndis_stop(sc);
 		}
-		sc->ndis_if_flags = ifp->if_flags;
 		error = 0;
-		/*NDIS_UNLOCK(sc);*/
 		break;
 	case SIOCGDRVSPEC:
 		if ((error = priv_check(curthread, PRIV_DRIVER)))
