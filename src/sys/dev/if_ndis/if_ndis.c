@@ -767,7 +767,7 @@ nonettypes:
 		 */
 #define TESTSETRATE(x, y)						\
 	do {								\
-		int			i;				\
+		int i;							\
 		for (i = 0; i < ic->ic_sup_rates[x].rs_nrates; i++) {	\
 			if (ic->ic_sup_rates[x].rs_rates[i] == (y))	\
 				break;					\
@@ -1095,10 +1095,8 @@ int
 ndis_suspend(device_t dev)
 {
 	struct ndis_softc *sc;
-	struct ifnet *ifp;
 
 	sc = device_get_softc(dev);
-	ifp = sc->ifp;
 
 #ifdef notdef
 	if (NDIS_INITIALIZED(sc))
@@ -1112,10 +1110,8 @@ int
 ndis_resume(device_t dev)
 {
 	struct ndis_softc *sc;
-	struct ifnet *ifp;
 
 	sc = device_get_softc(dev);
-	ifp = sc->ifp;
 
 	if (NDIS_INITIALIZED(sc))
 		ndis_init(sc);
@@ -1145,7 +1141,6 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 	block = adapter;
 
 	m = m_getcl(M_DONTWAIT, MT_DATA, M_PKTHDR);
-
 	if (m == NULL) {
 		NdisFreePacket(p);
 		return;
@@ -2137,17 +2132,14 @@ static void
 ndis_setstate_80211(struct ndis_softc *sc)
 {
 	struct ieee80211_node *ni;
-	struct ieee80211com *ic;
+	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211vap *vap;
 	const struct ieee80211_txparam *tp;
 	ndis_80211_config config;
 	ndis_80211_rates rates;
-	struct ifnet *ifp;
 	uint32_t arg;
 	int rval = 0, len, i;
 
-	ifp = sc->ifp;
-	ic = ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	ni = vap->iv_bss;
 
@@ -2732,14 +2724,11 @@ static int
 ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
     const uint8_t mac[IEEE80211_ADDR_LEN])
 {
-	struct ndis_softc *sc;
-	ndis_80211_key nkey;
+	struct ifnet *ifp = vap->iv_ic->ic_ifp;
+	struct ndis_softc *sc = ifp->if_softc;
 	ndis_80211_wep wep;
-	struct ifnet *ifp;
+	ndis_80211_key nkey;
 	int len, error = 0;
-
-	ifp = vap->iv_ic->ic_ifp;
-	sc = ifp->if_softc;
 
 	switch (key->wk_cipher->ic_cipher) {
 	case IEEE80211_CIPHER_TKIP:
@@ -2823,10 +2812,9 @@ ndis_resettask(device_object *d, void *arg)
 static void
 ndis_stop(struct ndis_softc *sc)
 {
-	struct ifnet *ifp;
+	struct ifnet *ifp = sc->ifp;
 	int i;
 
-	ifp = sc->ifp;
 	callout_drain(&sc->ndis_stat_callout);
 	if (sc->ndis_80211 == 1)
 		callout_drain(&sc->ndis_scan_callout);
