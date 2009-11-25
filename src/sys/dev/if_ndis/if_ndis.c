@@ -2607,8 +2607,18 @@ static int
 ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 {
 	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
-	ndis_80211_key nkey;
+	const struct ieee80211_cipher *cip = key->wk_cipher;
+	ndis_80211_remove_key nkey;
 	int len;
+
+	if (cip->ic_cipher == IEEE80211_CIPHER_WEP) {
+		uint32_t idx = key->wk_keyix;
+
+		len = sizeof(idx);
+		if (ndis_set_info(sc, OID_802_11_REMOVE_WEP, &idx, &len) != 0)
+			return (0);
+		return (1);
+	}
 
 	bzero((char *)&nkey, sizeof(nkey));
 	len = sizeof(nkey);
