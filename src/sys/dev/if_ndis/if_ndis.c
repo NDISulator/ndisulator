@@ -1181,9 +1181,8 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 }
 
 /*
- * NdisMEthIndicateReceiveComplete() handler, runs at DISPATCH_LEVEL
- * for serialized miniports, or IRQL <= DISPATCH_LEVEL for deserialized
- * miniports.
+ * NdisMEthIndicateReceiveComplete() handler, runs at DISPATCH_LEVEL for
+ * serialized miniports, or IRQL <= DISPATCH_LEVEL for deserialized miniports.
  */
 static void
 ndis_rxeof_done(ndis_handle adapter)
@@ -1237,9 +1236,8 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 		KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
 
 		/*
-		 * If status is NDIS_STATUS_PENDING, do nothing and
-		 * wait for a callback to the ndis_rxeof_xfr_done()
-		 * handler.
+		 * If status is NDIS_STATUS_PENDING, do nothing and wait
+		 * for a callback to the ndis_rxeof_xfr_done() handler.
 		 */
 		m->m_len = m->m_pkthdr.len;
 		m->m_pkthdr.rcvif = ifp;
@@ -1302,20 +1300,18 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
  * A frame has been uploaded: pass the resulting mbuf chain up to
  * the higher level protocols.
  *
- * When handling received NDIS packets, the 'status' field in the
- * out-of-band portion of the ndis_packet has special meaning. In the
- * most common case, the underlying NDIS driver will set this field
- * to NDIS_STATUS_SUCCESS, which indicates that it's ok for us to
- * take posession of it. We then change the status field to
- * NDIS_STATUS_PENDING to tell the driver that we now own the packet,
- * and that we will return it at some point in the future via the
+ * When handling received NDIS packets, the 'status' field in the out-of-band
+ * portion of the ndis_packet has special meaning. In the most common case,
+ * the underlying NDIS driver will set this field to NDIS_STATUS_SUCCESS,
+ * which indicates that it's ok for us to take posession of it. We then change
+ * the status field to NDIS_STATUS_PENDING to tell the driver that we now own
+ * the packet, and that we will return it at some point in the future via the
  * return packet handler.
  *
  * If the driver hands us a packet with a status of NDIS_STATUS_RESOURCES,
- * this means the driver is running out of packet/buffer resources and
- * wants to maintain ownership of the packet. In this case, we have to
- * copy the packet data into local storage and let the driver keep the
- * packet.
+ * this means the driver is running out of packet/buffer resources and wants
+ * to maintain ownership of the packet. In this case, we have to copy the
+ * packet data into local storage and let the driver keep the packet.
  */
 static void
 ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
@@ -1398,8 +1394,7 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 				s = (uintptr_t)
 				    p->np_ext.npe_info[ndis_tcpipcsum_info];
 				csum = (ndis_tcpip_csum *)&s;
-				if (csum->u.ntc_rxflags &
-				    NDIS_RXCSUM_IP_PASSED)
+				if (csum->u.ntc_rxflags & NDIS_RXCSUM_IP_PASSED)
 					m0->m_pkthdr.csum_flags |=
 					    CSUM_IP_CHECKED|CSUM_IP_VALID;
 				if (csum->u.ntc_rxflags &
@@ -1490,7 +1485,6 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 
 	sc->ndis_tx_timer = 0;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-
 	NDIS_UNLOCK(sc);
 
 	IoQueueWorkItem(sc->ndis_startitem,
@@ -1498,8 +1492,7 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 }
 
 static void
-ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf,
-    uint32_t slen)
+ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf, uint32_t slen)
 {
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
@@ -1717,12 +1710,11 @@ ndis_starttask(device_object *d, void *arg)
 }
 
 /*
- * Main transmit routine. To make NDIS drivers happy, we need to
- * transform mbuf chains into NDIS packets and feed them to the
- * send packet routines. Most drivers allow you to send several
- * packets at once (up to the maxpkts limit). Unfortunately, rather
- * that accepting them in the form of a linked list, they expect
- * a contiguous array of pointers to packets.
+ * Main transmit routine. To make NDIS drivers happy, we need to transform
+ * mbuf chains into NDIS packets and feed them to the send packet routines.
+ * Most drivers allow you to send several packets at once (up to the maxpkts
+ * limit). Unfortunately, rather that accepting them in the form of a linked
+ * list, they expect a contiguous array of pointers to packets.
  *
  * For those drivers which use the NDIS scatter/gather DMA mechanism,
  * we need to perform busdma work here. Those that use map registers
@@ -1838,8 +1830,7 @@ ndis_start(struct ifnet *ifp)
 	/*
 	 * According to NDIS documentation, if a driver exports
 	 * a MiniportSendPackets() routine, we prefer that over
-	 * a MiniportSend() routine (which sends just a single
-	 * packet).
+	 * a MiniportSend() routine (which sends just a single packet).
 	 */
 	if (sc->ndis_chars->nmc_sendmulti_func != NULL)
 		ndis_send_packets(sc, p0, pcnt);
@@ -1972,20 +1963,15 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 	uint32_t arg, save;
 
 	len = sizeof(arg);
-
 	if (cipher == WPA_CSE_WEP40 || WPA_CSE_WEP104) {
 		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_WEP))
 			return (ENOTSUP);
 		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
-	}
-
-	if (cipher == WPA_CSE_TKIP) {
+	} else if (cipher == WPA_CSE_TKIP) {
 		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_TKIP))
 			return (ENOTSUP);
 		arg = NDIS_80211_WEPSTAT_ENC2ENABLED;
-	}
-
-	if (cipher == WPA_CSE_CCMP) {
+	} else if (cipher == WPA_CSE_CCMP) {
 		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_AES_CCM))
 			return (ENOTSUP);
 		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
@@ -2290,7 +2276,7 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 static void
 ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	int len, error;
+	int len;
 	uint32_t arg;
 
 	/* Initial setup */
@@ -2302,8 +2288,7 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 		DPRINTF(("Setting WEP on\n"));
 		arg = NDIS_80211_WEPSTAT_ENABLED;
 		len = sizeof(arg);
-		error = ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len);
-		if (error != 0)
+		if (ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len) != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
 	}
 
@@ -2311,8 +2296,7 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if ((vap->iv_flags & IEEE80211_F_WPA) &&
 	    vap->iv_appie_assocreq != NULL) {
 		struct ieee80211_appie *ie = vap->iv_appie_assocreq;
-		error = ndis_set_wpa(sc, ie->ie_data, ie->ie_len);
-		if (error != 0)
+		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
 	}
 }
@@ -2947,13 +2931,12 @@ ndis_scan_start(struct ieee80211com *ic)
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
-	int error, len;
+	int len;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	len = 0;
-	error = ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len);
-	if (error) {
+	if (ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len) != 0) {
 		ieee80211_cancel_scan(vap);
 		return;
 	}
