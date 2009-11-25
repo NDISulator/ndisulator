@@ -197,7 +197,7 @@ static int ndis_set_wpa(struct ndis_softc *, void *, int);
 static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
     const u_int8_t []);
 static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
-static void ndis_setmulti(struct ndis_softc *);
+static int ndis_setmulti(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 
 static int ndisdrv_loaded = 0;
@@ -275,30 +275,23 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 /*
  * Program the 64-bit multicast hash filter.
  */
-static void
+static int
 ndis_setmulti(struct ndis_softc *sc)
 {
 	struct ifnet *ifp = sc->ifp;
 	struct ifmultiaddr *ifma;
-	int len, mclistsz, error;
+	int len, mclistsz;
 	uint8_t *mclist;
-
-	if (!NDIS_INITIALIZED(sc))
-		return;
 
 	if (ifp->if_flags & IFF_ALLMULTI || ifp->if_flags & IFF_PROMISC) {
 		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
 		len = sizeof(sc->ndis_filter);
-		error = ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-		    &sc->ndis_filter, &len);
-		if (error)
-			device_printf(sc->ndis_dev,
-			    "set allmulti failed: %d\n", error);
-		return;
+		return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
+		    &sc->ndis_filter, &len));
 	}
 
 	if (TAILQ_EMPTY(&ifp->if_multiaddrs))
-		return;
+		return (EINVAL);
 
 	len = sizeof(mclistsz);
 	ndis_get_info(sc, OID_802_3_MAXIMUM_LIST_SIZE, &mclistsz, &len);
@@ -329,9 +322,8 @@ ndis_setmulti(struct ndis_softc *sc)
 	if_maddr_runlock(ifp);
 
 	len = len * ETHER_ADDR_LEN;
-	error = ndis_set_info(sc, OID_802_3_MULTICAST_LIST, mclist, &len);
-	if (error) {
-		device_printf(sc->ndis_dev, "set mclist failed: %d\n", error);
+	if (ndis_set_info(sc, OID_802_3_MULTICAST_LIST, mclist, &len) != 0) {
+		device_printf(sc->ndis_dev, "set mclist failed\n");
 		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
 		sc->ndis_filter &= ~NDIS_PACKET_TYPE_MULTICAST;
 	}
@@ -339,10 +331,8 @@ out:
 	free(mclist, M_NDIS_DEV);
 
 	len = sizeof(sc->ndis_filter);
-	error = ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-	    &sc->ndis_filter, &len);
-	if (error)
-		device_printf(sc->ndis_dev, "set multi failed: %d\n", error);
+	return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
+	    &sc->ndis_filter, &len));
 }
 
 static int
@@ -1844,7 +1834,7 @@ ndis_init(void *xsc)
 	struct ndis_softc *sc = xsc;
 	struct ifnet *ifp = sc->ifp;
 	struct ieee80211com *ic = ifp->if_l2com;
-	int i, len, error;
+	int i, len;
 
 	/* Program the packet filter */
 	sc->ndis_filter = NDIS_PACKET_TYPE_DIRECTED;
@@ -1853,10 +1843,9 @@ ndis_init(void *xsc)
 	if (ifp->if_flags & IFF_PROMISC)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_PROMISCUOUS;
 	len = sizeof(sc->ndis_filter);
-	error = ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-	    &sc->ndis_filter, &len);
-	if (error)
-		device_printf(sc->ndis_dev, "set filter failed: %d\n", error);
+	if (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
+	    &sc->ndis_filter, &len) != 0)
+		device_printf(sc->ndis_dev, "set filter failed\n");
 
 	/* Set lookahead */
 	i = ifp->if_mtu;
@@ -2455,12 +2444,10 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 				ndis_stop(sc);
 		}
 		sc->ndis_if_flags = ifp->if_flags;
-		error = 0;
 		break;
 	case SIOCADDMULTI:
 	case SIOCDELMULTI:
-		ndis_setmulti(sc);
-		error = 0;
+		error = ndis_setmulti(sc);
 		break;
 	case SIOCGIFMEDIA:
 	case SIOCSIFMEDIA:
@@ -2472,7 +2459,7 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 			ifp->if_hwassist = sc->ndis_hwassist;
 		else
 			ifp->if_hwassist = 0;
-		ndis_set_offload(sc);
+		error = ndis_set_offload(sc);
 		break;
 	default:
 		error = ether_ioctl(ifp, command, data);
