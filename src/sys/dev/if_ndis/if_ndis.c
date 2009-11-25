@@ -186,8 +186,8 @@ static int ndis_get_bssid_list(struct ndis_softc *,
     ndis_80211_bssid_list_ex **);
 static int ndis_probe_offload(struct ndis_softc *);
 static int ndis_set_offload(struct ndis_softc *);
-static void ndis_getstate_80211(struct ndis_softc *);
-static void ndis_setstate_80211(struct ndis_softc *);
+static void ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher(struct ndis_softc *, int);
@@ -2071,19 +2071,15 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 }
 
 static void
-ndis_setstate_80211(struct ndis_softc *sc)
+ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	struct ieee80211_node *ni;
 	struct ieee80211com *ic = sc->ifp->if_l2com;
-	struct ieee80211vap *vap;
+	struct ieee80211_node *ni = vap->iv_bss;
 	const struct ieee80211_txparam *tp;
 	ndis_80211_config config;
 	ndis_80211_rates rates;
 	uint32_t arg;
 	int rval = 0, len, i;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
-	ni = vap->iv_bss;
 
 	/* Disassociate and turn off radio */
 	len = 0;
@@ -2280,7 +2276,7 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	uint32_t arg;
 
 	/* Initial setup */
-	ndis_setstate_80211(sc);
+	ndis_setstate_80211(sc, vap);
 
 	/* Set up WEP */
 	if (vap->iv_flags & IEEE80211_F_PRIVACY &&
@@ -2329,19 +2325,15 @@ ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 }
 
 static void
-ndis_getstate_80211(struct ndis_softc *sc)
+ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com *ic = sc->ifp->if_l2com;
-	struct ieee80211vap *vap;
-	struct ieee80211_node *ni;
+	struct ieee80211_node *ni = vap->iv_bss;
 	ndis_80211_config config;
 	ndis_80211_macaddr bssid;
 	ndis_80211_ssid ssid;
 	int chanflag = 0, len, i = 0;
 	uint32_t arg;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
-	ni = vap->iv_bss;
 
 	/* Get BSSID */
 	len = sizeof(bssid);
@@ -2804,7 +2796,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 			ndis_auth(sc, vap);
 			ndis_assoc(sc, vap);
 		}
-		ndis_getstate_80211(sc);
+		ndis_getstate_80211(sc, vap);
 		break;
 	case IEEE80211_S_AUTH:
 		ndis_auth(sc, vap);
