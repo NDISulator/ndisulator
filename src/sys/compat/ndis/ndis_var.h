@@ -414,13 +414,11 @@ struct ndis_80211_stats {
 };
 typedef struct ndis_80211_stats ndis_80211_stats;
 
-typedef uint32_t ndis_80211_key_idx;
-
 struct ndis_80211_wep {
-	uint32_t	nw_length;
+	uint32_t	nw_len;
 	uint32_t	nw_keyidx;
 	uint32_t	nw_keylen;
-	uint8_t		nw_keydata[256];
+	uint8_t		nw_keydata[32];
 };
 typedef struct ndis_80211_wep ndis_80211_wep;
 
