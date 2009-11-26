@@ -2068,7 +2068,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	ndis_80211_config config;
 	ndis_80211_rates rates;
 	uint32_t arg;
-	int rval = 0, len, i;
+	int len, i;
 
 	/* Disassociate and turn off radio */
 	len = 0;
@@ -2142,7 +2142,8 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	bzero((char *)&config, len);
 	config.nc_length = len;
 	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
-	rval = ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len);
+	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) != 0)
+		return;
 
 	/*
 	 * Some drivers expect us to initialize these values, so
@@ -2154,21 +2155,14 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		config.nc_atimwin = 100;
 	if (config.nc_fhconfig.ncf_length != 0)
 		config.nc_fhconfig.ncf_dwelltime = ni->ni_fhdwell;
-	if (rval == 0 && ic->ic_bsschan != IEEE80211_CHAN_ANYC) {
+	if (ic->ic_bsschan != IEEE80211_CHAN_ANYC) {
 		config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
 		len = sizeof(config);
 		config.nc_length = len;
 		config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
 		DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
-		rval = ndis_set_info(sc, OID_802_11_CONFIGURATION,
-		    &config, &len);
-		if (rval)
-			device_printf(sc->ndis_dev, "couldn't change "
-			    "DS config to %ukHz: %d\n",
-			    config.nc_dsconfig, rval);
-	} else if (rval)
-		device_printf(sc->ndis_dev, "couldn't retrieve "
-		    "channel info: %d\n", rval);
+		ndis_set_info(sc, OID_802_11_CONFIGURATION, &config, &len);
+	}
 }
 
 static void
