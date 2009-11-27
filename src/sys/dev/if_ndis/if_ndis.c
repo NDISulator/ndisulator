@@ -616,7 +616,7 @@ ndis_attach(device_t dev)
 	/* Figure out how big to make the TX buffer pool */
 	len = sizeof(sc->ndis_maxpkts);
 	if (ndis_get_info(sc, OID_GEN_MAXIMUM_SEND_PACKETS,
-		    &sc->ndis_maxpkts, &len)) {
+		    &sc->ndis_maxpkts, &len) != 0) {
 		device_printf(dev, "failed to get max TX packets\n");
 		error = ENXIO;
 		goto fail;
@@ -700,7 +700,6 @@ ndis_attach(device_t dev)
 		ndis_80211_rates_ex rates;
 		struct ndis_80211_nettype_list *ntl;
 		uint32_t arg;
-		int r;
 
 		callout_init(&sc->ndis_scan_callout, CALLOUT_MPSAFE);
 
@@ -713,14 +712,12 @@ ndis_attach(device_t dev)
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
 
 		len = 0;
-		r = ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
-		    NULL, &len);
-		if (r != ENOSPC)
+		if (ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
+		    NULL, &len) != ENOSPC)
 			goto nonettypes;
 		ntl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
-		r = ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
-		    ntl, &len);
-		if (r != 0) {
+		if (ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
+		    ntl, &len) != 0) {
 			free(ntl, M_NDIS_DEV);
 			goto nonettypes;
 		}
@@ -740,10 +737,9 @@ nonettypes:
 		}
 		len = sizeof(rates);
 		bzero((char *)&rates, len);
-		r = ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
-		    (void *)rates, &len);
-		if (r)
-			device_printf(dev, "get rates failed: 0x%x\n", r);
+		if (ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
+		    (void *)rates, &len) != 0)
+			device_printf(dev, "get rates failed\n");
 		/*
 		 * Since the supported rates only up to 8 can be supported,
 		 * if this is not 802.11b we're just going to be faking it
@@ -843,12 +839,12 @@ nonettypes:
 		 */
 		i = sizeof(arg);
 		arg = NDIS_80211_AUTHMODE_WPA;
-		r = ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i);
-		if (r == 0) {
-			r = ndis_get_info(sc,
-			    OID_802_11_AUTHENTICATION_MODE, &arg, &i);
-			if (r == 0 && arg == NDIS_80211_AUTHMODE_WPA)
-				ic->ic_caps |= IEEE80211_C_WPA;
+		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
+		    &arg, &i) == 0) {
+			if (ndis_get_info(sc,
+			    OID_802_11_AUTHENTICATION_MODE, &arg, &i) == 0)
+				if (arg == NDIS_80211_AUTHMODE_WPA)
+					ic->ic_caps |= IEEE80211_C_WPA;
 		}
 
 		/*
@@ -860,35 +856,32 @@ nonettypes:
 		 */
 		i = sizeof(arg);
 		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
-		r = ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &i);
-		if (r == 0) {
+		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
+		    &arg, &i) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP
 					  |  IEEE80211_CRYPTO_AES_CCM;
 			goto got_crypto;
 		}
 		arg = NDIS_80211_WEPSTAT_ENC2ENABLED;
-		r = ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &i);
-		if (r == 0) {
+		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
+		    &arg, &i) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP;
 			goto got_crypto;
 		}
 		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
-		r = ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &i);
-		if (r == 0)
+		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
+		    &arg, &i) == 0)
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
 		i = sizeof(arg);
-		r = ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
-		    &arg, &i);
-		if (r == 0)
+		if (ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
+		    &arg, &i) == 0)
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
-		r = ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &i);
-		if (r == 0)
+		if (ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &i) == 0)
 			ic->ic_caps |= IEEE80211_C_PMGT;
-		r = ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &i);
-		if (r == 0)
+		if (ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &i) == 0)
 			ic->ic_caps |= IEEE80211_C_TXPMGT;
 
 		ieee80211_ifattach(ic, eaddr);
@@ -2184,7 +2177,7 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 {
 	struct ieee80211_node *ni = vap->iv_bss;
 	ndis_80211_ssid ssid;
-	int len, rval;
+	int len;
 
 	len = sizeof(ssid);
 	bzero((char *)&ssid, len);
@@ -2215,9 +2208,8 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 		printf("\n");
 	}
 #endif
-	rval = ndis_set_info(sc, OID_802_11_SSID, &ssid, &len);
-	if (rval)
-		DPRINTF(("set ESSID failed: %d\n", rval));
+	if (ndis_set_info(sc, OID_802_11_SSID, &ssid, &len) != 0)
+		DPRINTF(("set ESSID failed.\n"));
 }
 
 static void
@@ -2340,9 +2332,9 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	/* Get fragmentation threshold */
 	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
 		len = sizeof(arg);
-		ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
-		    &arg, &len);
-		vap->iv_fragthreshold = arg;
+		if (ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
+		    &arg, &len) == 0)
+			vap->iv_fragthreshold = arg;
 	}
 
 	/* Get RTS threshold */
@@ -2353,21 +2345,25 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	/* Get power management */
 	if (ic->ic_caps & IEEE80211_C_PMGT) {
 		len = sizeof(arg);
-		ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len);
-		if (arg == NDIS_80211_POWERMODE_CAM)
-			vap->iv_flags &= ~IEEE80211_F_PMGTON;
-		else
-			vap->iv_flags |= IEEE80211_F_PMGTON;
+		if (ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len) == 0) {
+			if (arg == NDIS_80211_POWERMODE_CAM)
+				vap->iv_flags &= ~IEEE80211_F_PMGTON;
+			else
+				vap->iv_flags |= IEEE80211_F_PMGTON;
+		}
 	}
 
 	/* Get TX power */
 	if (ic->ic_caps & IEEE80211_C_TXPMGT) {
 		len = sizeof(arg);
-		ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len);
-		for (i = 0; i < (sizeof(dBm2mW) / sizeof(dBm2mW[0])); i++)
-			if (dBm2mW[i] >= arg)
-				break;
-		ic->ic_txpowlimit = i;
+		if (ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL,
+		    &arg, &len) == 0) {
+			for (i = 0; i < (sizeof(dBm2mW) / sizeof(dBm2mW[0]));
+			    i++)
+				if (dBm2mW[i] >= arg)
+					break;
+			ic->ic_txpowlimit = i;
+		}
 	}
 
 	/* Get network mode */
