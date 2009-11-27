@@ -2021,16 +2021,14 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 	n = (struct ndis_ie *)pos;
 	if (n->ni_val == WPA_ASE_NONE)
 		arg = NDIS_80211_AUTHMODE_WPANONE;
-
-	if (n->ni_val == WPA_ASE_8021X_UNSPEC)
+	else if (n->ni_val == WPA_ASE_8021X_UNSPEC)
 		arg = NDIS_80211_AUTHMODE_WPA;
-
-	if (n->ni_val == WPA_ASE_8021X_PSK)
+	else if (n->ni_val == WPA_ASE_8021X_PSK)
 		arg = NDIS_80211_AUTHMODE_WPAPSK;
-
-	DPRINTF(("Setting WPA auth mode to %d\n", arg));
+	else
+		return (EINVAL);
 	i = sizeof(arg);
-	if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i))
+	if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i) != 0)
 		return (ENOTSUP);
 
 	/* Now configure the desired ciphers. */
@@ -2223,15 +2221,13 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 	int len;
 
 	/*
-	 * If the user selected a specific BSSID, try
-	 * to use that one. This is useful in the case where
-	 * there are several APs in range with the same network
-	 * name. To delete the BSSID, we use the broadcast
-	 * address as the BSSID.
-	 * Note that some drivers seem to allow setting a BSSID
-	 * in ad-hoc mode, which has the effect of forcing the
-	 * NIC to create an ad-hoc cell with a specific BSSID,
-	 * instead of a randomly chosen one.
+	 * If the user selected a specific BSSID, try to use that one.
+	 * This is useful in the case where there are several APs in
+	 * range with the same network name. To delete the BSSID, we
+	 * use the broadcast address as the BSSID.
+	 * Note that some drivers seem to allow setting a BSSID in ad-hoc
+	 * mode, which has the effect of forcing the NIC to create an ad-hoc
+	 * cell with a specific BSSID, instead of a randomly chosen one.
 	 */
 	len = IEEE80211_ADDR_LEN;
 	if (vap->iv_flags & IEEE80211_F_DESBSSID)
