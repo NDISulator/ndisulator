@@ -191,7 +191,7 @@ static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher(struct ndis_softc *, int);
-static void ndis_set_infra(struct ndis_softc *, int);
+static int ndis_set_infra(struct ndis_softc *, int);
 static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
 static int ndis_set_wpa(struct ndis_softc *, void *, int);
 static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
@@ -938,15 +938,17 @@ ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
 
 	if (!TAILQ_EMPTY(&ic->ic_vaps))		/* only one at a time */
 		return (NULL);
+
+	/* Infrastructure mode */
+	if (ndis_set_infra(sc, opmode) != 0)
+		return (NULL);
+
 	nvp = (struct ndis_vap *) malloc(sizeof(struct ndis_vap),
 	    M_80211_VAP, M_NOWAIT|M_ZERO);
 	if (nvp == NULL)
 		return (NULL);
 	vap = &nvp->vap;
 	ieee80211_vap_setup(ic, vap, name, unit, opmode, flags, bssid, mac);
-
-	/* Infrastructure mode */
-	ndis_set_infra(sc, opmode);
 
 	/* Override with driver methods */
 	nvp->newstate = vap->iv_newstate;
@@ -2158,7 +2160,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	}
 }
 
-static void
+static int
 ndis_set_infra(struct ndis_softc *sc, int opmode)
 {
 	uint32_t arg;
@@ -2169,7 +2171,7 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 		arg = NDIS_80211_NET_INFRA_IBSS;
 	else
 		arg = NDIS_80211_NET_INFRA_BSS;
-	ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len);
+	return (ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len));
 }
 
 static void
