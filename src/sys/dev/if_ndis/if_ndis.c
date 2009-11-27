@@ -2121,16 +2121,6 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	len = sizeof(arg);
 	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 
-	/* Default encryption mode to off */
-	len = sizeof(arg);
-	arg = NDIS_80211_WEPSTAT_DISABLED;
-	ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
-
-	/* Authentication to open */
-	len = sizeof(arg);
-	arg = NDIS_80211_AUTHMODE_OPEN;
-	ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
-
 	len = sizeof(config);
 	bzero((char *)&config, len);
 	config.nc_length = len;
@@ -2251,20 +2241,30 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	/* Initial setup */
 	ndis_setstate_80211(sc, vap);
 
-	/* Set up WEP */
-	if (vap->iv_flags & IEEE80211_F_PRIVACY &&
+	if (!(vap->iv_flags & IEEE80211_F_WPA)) {
+		/* Authentication to open */
+		arg = NDIS_80211_AUTHMODE_OPEN;
+		len = sizeof(arg);
+		ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
+	}
+
+	if ((vap->iv_flags & IEEE80211_F_PRIVACY) == 0) {
+		/* Encryption mode to off */
+		arg = NDIS_80211_WEPSTAT_DISABLED;
+		len = sizeof(arg);
+		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
+	} else if (vap->iv_flags & IEEE80211_F_PRIVACY &&
 	    !(vap->iv_flags & IEEE80211_F_WPA)) {
-		DPRINTF(("Setting WEP on\n"));
+		/* Set up WEP */
 		arg = NDIS_80211_WEPSTAT_ENABLED;
 		len = sizeof(arg);
 		if (ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len) != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
-	}
-
-	/* Set up WPA */
-	if ((vap->iv_flags & IEEE80211_F_WPA) &&
+	} else if ((vap->iv_flags & IEEE80211_F_WPA) &&
 	    vap->iv_appie_assocreq != NULL) {
+		/* Set up WPA */
 		struct ieee80211_appie *ie = vap->iv_appie_assocreq;
+
 		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
 	}
