@@ -2395,6 +2395,20 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		else
 			vap->iv_flags &= ~IEEE80211_F_DROPUNENC;
 	}
+
+	len = sizeof(arg);
+	if (ndis_get_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len) == 0) {
+		switch (arg) {
+		case NDIS_80211_WEPSTAT_ENC1ENABLED:
+		case NDIS_80211_WEPSTAT_ENC2ENABLED:
+		case NDIS_80211_WEPSTAT_ENC3ENABLED:
+			vap->iv_flags |= IEEE80211_F_PRIVACY;
+			break;
+		default:
+			vap->iv_flags &= ~IEEE80211_F_PRIVACY;
+			break;
+		}
+	}
 }
 
 static int
