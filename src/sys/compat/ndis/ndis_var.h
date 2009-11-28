@@ -422,9 +422,6 @@ struct ndis_80211_wep {
 };
 typedef struct ndis_80211_wep ndis_80211_wep;
 
-#define	NDIS_80211_WEPKEY_TX		0x80000000
-#define	NDIS_80211_WEPKEY_PERCLIENT	0x40000000
-
 enum ndis_infra {
 	NDIS_80211_NET_INFRA_IBSS,
 	NDIS_80211_NET_INFRA_BSS,

@@ -2696,8 +2696,8 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		wep.nw_keylen = key->wk_keylen;
 		wep.nw_keyidx = key->wk_keyix;
 		wep.nw_len = (sizeof(uint32_t) * 3) + wep.nw_keylen;
-		if (wep.nw_keyidx == vap->iv_def_txkey)
-			wep.nw_keyidx |= NDIS_80211_WEPKEY_TX;
+		if (key->wk_flags & IEEE80211_KEY_XMIT)
+			wep.nw_keyidx |=  1 << 31;
 		bcopy(key->wk_key, wep.nw_keydata, wep.nw_len);
 		error = ndis_set_info(sc, OID_802_11_ADD_WEP, &wep, &len);
 		break;
