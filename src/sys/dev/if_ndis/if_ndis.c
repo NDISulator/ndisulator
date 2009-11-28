@@ -213,8 +213,6 @@ MALLOC_DEFINE(M_NDIS_DEV, "ndis_dev", "if_ndis buffers");
 int
 ndisdrv_modevent(module_t mod, int cmd, void *arg)
 {
-	int error = 0;
-
 	switch (cmd) {
 	case MOD_LOAD:
 		ndisdrv_loaded++;
@@ -265,11 +263,11 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		windrv_unwrap(ndis_inputtask_wrap);
 		break;
 	default:
-		error = EINVAL;
+		return (EINVAL);
 		break;
 	}
 
-	return (error);
+	return (0);
 }
 
 /*
