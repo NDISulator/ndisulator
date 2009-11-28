@@ -190,6 +190,7 @@ static void ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_disassociate(struct ndis_softc *);
 static int ndis_set_cipher(struct ndis_softc *, int);
 static int ndis_set_infra(struct ndis_softc *, int);
 static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
@@ -2061,10 +2062,6 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	uint32_t arg;
 	int len, i;
 
-	/* Disassociate and turn off radio */
-	len = 0;
-	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
-
 	/* Set fragmentation threshold */
 	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
 		arg = vap->iv_fragthreshold;
@@ -2236,7 +2233,8 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	int len;
 	uint32_t arg;
 
-	/* Initial setup */
+	ndis_disassociate(sc);
+
 	ndis_setstate_80211(sc, vap);
 
 	if (!(vap->iv_flags & IEEE80211_F_WPA)) {
@@ -2266,6 +2264,17 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
 	}
+}
+
+/*
+ * Disassociate and turn off radio.
+ */
+static void
+ndis_disassociate(struct ndis_softc *sc)
+{
+	int len = 0;
+
+	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
 }
 
 static int
@@ -2784,6 +2793,10 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 
 	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
+	case IEEE80211_S_INIT:
+		if (ostate != IEEE80211_S_INIT)
+			ndis_disassociate(sc);
+		break;
 	case IEEE80211_S_SCAN:
 		if (vap->iv_opmode == IEEE80211_M_STA)
 			ndis_set_ssid(sc, vap, 1);
