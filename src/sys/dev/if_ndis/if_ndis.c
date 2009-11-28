@@ -1024,15 +1024,15 @@ ndis_detach(device_t dev)
 	bus_generic_detach(dev);
 	ndis_unload_driver(sc);
 
-	if (sc->ndis_irq)
+	if (sc->ndis_irq != NULL)
 		bus_release_resource(dev, SYS_RES_IRQ, 0, sc->ndis_irq);
-	if (sc->ndis_res_io)
+	if (sc->ndis_res_io != NULL)
 		bus_release_resource(dev, SYS_RES_IOPORT,
 		    sc->ndis_io_rid, sc->ndis_res_io);
-	if (sc->ndis_res_mem)
+	if (sc->ndis_res_mem != NULL)
 		bus_release_resource(dev, SYS_RES_MEMORY,
 		    sc->ndis_mem_rid, sc->ndis_res_mem);
-	if (sc->ndis_res_altmem)
+	if (sc->ndis_res_altmem != NULL)
 		bus_release_resource(dev, SYS_RES_MEMORY,
 		    sc->ndis_altmem_rid, sc->ndis_res_altmem);
 
@@ -1048,7 +1048,7 @@ ndis_detach(device_t dev)
 	if (sc->ndis_txarray != NULL)
 		free(sc->ndis_txarray, M_NDIS_DEV);
 
-	if (!sc->ndis_80211)
+	if (sc->ndis_80211 == 0)
 		ifmedia_removeall(&sc->ifmedia);
 
 	if (sc->ndis_txpool != NULL)
