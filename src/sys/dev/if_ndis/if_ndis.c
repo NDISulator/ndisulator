@@ -2055,9 +2055,7 @@ static void
 ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com *ic = sc->ifp->if_l2com;
-	struct ieee80211_node *ni = vap->iv_bss;
 	const struct ieee80211_txparam *tp;
-	ndis_80211_config config;
 	ndis_80211_rates rates;
 	uint32_t arg;
 	int len, i;
@@ -2115,32 +2113,6 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		arg = NDIS_80211_PRIVFILT_ACCEPTALL;
 	len = sizeof(arg);
 	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
-
-	len = sizeof(config);
-	bzero((char *)&config, len);
-	config.nc_length = len;
-	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
-	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) != 0)
-		return;
-
-	/*
-	 * Some drivers expect us to initialize these values, so
-	 * provide some defaults.
-	 */
-	config.nc_beaconperiod = ic->ic_bintval;
-	if (vap->iv_opmode == IEEE80211_M_IBSS &&
-	    config.nc_atimwin == 0)
-		config.nc_atimwin = 100;
-	if (config.nc_fhconfig.ncf_length != 0)
-		config.nc_fhconfig.ncf_dwelltime = ni->ni_fhdwell;
-	if (ic->ic_bsschan != IEEE80211_CHAN_ANYC) {
-		config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
-		len = sizeof(config);
-		config.nc_length = len;
-		config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
-		DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
-		ndis_set_info(sc, OID_802_11_CONFIGURATION, &config, &len);
-	}
 }
 
 static int
@@ -2949,7 +2921,34 @@ ndis_scan_start(struct ieee80211com *ic)
 static void
 ndis_set_channel(struct ieee80211com *ic)
 {
-	/* ignore */
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
+	struct ieee80211vap *vap;
+	ndis_80211_config config;
+	int len;
+
+	if (sc->ndis_link == 1 || ic->ic_bsschan == IEEE80211_CHAN_ANYC)
+		return;
+
+	vap = TAILQ_FIRST(&ic->ic_vaps);
+
+	len = sizeof(config);
+	bzero((char *)&config, len);
+	config.nc_length = len;
+	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
+	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) != 0)
+		return;
+
+	config.nc_beaconperiod = ic->ic_bintval;
+	if (config.nc_atimwin == 0)
+		config.nc_atimwin = 100;
+	if (config.nc_fhconfig.ncf_dwelltime == 0)
+		config.nc_fhconfig.ncf_dwelltime = 100;
+	config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
+	len = sizeof(config);
+	config.nc_length = len;
+	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
+	DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
+	ndis_set_info(sc, OID_802_11_CONFIGURATION, &config, &len);
 }
 
 static void
