@@ -524,7 +524,7 @@ dump_addreg(const char *s, int devidx)
 		if (reg->section == sec) {
 			if (reg->subkey == NULL) {
 				fprintf(ofp, "\n\t{ \"%s\",", reg->key);
-				fprintf(ofp,"\n\t\"%s \",", reg->key);
+				fprintf(ofp, "\n\t\"%s \",", reg->key);
 				fprintf(ofp, "\n\t{ \"%s\" }, %d },",
 				    reg->value == NULL ? "" :
 				    stringcvt(reg->value), devidx);
@@ -549,8 +549,7 @@ dump_enumreg(const struct section *s, const struct reg *r)
 			continue;
 		if (reg->subkey == NULL || strcasecmp(reg->subkey, enumkey))
 			continue;
-		fprintf(ofp, " [%s=%s]", reg->key,
-		    stringcvt(reg->value));
+		fprintf(ofp, " [%s=%s]", reg->key, stringcvt(reg->value));
 	}
 }
 
