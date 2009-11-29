@@ -40,40 +40,29 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/sockio.h>
+#include <sys/sysctl.h>
 #include <sys/mbuf.h>
 #include <sys/malloc.h>
-#include <sys/endian.h>
-#include <sys/priv.h>
+#include <sys/sockio.h>
+#include <sys/bus.h>
 #include <sys/kernel.h>
 #include <sys/socket.h>
-#include <sys/queue.h>
 #include <sys/module.h>
-#include <sys/proc.h>
-#include <sys/sysctl.h>
-#include <sys/kthread.h>
+#include <sys/priv.h>
 
+#include <net/bpf.h>
 #include <net/if.h>
-#include <net/if_arp.h>
 #include <net/ethernet.h>
 #include <net/if_dl.h>
 #include <net/if_media.h>
 #include <net/if_types.h>
-#include <net/route.h>
-
-#include <net/bpf.h>
 
 #include <machine/bus.h>
 #include <machine/resource.h>
-#include <sys/bus.h>
-#include <sys/rman.h>
 
 #include <net80211/ieee80211_var.h>
-#include <net80211/ieee80211_ioctl.h>
 #include <net80211/ieee80211_regdomain.h>
 
-#include <dev/pci/pcireg.h>
-#include <dev/pci/pcivar.h>
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 
@@ -1540,9 +1529,6 @@ ndis_linksts_done(ndis_handle adapter)
 	default:
 		break;
 	}
-
-	/* Notify possible listners of interface change. */
-	rt_ifmsg(ifp);
 }
 
 static void
