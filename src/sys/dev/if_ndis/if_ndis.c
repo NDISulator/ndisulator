@@ -604,7 +604,7 @@ ndis_attach(device_t dev)
 	/* Figure out how big to make the TX buffer pool */
 	len = sizeof(sc->ndis_maxpkts);
 	if (ndis_get_info(sc, OID_GEN_MAXIMUM_SEND_PACKETS,
-		    &sc->ndis_maxpkts, &len) != 0) {
+	    &sc->ndis_maxpkts, &len) != 0) {
 		device_printf(dev, "failed to get max TX packets\n");
 		error = ENXIO;
 		goto fail;
