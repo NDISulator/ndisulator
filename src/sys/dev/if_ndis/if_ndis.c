@@ -2214,9 +2214,9 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 		if (ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len) != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
 	} else if ((vap->iv_flags & IEEE80211_F_WPA) &&
-	    vap->iv_appie_assocreq != NULL) {
+	    vap->iv_appie_wpa != NULL) {
 		/* Set up WPA */
-		struct ieee80211_appie *ie = vap->iv_appie_assocreq;
+		struct ieee80211_appie *ie = vap->iv_appie_wpa;
 
 		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
 			device_printf(sc->ndis_dev, "WPA setup failed\n");
