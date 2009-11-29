@@ -161,7 +161,6 @@ static int ndis_auth_mode(uint32_t);
 static int ndis_nettype_chan(uint32_t);
 static int ndis_nettype_mode(uint32_t);
 static void ndis_scan(void *);
-static void ndis_scan_results(struct ndis_softc *);
 static void ndis_scan_start(struct ieee80211com *);
 static void ndis_scan_end(struct ieee80211com *);
 static void ndis_set_channel(struct ieee80211com *);
@@ -2788,9 +2787,72 @@ ndis_scan(void *arg)
 }
 
 static void
-ndis_scan_results(struct ndis_softc *sc)
+ndis_scan_start(struct ieee80211com *ic)
 {
-	struct ieee80211com *ic = sc->ifp->if_l2com;
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
+	struct ieee80211vap *vap;
+	int len;
+
+	vap = TAILQ_FIRST(&ic->ic_vaps);
+
+	len = 0;
+	if (ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len) != 0) {
+		ieee80211_cancel_scan(vap);
+		return;
+	}
+	/* Set a timer to collect the results */
+	callout_reset(&sc->ndis_scan_callout, hz * 3, ndis_scan, vap);
+}
+
+static void
+ndis_set_channel(struct ieee80211com *ic)
+{
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
+	struct ieee80211vap *vap;
+	ndis_80211_config config;
+	int len;
+
+	if (sc->ndis_link == 1 || ic->ic_bsschan == IEEE80211_CHAN_ANYC)
+		return;
+
+	vap = TAILQ_FIRST(&ic->ic_vaps);
+
+	len = sizeof(config);
+	bzero((char *)&config, len);
+	config.nc_length = len;
+	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
+	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) != 0)
+		return;
+
+	config.nc_beaconperiod = ic->ic_bintval;
+	if (config.nc_atimwin == 0)
+		config.nc_atimwin = 100;
+	if (config.nc_fhconfig.ncf_dwelltime == 0)
+		config.nc_fhconfig.ncf_dwelltime = 100;
+	config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
+	len = sizeof(config);
+	config.nc_length = len;
+	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
+	DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
+	ndis_set_info(sc, OID_802_11_CONFIGURATION, &config, &len);
+}
+
+static void
+ndis_scan_curchan(struct ieee80211_scan_state *ss, unsigned long maxdwell)
+{
+	/* ignore */
+}
+
+static void
+ndis_scan_mindwell(struct ieee80211_scan_state *ss)
+{
+	/* NB: don't try to abort scan; wait for firmware to finish */
+}
+
+static void
+ndis_scan_end(struct ieee80211com *ic)
+{
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
 	struct ieee80211_scanparams sp;
 	struct ieee80211_frame wh;
@@ -2884,75 +2946,4 @@ done:
 	free(bl, M_NDIS_DEV);
 	/* Restore the channel after messing with it */
 	ic->ic_curchan = saved_chan;
-}
-
-static void
-ndis_scan_start(struct ieee80211com *ic)
-{
-	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-	struct ieee80211vap *vap;
-	int len;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
-
-	len = 0;
-	if (ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len) != 0) {
-		ieee80211_cancel_scan(vap);
-		return;
-	}
-	/* Set a timer to collect the results */
-	callout_reset(&sc->ndis_scan_callout, hz * 3, ndis_scan, vap);
-}
-
-static void
-ndis_set_channel(struct ieee80211com *ic)
-{
-	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-	struct ieee80211vap *vap;
-	ndis_80211_config config;
-	int len;
-
-	if (sc->ndis_link == 1 || ic->ic_bsschan == IEEE80211_CHAN_ANYC)
-		return;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
-
-	len = sizeof(config);
-	bzero((char *)&config, len);
-	config.nc_length = len;
-	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
-	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) != 0)
-		return;
-
-	config.nc_beaconperiod = ic->ic_bintval;
-	if (config.nc_atimwin == 0)
-		config.nc_atimwin = 100;
-	if (config.nc_fhconfig.ncf_dwelltime == 0)
-		config.nc_fhconfig.ncf_dwelltime = 100;
-	config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
-	len = sizeof(config);
-	config.nc_length = len;
-	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
-	DPRINTF(("Setting channel to %ukHz\n", config.nc_dsconfig));
-	ndis_set_info(sc, OID_802_11_CONFIGURATION, &config, &len);
-}
-
-static void
-ndis_scan_curchan(struct ieee80211_scan_state *ss, unsigned long maxdwell)
-{
-	/* ignore */
-}
-
-static void
-ndis_scan_mindwell(struct ieee80211_scan_state *ss)
-{
-	/* NB: don't try to abort scan; wait for firmware to finish */
-}
-
-static void
-ndis_scan_end(struct ieee80211com *ic)
-{
-	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-
-	ndis_scan_results(sc);
 }
