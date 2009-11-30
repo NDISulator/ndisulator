@@ -38,19 +38,17 @@
 /*
  *  Image Format
  */
-
-#define	IMAGE_DOS_SIGNATURE			0x5A4D      /* MZ */
-#define	IMAGE_OS2_SIGNATURE			0x454E      /* NE */
-#define	IMAGE_OS2_SIGNATURE_LE			0x454C      /* LE */
-#define	IMAGE_VXD_SIGNATURE			0x454C      /* LE */
-#define	IMAGE_NT_SIGNATURE			0x00004550  /* PE00 */
+#define	IMAGE_DOS_SIGNATURE	0x5A4D		/* MZ */
+#define	IMAGE_OS2_SIGNATURE	0x454E		/* NE */
+#define	IMAGE_OS2_SIGNATURE_LE	0x454C		/* LE */
+#define	IMAGE_VXD_SIGNATURE	0x454C		/* LE */
+#define	IMAGE_NT_SIGNATURE	0x00004550	/* PE00 */
 
 /*
  * All PE files have one of these, just so if you attempt to
  * run them, they'll print out a message telling you they can
  * only be run in Windows.
  */
-
 struct image_dos_header {
 	uint16_t	idh_magic;	/* Magic number */
 	uint16_t	idh_cblp;	/* Bytes on last page of file */
@@ -72,13 +70,11 @@ struct image_dos_header {
 	uint16_t	idh_rsvd2[10];	/* Reserved words */
 	uint32_t	idh_lfanew;	/* File address of new exe header */
 };
-
 typedef struct image_dos_header image_dos_header;
 
 /*
  * File header format.
  */
-
 struct image_file_header {
 	uint16_t	ifh_machine;		/* Machine type */
 	uint16_t	ifh_numsections;	/* # of sections */
@@ -88,84 +84,77 @@ struct image_file_header {
 	uint16_t	ifh_optionalhdrlen;	/* Size of optional header */
 	uint16_t	ifh_characteristics;	/* Characteristics */
 };
-
 typedef struct image_file_header image_file_header;
 
 /* Machine types */
-
-#define	IMAGE_FILE_MACHINE_UNKNOWN      0
-#define	IMAGE_FILE_MACHINE_I860         0x014d
-#define	IMAGE_FILE_MACHINE_I386         0x014c
-#define	IMAGE_FILE_MACHINE_R3000        0x0162
-#define	IMAGE_FILE_MACHINE_R4000        0x0166
-#define	IMAGE_FILE_MACHINE_R10000       0x0168
-#define	IMAGE_FILE_MACHINE_WCEMIPSV2    0x0169
-#define	IMAGE_FILE_MACHINE_ALPHA        0x0184
-#define	IMAGE_FILE_MACHINE_SH3          0x01a2
-#define	IMAGE_FILE_MACHINE_SH3DSP       0x01a3
-#define	IMAGE_FILE_MACHINE_SH3E         0x01a4
-#define	IMAGE_FILE_MACHINE_SH4          0x01a6
-#define	IMAGE_FILE_MACHINE_SH5          0x01a8
-#define	IMAGE_FILE_MACHINE_ARM          0x01c0
-#define	IMAGE_FILE_MACHINE_THUMB        0x01c2
-#define	IMAGE_FILE_MACHINE_AM33         0x01d3
-#define	IMAGE_FILE_MACHINE_POWERPC      0x01f0
-#define	IMAGE_FILE_MACHINE_POWERPCFP    0x01f1
-#define	IMAGE_FILE_MACHINE_IA64         0x0200
-#define	IMAGE_FILE_MACHINE_MIPS16       0x0266
-#define	IMAGE_FILE_MACHINE_ALPHA64      0x0284
-#define	IMAGE_FILE_MACHINE_MIPSFPU      0x0366
-#define	IMAGE_FILE_MACHINE_MIPSFPU16    0x0466
-#define	IMAGE_FILE_MACHINE_AXP64        IMAGE_FILE_MACHINE_ALPHA64
-#define	IMAGE_FILE_MACHINE_TRICORE      0x0520
-#define	IMAGE_FILE_MACHINE_CEF          0x0cef
-#define	IMAGE_FILE_MACHINE_EBC          0x0ebc
-#define	IMAGE_FILE_MACHINE_AMD64        0x8664
-#define	IMAGE_FILE_MACHINE_M32R         0x9041
-#define	IMAGE_FILE_MACHINE_CEE          0xc0ee
+#define	IMAGE_FILE_MACHINE_UNKNOWN	0
+#define	IMAGE_FILE_MACHINE_I860		0x014d
+#define	IMAGE_FILE_MACHINE_I386		0x014c
+#define	IMAGE_FILE_MACHINE_R3000	0x0162
+#define	IMAGE_FILE_MACHINE_R4000	0x0166
+#define	IMAGE_FILE_MACHINE_R10000	0x0168
+#define	IMAGE_FILE_MACHINE_WCEMIPSV2	0x0169
+#define	IMAGE_FILE_MACHINE_ALPHA	0x0184
+#define	IMAGE_FILE_MACHINE_SH3		0x01a2
+#define	IMAGE_FILE_MACHINE_SH3DSP	0x01a3
+#define	IMAGE_FILE_MACHINE_SH3E		0x01a4
+#define	IMAGE_FILE_MACHINE_SH4		0x01a6
+#define	IMAGE_FILE_MACHINE_SH5		0x01a8
+#define	IMAGE_FILE_MACHINE_ARM		0x01c0
+#define	IMAGE_FILE_MACHINE_THUMB	0x01c2
+#define	IMAGE_FILE_MACHINE_AM33		0x01d3
+#define	IMAGE_FILE_MACHINE_POWERPC	0x01f0
+#define	IMAGE_FILE_MACHINE_POWERPCFP	0x01f1
+#define	IMAGE_FILE_MACHINE_IA64		0x0200
+#define	IMAGE_FILE_MACHINE_MIPS16	0x0266
+#define	IMAGE_FILE_MACHINE_ALPHA64	0x0284
+#define	IMAGE_FILE_MACHINE_MIPSFPU	0x0366
+#define	IMAGE_FILE_MACHINE_MIPSFPU16	0x0466
+#define	IMAGE_FILE_MACHINE_AXP64	IMAGE_FILE_MACHINE_ALPHA64
+#define	IMAGE_FILE_MACHINE_TRICORE	0x0520
+#define	IMAGE_FILE_MACHINE_CEF		0x0cef
+#define	IMAGE_FILE_MACHINE_EBC		0x0ebc
+#define	IMAGE_FILE_MACHINE_AMD64	0x8664
+#define	IMAGE_FILE_MACHINE_M32R		0x9041
+#define	IMAGE_FILE_MACHINE_CEE		0xc0ee
 
 /* Characteristics */
+#define	IMAGE_FILE_RELOCS_STRIPPED		0x0001 /* No relocation info */
+#define	IMAGE_FILE_EXECUTABLE_IMAGE		0x0002
+#define	IMAGE_FILE_LINE_NUMS_STRIPPED		0x0004
+#define	IMAGE_FILE_LOCAL_SYMS_STRIPPED		0x0008
+#define	IMAGE_FILE_AGGRESIVE_WS_TRIM		0x0010
+#define	IMAGE_FILE_LARGE_ADDRESS_AWARE		0x0020
+#define	IMAGE_FILE_16BIT_MACHINE		0x0040
+#define	IMAGE_FILE_BYTES_REVERSED_LO		0x0080
+#define	IMAGE_FILE_32BIT_MACHINE		0x0100
+#define	IMAGE_FILE_DEBUG_STRIPPED		0x0200
+#define	IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP	0x0400
+#define	IMAGE_FILE_NET_RUN_FROM_SWAP		0x0800
+#define	IMAGE_FILE_SYSTEM			0x1000
+#define	IMAGE_FILE_DLL				0x2000
+#define	IMAGE_FILE_UP_SYSTEM_ONLY		0x4000
+#define	IMAGE_FILE_BYTES_REVERSED_HI		0x8000
 
-#define	IMAGE_FILE_RELOCS_STRIPPED      0x0001 /* No relocation info */
-#define	IMAGE_FILE_EXECUTABLE_IMAGE     0x0002
-#define	IMAGE_FILE_LINE_NUMS_STRIPPED   0x0004
-#define	IMAGE_FILE_LOCAL_SYMS_STRIPPED  0x0008
-#define	IMAGE_FILE_AGGRESIVE_WS_TRIM    0x0010
-#define	IMAGE_FILE_LARGE_ADDRESS_AWARE  0x0020
-#define	IMAGE_FILE_16BIT_MACHINE        0x0040
-#define	IMAGE_FILE_BYTES_REVERSED_LO    0x0080
-#define	IMAGE_FILE_32BIT_MACHINE        0x0100
-#define	IMAGE_FILE_DEBUG_STRIPPED       0x0200
-#define	IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP      0x0400
-#define	IMAGE_FILE_NET_RUN_FROM_SWAP    0x0800
-#define	IMAGE_FILE_SYSTEM               0x1000
-#define	IMAGE_FILE_DLL                  0x2000
-#define	IMAGE_FILE_UP_SYSTEM_ONLY       0x4000
-#define	IMAGE_FILE_BYTES_REVERSED_HI    0x8000
-
-#define	IMAGE_SIZEOF_FILE_HEADER             20
+#define	IMAGE_SIZEOF_FILE_HEADER		20
 
 /*
  * Directory format.
  */
-
 struct image_data_directory {
-	uint32_t		idd_vaddr;	/* virtual address */
-	uint32_t		idd_size;	/* size */
+	uint32_t	idd_vaddr;	/* virtual address */
+	uint32_t	idd_size;	/* size */
 };
-
 typedef struct image_data_directory image_data_directory;
 
-#define	IMAGE_DIRECTORY_ENTRIES_MAX    16
+#define	IMAGE_DIRECTORY_ENTRIES_MAX	16
 
 /*
  * Optional header format.
  */
-
 struct image_optional_header {
 
 	/* Standard fields */
-
 	uint16_t	ioh_magic;
 	uint8_t		ioh_linkerver_major;
 	uint8_t		ioh_linkerver_minor;
@@ -179,7 +168,6 @@ struct image_optional_header {
 #endif
 
 	/* NT-specific fields */
-
 	uintptr_t	ioh_imagebase;
 	uint32_t	ioh_sectalign;
 	uint32_t	ioh_filealign;
@@ -219,25 +207,23 @@ typedef struct image_nt_header image_nt_header;
 	  ((image_nt_header *)(nthdr))->inh_filehdr.ifh_optionalhdrlen)
 
 /* Directory Entries */
-
-#define	IMAGE_DIRECTORY_ENTRY_EXPORT         0   /* Export Directory */
-#define	IMAGE_DIRECTORY_ENTRY_IMPORT         1   /* Import Directory */
-#define	IMAGE_DIRECTORY_ENTRY_RESOURCE       2   /* Resource Directory */
-#define	IMAGE_DIRECTORY_ENTRY_EXCEPTION      3   /* Exception Directory */
-#define	IMAGE_DIRECTORY_ENTRY_SECURITY       4   /* Security Directory */
-#define	IMAGE_DIRECTORY_ENTRY_BASERELOC      5   /* Base Relocation Table */
-#define	IMAGE_DIRECTORY_ENTRY_DEBUG          6   /* Debug Directory */
-#define	IMAGE_DIRECTORY_ENTRY_COPYRIGHT      7   /* Description String */
-#define	IMAGE_DIRECTORY_ENTRY_GLOBALPTR      8   /* Machine Value (MIPS GP) */
-#define	IMAGE_DIRECTORY_ENTRY_TLS            9   /* TLS Directory */
-#define	IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG   10   /* Load Configuration Directory */
-#define	IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT  11   /* Bound Import Directory in headers */
-#define	IMAGE_DIRECTORY_ENTRY_IAT           12   /* Import Address Table */
-#define	IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT      13
-#define	IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR    14
+#define	IMAGE_DIRECTORY_ENTRY_EXPORT	0	/* Export Directory */
+#define	IMAGE_DIRECTORY_ENTRY_IMPORT	1	/* Import Directory */
+#define	IMAGE_DIRECTORY_ENTRY_RESOURCE	2	/* Resource Directory */
+#define	IMAGE_DIRECTORY_ENTRY_EXCEPTION	3	/* Exception Directory */
+#define	IMAGE_DIRECTORY_ENTRY_SECURITY	4	/* Security Directory */
+#define	IMAGE_DIRECTORY_ENTRY_BASERELOC	5	/* Base Relocation Table */
+#define	IMAGE_DIRECTORY_ENTRY_DEBUG	6	/* Debug Directory */
+#define	IMAGE_DIRECTORY_ENTRY_COPYRIGHT	7	/* Description String */
+#define	IMAGE_DIRECTORY_ENTRY_GLOBALPTR	8	/* Machine Value (MIPS GP) */
+#define	IMAGE_DIRECTORY_ENTRY_TLS	9	/* TLS Directory */
+#define	IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG	10	/* Load Configuration Directory */
+#define	IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT	11	/* Bound Import Directory in headers */
+#define	IMAGE_DIRECTORY_ENTRY_IAT	12	/* Import Address Table */
+#define	IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT	13
+#define	IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR	14
 
 /* Resource types */
-
 #define	RT_CURSOR	1
 #define	RT_BITMAP	2
 #define	RT_ICON		3
@@ -262,8 +248,7 @@ typedef struct image_nt_header image_nt_header;
 /*
  * Section header format.
  */
-
-#define	IMAGE_SHORT_NAME_LEN			8
+#define	IMAGE_SHORT_NAME_LEN	8
 
 struct image_section_header {
 	uint8_t		ish_name[IMAGE_SHORT_NAME_LEN];
@@ -280,7 +265,6 @@ struct image_section_header {
 	uint16_t	ish_numlinenums;
 	uint32_t	ish_characteristics;
 };
-
 typedef struct image_section_header image_section_header;
 
 #define	IMAGE_SIZEOF_SECTION_HEADER          40
@@ -293,14 +277,13 @@ typedef struct image_section_header image_section_header;
 /*
  * Import format
  */
-
 struct image_import_by_name {
 	uint16_t	iibn_hint;
 	uint8_t		iibn_name[1];
 };
 
-#define	IMAGE_ORDINAL_FLAG 0x80000000
-#define	IMAGE_ORDINAL(Ordinal) (Ordinal & 0xffff)
+#define	IMAGE_ORDINAL_FLAG	0x80000000
+#define	IMAGE_ORDINAL(Ordinal)	(Ordinal & 0xffff)
 
 struct image_import_descriptor {
 	uint32_t	iid_import_name_table_addr;
@@ -309,7 +292,6 @@ struct image_import_descriptor {
 	uint32_t	iid_nameaddr;
 	uint32_t	iid_import_address_table_addr;
 };
-
 typedef struct image_import_descriptor image_import_descriptor;
 
 struct image_base_reloc {
@@ -317,7 +299,6 @@ struct image_base_reloc {
 	uint32_t	ibr_blocksize;
 	uint16_t	ibr_rel[1];
 };
-
 typedef struct image_base_reloc image_base_reloc;
 
 #define	IMR_RELTYPE(x)		((x >> 12) & 0xF)
@@ -338,88 +319,79 @@ typedef struct image_base_reloc image_base_reloc;
 #define	IMAGE_REL_BASED_HIGH3ADJ		11
 
 struct image_resource_directory_entry {
-	uint32_t		irde_name;
-	uint32_t		irde_dataoff;
+	uint32_t	irde_name;
+	uint32_t	irde_dataoff;
 };
-
 typedef struct image_resource_directory_entry image_resource_directory_entry;
 
 #define	RESOURCE_NAME_STR	0x80000000
 #define	RESOURCE_DIR_FLAG	0x80000000
 
 struct image_resource_directory {
-	uint32_t		ird_characteristics;
-	uint32_t		ird_timestamp;
-	uint16_t		ird_majorver;
-	uint16_t		ird_minorver;
-	uint16_t		ird_named_entries;
-	uint16_t		ird_id_entries;
+	uint32_t	ird_characteristics;
+	uint32_t	ird_timestamp;
+	uint16_t	ird_majorver;
+	uint16_t	ird_minorver;
+	uint16_t	ird_named_entries;
+	uint16_t	ird_id_entries;
 #ifdef notdef
 	image_resource_directory_entry	ird_entries[1];
 #endif
 };
-
 typedef struct image_resource_directory image_resource_directory;
 
 struct image_resource_directory_string {
-	uint16_t		irds_len;
-	char			irds_name[1];
+	uint16_t	irds_len;
+	char		irds_name[1];
 };
-
 typedef struct image_resource_directory_string image_resource_directory_string;
 
 struct image_resource_directory_string_u {
-	uint16_t		irds_len;
-	char			irds_name[1];
+	uint16_t	irds_len;
+	char		irds_name[1];
 };
-
 typedef struct image_resource_directory_string_u
 	image_resource_directory_string_u;
 
 struct image_resource_data_entry {
-	uint32_t		irde_offset;
-	uint32_t		irde_size;
-	uint32_t		irde_codepage;
-	uint32_t		irde_rsvd;
+	uint32_t	irde_offset;
+	uint32_t	irde_size;
+	uint32_t	irde_codepage;
+	uint32_t	irde_rsvd;
 };
-
 typedef struct image_resource_data_entry image_resource_data_entry;
 
 struct message_resource_data {
-	uint32_t		mrd_numblocks;
+	uint32_t	mrd_numblocks;
 #ifdef notdef
 	message_resource_block	mrd_blocks[1];
 #endif
 };
-
 typedef struct message_resource_data message_resource_data;
 
 struct message_resource_block {
-	uint32_t		mrb_lowid;
-	uint32_t		mrb_highid;
-	uint32_t		mrb_entryoff;
+	uint32_t	mrb_lowid;
+	uint32_t	mrb_highid;
+	uint32_t	mrb_entryoff;
 };
-
 typedef struct message_resource_block message_resource_block;
 
 struct message_resource_entry {
-	uint16_t		mre_len;
-	uint16_t		mre_flags;
-	char			mre_text[];
+	uint16_t	mre_len;
+	uint16_t	mre_flags;
+	char		mre_text[];
 };
-
 typedef struct message_resource_entry message_resource_entry;
 
 #define	MESSAGE_RESOURCE_UNICODE	0x0001
 
 struct image_patch_table {
-	char		*ipt_name;
-	void		(*ipt_func)(void);
-	void		(*ipt_wrap)(void);
-	int		ipt_argcnt;
-	int		ipt_ftype;
+	char	*ipt_name;
+	void	(*ipt_func)(void);
+	void	(*ipt_wrap)(void);
+	int	ipt_argcnt;
+	int	ipt_ftype;
 };
-
 typedef struct image_patch_table image_patch_table;
 
 /*
@@ -461,20 +433,20 @@ extern uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
 	uint64_t, uint64_t);
 
 
-#define	MSCALL1(fn, a)						\
+#define	MSCALL1(fn, a)							\
 	x86_64_call1((fn), (uint64_t)(a))
-#define	MSCALL2(fn, a, b)					\
+#define	MSCALL2(fn, a, b)						\
 	x86_64_call2((fn), (uint64_t)(a), (uint64_t)(b))
-#define	MSCALL3(fn, a, b, c)					\
+#define	MSCALL3(fn, a, b, c)						\
 	x86_64_call3((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c))
-#define	MSCALL4(fn, a, b, c, d)					\
+#define	MSCALL4(fn, a, b, c, d)						\
 	x86_64_call4((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c), (uint64_t)(d))
-#define	MSCALL5(fn, a, b, c, d, e)				\
+#define	MSCALL5(fn, a, b, c, d, e)					\
 	x86_64_call5((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c), (uint64_t)(d), (uint64_t)(e))
-#define	MSCALL6(fn, a, b, c, d, e, f)				\
+#define	MSCALL6(fn, a, b, c, d, e, f)					\
 	x86_64_call6((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c), (uint64_t)(d), (uint64_t)(e), (uint64_t)(f))
 
@@ -500,31 +472,31 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 
 #ifdef __i386__
 #define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_STDCALL }
-#define	IMPORT_SFUNC_MAP(x, y, z)	\
+#define	IMPORT_SFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_STDCALL }
 #define	IMPORT_FFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_FASTCALL }
-#define	IMPORT_FFUNC_MAP(x, y, z)	\
+#define	IMPORT_FFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_FASTCALL }
 #define	IMPORT_RFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_REGPARM }
-#define	IMPORT_RFUNC_MAP(x, y, z)	\
+#define	IMPORT_RFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_REGPARM }
 #define	IMPORT_CFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_CDECL }
-#define	IMPORT_CFUNC_MAP(x, y, z)	\
+#define	IMPORT_CFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_CDECL }
 #endif /* __i386__ */
 
 #ifdef __amd64__
 #define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_SFUNC_MAP(x, y, z)	\
+#define	IMPORT_SFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
 #define	IMPORT_FFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_FFUNC_MAP(x, y, z)	\
+#define	IMPORT_FFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
 #define	IMPORT_RFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_RFUNC_MAP(x, y, z)	\
+#define	IMPORT_RFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
 #define	IMPORT_CFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_CFUNC_MAP(x, y, z)	\
+#define	IMPORT_CFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
 #endif /* __amd64__ */
 
