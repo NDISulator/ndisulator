@@ -303,7 +303,6 @@ pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
 	image_dos_header *dos_hdr;
 	image_nt_header *nt_hdr;
 	image_section_header *sect_hdr;
-
 	int i, sections;
 
 	if (imgbase == 0 || hdr == NULL)
