@@ -41,7 +41,6 @@ struct ndis_cfg {
 	char	nc_val[256];
 	int	nc_idx;
 };
-
 typedef struct ndis_cfg ndis_cfg;
 
 #endif /* _CFG_VAR_H_ */

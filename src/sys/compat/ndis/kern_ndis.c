@@ -532,8 +532,7 @@ ndis_convert_res(void *arg)
 				 * shared, since in our implementation,
 				 * they will be.
 				 */
-				prd->cprd_sharedisp =
-				    CmResourceShareShared;
+				prd->cprd_sharedisp = CmResourceShareShared;
 				prd->u.cprd_intr.cprd_level = brle->start;
 				prd->u.cprd_intr.cprd_vector = brle->start;
 				prd->u.cprd_intr.cprd_affinity = 0;
