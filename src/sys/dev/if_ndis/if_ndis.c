@@ -2200,21 +2200,18 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
 	}
-
-	if ((vap->iv_flags & IEEE80211_F_PRIVACY) == 0) {
+	if (!(vap->iv_flags & IEEE80211_F_PRIVACY)) {
 		/* Encryption mode to off */
 		arg = NDIS_80211_WEPSTAT_DISABLED;
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
-	} else if (vap->iv_flags & IEEE80211_F_PRIVACY &&
-	    !(vap->iv_flags & IEEE80211_F_WPA)) {
+	} else if (!(vap->iv_flags & IEEE80211_F_WPA)) {
 		/* Set up WEP */
 		arg = NDIS_80211_WEPSTAT_ENABLED;
 		len = sizeof(arg);
 		if (ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len) != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
-	} else if ((vap->iv_flags & IEEE80211_F_WPA) &&
-	    vap->iv_appie_wpa != NULL) {
+	} else if (vap->iv_appie_wpa != NULL) {
 		/* Set up WPA */
 		struct ieee80211_appie *ie = vap->iv_appie_wpa;
 
