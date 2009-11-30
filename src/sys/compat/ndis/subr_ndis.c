@@ -74,7 +74,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/sysproto.h>
 
 #include <net/if.h>
-#include <net/if_arp.h>
 #include <net/ethernet.h>
 #include <net/if_dl.h>
 #include <net/if_media.h>
