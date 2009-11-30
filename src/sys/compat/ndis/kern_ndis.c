@@ -61,9 +61,6 @@ __FBSDID("$FreeBSD$");
 #include <net/if_dl.h>
 #include <net/if_media.h>
 
-#include <net80211/ieee80211_var.h>
-#include <net80211/ieee80211_ioctl.h>
-
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 

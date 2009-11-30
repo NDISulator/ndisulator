@@ -88,9 +88,6 @@ __FBSDID("$FreeBSD$");
 
 #include <machine/stdarg.h>
 
-#include <net80211/ieee80211_var.h>
-#include <net80211/ieee80211_ioctl.h>
-
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 #include <dev/usb/usb.h>
