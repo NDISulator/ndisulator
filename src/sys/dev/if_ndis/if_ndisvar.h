@@ -32,6 +32,8 @@
  * $FreeBSD$
  */
 
+#include <net80211/ieee80211_var.h>
+
 #define NDIS_DEFAULT_NODENAME	"FreeBSD NDIS node"
 #define NDIS_NODENAME_LEN	32
 

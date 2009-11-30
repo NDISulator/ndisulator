@@ -59,9 +59,6 @@ __FBSDID("$FreeBSD$");
 #include <machine/bus.h>
 #include <machine/resource.h>
 
-#include <net80211/ieee80211_var.h>
-#include <net80211/ieee80211_regdomain.h>
-
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 
@@ -73,6 +70,7 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/ndis_var.h>
 #include <compat/ndis/usbd_var.h>
 #include <dev/if_ndis/if_ndisvar.h>
+#include <net80211/ieee80211_regdomain.h>
 
 #define NDIS_DEBUG
 #ifdef NDIS_DEBUG

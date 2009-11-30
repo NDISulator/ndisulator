@@ -50,8 +50,6 @@ __FBSDID("$FreeBSD$");
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 
-#include <net80211/ieee80211_var.h>
-
 #include <compat/ndis/pe_var.h>
 #include <compat/ndis/cfg_var.h>
 #include <compat/ndis/resource_var.h>
