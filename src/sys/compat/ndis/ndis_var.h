@@ -818,23 +818,6 @@ typedef enum ndis_media_state ndis_media_state;
 #define	NDIS_DMA_32BITS		0x01
 #define	NDIS_DMA_64BITS		0x02
 
-/*
-struct ndis_physaddr {
-#ifdef __i386__
-	uint64_t	np_quad;
-#endif
-#ifdef __amd64__
-	uint32_t	np_low;
-	uint32_t	np_high;
-#define	np_quad np_low
-#endif
-#ifdef notdef
-	uint32_t	np_low;
-	uint32_t	np_high;
-#endif
-};
-*/
-
 typedef struct physaddr ndis_physaddr;
 
 struct ndis_ansi_string {

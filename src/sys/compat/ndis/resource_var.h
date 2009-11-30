@@ -44,7 +44,6 @@ struct physaddr {
 	uint32_t	np_high;
 #endif
 };
-
 typedef struct physaddr physaddr;
 
 enum interface_type {
@@ -67,7 +66,6 @@ enum interface_type {
 	PNPBus,
 	MaximumInterfaceType
 };
-
 typedef enum interface_type interface_type;
 
 #define	CmResourceTypeNull		0	/* ResType_All or ResType_None (0x0000) */

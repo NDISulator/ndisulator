@@ -209,7 +209,6 @@ struct usbd_version_info {
 	uint32_t	uvi_usbdi_vers;
 	uint32_t	uvi_supported_vers;
 };
-
 typedef struct usbd_version_info usbd_version_info;
 
 extern image_patch_table usbd_functbl[];

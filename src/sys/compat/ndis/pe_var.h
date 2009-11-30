@@ -191,7 +191,6 @@ struct image_optional_header {
 	uint32_t	ioh_rva_size_cnt;
 	image_data_directory	ioh_datadir[IMAGE_DIRECTORY_ENTRIES_MAX];
 };
-
 typedef struct image_optional_header image_optional_header;
 
 struct image_nt_header {
@@ -199,7 +198,6 @@ struct image_nt_header {
 	image_file_header	inh_filehdr;
 	image_optional_header	inh_optionalhdr;
 };
-
 typedef struct image_nt_header image_nt_header;
 
 #define	IMAGE_SIZEOF_NT_HEADER(nthdr)					\
