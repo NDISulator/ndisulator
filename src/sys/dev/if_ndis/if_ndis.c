@@ -1604,18 +1604,6 @@ ndis_ticktask(device_object *d, void *xsc)
 		NDIS_LOCK(sc);
 		if_link_state_change(sc->ifp, LINK_STATE_DOWN);
 	}
-
-	if (sc->ndis_link == 0 &&
-	    sc->ndis_sts == NDIS_STATUS_MEDIA_DISCONNECT) {
-		NDIS_UNLOCK(sc);
-		if (vap != NULL)
-			if (vap->iv_roaming != IEEE80211_ROAMING_MANUAL &&
-			    (vap->iv_state == IEEE80211_S_AUTH ||
-			     vap->iv_state == IEEE80211_S_ASSOC))
-				ieee80211_new_state(vap, IEEE80211_S_SCAN, 1);
-		NDIS_LOCK(sc);
-	}
-
 	NDIS_UNLOCK(sc);
 }
 
