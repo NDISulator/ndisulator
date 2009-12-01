@@ -186,7 +186,7 @@ struct ndis_softc {
 	int			ndis_txpending;
 	ndis_packet		**ndis_txarray;
 	ndis_handle		ndis_txpool;
-	int			ndis_sc;
+	uint8_t			ndis_sc;
 	ndis_cfg		*ndis_regvals;
 	struct nch		ndis_cfglist_head;
 	uint8_t			ndis_80211;
