@@ -172,7 +172,6 @@ struct ndis_softc {
 	struct resource_list	ndis_rl;
 	int			ndis_rescnt;
 	struct mtx		ndis_mtx;
-	uint8_t			ndis_irql;
 	device_t		ndis_dev;
 	ndis_miniport_block	*ndis_block;
 	ndis_miniport_characteristics	*ndis_chars;
