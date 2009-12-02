@@ -904,8 +904,6 @@ fail:
 		return (error);
 	}
 
-	if (sc->ndis_iftype == PNPBus && ndisusb_halt == 0)
-		return (error);
 	DPRINTF(("attach done.\n"));
 
 	return (error);
