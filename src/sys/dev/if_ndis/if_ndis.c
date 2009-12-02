@@ -1559,8 +1559,6 @@ ndis_ticktask(device_object *d, void *xsc)
 	struct ndis_softc *sc = xsc;
 	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211vap *vap;
-	ndis_checkforhang_handler hangfunc;
-	uint8_t r;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
@@ -1571,10 +1569,9 @@ ndis_ticktask(device_object *d, void *xsc)
 	}
 	NDIS_UNLOCK(sc);
 
-	hangfunc = sc->ndis_chars->nmc_checkhang_func;
-	if (hangfunc != NULL) {
-		r = MSCALL1(hangfunc, sc->ndis_block->nmb_miniportadapterctx);
-		if (r == TRUE) {
+	if (sc->ndis_chars->nmc_checkhang_func != NULL) {
+		if (MSCALL1(sc->ndis_chars->nmc_checkhang_func,
+		    sc->ndis_block->nmb_miniportadapterctx) == TRUE) {
 			ndis_reset_nic(sc);
 			return;
 		}
@@ -1590,9 +1587,7 @@ ndis_ticktask(device_object *d, void *xsc)
 		}
 		NDIS_LOCK(sc);
 		if_link_state_change(sc->ifp, LINK_STATE_UP);
-	}
-
-	if (sc->ndis_link == 1 &&
+	} else if (sc->ndis_link == 1 &&
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_DISCONNECT) {
 		sc->ndis_link = 0;
 		NDIS_UNLOCK(sc);
