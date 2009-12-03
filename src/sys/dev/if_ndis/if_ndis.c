@@ -1963,12 +1963,6 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 	 */
 	w = (struct ieee80211_ie_wpa *)ie;
 
-	/* Check for the right kind of IE. */
-	if (w->wpa_id != IEEE80211_ELEMID_VENDOR) {
-		DPRINTF(("Incorrect IE type %d\n", w->wpa_id));
-		return (EINVAL);
-	}
-
 	/* Skip over the ucast cipher OIDs. */
 	pos = (char *)&w->wpa_uciphers[0];
 	pos += w->wpa_uciphercnt * sizeof(struct ndis_ie);
