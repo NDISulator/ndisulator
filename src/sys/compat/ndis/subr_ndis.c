@@ -873,7 +873,7 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	device_t dev;
 	driver_object *drv;
 	va_list ap;
-	int i, error;
+	int i;
 	char *str = NULL;
 	uint16_t flags;
 	unicode_string us;
@@ -886,9 +886,8 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	ifp = sc->ifp;
 
 	if (ifp != NULL && ifp->if_flags & IFF_DEBUG) {
-		error = pe_get_message((vm_offset_t)drv->dro_driverstart,
-		    code, &str, &i, &flags);
-		if (error == 0) {
+		if (pe_get_message((vm_offset_t)drv->dro_driverstart,
+		    code, &str, &i, &flags) == 0) {
 			if (flags & MESSAGE_RESOURCE_UNICODE) {
 				RtlInitUnicodeString(&us, (uint16_t *)str);
 				if (RtlUnicodeStringToAnsiString(&as,
@@ -944,7 +943,6 @@ NdisMStartBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
 	struct ndis_softc *sc;
 	struct ndis_map_arg nma;
 	bus_dmamap_t map;
-	int error;
 
 	if (adapter == NULL)
 		return;
@@ -958,10 +956,9 @@ NdisMStartBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
 	map = sc->ndis_mmaps[mapreg];
 	nma.nma_fraglist = addrarray;
 
-	error = bus_dmamap_load(sc->ndis_mtag, map,
+	if (bus_dmamap_load(sc->ndis_mtag, map,
 	    MmGetMdlVirtualAddress(buf), MmGetMdlByteCount(buf), ndis_map_cb,
-	    (void *)&nma, BUS_DMA_NOWAIT);
-	if (error)
+	    (void *)&nma, BUS_DMA_NOWAIT) != 0)
 		return;
 
 	bus_dmamap_sync(sc->ndis_mtag, map,
@@ -1198,7 +1195,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 {
 	struct ndis_softc *sc;
 	ndis_miniport_block *block;
-	int error, i, nseg = NDIS_MAXSEG;
+	int i, nseg = NDIS_MAXSEG;
 
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -1208,7 +1205,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 	if (sc->ndis_mmaps == NULL)
 		return (NDIS_STATUS_RESOURCES);
 
-	error = bus_dma_tag_create(sc->ndis_parent_tag,
+	if (bus_dma_tag_create(sc->ndis_parent_tag,
 			ETHER_ALIGN, 0,
 			BUS_SPACE_MAXADDR_32BIT,
 			BUS_SPACE_MAXADDR,
@@ -1219,8 +1216,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 			BUS_DMA_ALLOCNOW,
 			NULL,
 			NULL,
-			&sc->ndis_mtag);
-	if (error) {
+			&sc->ndis_mtag) != 0) {
 		free(sc->ndis_mmaps, M_NDIS_SUBR);
 		return (NDIS_STATUS_RESOURCES);
 	}
@@ -1273,7 +1269,6 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	ndis_miniport_block *block;
 	struct ndis_softc *sc;
 	struct ndis_shmem *sh;
-	int error;
 
 	if (adapter == NULL)
 		return;
@@ -1300,7 +1295,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	 * way to make these cards work reliably in systems with more
 	 * than 1GB of physical memory.
 	 */
-	error = bus_dma_tag_create(sc->ndis_parent_tag,
+	if (bus_dma_tag_create(sc->ndis_parent_tag,
 			64, 0,
 			NDIS_BUS_SPACE_SHARED_MAXADDR,
 			BUS_SPACE_MAXADDR,
@@ -1311,23 +1306,20 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 			BUS_DMA_ALLOCNOW,
 			NULL,
 			NULL,
-			&sh->ndis_stag);
-	if (error) {
+			&sh->ndis_stag) != 0) {
 		free(sh, M_NDIS_SUBR);
 		return;
 	}
 
-	error = bus_dmamem_alloc(sh->ndis_stag, vaddr,
-	    BUS_DMA_NOWAIT | BUS_DMA_ZERO, &sh->ndis_smap);
-	if (error) {
+	if (bus_dmamem_alloc(sh->ndis_stag, vaddr,
+	    BUS_DMA_NOWAIT | BUS_DMA_ZERO, &sh->ndis_smap) != 0) {
 		bus_dma_tag_destroy(sh->ndis_stag);
 		free(sh, M_NDIS_SUBR);
 		return;
 	}
 
-	error = bus_dmamap_load(sh->ndis_stag, sh->ndis_smap, *vaddr,
-	    len, ndis_mapshared_cb, (void *)paddr, BUS_DMA_NOWAIT);
-	if (error) {
+	if (bus_dmamap_load(sh->ndis_stag, sh->ndis_smap, *vaddr,
+	    len, ndis_mapshared_cb, (void *)paddr, BUS_DMA_NOWAIT) != 0) {
 		bus_dmamem_free(sh->ndis_stag, *vaddr, sh->ndis_smap);
 		bus_dma_tag_destroy(sh->ndis_stag);
 		free(sh, M_NDIS_SUBR);
@@ -1515,7 +1507,6 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
 {
 	struct ndis_softc *sc;
 	ndis_miniport_block *block;
-	int error;
 
 	if (adapter == NULL)
 		return (NDIS_STATUS_FAILURE);
@@ -1526,7 +1517,7 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
 	if (sc->ndis_sc == 1)
 		return (NDIS_STATUS_SUCCESS);
 
-	error = bus_dma_tag_create(sc->ndis_parent_tag,
+	if (bus_dma_tag_create(sc->ndis_parent_tag,
 			ETHER_ALIGN, 0,
 			BUS_SPACE_MAXADDR_32BIT,
 			BUS_SPACE_MAXADDR,
@@ -1537,8 +1528,7 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
 			BUS_DMA_ALLOCNOW,
 			NULL,
 			NULL,
-			&sc->ndis_ttag);
-	if (error)
+			&sc->ndis_ttag) != 0)
 		return (NDIS_STATUS_RESOURCES);
 
 	sc->ndis_sc = 1;
@@ -2017,7 +2007,6 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 	ndis_miniport_block *block;
 	ndis_miniport_characteristics *ch;
 	struct ndis_softc *sc;
-	int error;
 
 	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
@@ -2041,10 +2030,9 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 	    ndis_findwrap((funcptr)ndis_intrhand), intr);
 	KeSetImportanceDpc(&intr->ni_dpc, KDPC_IMPORTANCE_LOW);
 
-	error = IoConnectInterrupt(&intr->ni_introbj,
+	if (IoConnectInterrupt(&intr->ni_introbj,
 	    ndis_findwrap((funcptr)ndis_intr), sc, NULL,
-	    ivec, ilevel, 0, imode, shared, 0, FALSE);
-	if (error != STATUS_SUCCESS)
+	    ivec, ilevel, 0, imode, shared, 0, FALSE) != STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
 
 	block->nmb_interrupt = intr;
@@ -2431,7 +2419,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	struct nameidata nd;
 	struct ndis_checkmodule nc;
 	struct vattr vat, *vap = &vat;
-	int flags, error, vfslocked;
+	int flags, vfslocked;
 	ndis_fh *fh;
 
 	if (RtlUnicodeStringToAnsiString(&as, filename, TRUE)) {
@@ -2506,11 +2494,10 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	NDINIT(&nd, LOOKUP, FOLLOW | MPSAFE, UIO_SYSSPACE, path, td);
 
 	flags = FREAD;
-	error = vn_open(&nd, &flags, 0, NULL);
-	if (error) {
+	if (vn_open(&nd, &flags, 0, NULL) != 0) {
 		*status = NDIS_STATUS_FILE_NOT_FOUND;
 		ExFreePool(fh);
-		printf("NDIS: open file %s failed: %d\n", path, error);
+		printf("NDIS: open file %s failed\n", path);
 		ExFreePool(path);
 		free(afilename, M_NDIS_SUBR);
 		return;

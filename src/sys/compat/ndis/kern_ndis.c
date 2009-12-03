@@ -121,7 +121,6 @@ static int
 ndis_modevent(module_t mod, int cmd, void *arg)
 {
 	image_patch_table *patch;
-	int error = 0;
 
 	switch (cmd) {
 	case MOD_LOAD:
@@ -173,11 +172,11 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		}
 		break;
 	default:
-		error = EINVAL;
+		return (EINVAL);
 		break;
 	}
 
-	return (error);
+	return (0);
 }
 DEV_MODULE(ndisapi, ndis_modevent, NULL);
 MODULE_VERSION(ndisapi, 1);
@@ -485,7 +484,6 @@ ndis_convert_res(void *arg)
 	device_t dev;
 	struct resource_list *brl;
 	struct resource_list_entry *brle;
-	int error = 0;
 
 	block = sc->ndis_block;
 	dev = sc->ndis_dev;
@@ -546,7 +544,7 @@ ndis_convert_res(void *arg)
 
 	block->nmb_rlist = rl;
 
-	return (error);
+	return (0);
 }
 
 /*
@@ -857,7 +855,7 @@ int
 ndis_init_dma(void *arg)
 {
 	struct ndis_softc *sc = arg;
-	int i, error;
+	int i;
 
 	sc->ndis_tmaps = malloc(sizeof(bus_dmamap_t) * sc->ndis_maxpkts,
 	    M_NDIS_KERN, M_NOWAIT|M_ZERO);
@@ -865,9 +863,8 @@ ndis_init_dma(void *arg)
 		return (ENOMEM);
 
 	for (i = 0; i < sc->ndis_maxpkts; i++) {
-		error = bus_dmamap_create(sc->ndis_ttag, 0,
-		    &sc->ndis_tmaps[i]);
-		if (error) {
+		if (bus_dmamap_create(sc->ndis_ttag, 0,
+		    &sc->ndis_tmaps[i]) != 0) {
 			free(sc->ndis_tmaps, M_NDIS_KERN);
 			return (ENODEV);
 		}
@@ -1176,14 +1173,12 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	ndis_miniport_block *block;
 	struct ndis_softc *sc;
 	int32_t status;
-	int error;
 
 	sc = device_get_softc(pdo->do_devext);
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus) {
-		error = bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
+		if (bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
 		    INTR_TYPE_NET | INTR_MPSAFE,
-		    NULL, ntoskrnl_intr, NULL, &sc->ndis_intrhand);
-		if (error)
+		    NULL, ntoskrnl_intr, NULL, &sc->ndis_intrhand) != 0)
 			return (NDIS_STATUS_FAILURE);
 	}
 
