@@ -250,7 +250,6 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		break;
 	default:
 		return (EINVAL);
-		break;
 	}
 
 	return (0);
@@ -899,12 +898,8 @@ got_crypto:
 	}
 
 fail:
-	if (error) {
+	if (error)
 		ndis_detach(dev);
-		return (error);
-	}
-
-	DPRINTF(("attach done.\n"));
 
 	return (error);
 }
