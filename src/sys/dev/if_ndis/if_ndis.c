@@ -1909,7 +1909,7 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 	uint32_t arg, save;
 
 	len = sizeof(arg);
-	if (cipher == WPA_CSE_WEP40 || WPA_CSE_WEP104) {
+	if (cipher == WPA_CSE_WEP40 || cipher == WPA_CSE_WEP104) {
 		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_WEP))
 			return (ENOTSUP);
 		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
