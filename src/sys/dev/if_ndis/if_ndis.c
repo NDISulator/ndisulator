@@ -176,7 +176,7 @@ static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_disassociate(struct ndis_softc *);
-static void ndis_set_cipher(struct ndis_softc *, int);
+static int ndis_set_cipher(struct ndis_softc *, int);
 static int ndis_set_infra(struct ndis_softc *, int);
 static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
 static int ndis_set_wpa(struct ndis_softc *, void *, int);
@@ -1896,7 +1896,7 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 	}
 }
 
-static void
+static int
 ndis_set_cipher(struct ndis_softc *sc, int cipher)
 {
 	uint32_t arg;
@@ -1909,27 +1909,24 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 	else if (cipher == WPA_CSE_CCMP)
 		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
 	else
-		return;
+		return (EINVAL);
 
 	DPRINTF(("Setting cipher to %d\n", arg));
 	len = sizeof(arg);
-	ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
+	return (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len));
 }
 
 /*
- * WPA is hairy to set up. Do the work in a separate routine
- * so we don't clutter the setstate function too much.
- * Important yet undocumented fact: first we have to set the
- * authentication mode, _then_ we enable the ciphers. If one
- * of the WPA authentication modes isn't enabled, the driver
- * might not permit the TKIP or AES ciphers to be selected.
+ * First we have to set the authentication mode, _then_ we enable
+ * the ciphers. If one of the WPA authentication modes isn't enabled,
+ * the driver might not permit the TKIP or AES ciphers to be selected.
  */
 static int
 ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 {
 	uint32_t arg;
 	uint8_t *w;
-	int n, len;
+	int n, len, cipher;
 
 	/*
 	 * Apparently, the only way for us to know what ciphers
@@ -1942,12 +1939,14 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 
 	if (w[0] == IEEE80211_ELEMID_RSN) {
 		/* Group Suite Selector */
-		w += 7; 	ndis_set_cipher(sc, w[0]);
+		w += 7; 	cipher = w[0];
 		/* Pairwise Suite Count */
 		n = w[1];	w += 2;
 		/* Pairwise Suite List */
 		for (; n > 0; n--) {
-			w += 4;		ndis_set_cipher(sc, w[0]);
+			w += 4;
+			if (cipher < w[0])
+				cipher = w[0];
 		}
 		/* Authentication Key Management Suite Count */
 		n = w[1];	w += 2;
@@ -1965,12 +1964,14 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 		}
 	} else if (w[0] == IEEE80211_ELEMID_VENDOR) {
 		/* Group Suite Selector */
-		w += 11;	ndis_set_cipher(sc, w[0]);
+		w += 11;	cipher = w[0];
 		/* Pairwise Suite Count */
 		n = w[1];	w += 2;
 		/* Pairwise Suite List */
 		for (; n > 0; n--) {
-			w += 4;		ndis_set_cipher(sc, w[0]);
+			w += 4;
+			if (cipher < w[0])
+				cipher = w[0];
 		}
 		/* Authentication Key Management Suite Count */
 		n = w[1];	w += 2;
@@ -1991,7 +1992,7 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 	} else
 		return (EINVAL);
 
-	return (0);
+	return (ndis_set_cipher(sc, cipher));
 }
 
 static void
