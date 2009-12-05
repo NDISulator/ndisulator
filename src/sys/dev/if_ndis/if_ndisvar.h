@@ -37,6 +37,9 @@
 #define NDIS_DEFAULT_NODENAME	"FreeBSD NDIS node"
 #define NDIS_NODENAME_LEN	32
 
+extern int ndis_alloc_amem(void *);
+extern void ndis_free_amem(void *);
+
 /* For setting/getting OIDs from userspace. */
 struct ndis_oid_data {
 	uint32_t	oid;
