@@ -176,7 +176,7 @@ static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_disassociate(struct ndis_softc *);
-static int ndis_set_cipher(struct ndis_softc *, int);
+static void ndis_set_cipher(struct ndis_softc *, int);
 static int ndis_set_infra(struct ndis_softc *, int);
 static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
 static int ndis_set_wpa(struct ndis_softc *, void *, int);
@@ -1896,40 +1896,24 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 	}
 }
 
-static int
+static void
 ndis_set_cipher(struct ndis_softc *sc, int cipher)
 {
-	struct ieee80211com *ic = sc->ifp->if_l2com;
-	int rval = 0, len;
-	uint32_t arg, save;
+	uint32_t arg;
+	int len;
 
-	len = sizeof(arg);
-	if (cipher == WPA_CSE_WEP40 || cipher == WPA_CSE_WEP104) {
-		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_WEP))
-			return (ENOTSUP);
+	if (cipher == WPA_CSE_WEP40 || cipher == WPA_CSE_WEP104)
 		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
-	} else if (cipher == WPA_CSE_TKIP) {
-		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_TKIP))
-			return (ENOTSUP);
+	else if (cipher == WPA_CSE_TKIP)
 		arg = NDIS_80211_WEPSTAT_ENC2ENABLED;
-	} else if (cipher == WPA_CSE_CCMP) {
-		if (!(ic->ic_cryptocaps & IEEE80211_CRYPTO_AES_CCM))
-			return (ENOTSUP);
+	else if (cipher == WPA_CSE_CCMP)
 		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
-	}
+	else
+		return;
 
 	DPRINTF(("Setting cipher to %d\n", arg));
-	save = arg;
-	rval = ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
-	if (rval != 0)
-		return (rval);
-
-	/* Check that the cipher was set correctly. */
-	rval = ndis_get_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
-	if (rval != 0 || arg != save)
-		return (ENODEV);
-
-	return (0);
+	len = sizeof(arg);
+	ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 }
 
 /*
@@ -1943,11 +1927,9 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 static int
 ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 {
-	struct ieee80211_ie_wpa *w;
-	struct ndis_ie *n;
-	char *pos;
 	uint32_t arg;
-	int i;
+	uint8_t *w;
+	int n, len;
 
 	/*
 	 * Apparently, the only way for us to know what ciphers
@@ -1956,49 +1938,58 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 	 * stored in the 802.11 state machine. This IE should be
 	 * supplied by the WPA supplicant.
 	 */
-	w = (struct ieee80211_ie_wpa *)ie;
+	w = (uint8_t *)ie;
 
-	/* Skip over the ucast cipher OIDs. */
-	pos = (char *)&w->wpa_uciphers[0];
-	pos += w->wpa_uciphercnt * sizeof(struct ndis_ie);
-
-	/* Skip over the authmode count. */
-	pos += sizeof(u_int16_t);
-
-	/*
-	 * Check for the authentication modes. I'm
-	 * pretty sure there's only supposed to be one.
-	 */
-	n = (struct ndis_ie *)pos;
-	if (n->ni_val == WPA_ASE_NONE)
-		arg = NDIS_80211_AUTHMODE_WPANONE;
-	else if (n->ni_val == WPA_ASE_8021X_UNSPEC)
-		arg = NDIS_80211_AUTHMODE_WPA;
-	else if (n->ni_val == WPA_ASE_8021X_PSK)
-		arg = NDIS_80211_AUTHMODE_WPAPSK;
-	else
+	if (w[0] == IEEE80211_ELEMID_RSN) {
+		/* Group Suite Selector */
+		w += 7; 	ndis_set_cipher(sc, w[0]);
+		/* Pairwise Suite Count */
+		n = w[1];	w += 2;
+		/* Pairwise Suite List */
+		for (; n > 0; n--) {
+			w += 4;		ndis_set_cipher(sc, w[0]);
+		}
+		/* Authentication Key Management Suite Count */
+		n = w[1];	w += 2;
+		/* Authentication Key Management Suite List */
+		for (; n > 0; n--) {
+			w += 4;
+			if (w[0] == WPA_ASE_8021X_PSK)
+				arg = NDIS_80211_AUTHMODE_WPA2PSK;
+			else
+				arg = NDIS_80211_AUTHMODE_WPA2;
+			len = sizeof(arg);
+			if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
+			    &arg, &len) != 0)
+				return (ENOTSUP);
+		}
+	} else if (w[0] == IEEE80211_ELEMID_VENDOR) {
+		/* Group Suite Selector */
+		w += 11;	ndis_set_cipher(sc, w[0]);
+		/* Pairwise Suite Count */
+		n = w[1];	w += 2;
+		/* Pairwise Suite List */
+		for (; n > 0; n--) {
+			w += 4;		ndis_set_cipher(sc, w[0]);
+		}
+		/* Authentication Key Management Suite Count */
+		n = w[1];	w += 2;
+		/* Authentication Key Management Suite List */
+		for (; n > 0; n--) {
+			w += 4;
+			if (w[0] == WPA_ASE_8021X_PSK)
+				arg = NDIS_80211_AUTHMODE_WPAPSK;
+			else if (w[0] == WPA_ASE_8021X_UNSPEC)
+				arg = NDIS_80211_AUTHMODE_WPA;
+			else
+				arg = NDIS_80211_AUTHMODE_WPANONE;
+			len = sizeof(arg);
+			if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
+			    &arg, &len) != 0)
+				return (ENOTSUP);
+		}
+	} else
 		return (EINVAL);
-	i = sizeof(arg);
-	if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &i) != 0)
-		return (ENOTSUP);
-
-	/* Now configure the desired ciphers. */
-
-	/* First, set up the multicast group cipher. */
-	n = (struct ndis_ie *)&w->wpa_mcipher[0];
-
-	if (ndis_set_cipher(sc, n->ni_val))
-		return (ENOTSUP);
-
-	/* Now start looking around for the unicast ciphers. */
-	pos = (char *)&w->wpa_uciphers[0];
-	n = (struct ndis_ie *)pos;
-
-	for (i = 0; i < w->wpa_uciphercnt; i++) {
-		if (ndis_set_cipher(sc, n->ni_val))
-			return (ENOTSUP);
-		n++;
-	}
 
 	return (0);
 }
@@ -2118,7 +2109,7 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 	}
 #endif
 	if (ndis_set_info(sc, OID_802_11_SSID, &ssid, &len) != 0)
-		DPRINTF(("set ESSID failed.\n"));
+		DPRINTF(("set ESSID failed\n"));
 }
 
 static void
@@ -2145,7 +2136,7 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 		bcopy(ifp->if_broadcastaddr, bssid, len);
 	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
 	if (ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len) != 0)
-		device_printf(sc->ndis_dev, "setting BSSID failed\n");
+		DPRINTF(("set BSSID failed\n"));
 
 	/* Set SSID -- always do this last. */
 	ndis_set_ssid(sc, vap, 0);

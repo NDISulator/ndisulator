@@ -79,15 +79,6 @@ struct ndis_cfglist {
         TAILQ_ENTRY(ndis_cfglist)	link;
 };
 
-/*
- * Helper struct to make parsing information
- * elements easier.
- */
-struct ndis_ie {
-	uint8_t		ni_oui[3];
-	uint8_t		ni_val;
-};
-
 TAILQ_HEAD(nch, ndis_cfglist);
 
 #define	NDIS_INITIALIZED(sc)	(sc->ndis_block->nmb_devicectx != NULL)
