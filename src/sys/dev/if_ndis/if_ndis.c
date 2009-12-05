@@ -1909,7 +1909,7 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 	else if (cipher == WPA_CSE_CCMP)
 		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
 	else
-		return (EINVAL);
+		arg = NDIS_80211_WEPSTAT_DISABLED;
 
 	DPRINTF(("Setting cipher to %d\n", arg));
 	len = sizeof(arg);
