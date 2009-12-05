@@ -1957,10 +1957,6 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 				arg = NDIS_80211_AUTHMODE_WPA2PSK;
 			else
 				arg = NDIS_80211_AUTHMODE_WPA2;
-			len = sizeof(arg);
-			if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
-			    &arg, &len) != 0)
-				return (ENOTSUP);
 		}
 	} else if (w[0] == IEEE80211_ELEMID_VENDOR) {
 		/* Group Suite Selector */
@@ -1984,14 +1980,13 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 				arg = NDIS_80211_AUTHMODE_WPA;
 			else
 				arg = NDIS_80211_AUTHMODE_WPANONE;
-			len = sizeof(arg);
-			if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
-			    &arg, &len) != 0)
-				return (ENOTSUP);
 		}
 	} else
 		return (EINVAL);
 
+	len = sizeof(arg);
+	if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len) != 0)
+		return (ENOTSUP);
 	return (ndis_set_cipher(sc, cipher));
 }
 
