@@ -677,35 +677,32 @@ ndis_mtop(struct mbuf *m0, ndis_packet **p)
 	return (0);
 }
 
-int
+void
 ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
 {
-	int len, rval;
 	ndis_oid *o;
+	size_t len;
 
 	if (arg == NULL || oids == NULL || oidcnt == NULL)
-		return (EINVAL);
+		return;
 	len = 0;
 	ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, NULL, &len);
 
 	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
 	if (o == NULL)
-		return (ENOMEM);
+		return;
 
-	rval = ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len);
-	if (rval) {
+	if (ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len) != 0) {
 		free(o, M_NDIS_KERN);
-		return (rval);
+		return;
 	}
 
 	*oids = o;
 	*oidcnt = len / 4;
-
-	return (0);
 }
 
 int
-ndis_set_info(void *arg, ndis_oid oid, void *buf, int *buflen)
+ndis_set_info(void *arg, ndis_oid oid, void *buf, size_t *buflen)
 {
 	struct ndis_softc *sc = arg;
 	ndis_status rval;
@@ -1103,7 +1100,7 @@ ndis_intrsetup(kdpc *dpc, device_object *dobj, irp *ip, struct ndis_softc *sc)
 }
 
 int
-ndis_get_info(void *arg, ndis_oid oid, void *buf, int *buflen)
+ndis_get_info(void *arg, ndis_oid oid, void *buf, size_t *buflen)
 {
 	struct ndis_softc *sc = arg;
 	ndis_status rval;

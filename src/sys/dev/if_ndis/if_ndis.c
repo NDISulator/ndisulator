@@ -118,7 +118,7 @@ static void ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *, uint32_t,
 static void ndis_rxeof_done(ndis_handle);
 static void ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
 static void ndis_rxeof_xfr_done(ndis_handle, ndis_packet *, uint32_t, uint32_t);
-static void ndis_linksts(ndis_handle, ndis_status, void *, uint32_t);
+static void ndis_linksts(ndis_handle, ndis_status, void *, size_t);
 static void ndis_linksts_done(ndis_handle);
 
 /* We need to wrap these functions for amd64. */
@@ -263,7 +263,7 @@ ndis_setmulti(struct ndis_softc *sc)
 {
 	struct ifnet *ifp = sc->ifp;
 	struct ifmultiaddr *ifma;
-	int len, mclistsz;
+	size_t len, mclistsz;
 	uint8_t *mclist;
 
 	if (ifp->if_flags & IFF_ALLMULTI || ifp->if_flags & IFF_PROMISC) {
@@ -325,7 +325,8 @@ ndis_set_offload(struct ndis_softc *sc)
 	ndis_task_offload *nto;
 	ndis_task_offload_hdr *ntoh;
 	ndis_task_tcpip_csum *nttc;
-	int len, error;
+	int error;
+	size_t len;
 
 	if (!NDIS_INITIALIZED(sc))
 		return (EINVAL);
@@ -380,7 +381,8 @@ ndis_probe_offload(struct ndis_softc *sc)
 	ndis_task_offload *nto;
 	ndis_task_offload_hdr *ntoh;
 	ndis_task_tcpip_csum *nttc = NULL;
-	int len, error, dummy;
+	int error, dummy;
+	size_t len;
 
 	len = sizeof(dummy);
 	error = ndis_get_info(sc, OID_TCP_TASK_OFFLOAD, &dummy, &len);
@@ -505,7 +507,8 @@ ndis_attach(device_t dev)
 	driver_object *pdrv;
 	device_object *pdo;
 	struct ifnet *ifp = NULL;
-	int error = 0, len, mode, i;
+	int error = 0, mode, i;
+	size_t len;
 	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
@@ -820,12 +823,12 @@ nonettypes:
 		 * set AUTHENTICATION_MODE to WPA and read it back
 		 * successfully.
 		 */
-		i = sizeof(arg);
+		len = sizeof(arg);
 		arg = NDIS_80211_AUTHMODE_WPA;
 		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
-		    &arg, &i) == 0) {
+		    &arg, &len) == 0) {
 			if (ndis_get_info(sc,
-			    OID_802_11_AUTHENTICATION_MODE, &arg, &i) == 0)
+			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
 				if (arg == NDIS_80211_AUTHMODE_WPA)
 					ic->ic_caps |= IEEE80211_C_WPA;
 		}
@@ -837,10 +840,10 @@ nonettypes:
 		 * If only ENC2 works, then we have WEP and TKIP.
 		 * If only ENC1 works, then we have just WEP.
 		 */
-		i = sizeof(arg);
+		len = sizeof(arg);
 		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
 		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
-		    &arg, &i) == 0) {
+		    &arg, &len) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP
 					  |  IEEE80211_CRYPTO_AES_CCM;
@@ -848,23 +851,23 @@ nonettypes:
 		}
 		arg = NDIS_80211_WEPSTAT_ENC2ENABLED;
 		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
-		    &arg, &i) == 0) {
+		    &arg, &len) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP;
 			goto got_crypto;
 		}
 		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
 		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
-		    &arg, &i) == 0)
+		    &arg, &len) == 0)
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
-		i = sizeof(arg);
+		len = sizeof(arg);
 		if (ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
-		    &arg, &i) == 0)
+		    &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
-		if (ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &i) == 0)
+		if (ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_PMGT;
-		if (ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &i) == 0)
+		if (ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_TXPMGT;
 
 		ieee80211_ifattach(ic, eaddr);
@@ -1454,7 +1457,7 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 }
 
 static void
-ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf, uint32_t slen)
+ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf, size_t slen)
 {
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
@@ -1863,7 +1866,7 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 	struct ndis_softc *sc = ifp->if_softc;
 	uint32_t media_info;
 	ndis_media_state linkstate;
-	int len;
+	size_t len;
 
 	ifmr->ifm_status = IFM_AVALID;
 	ifmr->ifm_active = IFM_ETHER;
@@ -1872,13 +1875,12 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 		return;
 
 	len = sizeof(linkstate);
-	ndis_get_info(sc, OID_GEN_MEDIA_CONNECT_STATUS,
-	    (void *)&linkstate, &len);
+	ndis_get_info(sc, OID_GEN_MEDIA_CONNECT_STATUS, &linkstate, &len);
 	if (linkstate == nmc_connected)
 		ifmr->ifm_status |= IFM_ACTIVE;
 
 	len = sizeof(media_info);
-	ndis_get_info(sc, OID_GEN_LINK_SPEED, (void *)&media_info, &len);
+	ndis_get_info(sc, OID_GEN_LINK_SPEED, &media_info, &len);
 
 	switch (media_info) {
 	case 100000:
@@ -1900,7 +1902,7 @@ static int
 ndis_set_cipher(struct ndis_softc *sc, int cipher)
 {
 	uint32_t arg;
-	int len;
+	size_t len;
 
 	if (cipher == WPA_CSE_WEP40 || cipher == WPA_CSE_WEP104)
 		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
@@ -1926,7 +1928,8 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 {
 	uint32_t arg;
 	uint8_t *w;
-	int n, len, cipher;
+	int n, cipher;
+	size_t len;
 
 	/*
 	 * Apparently, the only way for us to know what ciphers
@@ -1936,7 +1939,6 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 	 * supplied by the WPA supplicant.
 	 */
 	w = (uint8_t *)ie;
-
 	if (w[0] == IEEE80211_ELEMID_RSN) {
 		/* Group Suite Selector */
 		w += 7; 	cipher = w[0];
@@ -1997,7 +1999,8 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	const struct ieee80211_txparam *tp;
 	ndis_80211_rates rates;
 	uint32_t arg;
-	int len, i;
+	int i;
+	size_t len;
 
 	/* Set fragmentation threshold */
 	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
@@ -2058,7 +2061,7 @@ static int
 ndis_set_infra(struct ndis_softc *sc, int opmode)
 {
 	uint32_t arg;
-	int len;
+	size_t len;
 
 	len = sizeof(arg);
 	if (opmode == IEEE80211_M_IBSS)
@@ -2073,7 +2076,7 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 {
 	struct ieee80211_node *ni = vap->iv_bss;
 	ndis_80211_ssid ssid;
-	int len;
+	size_t len;
 
 	len = sizeof(ssid);
 	bzero((char *)&ssid, len);
@@ -2114,7 +2117,7 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 	struct ieee80211_node *ni = vap->iv_bss;
 	struct ifnet *ifp = sc->ifp;
 	ndis_80211_macaddr bssid;
-	int len;
+	size_t len;
 
 	/*
 	 * If the user selected a specific BSSID, try to use that one.
@@ -2141,8 +2144,8 @@ ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 static void
 ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	int len;
 	uint32_t arg;
+	size_t len;
 
 	ndis_disassociate(sc);
 
@@ -2180,7 +2183,7 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 static void
 ndis_disassociate(struct ndis_softc *sc)
 {
-	int len = 0;
+	size_t len = 0;
 
 	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
 }
@@ -2188,7 +2191,8 @@ ndis_disassociate(struct ndis_softc *sc)
 static int
 ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 {
-	int len, error;
+	int error;
+	size_t len;
 
 	len = sizeof(uint32_t) + (sizeof(ndis_wlan_bssid_ex) * 16);
 	*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
@@ -2220,8 +2224,9 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	ndis_80211_config config;
 	ndis_80211_macaddr bssid;
 	ndis_80211_ssid ssid;
-	int chanflag = 0, len, i = 0;
+	int chanflag = 0, i = 0;
 	uint32_t arg;
+	size_t len;
 
 	/* Get BSSID */
 	len = sizeof(bssid);
@@ -2526,7 +2531,7 @@ ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
 	const struct ieee80211_cipher *cip = key->wk_cipher;
 	ndis_80211_remove_key nkey;
-	int len;
+	size_t len;
 
 	if (cip->ic_cipher == IEEE80211_CIPHER_WEP) {
 		uint32_t idx = key->wk_keyix;
@@ -2560,7 +2565,8 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 	struct ndis_softc *sc = ifp->if_softc;
 	ndis_80211_wep wep;
 	ndis_80211_key nkey;
-	int len, error = 0;
+	int error = 0;
+	size_t len;
 
 	switch (key->wk_cipher->ic_cipher) {
 	case IEEE80211_CIPHER_TKIP:
@@ -2623,7 +2629,6 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 	case IEEE80211_CIPHER_AES_CCM:
 	default:
 		error = ENOTTY;
-		break;
 	}
 	if (error)
 		return (0);
@@ -2742,11 +2747,10 @@ ndis_scan_start(struct ieee80211com *ic)
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
-	int len;
+	size_t len = 0;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
-	len = 0;
 	if (ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len) != 0) {
 		ieee80211_cancel_scan(vap);
 		return;
@@ -2761,7 +2765,7 @@ ndis_set_channel(struct ieee80211com *ic)
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
 	ndis_80211_config config;
-	int len;
+	size_t len;
 
 	if (sc->ndis_link == 1 || ic->ic_bsschan == IEEE80211_CHAN_ANYC)
 		return;

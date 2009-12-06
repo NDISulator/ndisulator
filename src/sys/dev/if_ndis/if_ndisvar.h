@@ -43,10 +43,7 @@ extern void ndis_free_amem(void *);
 /* For setting/getting OIDs from userspace. */
 struct ndis_oid_data {
 	uint32_t	oid;
-	uint32_t	len;
-#ifdef notdef
-	uint8_t		data[1];
-#endif
+	size_t		len;
 };
 
 struct ndis_pci_type {
@@ -172,11 +169,11 @@ struct ndis_softc {
 	interface_type		ndis_type;
 	struct callout		ndis_scan_callout;
 	struct callout		ndis_stat_callout;
-	int			ndis_maxpkts;
+	size_t			ndis_maxpkts;
 	ndis_oid		*ndis_oids;
 	int			ndis_oidcnt;
 	int			ndis_txidx;
-	int			ndis_txpending;
+	size_t			ndis_txpending;
 	ndis_packet		**ndis_txarray;
 	ndis_handle		ndis_txpool;
 	uint8_t			ndis_sc;
