@@ -2530,7 +2530,6 @@ ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 {
 	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
 	const struct ieee80211_cipher *cip = key->wk_cipher;
-	ndis_80211_remove_key nkey;
 	size_t len;
 
 	if (cip->ic_cipher == IEEE80211_CIPHER_WEP) {
@@ -2539,20 +2538,17 @@ ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 		len = sizeof(idx);
 		if (ndis_set_info(sc, OID_802_11_REMOVE_WEP, &idx, &len) != 0)
 			return (0);
-		return (1);
+	} else {
+		ndis_80211_remove_key rkey;
+
+		len = sizeof(rkey);
+		bzero((char *)&rkey, len);
+		rkey.nk_len = len;
+		rkey.nk_keyidx = key->wk_keyix;
+		bcopy(key->wk_macaddr, rkey.nk_bssid, IEEE80211_ADDR_LEN);
+		if (ndis_set_info(sc, OID_802_11_REMOVE_KEY, &rkey, &len) != 0)
+			return (0);
 	}
-
-	bzero((char *)&nkey, sizeof(nkey));
-	len = sizeof(nkey);
-
-	nkey.nk_len = len;
-	nkey.nk_keyidx = key->wk_keyix;
-
-	bcopy(vap->iv_ifp->if_broadcastaddr,
-	    nkey.nk_bssid, IEEE80211_ADDR_LEN);
-
-	if (ndis_set_info(sc, OID_802_11_REMOVE_KEY, &nkey, &len) != 0)
-		return (0);
 
 	return (1);
 }
@@ -2569,46 +2565,32 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 	size_t len;
 
 	switch (key->wk_cipher->ic_cipher) {
+	case IEEE80211_CIPHER_AES_CCM:
 	case IEEE80211_CIPHER_TKIP:
 		len = sizeof(ndis_80211_key);
 		bzero((char *)&nkey, sizeof(nkey));
 		nkey.nk_len = len;
 		nkey.nk_keylen = key->wk_keylen;
-
-		if (key->wk_flags & IEEE80211_KEY_SWMIC)
-			nkey.nk_keylen += 16;
-
-		/* key index - gets weird in NDIS */
+		bcopy(key->wk_macaddr, nkey.nk_bssid, IEEE80211_ADDR_LEN);
 		if (key->wk_keyix != IEEE80211_KEYIX_NONE)
 			nkey.nk_keyidx = key->wk_keyix;
 		else
 			nkey.nk_keyidx = 0;
-
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
 			nkey.nk_keyidx |= 1 << 31;
-
-		if (key->wk_flags & IEEE80211_KEY_GROUP) {
-			bcopy(ifp->if_broadcastaddr,
-			    nkey.nk_bssid, IEEE80211_ADDR_LEN);
-		} else {
-			bcopy(vap->iv_bss->ni_bssid,
-			    nkey.nk_bssid, IEEE80211_ADDR_LEN);
-			/* pairwise key */
+		if (!(key->wk_flags & IEEE80211_KEY_GROUP))
 			nkey.nk_keyidx |= 1 << 30;
-		}
 
-		/* need to set bit 29 based on keyrsc */
 		nkey.nk_keyrsc = key->wk_keyrsc[0];	/* XXX need tid */
 		if (nkey.nk_keyrsc)
 			nkey.nk_keyidx |= 1 << 29;
-
-		if (key->wk_flags & IEEE80211_KEY_SWMIC) {
+		if (key->wk_cipher->ic_cipher == IEEE80211_CIPHER_TKIP &&
+		    key->wk_keylen == 32) {
 			bcopy(key->wk_key, nkey.nk_keydata, 16);
-			bcopy(key->wk_key + 24, nkey.nk_keydata + 16, 8);
 			bcopy(key->wk_key + 16, nkey.nk_keydata + 24, 8);
+			bcopy(key->wk_key + 24, nkey.nk_keydata + 16, 8);
 		} else
 			bcopy(key->wk_key, nkey.nk_keydata, key->wk_keylen);
-
 		error = ndis_set_info(sc, OID_802_11_ADD_KEY, &nkey, &len);
 		break;
 	case IEEE80211_CIPHER_WEP:
@@ -2622,13 +2604,9 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		bcopy(key->wk_key, wep.nw_keydata, wep.nw_len);
 		error = ndis_set_info(sc, OID_802_11_ADD_WEP, &wep, &len);
 		break;
-	/*
-	 * I don't know how to set up keys for the AES
-	 * cipher yet. Is it the same as TKIP?
-	 */
-	case IEEE80211_CIPHER_AES_CCM:
 	default:
-		error = ENOTTY;
+		error = ENOTSUP;
+		break;
 	}
 	if (error)
 		return (0);
