@@ -1463,10 +1463,10 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf, size_t slen)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	NDIS_LOCK(sc);
 	sc->ndis_sts = status;
 
 	/* Event list is all full up, drop this one. */
-	NDIS_LOCK(sc);
 	if (sc->ndis_evt[sc->ndis_evtpidx].ne_sts) {
 		NDIS_UNLOCK(sc);
 		return;
@@ -1577,19 +1577,17 @@ ndis_ticktask(device_object *d, void *xsc)
 	if (sc->ndis_link == 0 &&
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_CONNECT) {
 		sc->ndis_link = 1;
-		NDIS_UNLOCK(sc);
 		if (vap != NULL) {
-			ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
+			if (vap->iv_state == IEEE80211_S_ASSOC)
+				ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
 		}
-		NDIS_LOCK(sc);
 		if_link_state_change(sc->ifp, LINK_STATE_UP);
 	} else if (sc->ndis_link == 1 &&
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_DISCONNECT) {
 		sc->ndis_link = 0;
-		NDIS_UNLOCK(sc);
 		if (vap != NULL)
-			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
-		NDIS_LOCK(sc);
+			if (vap->iv_state == IEEE80211_S_RUN)
+				ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
 		if_link_state_change(sc->ifp, LINK_STATE_DOWN);
 	}
 	NDIS_UNLOCK(sc);
@@ -1817,9 +1815,7 @@ ndis_init(void *xsc)
 	sc->ndis_txidx = 0;
 	sc->ndis_txpending = sc->ndis_maxpkts;
 	sc->ndis_link = 0;
-
 	if_link_state_change(sc->ifp, LINK_STATE_UNKNOWN);
-
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	sc->ndis_tx_timer = 0;
@@ -2638,9 +2634,7 @@ ndis_stop(struct ndis_softc *sc)
 	NDIS_LOCK(sc);
 	sc->ndis_tx_timer = 0;
 	sc->ndis_link = 0;
-
 	if_link_state_change(sc->ifp, LINK_STATE_UNKNOWN);
-
 	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	for (i = 0; i < NDIS_EVENTS; i++) {
 		if (sc->ndis_evt[i].ne_sts && sc->ndis_evt[i].ne_buf != NULL) {
@@ -2701,7 +2695,8 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		break;
 	case IEEE80211_S_AUTH:
 		ndis_auth(sc, vap);
-		/* fallthrough */
+		ieee80211_new_state(vap, IEEE80211_S_ASSOC, 0);
+		break;
 	case IEEE80211_S_ASSOC:
 		ndis_assoc(sc, vap);
 		break;
