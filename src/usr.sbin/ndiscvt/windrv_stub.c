@@ -43,7 +43,7 @@ __FBSDID("$FreeBSD$");
 #include <machine/resource.h>
 #include <sys/bus.h>
 
-#define NDIS_REGVALS
+#define	NDIS_REGVALS
 
 struct ndis_cfg {
 	char	*nc_cfgkey;
@@ -140,15 +140,15 @@ extern int windrv_load(module_t, vm_offset_t, size_t,
 extern int windrv_unload(module_t, vm_offset_t, size_t);
 
 #ifndef DRV_DATA_START
-#define DRV_DATA_START UNDEF_START
+#define	DRV_DATA_START UNDEF_START
 #endif
 
 #ifndef DRV_DATA_END
-#define DRV_DATA_END UNDEF_END
+#define	DRV_DATA_END UNDEF_END
 #endif
 
 #ifndef DRV_NAME
-#define DRV_NAME UNDEF_NAME
+#define	DRV_NAME UNDEF_NAME
 #endif
 
 extern uint8_t DRV_DATA_START;
@@ -161,7 +161,7 @@ extern uint8_t DRV_DATA_END;
  * reason we need this code is so that loading an ELF-ified Windows
  * driver module will trigger a bus reprobe.
  */
-#define MODULE_DECL(x)				\
+#define	MODULE_DECL(x)				\
 	MODULE_DEPEND(x, ndisapi, 1, 1, 1);	\
 	MODULE_DEPEND(x, ndis, 1, 1, 1)
 
@@ -185,7 +185,7 @@ static driver_t windrv_driver = {
 
 static devclass_t windrv_devclass;
 
-#define DRIVER_DECL(x)					\
+#define	DRIVER_DECL(x)					\
 	DRIVER_MODULE(x, pci, windrv_driver,		\
 	    windrv_devclass, windrv_modevent, NULL);	\
 	DRIVER_MODULE(x, cardbus, windrv_driver,	\

@@ -241,7 +241,7 @@ ndis_get_resource_list(device_t dev, device_t child)
 	return (&sc->ndis_rl);
 }
 
-#define NDIS_AM_RID 3
+#define	NDIS_AM_RID 3
 
 int
 ndis_alloc_amem(void *arg)

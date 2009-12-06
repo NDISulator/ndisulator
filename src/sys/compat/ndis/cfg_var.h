@@ -33,7 +33,7 @@
  */
 
 #ifndef _CFG_VAR_H_
-#define _CFG_VAR_H_
+#define	_CFG_VAR_H_
 
 struct ndis_cfg {
 	char	*nc_cfgkey;

@@ -34,8 +34,8 @@
 
 #include <net80211/ieee80211_var.h>
 
-#define NDIS_DEFAULT_NODENAME	"FreeBSD NDIS node"
-#define NDIS_NODENAME_LEN	32
+#define	NDIS_DEFAULT_NODENAME	"FreeBSD NDIS node"
+#define	NDIS_NODENAME_LEN	32
 
 extern int ndis_alloc_amem(void *);
 extern void ndis_free_amem(void *);

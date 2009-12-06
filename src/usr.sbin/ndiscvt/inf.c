@@ -303,7 +303,7 @@ nextmanf:
 
 	if (first == 1) {
 		/* Emit start of PCI device table */
-		fprintf(ofp, "#define NDIS_PCI_DEV_TABLE");
+		fprintf(ofp, "#define\tNDIS_PCI_DEV_TABLE");
 		first = 0;
 	}
 retry:
@@ -384,7 +384,7 @@ nextmanf:
 
 	if (first == 1) {
 		/* Emit start of PCMCIA device table */
-		fprintf(ofp, "#define NDIS_PCMCIA_DEV_TABLE");
+		fprintf(ofp, "#define\tNDIS_PCMCIA_DEV_TABLE");
 		first = 0;
 	}
 retry:
@@ -465,7 +465,7 @@ nextmanf:
 
 	if (first == 1) {
 		/* Emit start of USB device table */
-		fprintf(ofp, "#define NDIS_USB_DEV_TABLE");
+		fprintf(ofp, "#define\tNDIS_USB_DEV_TABLE");
 		first = 0;
 	}
 retry:
@@ -772,7 +772,7 @@ void
 define_add(const char *d __unused)
 {
 #ifdef notdef
-	fprintf(stderr, "define \"%s\"\n", d);
+	fprintf(stderr, "define\t\"%s\"\n", d);
 #endif
 }
 

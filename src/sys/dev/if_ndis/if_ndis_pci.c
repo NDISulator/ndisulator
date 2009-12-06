@@ -267,7 +267,7 @@ ndis_attach_pci(device_t dev)
 	/*
 	 * Allocate the parent bus DMA tag appropriate for PCI.
 	 */
-#define NDIS_NSEG_NEW 32
+#define	NDIS_NSEG_NEW 32
 	error = bus_dma_tag_create(NULL,	/* parent */
 			1, 0,			/* alignment, boundary */
 			BUS_SPACE_MAXADDR_32BIT,/* lowaddr */

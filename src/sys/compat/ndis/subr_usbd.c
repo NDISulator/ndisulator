@@ -76,14 +76,14 @@ static driver_object usbd_driver;
 static usb_callback_t usbd_non_isoc_callback;
 static usb_callback_t usbd_ctrl_callback;
 
-#define USBD_CTRL_READ_PIPE		0
-#define USBD_CTRL_WRITE_PIPE		1
-#define USBD_CTRL_MAX_PIPE		2
-#define USBD_CTRL_READ_BUFFER_SP	256
-#define USBD_CTRL_WRITE_BUFFER_SP	256
-#define USBD_CTRL_READ_BUFFER_SIZE	\
+#define	USBD_CTRL_READ_PIPE		0
+#define	USBD_CTRL_WRITE_PIPE		1
+#define	USBD_CTRL_MAX_PIPE		2
+#define	USBD_CTRL_READ_BUFFER_SP	256
+#define	USBD_CTRL_WRITE_BUFFER_SP	256
+#define	USBD_CTRL_READ_BUFFER_SIZE	\
 	(sizeof(struct usb_device_request) + USBD_CTRL_READ_BUFFER_SP)
-#define USBD_CTRL_WRITE_BUFFER_SIZE	\
+#define	USBD_CTRL_WRITE_BUFFER_SIZE	\
 	(sizeof(struct usb_device_request) + USBD_CTRL_WRITE_BUFFER_SP)
 static struct usb_config usbd_default_epconfig[USBD_CTRL_MAX_PIPE] = {
 	[USBD_CTRL_READ_PIPE] = {
@@ -433,7 +433,7 @@ usbd_submit_urb(irp *ip)
 static int32_t
 usbd_func_getdesc(irp *ip)
 {
-#define NDISUSB_GETDESC_MAXRETRIES 3
+#define	NDISUSB_GETDESC_MAXRETRIES 3
 	device_t dev;
 	struct ndis_softc *sc;
 	struct usbd_urb_control_descriptor_request *ctldesc;

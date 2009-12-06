@@ -43,7 +43,7 @@ __FBSDID("$FreeBSD$");
 #include "y.tab.h"
 
 int lineno = 1;
-#define YY_NO_UNPUT
+#define	YY_NO_UNPUT
 
 int yylex(void);
 void yyerror(const char *);

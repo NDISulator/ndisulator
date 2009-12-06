@@ -72,14 +72,14 @@ __FBSDID("$FreeBSD$");
 #include <dev/if_ndis/if_ndisvar.h>
 #include <net80211/ieee80211_regdomain.h>
 
-#define NDIS_DEBUG
+#define	NDIS_DEBUG
 #ifdef NDIS_DEBUG
-#define DPRINTF(x)	do { if (ndis_debug > 0) printf x; } while (0)
+#define	DPRINTF(x)	do { if (ndis_debug > 0) printf x; } while (0)
 static int ndis_debug = 0;
 SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug, 0,
     "if_ndis debug level");
 #else
-#define DPRINTF(x)
+#define	DPRINTF(x)
 #endif
 
 SYSCTL_DECL(_hw_ndisusb);
@@ -731,7 +731,7 @@ nonettypes:
 		 * if this is not 802.11b we're just going to be faking it
 		 * all up to heck.
 		 */
-#define TESTSETRATE(x, y)						\
+#define	TESTSETRATE(x, y)						\
 	do {								\
 		int i;							\
 		for (i = 0; i < ic->ic_sup_rates[x].rs_nrates; i++) {	\
@@ -744,9 +744,9 @@ nonettypes:
 		}							\
 	} while (0)
 
-#define SETRATE(x, y)							\
+#define	SETRATE(x, y)							\
 	ic->ic_sup_rates[x].rs_rates[ic->ic_sup_rates[x].rs_nrates] = (y)
-#define INCRATE(x)							\
+#define	INCRATE(x)							\
 	ic->ic_sup_rates[x].rs_nrates++
 
 		if (isset(ic->ic_modecaps, IEEE80211_MODE_11A))
