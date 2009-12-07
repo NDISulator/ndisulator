@@ -191,19 +191,18 @@ static int ndisdrv_loaded = 0;
 MALLOC_DEFINE(M_NDIS_DEV, "ndis_dev", "if_ndis buffers");
 
 /*
- * This routine should call windrv_load() once for each driver
- * image. This will do the relocation and dynalinking for the
- * image, and create a Windows driver object which will be
- * saved in our driver database.
+ * This routine should call windrv_load() once for each driver image.
+ * This will do the relocation and dynalinking for the image, and create
+ * a Windows driver object which will be saved in our driver database.
  */
 int
 ndisdrv_modevent(module_t mod, int cmd, void *arg)
 {
 	switch (cmd) {
 	case MOD_LOAD:
-		ndisdrv_loaded++;
-		if (ndisdrv_loaded > 1)
+		if (ndisdrv_loaded == 1)
 			break;
+		ndisdrv_loaded = 1;
 		windrv_wrap((funcptr)ndis_rxeof, &ndis_rxeof_wrap,
 		    3, WINDRV_WRAP_STDCALL);
 		windrv_wrap((funcptr)ndis_rxeof_eth, &ndis_rxeof_eth_wrap,
@@ -230,9 +229,9 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		    2, WINDRV_WRAP_STDCALL);
 		break;
 	case MOD_UNLOAD:
-		ndisdrv_loaded--;
-		if (ndisdrv_loaded > 0)
+		if (ndisdrv_loaded == 0)
 			break;
+		ndisdrv_loaded = 0;
 		/* fallthrough */
 	case MOD_SHUTDOWN:
 		windrv_unwrap(ndis_rxeof_wrap);
@@ -249,7 +248,7 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		windrv_unwrap(ndis_inputtask_wrap);
 		break;
 	default:
-		return (EINVAL);
+		return (ENOTSUP);
 	}
 
 	return (0);

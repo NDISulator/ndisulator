@@ -135,8 +135,8 @@ typedef enum interface_type interface_type;
 extern struct kobjop_desc device_probe_desc;
 typedef int device_probe_t(device_t dev);
 
-extern int windrv_load(module_t, vm_offset_t, size_t,
-    interface_type, void *, void *);
+extern int windrv_load(module_t, vm_offset_t, size_t, interface_type, void *,
+    void *);
 extern int windrv_unload(module_t, vm_offset_t, size_t);
 
 #ifndef DRV_DATA_START
@@ -209,7 +209,7 @@ static int
 windrv_modevent(module_t mod, int cmd, void *arg)
 {
 	vm_offset_t drv_data_start, drv_data_end;
-	int drv_data_len, error = 0;
+	size_t drv_data_len;
 
 	drv_data_start = (vm_offset_t)&DRV_DATA_START;
 	drv_data_end = (vm_offset_t)&DRV_DATA_END;
@@ -217,9 +217,9 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 
 	switch (cmd) {
 	case MOD_LOAD:
-		windrv_loaded++;
-		if (windrv_loaded > 1)
+		if (windrv_loaded == 1)
 			break;
+		windrv_loaded = 1;
 #ifdef NDIS_PCI_DEV_TABLE
 		windrv_load(mod, drv_data_start, drv_data_len, PCIBus,
 		    ndis_devs_pci, &ndis_regvals);
@@ -234,9 +234,9 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 #endif
 		break;
 	case MOD_UNLOAD:
-		windrv_loaded--;
-		if (windrv_loaded > 0)
+		if (windrv_loaded == 0)
 			break;
+		windrv_loaded = 0;
 #ifdef NDIS_PCI_DEV_TABLE
 		windrv_unload(mod, drv_data_start, drv_data_len);
 #endif
@@ -250,9 +250,8 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 	case MOD_SHUTDOWN:
 		break;
 	default:
-		error = EINVAL;
-		break;
+		return (ENOTSUP);
 	}
 
-	return (error);
+	return (0);
 }

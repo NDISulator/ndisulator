@@ -1272,7 +1272,7 @@ extern int windrv_libinit(void);
 extern int windrv_libfini(void);
 extern driver_object *windrv_lookup(vm_offset_t, char *);
 extern struct drvdb_ent *windrv_match(matchfuncptr, void *);
-extern int windrv_load(module_t, vm_offset_t, int, interface_type, void *,
+extern int windrv_load(module_t, vm_offset_t, size_t, interface_type, void *,
     ndis_cfg *);
 extern int windrv_unload(module_t, vm_offset_t, int);
 extern int windrv_create_pdo(driver_object *, device_t);
