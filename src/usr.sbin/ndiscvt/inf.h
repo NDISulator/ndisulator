@@ -7,7 +7,7 @@
 #define	W_MAX	16
 
 struct section {
-	const char *	name;
+	const char	*name;
 
 	TAILQ_ENTRY(section)	link;
 };
@@ -15,9 +15,8 @@ TAILQ_HEAD(section_head, section);
 
 struct assign {
 	struct section	*section;
-
-	const char *	key;
-	const char *	vals[W_MAX];
+	const char	*key;
+	const char	*vals[W_MAX];
 
 	TAILQ_ENTRY(assign)	link;
 };
@@ -26,11 +25,11 @@ TAILQ_HEAD(assign_head, assign);
 struct reg {
 	struct section *section;
 
-	const char *	root;
-	const char *	subkey;
-	const char *	key;
+	const char	*root;
+	const char	*subkey;
+	const char	*key;
 	u_int		flags;
-	const char *	value;
+	const char	*value;
 
 	TAILQ_ENTRY(reg)	link;
 };
@@ -51,11 +50,10 @@ TAILQ_HEAD(reg_head, reg);
 #define	FLG_ADDREG_TYPE_DWORD		0x00010001
 #define	FLG_ADDREG_TYPE_NONE		0x00020001
 
-extern void	section_add	(const char *);
-extern void	assign_add	(const char *);
-extern void	define_add	(const char *);
-extern void	regkey_add	(const char *);
-
-extern void	push_word	(const char *);
-extern void	clear_words	(void);
-extern int	inf_parse	(FILE *, FILE *);
+extern int inf_parse(FILE *, FILE *);
+extern void assign_add(const char *);
+extern void clear_words(void);
+extern void define_add(const char *);
+extern void push_word(const char *);
+extern void regkey_add(const char *);
+extern void section_add(const char *);
