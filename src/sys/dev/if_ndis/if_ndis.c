@@ -1786,7 +1786,8 @@ ndis_init(void *xsc)
 	struct ndis_softc *sc = xsc;
 	struct ifnet *ifp = sc->ifp;
 	struct ieee80211com *ic = ifp->if_l2com;
-	int i, len;
+	uint32_t arg;
+	size_t len;
 
 	/* Program the packet filter */
 	sc->ndis_filter = NDIS_PACKET_TYPE_DIRECTED;
@@ -1800,9 +1801,9 @@ ndis_init(void *xsc)
 		device_printf(sc->ndis_dev, "set filter failed\n");
 
 	/* Set lookahead */
-	i = ifp->if_mtu;
-	len = sizeof(i);
-	ndis_set_info(sc, OID_GEN_CURRENT_LOOKAHEAD, &i, &len);
+	arg = ifp->if_mtu;
+	len = sizeof(arg);
+	ndis_set_info(sc, OID_GEN_CURRENT_LOOKAHEAD, &arg, &len);
 
 	/* Program the multicast filter, if necessary */
 	ndis_setmulti(sc);
@@ -2331,7 +2332,8 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 {
 	struct ndis_softc *sc = ifp->if_softc;
 	struct ifreq *ifr = (struct ifreq *) data;
-	int i, error = 0;
+	int error = 0;
+	size_t len;
 
 	switch (command) {
 	case SIOCSIFFLAGS:
@@ -2341,19 +2343,19 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 			    !(sc->ndis_if_flags & IFF_PROMISC)) {
 				sc->ndis_filter |=
 				    NDIS_PACKET_TYPE_PROMISCUOUS;
-				i = sizeof(sc->ndis_filter);
+				len = sizeof(sc->ndis_filter);
 				error = ndis_set_info(sc,
 				    OID_GEN_CURRENT_PACKET_FILTER,
-				    &sc->ndis_filter, &i);
+				    &sc->ndis_filter, &len);
 			} else if (ifp->if_drv_flags & IFF_DRV_RUNNING &&
 			    !(ifp->if_flags & IFF_PROMISC) &&
 			    sc->ndis_if_flags & IFF_PROMISC) {
 				sc->ndis_filter &=
 				    ~NDIS_PACKET_TYPE_PROMISCUOUS;
-				i = sizeof(sc->ndis_filter);
+				len = sizeof(sc->ndis_filter);
 				error = ndis_set_info(sc,
 				    OID_GEN_CURRENT_PACKET_FILTER,
-				    &sc->ndis_filter, &i);
+				    &sc->ndis_filter, &len);
 			} else
 				ndis_init(sc);
 		} else {
