@@ -42,7 +42,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/malloc.h>
 #include <sys/lock.h>
 #include <sys/mutex.h>
-#include <sys/sx.h>
 #include <sys/condvar.h>
 #include <sys/module.h>
 #include <sys/conf.h>
@@ -50,8 +49,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/socket.h>
 #include <machine/bus.h>
 #include <sys/bus.h>
-
-#include <sys/queue.h>
 
 #include <net/if.h>
 #include <net/if_media.h>

@@ -205,19 +205,19 @@ typedef struct image_nt_header image_nt_header;
 	  ((image_nt_header *)(nthdr))->inh_filehdr.ifh_optionalhdrlen)
 
 /* Directory Entries */
-#define	IMAGE_DIRECTORY_ENTRY_EXPORT	0	/* Export Directory */
-#define	IMAGE_DIRECTORY_ENTRY_IMPORT	1	/* Import Directory */
-#define	IMAGE_DIRECTORY_ENTRY_RESOURCE	2	/* Resource Directory */
-#define	IMAGE_DIRECTORY_ENTRY_EXCEPTION	3	/* Exception Directory */
-#define	IMAGE_DIRECTORY_ENTRY_SECURITY	4	/* Security Directory */
-#define	IMAGE_DIRECTORY_ENTRY_BASERELOC	5	/* Base Relocation Table */
-#define	IMAGE_DIRECTORY_ENTRY_DEBUG	6	/* Debug Directory */
-#define	IMAGE_DIRECTORY_ENTRY_COPYRIGHT	7	/* Description String */
-#define	IMAGE_DIRECTORY_ENTRY_GLOBALPTR	8	/* Machine Value (MIPS GP) */
-#define	IMAGE_DIRECTORY_ENTRY_TLS	9	/* TLS Directory */
-#define	IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG	10	/* Load Configuration Directory */
-#define	IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT	11	/* Bound Import Directory in headers */
-#define	IMAGE_DIRECTORY_ENTRY_IAT	12	/* Import Address Table */
+#define	IMAGE_DIRECTORY_ENTRY_EXPORT		0
+#define	IMAGE_DIRECTORY_ENTRY_IMPORT		1
+#define	IMAGE_DIRECTORY_ENTRY_RESOURCE		2
+#define	IMAGE_DIRECTORY_ENTRY_EXCEPTION		3
+#define	IMAGE_DIRECTORY_ENTRY_SECURITY		4
+#define	IMAGE_DIRECTORY_ENTRY_BASERELOC		5
+#define	IMAGE_DIRECTORY_ENTRY_DEBUG		6
+#define	IMAGE_DIRECTORY_ENTRY_COPYRIGHT		7
+#define	IMAGE_DIRECTORY_ENTRY_GLOBALPTR		8
+#define	IMAGE_DIRECTORY_ENTRY_TLS		9
+#define	IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG	10
+#define	IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT	11
+#define	IMAGE_DIRECTORY_ENTRY_IAT		12
 #define	IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT	13
 #define	IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR	14
 
@@ -426,10 +426,9 @@ extern uint64_t x86_64_call2(void *, uint64_t, uint64_t);
 extern uint64_t x86_64_call3(void *, uint64_t, uint64_t, uint64_t);
 extern uint64_t x86_64_call4(void *, uint64_t, uint64_t, uint64_t, uint64_t);
 extern uint64_t x86_64_call5(void *, uint64_t, uint64_t, uint64_t, uint64_t,
-	uint64_t);
+    uint64_t);
 extern uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
-	uint64_t, uint64_t);
-
+    uint64_t, uint64_t);
 
 #define	MSCALL1(fn, a)							\
 	x86_64_call1((fn), (uint64_t)(a))
@@ -464,7 +463,6 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 		x86_stdcall_call(fn, 6, (a), (b), (c), (d), (e), (f))
 
 #endif /* __i386__ */
-
 
 #define	FUNC void(*)(void)
 

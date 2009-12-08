@@ -35,9 +35,7 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/types.h>
-#include <sys/errno.h>
 
-#include <sys/callout.h>
 #include <sys/kernel.h>
 #include <sys/lock.h>
 #include <sys/mutex.h>
@@ -47,9 +45,6 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/systm.h>
 #include <machine/bus.h>
-
-#include <sys/bus.h>
-#include <sys/rman.h>
 
 #include <compat/ndis/pe_var.h>
 #include <compat/ndis/resource_var.h>
