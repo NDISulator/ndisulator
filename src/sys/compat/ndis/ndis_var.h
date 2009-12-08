@@ -1225,12 +1225,14 @@ typedef struct ndis_packet ndis_packet;
 
 struct ndis_packet_pool {
 	slist_header	np_head;
-	int		np_dead;
+#ifdef NDIS_DEBUG_PACKETS
+	uint32_t	np_dead;
+#endif
 	nt_kevent	np_event;
 	kspin_lock	np_lock;
-	int		np_cnt;
-	int		np_len;
-	int		np_protrsvd;
+	uint32_t	np_cnt;
+	uint32_t	np_len;
+	uint32_t	np_protrsvd;
 	void		*np_pktmem;
 };
 typedef struct ndis_packet_pool ndis_packet_pool;
