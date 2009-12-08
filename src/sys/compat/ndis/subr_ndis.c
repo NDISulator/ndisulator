@@ -1551,7 +1551,6 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 	}
 
 	p->np_cnt = descnum + NDIS_POOL_EXTRA;
-	p->np_protrsvd = protrsvdlen;
 	p->np_len = sizeof(ndis_packet) + protrsvdlen;
 
 	packets = ExAllocatePoolWithTag(NonPagedPool, p->np_cnt *

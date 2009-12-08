@@ -1232,7 +1232,6 @@ struct ndis_packet_pool {
 	kspin_lock	np_lock;
 	uint32_t	np_cnt;
 	uint32_t	np_len;
-	uint32_t	np_protrsvd;
 	void		*np_pktmem;
 };
 typedef struct ndis_packet_pool ndis_packet_pool;
