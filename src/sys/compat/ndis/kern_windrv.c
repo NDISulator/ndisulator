@@ -309,7 +309,6 @@ windrv_load(module_t mod, vm_offset_t img, size_t len, interface_type bustype,
 	driver_entry entry;
 	struct drvdb_ent *new;
 	struct driver_object *drv;
-	int status;
 	uint32_t *ptr;
 	ansi_string as;
 
@@ -388,8 +387,7 @@ skipreloc:
 	new->windrv_bustype = bustype;
 
 	/* Now call the DriverEntry() function. */
-	status = MSCALL2(entry, drv, &drv->dro_drivername);
-	if (status != STATUS_SUCCESS) {
+	if (MSCALL2(entry, drv, &drv->dro_drivername) != STATUS_SUCCESS) {
 		RtlFreeUnicodeString(&drv->dro_drivername);
 		free(drv, M_NDIS_WINDRV);
 		free(new, M_NDIS_WINDRV);

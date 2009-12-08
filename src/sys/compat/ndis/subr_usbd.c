@@ -914,10 +914,10 @@ next:
 		ubi = &urb->uu_bulkintr;
 		ep = ubi->ubi_epdesc;
 
-		nx->nx_urbbuf		= ubi->ubi_trans_buf;
-		nx->nx_urbactlen	= 0;
-		nx->nx_urblen		= ubi->ubi_trans_buflen;
-		nx->nx_shortxfer	= (ubi->ubi_trans_flags &
+		nx->nx_urbbuf = ubi->ubi_trans_buf;
+		nx->nx_urbactlen = 0;
+		nx->nx_urblen = ubi->ubi_trans_buflen;
+		nx->nx_shortxfer = (ubi->ubi_trans_flags &
 		    USBD_SHORT_TRANSFER_OK) ? 1 : 0;
 extra:
 		len = MIN(usbd_xfer_max_len(xfer), nx->nx_urblen);
@@ -1039,9 +1039,9 @@ next:
 		USETW(req.wValue, vcreq->uvc_value);
 		USETW(req.wLength, vcreq->uvc_trans_buflen);
 
-		nx->nx_urbbuf		= vcreq->uvc_trans_buf;
-		nx->nx_urblen		= vcreq->uvc_trans_buflen;
-		nx->nx_urbactlen	= 0;
+		nx->nx_urbbuf = vcreq->uvc_trans_buf;
+		nx->nx_urblen = vcreq->uvc_trans_buflen;
+		nx->nx_urbactlen = 0;
 
 		pc = usbd_xfer_get_frame(xfer, 0);
 		usbd_copy_in(pc, 0, &req, sizeof(req));

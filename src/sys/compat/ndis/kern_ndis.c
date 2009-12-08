@@ -833,15 +833,12 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
 	status = MSCALL3(sendfunc, adapter, packet,
 	    packet->np_private.npp_flags);
-
 	if (status == NDIS_STATUS_PENDING) {
 		if (NDIS_SERIALIZED(sc->ndis_block))
 			KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
 		return (0);
 	}
-
 	MSCALL3(senddonefunc, sc->ndis_block, packet, status);
-
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
 
@@ -1037,7 +1034,7 @@ ndis_init_nic(void *arg)
 	struct ndis_softc *sc = arg;
 	ndis_miniport_block *block;
 	ndis_init_handler initfunc;
-	ndis_status status, openstatus = 0;
+	ndis_status openstatus = 0;
 	ndis_medium mediumarray[NdisMediumMax];
 	uint32_t chosenmedium, i;
 
@@ -1051,14 +1048,13 @@ ndis_init_nic(void *arg)
 	for (i = 0; i < NdisMediumMax; i++)
 		mediumarray[i] = i;
 
-	status = MSCALL6(initfunc, &openstatus, &chosenmedium,
-	    mediumarray, NdisMediumMax, block, block);
 	/*
 	 * If the init fails, blow away the other exported routines
 	 * we obtained from the driver so we can't call them later.
 	 * If the init failed, none of these will work.
 	 */
-	if (status != NDIS_STATUS_SUCCESS) {
+	if (MSCALL6(initfunc, &openstatus, &chosenmedium,
+	    mediumarray, NdisMediumMax, block, block) != NDIS_STATUS_SUCCESS) {
 		NDIS_LOCK(sc);
 		sc->ndis_block->nmb_miniportadapterctx = NULL;
 		NDIS_UNLOCK(sc);

@@ -1041,7 +1041,6 @@ IofCallDriver(device_object *dobj, irp *ip)
 void
 IofCompleteRequest(irp *ip, uint8_t prioboost)
 {
-	int32_t status;
 	device_object *dobj;
 	io_stack_location *sl;
 	completion_func cf;
@@ -1069,8 +1068,8 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 		    (ip->irp_cancel == TRUE &&
 		    sl->isl_ctl & SL_INVOKE_ON_CANCEL))) {
 			cf = sl->isl_completionfunc;
-			status = MSCALL3(cf, dobj, ip, sl->isl_completionctx);
-			if (status == STATUS_MORE_PROCESSING_REQUIRED)
+			if (MSCALL3(cf, dobj, ip, sl->isl_completionctx) ==
+			    STATUS_MORE_PROCESSING_REQUIRED)
 				return;
 		} else {
 			if ((ip->irp_currentstackloc <= ip->irp_stackcnt) &&
