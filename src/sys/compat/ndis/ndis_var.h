@@ -1612,7 +1612,6 @@ extern image_patch_table ndis_functbl[];
 __BEGIN_DECLS
 extern int ndis_libinit(void);
 extern int ndis_libfini(void);
-extern int ndis_load_driver(vm_offset_t, void *);
 extern int ndis_unload_driver(void *);
 extern int ndis_mtop(struct mbuf *, ndis_packet **);
 extern int ndis_ptom(struct mbuf **, ndis_packet *);
@@ -1634,7 +1633,6 @@ extern int ndis_init_dma(void *);
 extern int ndis_destroy_dma(void *);
 extern int ndis_create_sysctls(void *);
 extern int ndis_add_sysctl(void *, char *, char *, char *, int);
-extern int ndis_flush_sysctls(void *);
 extern int32_t NdisAddDevice(driver_object *, device_object *);
 extern void NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
     uint32_t);

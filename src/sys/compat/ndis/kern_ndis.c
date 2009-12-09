@@ -82,6 +82,7 @@ static void ndis_resetdone_func(ndis_handle, ndis_status, uint8_t);
 static void ndis_sendrsrcavail_func(ndis_handle);
 static void ndis_intrsetup(kdpc *, device_object *, irp *, struct ndis_softc *);
 static void ndis_return(device_object *, void *);
+static int ndis_flush_sysctls(void *);
 
 static image_patch_table kernndis_functbl[] = {
 	IMPORT_SFUNC(ndis_status_func, 4),
@@ -364,7 +365,7 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
  * make life so much easier!" Lies. Why must they turn the kernel
  * into a house of lies?
  */
-int
+static int
 ndis_flush_sysctls(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -400,7 +401,6 @@ ndis_return(device_object *dobj, void *arg)
 	block = arg;
 	ch = IoGetDriverObjectExtension(dobj->do_drvobj, (void *)1);
 
-	p = arg;
 	adapter = block->nmb_miniportadapterctx;
 	if (adapter == NULL)
 		return;
