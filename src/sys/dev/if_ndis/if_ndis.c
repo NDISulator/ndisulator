@@ -746,7 +746,7 @@ nonettypes:
 			setbit(&bands, IEEE80211_MODE_11B);
 		}
 		len = sizeof(rates);
-		bzero((char *)&rates, len);
+		memset(&rates, 0, len);
 		if (ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
 		    (void *)rates, &len) != 0)
 			device_printf(dev, "get rates failed\n");
@@ -2040,7 +2040,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	tp = &vap->iv_txparms[ieee80211_chan2mode(ic->ic_curchan)];
 	if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE) {
 		len = sizeof(rates);
-		bzero((uint8_t *)&rates, len);
+		memset(&rates, 0, len);
 		if (ndis_get_info(sc, OID_802_11_DESIRED_RATES,
 		    (void *)rates, &len) == 0) {
 			for (i = 0; i < len; i++)
@@ -2100,7 +2100,7 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 	size_t len;
 
 	len = sizeof(ssid);
-	bzero((char *)&ssid, len);
+	memset(&ssid, 0, len);
 
 	if (scan == 0) {
 		ssid.ns_ssidlen = ni->ni_esslen;
@@ -2312,7 +2312,7 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 
 	/* Get current channel and beacon interval */
 	len = sizeof(config);
-	bzero((char *)&config, len);
+	memset(&config, 0, len);
 	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) == 0) {
 		ic->ic_curchan = ieee80211_find_channel(ic,
 		    config.nc_dsconfig / 1000, chanflag);
@@ -2564,9 +2564,11 @@ ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 		ndis_80211_remove_key rkey;
 
 		len = sizeof(rkey);
-		bzero((char *)&rkey, len);
+		memset(&rkey, 0, len);
 		rkey.nk_len = len;
 		rkey.nk_keyidx = key->wk_keyix;
+		if (!(key->wk_flags & IEEE80211_KEY_GROUP))
+			rkey.nk_keyidx |= 1 << 30;
 		bcopy(key->wk_macaddr, rkey.nk_bssid, IEEE80211_ADDR_LEN);
 		if (ndis_set_info(sc, OID_802_11_REMOVE_KEY, &rkey, &len) != 0)
 			return (0);
@@ -2590,9 +2592,10 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 	case IEEE80211_CIPHER_AES_CCM:
 	case IEEE80211_CIPHER_TKIP:
 		len = sizeof(ndis_80211_key);
-		bzero((char *)&nkey, sizeof(nkey));
-		nkey.nk_len = len;
+		memset(&nkey, 0, sizeof(nkey));
 		nkey.nk_keylen = key->wk_keylen;
+		nkey.nk_len =
+		    sizeof(nkey) - sizeof(nkey.nk_keydata) + nkey.nk_keylen;
 		bcopy(key->wk_macaddr, nkey.nk_bssid, IEEE80211_ADDR_LEN);
 		if (key->wk_keyix != IEEE80211_KEYIX_NONE)
 			nkey.nk_keyidx = key->wk_keyix;
@@ -2617,13 +2620,14 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		break;
 	case IEEE80211_CIPHER_WEP:
 		len = sizeof(ndis_80211_wep);
-		bzero((char *)&wep, sizeof(wep));
+		memset(&wep, 0, sizeof(wep));
 		wep.nw_keylen = key->wk_keylen;
 		wep.nw_keyidx = key->wk_keyix;
-		wep.nw_len = (sizeof(uint32_t) * 3) + wep.nw_keylen;
+		wep.nw_len =
+		    sizeof(wep) - sizeof(wep.nw_keydata) + wep.nw_keylen;
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
 			wep.nw_keyidx |=  1 << 31;
-		bcopy(key->wk_key, wep.nw_keydata, wep.nw_len);
+		bcopy(key->wk_key, wep.nw_keydata, wep.nw_keylen);
 		error = ndis_set_info(sc, OID_802_11_ADD_WEP, &wep, &len);
 		break;
 	default:
@@ -2771,7 +2775,7 @@ ndis_set_channel(struct ieee80211com *ic)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	len = sizeof(config);
-	bzero((char *)&config, len);
+	memset(&config, 0, len);
 	config.nc_length = len;
 	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
 	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) != 0)
