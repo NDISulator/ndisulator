@@ -185,6 +185,7 @@ static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
 static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
 static int ndis_setmulti(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
+static void ndis_get_supported_oids(void *, ndis_oid **, int *);
 
 static int ndisdrv_loaded = 0;
 
@@ -252,6 +253,30 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 	}
 
 	return (0);
+}
+
+static void
+ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
+{
+	ndis_oid *o;
+	size_t len;
+
+	if (arg == NULL || oids == NULL || oidcnt == NULL)
+		return;
+	len = 0;
+	ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, NULL, &len);
+
+	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
+	if (o == NULL)
+		return;
+
+	if (ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len) != 0) {
+		free(o, M_NDIS_KERN);
+		return;
+	}
+
+	*oids = o;
+	*oidcnt = len / 4;
 }
 
 /*

@@ -677,30 +677,6 @@ ndis_mtop(struct mbuf *m0, ndis_packet **p)
 	return (0);
 }
 
-void
-ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
-{
-	ndis_oid *o;
-	size_t len;
-
-	if (arg == NULL || oids == NULL || oidcnt == NULL)
-		return;
-	len = 0;
-	ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, NULL, &len);
-
-	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
-	if (o == NULL)
-		return;
-
-	if (ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len) != 0) {
-		free(o, M_NDIS_KERN);
-		return;
-	}
-
-	*oids = o;
-	*oidcnt = len / 4;
-}
-
 int
 ndis_set_info(void *arg, ndis_oid oid, void *buf, size_t *buflen)
 {

@@ -1617,7 +1617,6 @@ extern int ndis_mtop(struct mbuf *, ndis_packet **);
 extern int ndis_ptom(struct mbuf **, ndis_packet *);
 extern int ndis_get_info(void *, ndis_oid, void *, size_t *);
 extern int ndis_set_info(void *, ndis_oid, void *, size_t *);
-extern void ndis_get_supported_oids(void *, ndis_oid **, int *);
 extern int ndis_send_packets(void *, ndis_packet **, int);
 extern int ndis_send_packet(void *, ndis_packet *);
 extern int ndis_convert_res(void *);
