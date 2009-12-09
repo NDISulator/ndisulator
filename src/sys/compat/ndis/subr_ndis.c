@@ -899,11 +899,11 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 		}
 	}
 
-	device_printf(dev, "NDIS ERROR: %x (%s)\n", code,
+	device_printf(dev, "NDIS ERROR: %X (%s)\n", code,
 	    str == NULL ? "unknown error" : str);
 
 	if (ifp != NULL && ifp->if_flags & IFF_DEBUG) {
-		device_printf(dev, "NDIS NUMERRORS: %x\n", numerrors);
+		device_printf(dev, "NDIS NUMERRORS: %X\n", numerrors);
 		va_start(ap, numerrors);
 		for (i = 0; i < numerrors; i++)
 			device_printf(dev, "argptr: %p\n",
