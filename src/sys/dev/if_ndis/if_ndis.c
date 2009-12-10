@@ -885,7 +885,10 @@ nonettypes:
 		    &arg, &len) == 0)
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
+		/* Disable encryption after messing with it */
 		len = sizeof(arg);
+		arg = NDIS_80211_WEPSTAT_DISABLED;
+		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 		if (ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
 		    &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
