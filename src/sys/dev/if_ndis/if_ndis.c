@@ -150,6 +150,7 @@ static void ndis_start(struct ifnet *);
 static void ndis_starttask(device_object *, void *);
 static void ndis_resettask(device_object *, void *);
 static void ndis_inputtask(device_object *, void *);
+static int ndis_reset_vap(struct ieee80211vap *, u_long);
 static int ndis_ioctl(struct ifnet *, u_long, caddr_t);
 static int ndis_ioctl_80211(struct ifnet *, u_long, caddr_t);
 static int ndis_send_mgmt(struct ieee80211_node *, int, int);
@@ -960,6 +961,7 @@ ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
 	/* Override with driver methods */
 	nvp->newstate = vap->iv_newstate;
 	vap->iv_newstate = ndis_newstate;
+	vap->iv_reset = ndis_reset_vap;
 
 	/* Complete setup */
 	ieee80211_vap_attach(vap, ieee80211_media_change,
@@ -2353,6 +2355,46 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 			break;
 		}
 	}
+}
+
+static int
+ndis_reset_vap(struct ieee80211vap *vap, u_long cmd)
+{
+	struct ieee80211com *ic = vap->iv_ic;
+	struct ndis_softc *sc = ic->ic_ifp->if_softc;
+	uint32_t arg;
+	size_t len;
+	int r;
+
+	switch (cmd) {
+	case IEEE80211_IOC_TXPOWER:
+		arg = dBm2mW[ic->ic_txpowlimit];
+		len = sizeof(arg);
+		r = ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len);
+		break;
+	case IEEE80211_IOC_POWERSAVE:
+		if (vap->iv_flags & IEEE80211_F_PMGTON)
+			arg = NDIS_80211_POWERMODE_FAST_PSP;
+		else
+			arg = NDIS_80211_POWERMODE_CAM;
+		len = sizeof(arg);
+		r = ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len);
+		break;
+	case IEEE80211_IOC_RTSTHRESHOLD:
+		arg = vap->iv_rtsthreshold;
+		len = sizeof(arg);
+		r = ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
+		break;
+	case IEEE80211_IOC_FRAGTHRESHOLD:
+		arg = vap->iv_fragthreshold;
+		len = sizeof(arg);
+		r = ndis_set_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len);
+		break;
+	default:
+		r = ENETRESET;
+		break;
+	}
+	return (r);
 }
 
 static int
