@@ -1607,7 +1607,7 @@ ndis_ticktask(device_object *d, void *xsc)
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_CONNECT) {
 		sc->ndis_link = 1;
 		if (vap != NULL) {
-			if (vap->iv_state == IEEE80211_S_AUTH)
+			if (vap->iv_state == IEEE80211_S_ASSOC)
 				ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
 		}
 		if_link_state_change(sc->ifp, LINK_STATE_UP);
@@ -2770,9 +2770,12 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		break;
 	case IEEE80211_S_AUTH:
 		ndis_auth(sc, vap);
-		/* fallthrough */
+		vap->iv_state = nstate;
+		ieee80211_new_state(vap, IEEE80211_S_ASSOC, 0);
+		break;
 	case IEEE80211_S_ASSOC:
 		ndis_assoc(sc, vap);
+		vap->iv_state = nstate;
 		break;
 	default:
 		break;
