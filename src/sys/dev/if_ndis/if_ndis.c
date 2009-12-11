@@ -187,6 +187,10 @@ static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
 static int ndis_setmulti(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 static void ndis_get_supported_oids(void *, ndis_oid **, int *);
+static int ndis_set_txpower(struct ndis_softc *);
+static int ndis_set_powersave(struct ndis_softc *, struct ieee80211vap *);
+static int ndis_set_rtsthreshold(struct ndis_softc *, struct ieee80211vap *);
+static int ndis_set_fragthreshold(struct ndis_softc *, struct ieee80211vap *);
 
 static int ndisdrv_loaded = 0;
 
@@ -260,11 +264,10 @@ static void
 ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
 {
 	ndis_oid *o;
-	size_t len;
+	size_t len = 0;
 
 	if (arg == NULL || oids == NULL || oidcnt == NULL)
 		return;
-	len = 0;
 	ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, NULL, &len);
 
 	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
@@ -278,6 +281,55 @@ ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
 
 	*oids = o;
 	*oidcnt = len / 4;
+}
+
+static int
+ndis_set_txpower(struct ndis_softc *sc)
+{
+	struct ieee80211com *ic = sc->ifp->if_l2com;
+	size_t len;
+	uint32_t arg;
+
+	arg = dBm2mW[ic->ic_txpowlimit];
+	len = sizeof(arg);
+	return (ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len));
+}
+
+static int
+ndis_set_powersave(struct ndis_softc *sc, struct ieee80211vap *vap)
+{
+	size_t len;
+	uint32_t arg;
+
+	if (vap->iv_flags & IEEE80211_F_PMGTON)
+		arg = NDIS_80211_POWERMODE_FAST_PSP;
+	else
+		arg = NDIS_80211_POWERMODE_CAM;
+	len = sizeof(arg);
+	return (ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len));
+}
+
+static int
+ndis_set_rtsthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
+{
+	uint32_t arg;
+	size_t len;
+
+	arg = vap->iv_rtsthreshold;
+	len = sizeof(arg);
+	return (ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len));
+}
+
+static int
+ndis_set_fragthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
+{
+	uint32_t arg;
+	size_t len;
+
+	arg = vap->iv_fragthreshold;
+	len = sizeof(arg);
+	return (ndis_set_info(sc,
+	    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len));
 }
 
 /*
@@ -2028,18 +2080,13 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	int i;
 	size_t len;
 
-	/* Set fragmentation threshold */
-	if (ic->ic_caps & IEEE80211_C_TXFRAG) {
-		arg = vap->iv_fragthreshold;
-		len = sizeof(arg);
-		ndis_set_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
-		    &arg, &len);
-	}
-
-	/* Set RTS threshold */
-	len = sizeof(arg);
-	arg = vap->iv_rtsthreshold;
-	ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
+	ndis_set_rtsthreshold(sc, vap);
+	if (ic->ic_caps & IEEE80211_C_TXFRAG)
+		ndis_set_fragthreshold(sc, vap);
+	if (ic->ic_caps & IEEE80211_C_PMGT)
+		ndis_set_powersave(sc, vap);
+	if (ic->ic_caps & IEEE80211_C_TXPMGT)
+		ndis_set_txpower(sc);
 
 	/* Set transmission rate */
 	tp = &vap->iv_txparms[ieee80211_chan2mode(ic->ic_curchan)];
@@ -2054,24 +2101,6 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 			ndis_set_info(sc, OID_802_11_DESIRED_RATES,
 			    (void *)rates, &len);
 		}
-	}
-
-	/* Set power management */
-	if (ic->ic_caps & IEEE80211_C_PMGT) {
-		if (vap->iv_flags & IEEE80211_F_PMGTON)
-			arg = NDIS_80211_POWERMODE_FAST_PSP;
-		else
-			arg = NDIS_80211_POWERMODE_CAM;
-		len = sizeof(arg);
-		ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len);
-	}
-
-	/* Set TX power */
-	if ((ic->ic_caps & IEEE80211_C_TXPMGT) &&
-	    ic->ic_txpowlimit < (sizeof(dBm2mW) / sizeof(dBm2mW[0]))) {
-		arg = dBm2mW[ic->ic_txpowlimit];
-		len = sizeof(arg);
-		ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len);
 	}
 
 	/* Drop unencrypted? */
@@ -2360,41 +2389,19 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 static int
 ndis_reset_vap(struct ieee80211vap *vap, u_long cmd)
 {
-	struct ieee80211com *ic = vap->iv_ic;
-	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-	uint32_t arg;
-	size_t len;
-	int r;
+	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
 
 	switch (cmd) {
 	case IEEE80211_IOC_TXPOWER:
-		arg = dBm2mW[ic->ic_txpowlimit];
-		len = sizeof(arg);
-		r = ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len);
-		break;
+		return (ndis_set_txpower(sc));
 	case IEEE80211_IOC_POWERSAVE:
-		if (vap->iv_flags & IEEE80211_F_PMGTON)
-			arg = NDIS_80211_POWERMODE_FAST_PSP;
-		else
-			arg = NDIS_80211_POWERMODE_CAM;
-		len = sizeof(arg);
-		r = ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len);
-		break;
+		return (ndis_set_powersave(sc, vap));
 	case IEEE80211_IOC_RTSTHRESHOLD:
-		arg = vap->iv_rtsthreshold;
-		len = sizeof(arg);
-		r = ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len);
-		break;
+		return (ndis_set_rtsthreshold(sc, vap));
 	case IEEE80211_IOC_FRAGTHRESHOLD:
-		arg = vap->iv_fragthreshold;
-		len = sizeof(arg);
-		r = ndis_set_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len);
-		break;
-	default:
-		r = ENETRESET;
-		break;
+		return (ndis_set_fragthreshold(sc, vap));
 	}
-	return (r);
+	return (ENETRESET);
 }
 
 static int
@@ -2864,13 +2871,12 @@ ndis_scan_end(struct ieee80211com *ic)
 	struct ieee80211_channel *saved_chan;
 	ndis_80211_bssid_list_ex *bl;
 	ndis_wlan_bssid_ex *wb;
-	int i, j, rssi, noise, freq, chanflag;
+	int i, j, rssi, freq, chanflag;
 	uint8_t ssid[2+IEEE80211_NWID_LEN], rates[2+IEEE80211_RATE_MAXSIZE];
 	uint8_t *frm, *efrm;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	saved_chan = ic->ic_curchan;
-	noise = -96;
 
 	if (ndis_get_bssid_list(sc, &bl))
 		return;
@@ -2881,7 +2887,7 @@ ndis_scan_end(struct ieee80211com *ic)
 		memset(&sp, 0, sizeof(sp));
 		memcpy(wh.i_addr2, wb->nwbx_macaddr, sizeof(wh.i_addr2));
 		memcpy(wh.i_addr3, wb->nwbx_macaddr, sizeof(wh.i_addr3));
-		rssi = 100 * (wb->nwbx_rssi - noise) / (-32 - noise);
+		rssi = 100 * (wb->nwbx_rssi - -96) / (-32 - -96);
 		rssi = max(0, min(rssi, 100));	/* limit 0 <= rssi <= 100 */
 		if (wb->nwbx_privacy)
 			sp.capinfo |= IEEE80211_CAPINFO_PRIVACY;
@@ -2934,7 +2940,7 @@ done:
 		DPRINTF(("scan: bssid %s chan %dMHz (%d/%d) rssi %d\n",
 		    ether_sprintf(wb->nwbx_macaddr), freq, sp.bchan, chanflag,
 		    rssi));
-		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, noise);
+		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, -96);
 		wb = (ndis_wlan_bssid_ex *)((char *)wb + wb->nwbx_len);
 	}
 	free(bl, M_NDIS_DEV);
