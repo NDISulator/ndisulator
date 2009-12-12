@@ -195,6 +195,7 @@ static void *MmAllocateContiguousMemorySpecifyCache(uint32_t, uint64_t,
     uint64_t, uint64_t, uint32_t);
 static void MmFreeContiguousMemory(void *);
 static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t, uint32_t);
+static uint8_t MmIsAddressValid(void *);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(mdl *, uint8_t);
 static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t, uint32_t, void *,
@@ -206,8 +207,8 @@ static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
 static ndis_status RtlUnicodeStringToInteger(unicode_string *, uint32_t,
     uint32_t *);
-static int atoi (const char *);
-static long atol (const char *);
+static int atoi(const char *);
+static long atol(const char *);
 static int rand(void);
 static void srand(unsigned int);
 static void KeQuerySystemTime(int64_t *);
@@ -2325,13 +2326,13 @@ MmUnmapLockedPages(void *vaddr, mdl *buf)
  * You'd think the virtual memory subsystem would help us out
  * here, but it doesn't.
  */
-uint8_t
+static uint8_t
 MmIsAddressValid(void *vaddr)
 {
 	if (pmap_extract(kernel_map->pmap, (vm_offset_t)vaddr))
 		return (TRUE);
-
-	return (FALSE);
+	else
+		return (FALSE);
 }
 
 void *
