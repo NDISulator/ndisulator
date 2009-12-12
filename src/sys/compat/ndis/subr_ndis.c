@@ -107,7 +107,7 @@ __FBSDID("$FreeBSD$");
 #include <vm/vm_kern.h>
 #include <vm/vm_map.h>
 
-static char ndis_filepath[MAXPATHLEN];
+static char ndis_filepath[MAXPATHLEN] = "/compat/ndis";
 
 SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
     MAXPATHLEN, "Path used by NdisOpenFile() to search for files");
@@ -288,8 +288,6 @@ int
 ndis_libinit(void)
 {
 	image_patch_table *patch;
-
-	strcpy(ndis_filepath, "/compat/ndis");
 
 	patch = ndis_functbl;
 	while (patch->ipt_func != NULL) {
