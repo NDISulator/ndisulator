@@ -68,7 +68,7 @@ static void READ_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
 static uint64_t KeQueryPerformanceCounter(uint64_t *);
 static void _KeLowerIrql(uint8_t);
 static uint8_t KeRaiseIrqlToDpcLevel(void);
-static void dummy (void);
+static void dummy(void);
 
 #define	NDIS_MAXCPUS	64
 static struct mtx disp_lock[NDIS_MAXCPUS];
