@@ -161,6 +161,7 @@ ndisusb_attach(device_t self)
 	driver_object *drv;
 	int devidx = 0;
 
+	device_set_usb_desc(self);
 	dummy = device_get_softc(self);
 	uaa = device_get_ivars(self);
 	db = uaa->driver_ivar;
