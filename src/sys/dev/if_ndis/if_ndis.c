@@ -186,7 +186,7 @@ static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
 static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
 static int ndis_setmulti(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
-static void ndis_get_supported_oids(void *, ndis_oid **, int *);
+static void ndis_get_supported_oids(struct ndis_softc *);
 static int ndis_set_txpower(struct ndis_softc *);
 static int ndis_set_powersave(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_rtsthreshold(struct ndis_softc *, struct ieee80211vap *);
@@ -261,34 +261,30 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 }
 
 static void
-ndis_get_supported_oids(void *arg, ndis_oid **oids, int *oidcnt)
+ndis_get_supported_oids(struct ndis_softc *sc)
 {
 	ndis_oid *o;
 	size_t len = 0;
 
-	if (arg == NULL || oids == NULL || oidcnt == NULL)
-		return;
-	ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, NULL, &len);
-
+	ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, NULL, &len);
 	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
 	if (o == NULL)
 		return;
-
-	if (ndis_get_info(arg, OID_GEN_SUPPORTED_LIST, o, &len) != 0) {
+	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, o, &len) != 0) {
 		free(o, M_NDIS_KERN);
 		return;
 	}
 
-	*oids = o;
-	*oidcnt = len / 4;
+	sc->ndis_oids = o;
+	sc->ndis_oidcnt = len / 4;
 }
 
 static int
 ndis_set_txpower(struct ndis_softc *sc)
 {
 	struct ieee80211com *ic = sc->ifp->if_l2com;
-	size_t len;
 	uint32_t arg;
+	size_t len;
 
 	arg = dBm2mW[ic->ic_txpowlimit];
 	len = sizeof(arg);
@@ -298,8 +294,8 @@ ndis_set_txpower(struct ndis_softc *sc)
 static int
 ndis_set_powersave(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	size_t len;
 	uint32_t arg;
+	size_t len;
 
 	if (vap->iv_flags & IEEE80211_F_PMGTON)
 		arg = NDIS_80211_POWERMODE_FAST_PSP;
@@ -711,9 +707,7 @@ ndis_attach(device_t dev)
 
 	sc->ndis_txpending = sc->ndis_maxpkts;
 
-	/* Get supported oid list. */
-	sc->ndis_oidcnt = 0;
-	ndis_get_supported_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
+	ndis_get_supported_oids(sc);
 
 	/* If the NDIS module requested scatter/gather, init maps. */
 	if (sc->ndis_sc)

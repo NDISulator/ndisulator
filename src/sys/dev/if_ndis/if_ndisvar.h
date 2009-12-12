@@ -161,7 +161,7 @@ struct ndis_softc {
 	int			ndis_am_rid;
 	struct resource		*ndis_res_cm;	/* common mem (pccard) */
 	struct resource_list	ndis_rl;
-	int			ndis_rescnt;
+	uint32_t		ndis_rescnt;
 	struct mtx		ndis_mtx;
 	device_t		ndis_dev;
 	ndis_miniport_block	*ndis_block;
@@ -169,11 +169,11 @@ struct ndis_softc {
 	interface_type		ndis_type;
 	struct callout		ndis_scan_callout;
 	struct callout		ndis_stat_callout;
-	size_t			ndis_maxpkts;
+	uint32_t		ndis_maxpkts;
 	ndis_oid		*ndis_oids;
-	int			ndis_oidcnt;
-	int			ndis_txidx;
-	size_t			ndis_txpending;
+	uint32_t		ndis_oidcnt;
+	uint32_t		ndis_txidx;
+	uint32_t		ndis_txpending;
 	ndis_packet		**ndis_txarray;
 	ndis_handle		ndis_txpool;
 	uint8_t			ndis_sc;
@@ -185,7 +185,7 @@ struct ndis_softc {
 	uint32_t		ndis_filter;
 	int			ndis_if_flags;
 
-	int			ndis_devidx;
+	uint32_t		ndis_devidx;
 	interface_type		ndis_iftype;
 	driver_object		*ndis_dobj;
 	io_workitem		*ndis_tickitem;
@@ -199,10 +199,10 @@ struct ndis_softc {
 	bus_dma_tag_t		ndis_ttag;
 	bus_dmamap_t		*ndis_mmaps;
 	bus_dmamap_t		*ndis_tmaps;
-	int			ndis_mmapcnt;
+	uint32_t		ndis_mmapcnt;
 	struct ndis_evt		ndis_evt[NDIS_EVENTS];
-	int			ndis_evtpidx;
-	int			ndis_evtcidx;
+	uint32_t		ndis_evtpidx;
+	uint32_t		ndis_evtcidx;
 	struct ifqueue		ndis_rxqueue;
 	kspin_lock		ndis_rxlock;
 

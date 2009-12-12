@@ -154,10 +154,10 @@ ndis_attach_pci(device_t dev)
 	struct resource_list *rl;
 	struct resource_list_entry *rle;
 	struct drvdb_ent *db;
-	int devidx = 0, defidx = 0, error = 0, rid, unit;
+	uint32_t devidx = 0, defidx = 0;
+	int error = 0, rid;
 
 	sc = device_get_softc(dev);
-	unit = device_get_unit(dev);
 	sc->ndis_dev = dev;
 
 	db = windrv_match((matchfuncptr)ndis_devcompare, dev);
