@@ -336,10 +336,8 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
 	char descstr[256];
 
 	cfg = malloc(sizeof(struct ndis_cfglist), M_NDIS_KERN, M_NOWAIT|M_ZERO);
-	if (cfg == NULL) {
+	if (cfg == NULL)
 		return (ENOMEM);
-	}
-
 	cfg->ndis_cfg.nc_cfgkey = strdup(key, M_NDIS_KERN);
 	if (desc == NULL) {
 		snprintf(descstr, sizeof(descstr), "%s (dynamic)", key);
