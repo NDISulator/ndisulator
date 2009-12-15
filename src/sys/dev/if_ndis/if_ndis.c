@@ -1043,19 +1043,17 @@ int
 ndis_detach(device_t dev)
 {
 	struct ndis_softc *sc;
-	struct ifnet *ifp;
 	driver_object *drv;
 
 	sc = device_get_softc(dev);
-	ifp = sc->ifp;
 
 	if (device_is_attached(dev)) {
 		ndis_stop(sc);
-		if (ifp != NULL) {
+		if (sc->ifp != NULL) {
 			if (sc->ndis_80211)
-				ieee80211_ifdetach(ifp->if_l2com);
+				ieee80211_ifdetach(sc->ifp->if_l2com);
 			else
-				ether_ifdetach(ifp);
+				ether_ifdetach(sc->ifp);
 		}
 	}
 
@@ -1090,25 +1088,18 @@ ndis_detach(device_t dev)
 	if (sc->ndis_res_altmem != NULL)
 		bus_release_resource(dev, SYS_RES_MEMORY,
 		    sc->ndis_altmem_rid, sc->ndis_res_altmem);
-
-	if (ifp != NULL)
-		if_free(ifp);
-
+	if (sc->ifp != NULL)
+		if_free(sc->ifp);
 	if (sc->ndis_iftype == PCMCIABus)
 		ndis_free_amem(sc);
-
 	if (sc->ndis_sc)
 		ndis_destroy_dma(sc);
-
 	if (sc->ndis_txarray != NULL)
 		free(sc->ndis_txarray, M_NDIS_DEV);
-
 	if (sc->ndis_80211 == 0)
 		ifmedia_removeall(&sc->ifmedia);
-
 	if (sc->ndis_txpool != NULL)
 		NdisFreePacketPool(sc->ndis_txpool);
-
 	if (sc->ndis_oids != NULL)
 		free(sc->ndis_oids, M_NDIS_DEV);
 
@@ -1125,6 +1116,8 @@ ndis_detach(device_t dev)
 
 	if (sc->ndis_iftype == PCIBus)
 		bus_dma_tag_destroy(sc->ndis_parent_tag);
+
+	mtx_destroy(&sc->ndis_mtx);
 
 	return (0);
 }
