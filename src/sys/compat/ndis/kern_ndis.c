@@ -982,12 +982,10 @@ ndis_shutdown_nic(void *arg)
 int
 ndis_pnpevent_nic(void *arg, int type)
 {
-	device_t dev;
 	struct ndis_softc *sc;
 	ndis_handle adapter;
 	ndis_pnpevent_handler pnpeventfunc;
 
-	dev = arg;
 	sc = device_get_softc(arg);
 	NDIS_LOCK(sc);
 	adapter = sc->ndis_block->nmb_miniportadapterctx;

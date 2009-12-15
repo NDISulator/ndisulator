@@ -1570,10 +1570,8 @@ ndis_linksts_done(ndis_handle adapter)
 {
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
-	struct ifnet *ifp;
 
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	ifp = sc->ifp;
 
 	if (!NDIS_INITIALIZED(sc))
 		return;
@@ -1585,7 +1583,7 @@ ndis_linksts_done(ndis_handle adapter)
 		    WORKQUEUE_CRITICAL, sc);
 		IoQueueWorkItem(sc->ndis_startitem,
 		    (io_workitem_func)ndis_starttask_wrap,
-		    WORKQUEUE_CRITICAL, ifp);
+		    WORKQUEUE_CRITICAL, sc->ifp);
 		break;
 	case NDIS_STATUS_MEDIA_DISCONNECT:
 		if (sc->ndis_link)
