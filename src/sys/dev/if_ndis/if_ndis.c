@@ -263,19 +263,19 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 static void
 ndis_get_supported_oids(struct ndis_softc *sc)
 {
-	ndis_oid *o;
+	ndis_oid *oids;
 	size_t len = 0;
 
 	ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, NULL, &len);
-	o = malloc(len, M_NDIS_KERN, M_NOWAIT);
-	if (o == NULL)
+	oids = malloc(len, M_NDIS_DEV, M_NOWAIT);
+	if (oids == NULL)
 		return;
-	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, o, &len) != 0) {
-		free(o, M_NDIS_KERN);
+	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, oids, &len) != 0) {
+		free(oids, M_NDIS_DEV);
 		return;
 	}
 
-	sc->ndis_oids = o;
+	sc->ndis_oids = oids;
 	sc->ndis_oidcnt = len / 4;
 }
 
@@ -1110,7 +1110,7 @@ ndis_detach(device_t dev)
 		NdisFreePacketPool(sc->ndis_txpool);
 
 	if (sc->ndis_oids != NULL)
-		free(sc->ndis_oids, M_NDIS_KERN);
+		free(sc->ndis_oids, M_NDIS_DEV);
 
 	/* Destroy the PDO for this device. */
 	if (sc->ndis_iftype == PCIBus)
