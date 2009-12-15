@@ -388,22 +388,18 @@ ndis_flush_sysctls(void *arg)
 static void
 ndis_return(device_object *dobj, void *arg)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = arg;
 	ndis_miniport_characteristics *ch;
-	ndis_return_handler returnfunc;
 	ndis_handle adapter;
 	ndis_packet *p;
 	uint8_t irql;
 	list_entry *l;
 
-	block = arg;
-	ch = IoGetDriverObjectExtension(dobj->do_drvobj, (void *)1);
-
 	adapter = block->nmb_miniportadapterctx;
 	if (adapter == NULL)
 		return;
 
-	returnfunc = ch->nmc_return_packet_func;
+	ch = IoGetDriverObjectExtension(dobj->do_drvobj, (void *)1);
 
 	KeAcquireSpinLock(&block->nmb_returnlock, &irql);
 	while (!IsListEmpty(&block->nmb_returnlist)) {
@@ -411,7 +407,7 @@ ndis_return(device_object *dobj, void *arg)
 		p = CONTAINING_RECORD(l, ndis_packet, np_list);
 		InitializeListHead((&p->np_list));
 		KeReleaseSpinLock(&block->nmb_returnlock, irql);
-		MSCALL2(returnfunc, adapter, p);
+		MSCALL2(ch->nmc_return_packet_func, adapter, p);
 		KeAcquireSpinLock(&block->nmb_returnlock, &irql);
 	}
 	KeReleaseSpinLock(&block->nmb_returnlock, irql);
@@ -422,9 +418,6 @@ ndis_return_packet(void *buf, void *arg)
 {
 	ndis_packet *p = buf;
 	ndis_miniport_block *block = arg;
-
-	if (p == NULL || block == NULL)
-		return;
 
 	p->np_refcnt--;
 	if (p->np_refcnt)
