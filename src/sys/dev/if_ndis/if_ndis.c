@@ -690,7 +690,7 @@ ndis_attach(device_t dev)
 
 	/* Enforce some sanity, just in case. */
 	if (sc->ndis_maxpkts == 0)
-		sc->ndis_maxpkts = 10;
+		sc->ndis_maxpkts = 1;
 
 	sc->ndis_txarray = malloc(sizeof(ndis_packet *) *
 	    sc->ndis_maxpkts, M_NDIS_DEV, M_NOWAIT|M_ZERO);
