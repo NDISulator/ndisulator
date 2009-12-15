@@ -418,24 +418,17 @@ ndis_return(device_object *dobj, void *arg)
 }
 
 void
-ndis_return_packet(void *buf /* not used */, void *arg)
+ndis_return_packet(void *buf, void *arg)
 {
-	ndis_packet *p;
-	ndis_miniport_block *block;
+	ndis_packet *p = buf;
+	ndis_miniport_block *block = arg;
 
-	if (arg == NULL)
+	if (p == NULL || block == NULL)
 		return;
 
-	p = arg;
-
-	/* Decrement refcount. */
 	p->np_refcnt--;
-
-	/* Release packet when refcount hits zero, otherwise return. */
 	if (p->np_refcnt)
 		return;
-
-	block = ((struct ndis_softc *)p->np_softc)->ndis_block;
 
 	KeAcquireSpinLockAtDpcLevel(&block->nmb_returnlock);
 	InitializeListHead((&p->np_list));
