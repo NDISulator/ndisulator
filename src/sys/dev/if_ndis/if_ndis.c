@@ -168,7 +168,7 @@ static void ndis_init(void *);
 static void ndis_stop(struct ndis_softc *);
 static int ndis_ifmedia_upd(struct ifnet *);
 static void ndis_ifmedia_sts(struct ifnet *, struct ifmediareq *);
-static int ndis_get_bssid_list(struct ndis_softc *,
+static void ndis_get_bssid_list(struct ndis_softc *,
     ndis_80211_bssid_list_ex **);
 static int ndis_probe_offload(struct ndis_softc *);
 static int ndis_set_offload(struct ndis_softc *);
@@ -2237,32 +2237,21 @@ ndis_disassociate(struct ndis_softc *sc)
 	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
 }
 
-static int
+static void
 ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 {
-	int error;
-	size_t len;
+	size_t len = 65535;
 
-	len = sizeof(uint32_t) + (sizeof(ndis_wlan_bssid_ex) * 16);
 	*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (*bl == NULL)
-		return (ENOMEM);
-
-	error = ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
-	if (error == ENOSPC) {
+		return;
+	if (ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len) == ENOSPC) {
 		free(*bl, M_NDIS_DEV);
 		*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (*bl == NULL)
-			return (ENOMEM);
-		error = ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
+			return;
+		ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
 	}
-	if (error) {
-		DPRINTF(("%s: failed to read\n", __func__));
-		free(*bl, M_NDIS_DEV);
-		return (error);
-	}
-
-	return (0);
 }
 
 static void
@@ -2833,7 +2822,7 @@ ndis_scan_end(struct ieee80211com *ic)
 	struct ieee80211_scanparams sp;
 	struct ieee80211_frame wh;
 	struct ieee80211_channel *saved_chan;
-	ndis_80211_bssid_list_ex *bl;
+	ndis_80211_bssid_list_ex *bl = NULL;
 	ndis_wlan_bssid_ex *wb;
 	int i, j, rssi, freq, chanflag;
 	uint8_t ssid[2+IEEE80211_NWID_LEN], rates[2+IEEE80211_RATE_MAXSIZE];
@@ -2842,7 +2831,8 @@ ndis_scan_end(struct ieee80211com *ic)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	saved_chan = ic->ic_curchan;
 
-	if (ndis_get_bssid_list(sc, &bl))
+	ndis_get_bssid_list(sc, &bl);
+	if (bl == NULL)
 		return;
 
 	DPRINTF(("%s: %d results\n", __func__, bl->nblx_items));
