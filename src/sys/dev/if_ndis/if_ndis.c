@@ -2154,25 +2154,10 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 static void
 ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	struct ieee80211_node *ni = vap->iv_bss;
-	struct ifnet *ifp = sc->ifp;
 	ndis_80211_macaddr bssid;
-	size_t len;
+	size_t len = IEEE80211_ADDR_LEN;
 
-	/*
-	 * If the user selected a specific BSSID, try to use that one.
-	 * This is useful in the case where there are several APs in
-	 * range with the same network name. To delete the BSSID, we
-	 * use the broadcast address as the BSSID.
-	 * Note that some drivers seem to allow setting a BSSID in ad-hoc
-	 * mode, which has the effect of forcing the NIC to create an ad-hoc
-	 * cell with a specific BSSID, instead of a randomly chosen one.
-	 */
-	len = IEEE80211_ADDR_LEN;
-	if (vap->iv_flags & IEEE80211_F_DESBSSID)
-		bcopy(ni->ni_bssid, bssid, len);
-	else
-		bcopy(ifp->if_broadcastaddr, bssid, len);
+	IEEE80211_ADDR_COPY(vap->iv_bss->ni_bssid, bssid);
 	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
 	if (ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len) != 0)
 		DPRINTF(("set BSSID failed\n"));
@@ -2255,9 +2240,8 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	ndis_80211_ssid ssid;
 	int chanflag = 0, i = 0;
 	uint32_t arg;
-	size_t len;
+	size_t len= IEEE80211_ADDR_LEN;
 
-	len = sizeof(bssid);
 	if (ndis_get_info(sc, OID_802_11_BSSID, &bssid, &len))
 		return;
 	IEEE80211_ADDR_COPY(ni->ni_bssid, bssid);
