@@ -82,7 +82,7 @@ static void ndis_resetdone_func(ndis_handle, ndis_status, uint8_t);
 static void ndis_sendrsrcavail_func(ndis_handle);
 static void ndis_intrsetup(kdpc *, device_object *, irp *, struct ndis_softc *);
 static void ndis_return(device_object *, void *);
-static int ndis_flush_sysctls(void *);
+static void ndis_flush_sysctls(void *);
 
 static image_patch_table kernndis_functbl[] = {
 	IMPORT_SFUNC(ndis_status_func, 4),
@@ -145,8 +145,8 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 	case MOD_SHUTDOWN:
 		if (TAILQ_FIRST(&ndis_devhead) == NULL) {
 			/* Shut down subsystems */
-			ndis_libfini();
 			usbd_libfini();
+			ndis_libfini();
 			windrv_libfini();
 			ntoskrnl_libfini();
 			hal_libfini();
@@ -160,8 +160,8 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		break;
 	case MOD_UNLOAD:
 		/* Shut down subsystems */
-		ndis_libfini();
 		usbd_libfini();
+		ndis_libfini();
 		windrv_libfini();
 		ntoskrnl_libfini();
 		hal_libfini();
@@ -174,7 +174,6 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		break;
 	default:
 		return (EINVAL);
-		break;
 	}
 
 	return (0);
@@ -363,7 +362,7 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
  * make life so much easier!" Lies. Why must they turn the kernel
  * into a house of lies?
  */
-static int
+static void
 ndis_flush_sysctls(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -381,8 +380,6 @@ ndis_flush_sysctls(void *arg)
 		free(cfg->ndis_cfg.nc_cfgdesc, M_NDIS_KERN);
 		free(cfg, M_NDIS_KERN);
 	}
-
-	return (0);
 }
 
 static void
