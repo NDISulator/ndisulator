@@ -901,7 +901,15 @@ nonettypes:
 			if (ndis_get_info(sc,
 			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
 				if (arg == NDIS_80211_AUTHMODE_WPA)
-					ic->ic_caps |= IEEE80211_C_WPA;
+					ic->ic_caps |= IEEE80211_C_WPA1;
+		}
+		arg = NDIS_80211_AUTHMODE_WPA2;
+		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
+		    &arg, &len) == 0) {
+			if (ndis_get_info(sc,
+			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
+				if (arg == NDIS_80211_AUTHMODE_WPA2)
+					ic->ic_caps |= IEEE80211_C_WPA2;
 		}
 
 		/*
