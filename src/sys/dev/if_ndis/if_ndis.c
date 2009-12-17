@@ -1651,17 +1651,14 @@ ndis_ticktask(device_object *d, void *xsc)
 	if (sc->ndis_link == 0 &&
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_CONNECT) {
 		sc->ndis_link = 1;
-		if (vap != NULL) {
-			if (vap->iv_state == IEEE80211_S_ASSOC)
-				ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
-		}
+		if (vap != NULL)
+			ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
 		if_link_state_change(sc->ifp, LINK_STATE_UP);
 	} else if (sc->ndis_link == 1 &&
 	    sc->ndis_sts == NDIS_STATUS_MEDIA_DISCONNECT) {
 		sc->ndis_link = 0;
 		if (vap != NULL)
-			if (vap->iv_state == IEEE80211_S_RUN)
-				ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
+			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
 		if_link_state_change(sc->ifp, LINK_STATE_DOWN);
 	}
 	NDIS_UNLOCK(sc);
