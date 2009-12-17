@@ -81,7 +81,6 @@ struct tid {
 	struct tid	*tid_self;		/* 0x0C */
 	int		tid_cpu;		/* 0x10 */
 };
-
 static struct tid *my_tids;
 #endif /* __i386__ */
 
@@ -107,7 +106,6 @@ windrv_libinit(void)
 	 */
 	windrv_bus_attach(&fake_pci_driver, "PCI Bus");
 	windrv_bus_attach(&fake_pccard_driver, "PCCARD Bus");
-
 #ifdef __i386__
 	/*
 	 * In order to properly support SMP machines, we have
@@ -140,7 +138,6 @@ windrv_libfini(void)
 	RtlFreeUnicodeString(&fake_pccard_driver.dro_drivername);
 
 	mtx_destroy(&drvdb_mtx);
-
 #ifdef __i386__
 	smp_rendezvous(NULL, x86_oldldt, NULL, NULL);
 	ExFreePool(my_tids);
@@ -265,9 +262,7 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 	}
 	mtx_unlock(&drvdb_mtx);
 
-	if (r == NULL)
-		return (ENOENT);
-	if (drv == NULL)
+	if (r == NULL || drv == NULL)
 		return (ENOENT);
 
 	/*

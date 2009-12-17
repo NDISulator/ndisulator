@@ -47,7 +47,6 @@ struct unicode_string {
 	uint16_t	us_maxlen;
 	uint16_t	*us_buf;
 };
-
 typedef struct unicode_string unicode_string;
 
 struct ansi_string {
@@ -55,7 +54,6 @@ struct ansi_string {
 	uint16_t	as_maxlen;
 	char		*as_buf;
 };
-
 typedef struct ansi_string ansi_string;
 
 /*
@@ -90,7 +88,6 @@ struct mdl {
 	uint32_t	mdl_bytecount;
 	uint32_t	mdl_byteoffset;
 };
-
 typedef struct mdl mdl, ndis_buffer;
 
 /* MDL flags */
@@ -181,7 +178,6 @@ typedef register_t kspin_lock;
 struct slist_entry {
 	struct slist_entry *sl_next;
 };
-
 typedef struct slist_entry slist_entry;
 
 union slist_header {
@@ -192,14 +188,12 @@ union slist_header {
 		uint16_t		slh_seq;
 	} slh_list;
 };
-
 typedef union slist_header slist_header;
 
 struct list_entry {
 	struct list_entry	*nle_flink;
 	struct list_entry	*nle_blink;
 };
-
 typedef struct list_entry list_entry;
 
 #define	InitializeListHead(l) (l)->nle_flink = (l)->nle_blink = (l)
@@ -278,7 +272,6 @@ struct nt_dispatch_header {
 	int32_t		dh_sigstate;
 	list_entry	dh_waitlisthead;
 };
-
 typedef struct nt_dispatch_header nt_dispatch_header;
 
 /* Dispatcher object types */
@@ -323,9 +316,7 @@ struct nt_objref {
 	void			*no_obj;
 	TAILQ_ENTRY(nt_objref)	link;
 };
-
 TAILQ_HEAD(nt_objref_head, nt_objref);
-
 typedef struct nt_objref nt_objref;
 
 #define	EVENT_TYPE_NOTIFY 0
@@ -362,7 +353,6 @@ typedef struct ktimer ktimer;
 struct nt_kevent {
 	nt_dispatch_header	k_header;
 };
-
 typedef struct nt_kevent nt_kevent;
 
 /* Kernel defered procedure call (i.e. timer callback) */
@@ -380,14 +370,13 @@ struct kdpc {
 	void		*k_sysarg2;
 	void		*k_lock;
 };
+typedef struct kdpc kdpc;
 
 #define	KDPC_IMPORTANCE_LOW 0
 #define	KDPC_IMPORTANCE_MEDIUM 1
 #define	KDPC_IMPORTANCE_HIGH 2
 
 #define	KDPC_CPU_DEFAULT 255
-
-typedef struct kdpc kdpc;
 
 /*
  * Note: the acquisition count is BSD-specific. The Microsoft
@@ -407,7 +396,6 @@ struct kmutant {
 	uint8_t			km_abandoned;
 	uint8_t			km_apcdisable;
 };
-
 typedef struct kmutant kmutant;
 
 #define	LOOKASIDE_DEPTH 256
@@ -439,7 +427,6 @@ struct general_lookaside {
 	} u_l;
 	uint32_t	gl_rsvd[2];
 };
-
 typedef struct general_lookaside general_lookaside;
 
 struct npaged_lookaside_list {
@@ -462,7 +449,6 @@ struct kdevice_qentry {
 	uint32_t	kqe_sortkey;
 	uint8_t		kqe_inserted;
 };
-
 typedef struct kdevice_qentry kdevice_qentry;
 
 struct kdevice_queue {
@@ -472,7 +458,6 @@ struct kdevice_queue {
 	kspin_lock	kq_lock;
 	uint8_t		kq_busy;
 };
-
 typedef struct kdevice_queue kdevice_queue;
 
 struct wait_ctx_block {
@@ -484,7 +469,6 @@ struct wait_ctx_block {
 	void		*wcb_curirp;
 	void		*wcb_bufchaindpc;
 };
-
 typedef struct wait_ctx_block wait_ctx_block;
 
 struct wait_block {
@@ -501,7 +485,6 @@ struct wait_block {
 	uint8_t			wb_awakened;
 	uint8_t			wb_oldpri;
 };
-
 typedef struct wait_block wait_block;
 
 #define	wb_ext wb_kthread
@@ -523,7 +506,6 @@ struct thread_context {
 	void	*tc_thrctx;
 	void	*tc_thrfunc;
 };
-
 typedef struct thread_context thread_context;
 
 /* Forward declaration */
@@ -543,14 +525,12 @@ struct driver_extension {
 	 */
 	list_entry dre_usrext;
 };
-
 typedef struct driver_extension driver_extension;
 
 struct custom_extension {
 	list_entry	ce_list;
 	void		*ce_clid;
 };
-
 typedef struct custom_extension custom_extension;
 
 /*
@@ -568,7 +548,6 @@ struct kinterrupt {
 	void		*ki_svcfunc;
 	void		*ki_svcctx;
 };
-
 typedef struct kinterrupt kinterrupt;
 
 /*
@@ -616,7 +595,6 @@ struct device_object {
 	struct devobj_extension	*do_devobj_ext;
 	void			*do_rsvd;
 };
-
 typedef struct device_object device_object;
 
 struct devobj_extension {
@@ -624,7 +602,6 @@ struct devobj_extension {
 	uint16_t	dve_size;
 	device_object	*dve_devobj;
 };
-
 typedef struct devobj_extension devobj_extension;
 
 /* Device object flags */
@@ -814,13 +791,12 @@ typedef struct devobj_extension devobj_extension;
 struct io_status_block {
 	union {
 		uint32_t	isb_status;
-		void	*isb_ptr;
+		void		*isb_ptr;
 	} u;
 	register_t	isb_info;
 };
 #define	isb_status u.isb_status
 #define	isb_ptr u.isb_ptr
-
 typedef struct io_status_block io_status_block;
 
 struct kapc {
@@ -839,7 +815,6 @@ struct kapc {
 	uint8_t		apc_cpumode;
 	uint8_t		apc_inserted;
 };
-
 typedef struct kapc kapc;
 
 typedef uint32_t (*completion_func)(device_object *, struct irp *, void *);
@@ -890,7 +865,6 @@ struct io_stack_location {
 	completion_func	isl_completionfunc;
 	void		*isl_completionctx;
 };
-
 typedef struct io_stack_location io_stack_location;
 
 /* Stack location control flags */
@@ -902,7 +876,7 @@ typedef struct io_stack_location io_stack_location;
 struct irp {
 	uint16_t	irp_type;
 	uint16_t	irp_size;
-	mdl	*irp_mdl;
+	mdl		*irp_mdl;
 	uint32_t	irp_flags;
 	union {
 		struct irp	*irp_master;
@@ -946,7 +920,7 @@ struct irp {
 				list_entry irp_list;
 				union {
 					io_stack_location	*irp_csl;
-					uint32_t	irp_pkttype;
+					uint32_t		irp_pkttype;
 				} u2;
 			} s2;
 			void	*irp_fileobj;
@@ -961,14 +935,13 @@ struct irp {
 		void	*irp_compkey;
 	} irp_tail;
 };
+typedef struct irp irp;
 
 #define	irp_csl		s2.u2.irp_csl
 #define	irp_pkttype	s2.u2.irp_pkttype
 
 #define	IRP_NDIS_DEV(irp) (irp)->irp_tail.irp_misc.irp_usb.irp_dev
 #define	IRP_NDISUSB_EP(irp) (irp)->irp_tail.irp_misc.irp_usb.irp_ep
-
-typedef struct irp irp;
 
 #define	InterlockedExchangePointer(dst, val)				\
 	(void *)InterlockedExchange((uint32_t *)(dst), (uintptr_t)(val))
@@ -1062,7 +1035,6 @@ struct driver_object {
 	void		*dro_driverunloadfunc;
 	driver_dispatch	dro_dispatch[IRP_MJ_MAXIMUM_FUNCTION + 1];
 };
-
 typedef struct driver_object driver_object;
 
 #define	DEVPROP_DEVICE_DESCRIPTION	0x00000000
@@ -1206,7 +1178,6 @@ struct io_workitem {
 	device_object		*iw_dobj;
 	int			iw_idx;
 };
-
 typedef struct io_workitem io_workitem;
 
 #define	WORKQUEUE_CRITICAL	0
@@ -1229,7 +1200,6 @@ struct work_queue_item {
 	work_item_func	wqi_func;
 	void		*wqi_ctx;
 };
-
 typedef struct work_queue_item work_queue_item;
 
 #define	ExInitializeWorkItem(w, func, ctx)		\
