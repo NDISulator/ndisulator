@@ -1024,7 +1024,7 @@ struct driver_object {
 	device_object	*dro_devobj;
 	uint32_t	dro_flags;
 	void		*dro_driverstart;
-	uint32_t	dro_driversize;
+	size_t		dro_driversize;
 	void		*dro_driversection;
 	driver_extension	*dro_driverext;
 	unicode_string	dro_drivername;
