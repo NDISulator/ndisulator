@@ -413,13 +413,14 @@ ndis_return(device_object *dobj, void *arg)
 void
 ndis_return_packet(void *buf, void *arg)
 {
-	ndis_packet *p = buf;
-	ndis_miniport_block *block = arg;
+	ndis_packet *p = arg;
+	ndis_miniport_block *block;
 
 	p->np_refcnt--;
 	if (p->np_refcnt)
 		return;
 
+	block = ((struct ndis_softc *)p->np_softc)->ndis_block;
 	KeAcquireSpinLockAtDpcLevel(&block->nmb_returnlock);
 	InitializeListHead((&p->np_list));
 	InsertHeadList((&block->nmb_returnlist), (&p->np_list));

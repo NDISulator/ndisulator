@@ -1380,7 +1380,7 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 			p = packets[i];
 			if (p->np_oob.npo_status == NDIS_STATUS_SUCCESS) {
 				p->np_refcnt++;
-				ndis_return_packet(p, block);
+				ndis_return_packet(block, p);
 			}
 		}
 		return;
@@ -1394,7 +1394,7 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 		if (ndis_ptom(&m0, p)) {
 			device_printf(sc->ndis_dev, "ptom failed\n");
 			if (p->np_oob.npo_status == NDIS_STATUS_SUCCESS)
-				ndis_return_packet(p, block);
+				ndis_return_packet(block, p);
 		} else {
 #ifdef notdef
 			if (p->np_oob.npo_status == NDIS_STATUS_RESOURCES) {
