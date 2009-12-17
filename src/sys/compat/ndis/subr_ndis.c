@@ -201,7 +201,7 @@ static void NdisQueryBuffer(ndis_buffer *, void **, uint32_t *);
 static void NdisQueryBufferSafe(ndis_buffer *, void **, uint32_t *, uint32_t);
 static void *NdisBufferVirtualAddress(ndis_buffer *);
 static void *NdisBufferVirtualAddressSafe(ndis_buffer *, uint32_t);
-static void NdisAdjustBufferLength(ndis_buffer *, int);
+static void NdisAdjustBufferLength(ndis_buffer *, uint32_t);
 static uint32_t NdisInterlockedIncrement(uint32_t *);
 static uint32_t NdisInterlockedDecrement(uint32_t *);
 static void NdisInitializeEvent(ndis_event *);
@@ -1834,7 +1834,7 @@ NdisBufferVirtualAddressSafe(ndis_buffer *buf, uint32_t prio)
 }
 
 static void
-NdisAdjustBufferLength(ndis_buffer *buf, int len)
+NdisAdjustBufferLength(ndis_buffer *buf, uint32_t len)
 {
 	MmGetMdlByteCount(buf) = len;
 }
@@ -1842,7 +1842,7 @@ NdisAdjustBufferLength(ndis_buffer *buf, int len)
 static uint32_t
 NdisInterlockedIncrement(uint32_t *addend)
 {
-	atomic_add_long((u_long *)addend, 1);
+	atomic_add_long((unsigned long *)addend, 1);
 
 	return (*addend);
 }
@@ -1850,7 +1850,7 @@ NdisInterlockedIncrement(uint32_t *addend)
 static uint32_t
 NdisInterlockedDecrement(uint32_t *addend)
 {
-	atomic_subtract_long((u_long *)addend, 1);
+	atomic_subtract_long((unsigned long *)addend, 1);
 
 	return (*addend);
 }

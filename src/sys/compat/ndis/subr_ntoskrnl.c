@@ -241,7 +241,8 @@ static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(funcptr);
 static uint32_t DbgPrint(char *, ...);
 static void DbgBreakPoint(void);
-static void KeBugCheckEx(uint32_t, u_long, u_long, u_long, u_long);
+static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
+    unsigned long);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
@@ -2086,7 +2087,7 @@ KefAcquireSpinLockAtDpcLevel(kspin_lock *lock)
 #ifdef NTOSKRNL_DEBUG_SPINLOCKS
 	int i = 0;
 #endif
-	while (atomic_cmpset_acq_int((volatile u_int *)lock, 0, 1) == 0) {
+	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0) {
 		/* sit and spin */;
 #ifdef NTOSKRNL_DEBUG_SPINLOCKS
 		i++;
@@ -2099,7 +2100,7 @@ KefAcquireSpinLockAtDpcLevel(kspin_lock *lock)
 void
 KefReleaseSpinLockFromDpcLevel(kspin_lock *lock)
 {
-	atomic_store_rel_int((volatile u_int *)lock, 0);
+	atomic_store_rel_int((volatile unsigned int *)lock, 0);
 }
 
 uint8_t
@@ -2119,14 +2120,14 @@ KeAcquireSpinLockRaiseToDpc(kspin_lock *lock)
 void
 KeAcquireSpinLockAtDpcLevel(kspin_lock *lock)
 {
-	while (atomic_cmpset_acq_int((volatile u_int *)lock, 0, 1) == 0)
+	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0)
 		/* sit and spin */;
 }
 
 void
 KeReleaseSpinLockFromDpcLevel(kspin_lock *lock)
 {
-	atomic_store_rel_int((volatile u_int *)lock, 0);
+	atomic_store_rel_int((volatile unsigned int *)lock, 0);
 }
 #endif /* __i386__ */
 
@@ -2146,7 +2147,7 @@ InterlockedExchange(volatile uint32_t *dst, uintptr_t val)
 static uint32_t
 InterlockedIncrement(volatile uint32_t *addend)
 {
-	atomic_add_long((volatile u_long *)addend, 1);
+	atomic_add_long((volatile unsigned long *)addend, 1);
 
 	return (*addend);
 }
@@ -2154,7 +2155,7 @@ InterlockedIncrement(volatile uint32_t *addend)
 static uint32_t
 InterlockedDecrement(volatile uint32_t *addend)
 {
-	atomic_subtract_long((volatile u_long *)addend, 1);
+	atomic_subtract_long((volatile unsigned long *)addend, 1);
 
 	return (*addend);
 }
@@ -3161,8 +3162,8 @@ DbgBreakPoint(void)
 }
 
 static void
-KeBugCheckEx(uint32_t code, u_long param1, u_long param2, u_long param3,
-    u_long param4)
+KeBugCheckEx(uint32_t code, unsigned long param1, unsigned long param2,
+    unsigned long param3, unsigned long param4)
 {
 	panic("KeBugCheckEx: STOP 0x%X", code);
 }

@@ -502,7 +502,7 @@ extern void x86_64_wrap_call(void);
 extern void x86_64_wrap_end(void);
 
 int
-windrv_wrap(funcptr func, funcptr *wrap, int8_t argcnt, int ftype)
+windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 {
 	funcptr p;
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall;
@@ -643,8 +643,8 @@ ctxsw_wtou(void)
 #endif
 }
 
-static int windrv_wrap_stdcall(funcptr, funcptr *, int8_t);
-static int windrv_wrap_fastcall(funcptr, funcptr *, int8_t);
+static int windrv_wrap_stdcall(funcptr, funcptr *, uint8_t);
+static int windrv_wrap_fastcall(funcptr, funcptr *, uint8_t);
 static int windrv_wrap_regparm(funcptr, funcptr *);
 
 extern void x86_fastcall_wrap(void);
@@ -653,7 +653,7 @@ extern void x86_fastcall_wrap_arg(void);
 extern void x86_fastcall_wrap_end(void);
 
 static int
-windrv_wrap_fastcall(funcptr func, funcptr *wrap, int8_t argcnt)
+windrv_wrap_fastcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 {
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall, wraparg;
 	funcptr p;
@@ -676,11 +676,12 @@ windrv_wrap_fastcall(funcptr func, funcptr *wrap, int8_t argcnt)
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
 	*calladdr = (vm_offset_t)func;
 
-	argcnt -= 2;
-	if (argcnt < 1)
+	if (argcnt < 3)
 		argcnt = 0;
+	else
+		argcnt -= 2;
 
-	argaddr = (u_int8_t *)((char *)p + ((wraparg - wrapstart) + 1));
+	argaddr = (uint8_t *)((char *)p + ((wraparg - wrapstart) + 1));
 	*argaddr = argcnt * sizeof(uint32_t);
 
 	*wrap = p;
@@ -694,7 +695,7 @@ extern void x86_stdcall_wrap_arg(void);
 extern void x86_stdcall_wrap_end(void);
 
 static int
-windrv_wrap_stdcall(funcptr func, funcptr *wrap, int8_t argcnt)
+windrv_wrap_stdcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 {
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall, wraparg;
 	funcptr p;
@@ -717,7 +718,7 @@ windrv_wrap_stdcall(funcptr func, funcptr *wrap, int8_t argcnt)
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
 	*calladdr = (vm_offset_t)func;
 
-	argaddr = (u_int8_t *)((char *)p + ((wraparg - wrapstart) + 1));
+	argaddr = (uint8_t *)((char *)p + ((wraparg - wrapstart) + 1));
 	*argaddr = argcnt * sizeof(uint32_t);
 
 	*wrap = p;
@@ -757,7 +758,7 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 }
 
 int
-windrv_wrap(funcptr func, funcptr *wrap, int8_t argcnt, int ftype)
+windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 {
 	switch (ftype) {
 	case WINDRV_WRAP_FASTCALL:

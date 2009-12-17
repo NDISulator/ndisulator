@@ -954,7 +954,7 @@ typedef struct irp irp;
 	(void *)&(ip)->irp_cancelfunc, (void *)(func))
 
 #define	IoSetCancelValue(irp, val)					\
-	(u_long)InterlockedExchangePointer(				\
+	(unsigned long)InterlockedExchangePointer(			\
 	(void *)&(ip)->irp_cancel, (void *)(val))
 
 #define	IoGetCurrentIrpStackLocation(irp)				\
@@ -1249,7 +1249,7 @@ extern int windrv_create_pdo(driver_object *, device_t);
 extern void windrv_destroy_pdo(driver_object *, device_t);
 extern device_object *windrv_find_pdo(driver_object *, device_t);
 extern int windrv_bus_attach(driver_object *, char *);
-extern int windrv_wrap(funcptr, funcptr *, int8_t, int);
+extern int windrv_wrap(funcptr, funcptr *, uint8_t, int);
 extern int windrv_unwrap(funcptr);
 extern void ctxsw_utow(void);
 extern void ctxsw_wtou(void);
@@ -1327,7 +1327,7 @@ extern device_object *IoAttachDeviceToDeviceStack(device_object *,
 extern mdl *IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, irp *);
 extern void IoFreeMdl(mdl *);
 extern io_workitem *IoAllocateWorkItem(device_object *);
-extern void ExQueueWorkItem(work_queue_item *, u_int32_t);
+extern void ExQueueWorkItem(work_queue_item *, uint32_t);
 extern void IoFreeWorkItem(io_workitem *);
 extern void IoQueueWorkItem(io_workitem *, io_workitem_func, uint32_t, void *);
 

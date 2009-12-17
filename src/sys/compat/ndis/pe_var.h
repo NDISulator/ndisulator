@@ -387,7 +387,7 @@ struct image_patch_table {
 	char	*ipt_name;
 	void	(*ipt_func)(void);
 	void	(*ipt_wrap)(void);
-	int	ipt_argcnt;
+	uint8_t	ipt_argcnt;
 	int	ipt_ftype;
 };
 typedef struct image_patch_table image_patch_table;
