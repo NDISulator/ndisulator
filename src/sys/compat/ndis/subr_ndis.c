@@ -161,6 +161,7 @@ static void NdisMInitializeTimer(ndis_miniport_timer *, ndis_handle,
 static void NdisInitializeTimer(ndis_timer *, ndis_timer_function, void *);
 static void NdisSetTimer(ndis_timer *, uint32_t);
 static void NdisMSetPeriodicTimer(ndis_miniport_timer *, uint32_t);
+static void NdisMSleep(uint32_t);
 static void NdisMCancelTimer(ndis_timer *, uint8_t *);
 static void ndis_timercall(kdpc *, ndis_miniport_timer *, void *, void *);
 static void NdisMQueryAdapterResources(ndis_status *, ndis_handle,
@@ -2120,7 +2121,7 @@ NdisQueryBufferOffset(ndis_buffer *buf, uint32_t *off, uint32_t *len)
 	*len = MmGetMdlByteCount(buf);
 }
 
-void
+static void
 NdisMSleep(uint32_t usecs)
 {
 	DELAY(usecs);

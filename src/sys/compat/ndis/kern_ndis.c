@@ -908,7 +908,7 @@ ndis_halt_nic(void *arg)
 		KeReleaseSpinLock(&block->nmb_returnlock, irql);
 		if (empty)
 			break;
-		NdisMSleep(1000);
+		DELAY(1000);
 	}
 
 	NDIS_LOCK(sc);

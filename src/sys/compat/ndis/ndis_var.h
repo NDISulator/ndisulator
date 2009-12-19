@@ -1642,7 +1642,6 @@ extern void NdisFreePacketPool(ndis_handle);
 extern void NdisAllocatePacket(ndis_status *, ndis_packet **, ndis_handle);
 extern void NdisFreePacket(ndis_packet *);
 extern ndis_status NdisScheduleWorkItem(ndis_work_item *);
-extern void NdisMSleep(uint32_t);
 __END_DECLS
 
 #endif /* _NDIS_VAR_H_ */
