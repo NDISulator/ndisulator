@@ -2461,8 +2461,7 @@ ntoskrnl_workitem_thread(void *arg)
 
 		while (!IsListEmpty(&kq->kq_disp)) {
 			l = RemoveHeadList(&kq->kq_disp);
-			iw = CONTAINING_RECORD(l,
-			    io_workitem, iw_listentry);
+			iw = CONTAINING_RECORD(l, io_workitem, iw_listentry);
 			InitializeListHead((&iw->iw_listentry));
 			if (iw->iw_func == NULL)
 				continue;
@@ -2596,11 +2595,10 @@ ntoskrnl_workitem(device_object *dobj, void *arg)
 void
 ExQueueWorkItem(work_queue_item *w, uint32_t qtype)
 {
-	io_workitem *iw;
+	io_workitem *iw, *cur;
 	io_workitem_func iwf;
 	kdpc_queue *kq;
 	list_entry *l;
-	io_workitem *cur;
 	uint8_t irql;
 
 	/*
