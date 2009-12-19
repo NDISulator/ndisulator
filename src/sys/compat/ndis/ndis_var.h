@@ -1641,7 +1641,6 @@ extern uint32_t NdisPacketPoolUsage(ndis_handle);
 extern void NdisFreePacketPool(ndis_handle);
 extern void NdisAllocatePacket(ndis_status *, ndis_packet **, ndis_handle);
 extern void NdisFreePacket(ndis_packet *);
-extern ndis_status NdisScheduleWorkItem(ndis_work_item *);
 __END_DECLS
 
 #endif /* _NDIS_VAR_H_ */

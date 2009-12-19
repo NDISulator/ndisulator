@@ -160,6 +160,7 @@ static void NdisMInitializeTimer(ndis_miniport_timer *, ndis_handle,
     ndis_timer_function, void *);
 static void NdisInitializeTimer(ndis_timer *, ndis_timer_function, void *);
 static void NdisSetTimer(ndis_timer *, uint32_t);
+static ndis_status NdisScheduleWorkItem(ndis_work_item *);
 static void NdisMSetPeriodicTimer(ndis_miniport_timer *, uint32_t);
 static void NdisMSleep(uint32_t);
 static void NdisMCancelTimer(ndis_timer *, uint8_t *);
@@ -2657,7 +2658,7 @@ NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
  *
  * Got all that? (Sheesh.)
  */
-ndis_status
+static ndis_status
 NdisScheduleWorkItem(ndis_work_item *work)
 {
 	work_queue_item *wqi;
