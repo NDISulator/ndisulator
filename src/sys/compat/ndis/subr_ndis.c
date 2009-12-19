@@ -2123,20 +2123,7 @@ NdisQueryBufferOffset(ndis_buffer *buf, uint32_t *off, uint32_t *len)
 void
 NdisMSleep(uint32_t usecs)
 {
-	ktimer timer;
-
-	/*
-	 * During system bootstrap, (i.e. cold == 1), we aren't
-	 * allowed to sleep, so we have to do a hard DELAY()
-	 * instead.
-	 */
-	if (cold)
-		DELAY(usecs);
-	else {
-		KeInitializeTimer(&timer);
-		KeSetTimer(&timer, ((int64_t)usecs * -10), NULL);
-		KeWaitForSingleObject(&timer, 0, 0, FALSE, NULL);
-	}
+	DELAY(usecs);
 }
 
 static uint32_t
