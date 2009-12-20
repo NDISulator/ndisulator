@@ -1612,7 +1612,7 @@ extern image_patch_table ndis_functbl[];
 __BEGIN_DECLS
 extern void ndis_libinit(void);
 extern void ndis_libfini(void);
-extern int ndis_unload_driver(void *);
+extern void ndis_unload_driver(void *);
 extern int ndis_mtop(struct mbuf *, ndis_packet **);
 extern int ndis_ptom(struct mbuf **, ndis_packet *);
 extern int ndis_get_info(void *, ndis_oid, void *, size_t *);

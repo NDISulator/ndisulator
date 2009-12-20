@@ -2223,24 +2223,14 @@ IoFreeMdl(mdl *m)
 static void *
 MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 {
-	void *addr;
-	size_t pagelength = roundup(size, PAGE_SIZE);
-
-	addr = ExAllocatePoolWithTag(NonPagedPool, pagelength, 0);
-
-	return (addr);
+	return (ExAllocatePoolWithTag(NonPagedPool, roundup(size, PAGE_SIZE), 0));
 }
 
 static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
     uint64_t highest, uint64_t boundary, uint32_t cachetype)
 {
-	void *addr;
-	size_t pagelength = roundup(size, PAGE_SIZE);
-
-	addr = ExAllocatePoolWithTag(NonPagedPool, pagelength, 0);
-
-	return (addr);
+	return (ExAllocatePoolWithTag(NonPagedPool, roundup(size, PAGE_SIZE), 0));
 }
 
 static void

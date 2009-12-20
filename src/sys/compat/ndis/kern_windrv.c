@@ -502,8 +502,8 @@ extern void x86_64_wrap_end(void);
 void
 windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 {
-	funcptr p;
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall;
+	funcptr p;
 
 	wrapstart = (vm_offset_t)&x86_64_wrap;
 	wrapend = (vm_offset_t)&x86_64_wrap_end;
@@ -518,7 +518,7 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
 
 	/* Insert the function address into the new wrapper instance. */
-	calladdr = (uint64_t *)((char *)p + (wrapcall - wrapstart) + 2);
+	calladdr = (vm_offset_t *)((char *)p + (wrapcall - wrapstart) + 2);
 	*calladdr = (vm_offset_t)func;
 
 	*wrap = p;
@@ -639,13 +639,13 @@ ctxsw_wtou(void)
 #endif
 }
 
-static void windrv_wrap_stdcall(funcptr, funcptr *, uint8_t);
 static void windrv_wrap_fastcall(funcptr, funcptr *, uint8_t);
+static void windrv_wrap_stdcall(funcptr, funcptr *, uint8_t);
 static void windrv_wrap_regparm(funcptr, funcptr *);
 
 extern void x86_fastcall_wrap(void);
-extern void x86_fastcall_wrap_call(void);
 extern void x86_fastcall_wrap_arg(void);
+extern void x86_fastcall_wrap_call(void);
 extern void x86_fastcall_wrap_end(void);
 
 static void

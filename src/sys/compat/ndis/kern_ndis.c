@@ -1192,7 +1192,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	return (STATUS_SUCCESS);
 }
 
-int
+void
 ndis_unload_driver(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -1215,6 +1215,4 @@ ndis_unload_driver(void *arg)
 	IoFreeWorkItem(sc->ndis_block->nmb_returnitem);
 	IoDetachDevice(sc->ndis_block->nmb_nextdeviceobj);
 	IoDeleteDevice(fdo);
-
-	return (0);
 }
