@@ -1238,8 +1238,8 @@ typedef void (*funcptr)(void);
 typedef int (*matchfuncptr)(interface_type, void *, void *);
 
 __BEGIN_DECLS
-extern int windrv_libinit(void);
-extern int windrv_libfini(void);
+extern void windrv_libinit(void);
+extern void windrv_libfini(void);
 extern driver_object *windrv_lookup(vm_offset_t, char *);
 extern struct drvdb_ent *windrv_match(matchfuncptr, void *);
 extern int windrv_load(module_t, vm_offset_t, size_t, interface_type, void *,
@@ -1253,8 +1253,8 @@ extern int windrv_wrap(funcptr, funcptr *, uint8_t, int);
 extern int windrv_unwrap(funcptr);
 extern void ctxsw_utow(void);
 extern void ctxsw_wtou(void);
-extern int ntoskrnl_libinit(void);
-extern int ntoskrnl_libfini(void);
+extern void ntoskrnl_libinit(void);
+extern void ntoskrnl_libfini(void);
 extern void ntoskrnl_intr(void *);
 extern void ntoskrnl_time(uint64_t *);
 extern uint16_t ExQueryDepthSList(slist_header *);

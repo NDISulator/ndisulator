@@ -152,7 +152,7 @@ static funcptr usbd_irpcancel_wrap;
 static funcptr usbd_task_wrap;
 static funcptr usbd_xfertask_wrap;
 
-int
+void
 usbd_libinit(void)
 {
 	image_patch_table *patch;
@@ -197,11 +197,9 @@ usbd_libinit(void)
 	    (driver_dispatch)usbd_power_wrap;
 	usbd_driver.dro_dispatch[IRP_MJ_PNP] =
 	    (driver_dispatch)usbd_pnp_wrap;
-
-	return (0);
 }
 
-int
+void
 usbd_libfini(void)
 {
 	image_patch_table *patch;
@@ -212,17 +210,15 @@ usbd_libfini(void)
 		patch++;
 	}
 
-	windrv_unwrap(usbd_ioinvalid_wrap);
-	windrv_unwrap(usbd_iodispatch_wrap);
-	windrv_unwrap(usbd_pnp_wrap);
-	windrv_unwrap(usbd_power_wrap);
-	windrv_unwrap(usbd_irpcancel_wrap);
-	windrv_unwrap(usbd_task_wrap);
 	windrv_unwrap(usbd_xfertask_wrap);
+	windrv_unwrap(usbd_task_wrap);
+	windrv_unwrap(usbd_irpcancel_wrap);
+	windrv_unwrap(usbd_power_wrap);
+	windrv_unwrap(usbd_pnp_wrap);
+	windrv_unwrap(usbd_iodispatch_wrap);
+	windrv_unwrap(usbd_ioinvalid_wrap);
 
 	ExFreePool(usbd_driver.dro_drivername.us_buf);
-
-	return (0);
 }
 
 static int32_t

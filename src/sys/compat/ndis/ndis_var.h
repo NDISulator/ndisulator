@@ -1610,8 +1610,8 @@ extern image_patch_table ndis_functbl[];
 	} while (0)
 
 __BEGIN_DECLS
-extern int ndis_libinit(void);
-extern int ndis_libfini(void);
+extern void ndis_libinit(void);
+extern void ndis_libfini(void);
 extern int ndis_unload_driver(void *);
 extern int ndis_mtop(struct mbuf *, ndis_packet **);
 extern int ndis_ptom(struct mbuf **, ndis_packet *);

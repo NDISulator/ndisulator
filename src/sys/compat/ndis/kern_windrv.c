@@ -88,7 +88,7 @@ MALLOC_DEFINE(M_NDIS_WINDRV, "ndis_windrv", "ndis_windrv buffers");
 
 #define	DUMMY_REGISTRY_PATH "\\\\some\\bogus\\path"
 
-int
+void
 windrv_libinit(void)
 {
 	STAILQ_INIT(&drvdb_head);
@@ -118,10 +118,9 @@ windrv_libinit(void)
 		panic("failed to allocate thread info blocks");
 	smp_rendezvous(NULL, x86_newldt, NULL, NULL);
 #endif
-	return (0);
 }
 
-int
+void
 windrv_libfini(void)
 {
 	struct drvdb_ent *d;
@@ -142,7 +141,6 @@ windrv_libfini(void)
 	smp_rendezvous(NULL, x86_oldldt, NULL, NULL);
 	ExFreePool(my_tids);
 #endif
-	return (0);
 }
 
 /*

@@ -214,8 +214,8 @@ typedef struct usbd_version_info usbd_version_info;
 extern image_patch_table usbd_functbl[];
 
 __BEGIN_DECLS
-extern int usbd_libinit(void);
-extern int usbd_libfini(void);
+extern void usbd_libinit(void);
+extern void usbd_libfini(void);
 __END_DECLS
 
 #endif /* _USBD_VAR_H_ */

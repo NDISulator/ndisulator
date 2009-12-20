@@ -286,7 +286,7 @@ MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
  * the driver asks for. This #define controls how many.
  */
 #define	NDIS_POOL_EXTRA	16
-int
+void
 ndis_libinit(void)
 {
 	image_patch_table *patch;
@@ -298,11 +298,9 @@ ndis_libinit(void)
 		    patch->ipt_argcnt, patch->ipt_ftype);
 		patch++;
 	}
-
-	return (0);
 }
 
-int
+void
 ndis_libfini(void)
 {
 	image_patch_table *patch;
@@ -312,8 +310,6 @@ ndis_libfini(void)
 		windrv_unwrap(patch->ipt_wrap);
 		patch++;
 	}
-
-	return (0);
 }
 
 static funcptr

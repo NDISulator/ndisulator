@@ -260,7 +260,7 @@ static int wq_idx = 0;
 
 MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 
-int
+void
 ntoskrnl_libinit(void)
 {
 	image_patch_table *patch;
@@ -288,12 +288,12 @@ ntoskrnl_libinit(void)
 	    sizeof(kdpc_queue), 0);
 #endif
 	if (kq_queues == NULL)
-		return (ENOMEM);
+		panic("failed to allocate kq_queues");
 
 	wq_queues = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(kdpc_queue) * WORKITEM_THREADS, 0);
 	if (wq_queues == NULL)
-		return (ENOMEM);
+		panic("failed to allocate wq_queues");
 
 #ifdef NTOSKRNL_MULTIPLE_DPCS
 	bzero((char *)kq_queues, sizeof(kdpc_queue) * mp_ncpus);
@@ -364,11 +364,9 @@ ntoskrnl_libinit(void)
 
 	iw_zone = uma_zcreate("Windows WorkItem", sizeof(io_workitem),
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
-
-	return (0);
 }
 
-int
+void
 ntoskrnl_libfini(void)
 {
 	image_patch_table *patch;
@@ -405,8 +403,6 @@ ntoskrnl_libfini(void)
 	mtx_destroy(&ntoskrnl_dispatchlock);
 	mtx_destroy(&ntoskrnl_interlock);
 	mtx_destroy(&ntoskrnl_calllock);
-
-	return (0);
 }
 
 /*
