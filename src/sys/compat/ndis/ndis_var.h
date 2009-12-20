@@ -962,7 +962,7 @@ struct ndis_lock_state {
 typedef struct ndis_lock_state ndis_lock_state;
 
 struct ndis_request {
-	uint8_t		nr_macreserved[4*sizeof(void *)];
+	uint8_t		nr_macreserved[4 * sizeof(void *)];
 	uint32_t	nr_requesttype;
 	union _ndis_data {
 		struct _ndis_query_information {
@@ -1043,7 +1043,6 @@ struct ndis_sc_element {
 typedef struct ndis_sc_element ndis_sc_element;
 
 #define	NDIS_MAXSEG 32
-#define	NDIS_BUS_SPACE_SHARED_MAXADDR 0x3E7FFFFF
 
 struct ndis_sc_list {
 	uint32_t	nsl_frags;

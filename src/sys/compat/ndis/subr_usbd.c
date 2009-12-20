@@ -1442,7 +1442,7 @@ USBD_ParseConfigurationDescriptorEx(usb_config_descriptor_t *conf,
 static void
 dummy(void)
 {
-	printf("USBD dummy called\n");
+	printf("USBD dummy called...\n");
 }
 
 image_patch_table usbd_functbl[] = {
