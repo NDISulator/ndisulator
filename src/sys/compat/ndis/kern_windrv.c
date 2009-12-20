@@ -79,7 +79,6 @@ struct tid {
 	uint32_t	tid_oldfs;		/* 0x04 */
 	uint32_t	tid_selector;		/* 0x08 */
 	struct tid	*tid_self;		/* 0x0C */
-	int		tid_cpu;		/* 0x10 */
 };
 static struct tid *my_tids;
 #endif /* __i386__ */
@@ -577,14 +576,8 @@ extern void x86_setldt(struct gdt *, uint16_t);
 #define	SEGFLAGHI_BIG		0x40	/* 1 = 32 bit stack, 0 = 16 bit */
 
 /*
- * Context switch from UNIX to Windows. Save the existing value
- * of %fs for this processor, then change it to point to our
- * fake TID. Note that it is also possible to pin ourselves
- * to our current CPU, though I'm not sure this is really
- * necessary. It depends on whether or not an interrupt might
- * preempt us while Windows code is running and we wind up
- * scheduled onto another CPU as a result. So far, it doesn't
- * seem like this is what happens.
+ * Context switch from UNIX to Windows. Save the existing value of %fs
+ * for this processor, then change it to point to our fake TID.
  */
 void
 ctxsw_utow(void)
@@ -605,10 +598,9 @@ ctxsw_utow(void)
 	if (t->tid_self != t)
 		x86_newldt(NULL);
 
+	sched_bind(curthread, curthread->td_oncpu);
 	x86_critical_enter();
 	t->tid_oldfs = x86_getfs();
-	t->tid_cpu = curthread->td_oncpu;
-	sched_pin();
 	x86_setfs(SEL_TO_FS(t->tid_selector));
 	x86_critical_exit();
 
@@ -616,9 +608,8 @@ ctxsw_utow(void)
 }
 
 /*
- * Context switch from Windows back to UNIX. Restore %fs to
- * its previous value. This always occurs after a call to
- * ctxsw_utow().
+ * Context switch from Windows back to UNIX. Restore %fs to its
+ * previous value. This always occurs after a call to ctxsw_utow().
  */
 void
 ctxsw_wtou(void)
@@ -628,15 +619,10 @@ ctxsw_wtou(void)
 	x86_critical_enter();
 	t = x86_gettid();
 	x86_setfs(t->tid_oldfs);
-	sched_unpin();
 	x86_critical_exit();
+	sched_unbind(curthread);
 
 	/* Welcome back to UNIX land, we missed you. */
-
-#ifdef EXTRA_SANITY
-	if (t->tid_cpu != curthread->td_oncpu)
-		panic("ctxsw GOT MOVED TO OTHER CPU!");
-#endif
 }
 
 static void windrv_wrap_fastcall(funcptr, funcptr *, uint8_t);

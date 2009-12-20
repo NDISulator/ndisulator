@@ -1013,10 +1013,8 @@ ndis_timercall(kdpc *dpc, ndis_miniport_timer *timer, void *sysarg1,
 	 */
 	if (NDIS_SERIALIZED(timer->nmt_block))
 		KeAcquireSpinLockAtDpcLevel(&timer->nmt_block->nmb_lock);
-
 	MSCALL4(timer->nmt_timerfunc, dpc, timer->nmt_timerctx,
 	    sysarg1, sysarg2);
-
 	if (NDIS_SERIALIZED(timer->nmt_block))
 		KeReleaseSpinLockFromDpcLevel(&timer->nmt_block->nmb_lock);
 }
@@ -1661,13 +1659,11 @@ NdisFreePacket(ndis_packet *packet)
 #ifdef NDIS_DEBUG_PACKETS
 	uint8_t irql;
 #endif
-
 	p = (ndis_packet_pool *)packet->np_private.npp_pool;
 
 #ifdef NDIS_DEBUG_PACKETS
 	KeAcquireSpinLock(&p->np_lock, &irql);
 #endif
-
 	InterlockedPushEntrySList(&p->np_head, (slist_entry *)packet);
 
 #ifdef NDIS_DEBUG_PACKETS
