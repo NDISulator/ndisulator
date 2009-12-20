@@ -499,7 +499,7 @@ extern void x86_64_wrap(void);
 extern void x86_64_wrap_call(void);
 extern void x86_64_wrap_end(void);
 
-int
+void
 windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 {
 	funcptr p;
@@ -512,7 +512,7 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 	/* Allocate a new wrapper instance. */
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
-		return (ENOMEM);
+		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
@@ -522,8 +522,6 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 	*calladdr = (vm_offset_t)func;
 
 	*wrap = p;
-
-	return (0);
 }
 #endif /* __amd64__ */
 
@@ -641,16 +639,16 @@ ctxsw_wtou(void)
 #endif
 }
 
-static int windrv_wrap_stdcall(funcptr, funcptr *, uint8_t);
-static int windrv_wrap_fastcall(funcptr, funcptr *, uint8_t);
-static int windrv_wrap_regparm(funcptr, funcptr *);
+static void windrv_wrap_stdcall(funcptr, funcptr *, uint8_t);
+static void windrv_wrap_fastcall(funcptr, funcptr *, uint8_t);
+static void windrv_wrap_regparm(funcptr, funcptr *);
 
 extern void x86_fastcall_wrap(void);
 extern void x86_fastcall_wrap_call(void);
 extern void x86_fastcall_wrap_arg(void);
 extern void x86_fastcall_wrap_end(void);
 
-static int
+static void
 windrv_wrap_fastcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 {
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall, wraparg;
@@ -665,7 +663,7 @@ windrv_wrap_fastcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	/* Allocate a new wrapper instance. */
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
-		return (ENOMEM);
+		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
@@ -683,8 +681,6 @@ windrv_wrap_fastcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	*argaddr = argcnt * sizeof(uint32_t);
 
 	*wrap = p;
-
-	return (0);
 }
 
 extern void x86_stdcall_wrap(void);
@@ -692,7 +688,7 @@ extern void x86_stdcall_wrap_call(void);
 extern void x86_stdcall_wrap_arg(void);
 extern void x86_stdcall_wrap_end(void);
 
-static int
+static void
 windrv_wrap_stdcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 {
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall, wraparg;
@@ -707,7 +703,7 @@ windrv_wrap_stdcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	/* Allocate a new wrapper instance. */
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
-		return (ENOMEM);
+		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
 	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
@@ -720,15 +716,13 @@ windrv_wrap_stdcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	*argaddr = argcnt * sizeof(uint32_t);
 
 	*wrap = p;
-
-	return (0);
 }
 
 extern void x86_regparm_wrap(void);
 extern void x86_regparm_wrap_call(void);
 extern void x86_regparm_wrap_end(void);
 
-static int
+static void
 windrv_wrap_regparm(funcptr func, funcptr *wrap)
 {
 	funcptr p;
@@ -741,7 +735,7 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 	/* Allocate a new wrapper instance. */
 	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
 	if (p == NULL)
-		return (ENOMEM);
+		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
 	bcopy(x86_regparm_wrap, p, (wrapend - wrapstart));
@@ -751,27 +745,27 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 	*calladdr = (vm_offset_t)func;
 
 	*wrap = p;
-
-	return (0);
 }
 
-int
+void
 windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 {
 	switch (ftype) {
 	case WINDRV_WRAP_FASTCALL:
-		return (windrv_wrap_fastcall(func, wrap, argcnt));
+		windrv_wrap_fastcall(func, wrap, argcnt);
+		break;
 	case WINDRV_WRAP_STDCALL:
-		return (windrv_wrap_stdcall(func, wrap, argcnt));
+		windrv_wrap_stdcall(func, wrap, argcnt);
+		break;
 	case WINDRV_WRAP_REGPARM:
-		return (windrv_wrap_regparm(func, wrap));
+		windrv_wrap_regparm(func, wrap);
+		break;
 	case WINDRV_WRAP_CDECL:
-		return (windrv_wrap_stdcall(func, wrap, 0));
+		windrv_wrap_stdcall(func, wrap, 0);
+		break;
 	default:
 		break;
 	}
-
-	return (EINVAL);
 }
 
 static void
@@ -841,10 +835,8 @@ x86_newldt(void *dummy)
 }
 #endif /* __i386__ */
 
-int
+void
 windrv_unwrap(funcptr func)
 {
 	free(func, M_NDIS_WINDRV);
-
-	return (0);
 }
