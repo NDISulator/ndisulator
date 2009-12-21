@@ -184,6 +184,7 @@ static int ndis_set_wpa(struct ndis_softc *, void *, int);
 static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
     const u_int8_t []);
 static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
+static int ndis_setfilter(struct ndis_softc *);
 static int ndis_setmulti(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 static void ndis_get_supported_oids(struct ndis_softc *);
@@ -328,6 +329,17 @@ ndis_set_fragthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
 	    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len));
 }
 
+static int
+ndis_setfilter(struct ndis_softc *sc)
+{
+	size_t len;
+
+	len = sizeof(sc->ndis_filter);
+
+	return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
+	    &sc->ndis_filter, &len));
+}
+
 /*
  * Program the 64-bit multicast hash filter.
  */
@@ -341,9 +353,7 @@ ndis_setmulti(struct ndis_softc *sc)
 
 	if (ifp->if_flags & IFF_ALLMULTI || ifp->if_flags & IFF_PROMISC) {
 		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
-		len = sizeof(sc->ndis_filter);
-		return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-		    &sc->ndis_filter, &len));
+		return (ndis_setfilter(sc));
 	}
 
 	if (TAILQ_EMPTY(&ifp->if_multiaddrs))
@@ -386,9 +396,7 @@ ndis_setmulti(struct ndis_softc *sc)
 out:
 	free(mclist, M_NDIS_DEV);
 
-	len = sizeof(sc->ndis_filter);
-	return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-	    &sc->ndis_filter, &len));
+	return (ndis_setfilter(sc));
 }
 
 static int
@@ -1867,9 +1875,7 @@ ndis_init(void *xsc)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_BROADCAST;
 	if (ifp->if_flags & IFF_PROMISC)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_PROMISCUOUS;
-	len = sizeof(sc->ndis_filter);
-	if (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-	    &sc->ndis_filter, &len) != 0)
+	if (ndis_setfilter(sc) != 0)
 		device_printf(sc->ndis_dev, "set filter failed\n");
 
 	/* Set lookahead */
@@ -2353,19 +2359,13 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 			    !(sc->ndis_if_flags & IFF_PROMISC)) {
 				sc->ndis_filter |=
 				    NDIS_PACKET_TYPE_PROMISCUOUS;
-				len = sizeof(sc->ndis_filter);
-				error = ndis_set_info(sc,
-				    OID_GEN_CURRENT_PACKET_FILTER,
-				    &sc->ndis_filter, &len);
+				return (ndis_setfilter(sc));
 			} else if (ifp->if_drv_flags & IFF_DRV_RUNNING &&
 			    !(ifp->if_flags & IFF_PROMISC) &&
 			    sc->ndis_if_flags & IFF_PROMISC) {
 				sc->ndis_filter &=
 				    ~NDIS_PACKET_TYPE_PROMISCUOUS;
-				len = sizeof(sc->ndis_filter);
-				error = ndis_set_info(sc,
-				    OID_GEN_CURRENT_PACKET_FILTER,
-				    &sc->ndis_filter, &len);
+				return (ndis_setfilter(sc));
 			} else
 				ndis_init(sc);
 		} else {
@@ -2418,7 +2418,6 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
 				ndis_stop(sc);
 		}
-		error = 0;
 		break;
 	case SIOCGDRVSPEC:
 		if ((error = priv_check(curthread, PRIV_DRIVER)))
