@@ -2349,7 +2349,6 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 	struct ndis_softc *sc = ifp->if_softc;
 	struct ifreq *ifr = (struct ifreq *) data;
 	int error = 0;
-	size_t len;
 
 	switch (command) {
 	case SIOCSIFFLAGS:
@@ -2590,7 +2589,7 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		if (!(key->wk_flags & IEEE80211_KEY_GROUP))
 			nkey.nk_keyidx |= 1 << 30;
 
-		nkey.nk_keyrsc = key->wk_keyrsc[0];	/* XXX need tid */
+		nkey.nk_keyrsc = key->wk_keyrsc[IEEE80211_NONQOS_TID];
 		if (nkey.nk_keyrsc)
 			nkey.nk_keyidx |= 1 << 29;
 		if (key->wk_cipher->ic_cipher == IEEE80211_CIPHER_TKIP &&
