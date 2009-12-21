@@ -2358,13 +2358,13 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 			    !(sc->ndis_if_flags & IFF_PROMISC)) {
 				sc->ndis_filter |=
 				    NDIS_PACKET_TYPE_PROMISCUOUS;
-				return (ndis_setfilter(sc));
+				error = ndis_setfilter(sc);
 			} else if (ifp->if_drv_flags & IFF_DRV_RUNNING &&
 			    !(ifp->if_flags & IFF_PROMISC) &&
 			    sc->ndis_if_flags & IFF_PROMISC) {
 				sc->ndis_filter &=
 				    ~NDIS_PACKET_TYPE_PROMISCUOUS;
-				return (ndis_setfilter(sc));
+				error = ndis_setfilter(sc);
 			} else
 				ndis_init(sc);
 		} else {
