@@ -298,9 +298,9 @@ ndis_set_powersave(struct ndis_softc *sc, struct ieee80211vap *vap)
 	size_t len;
 
 	if (vap->iv_flags & IEEE80211_F_PMGTON)
-		arg = NDIS_80211_POWERMODE_FAST_PSP;
+		arg = NDIS_802_11_POWERMODE_FAST_PSP;
 	else
-		arg = NDIS_80211_POWERMODE_CAM;
+		arg = NDIS_802_11_POWERMODE_CAM;
 	len = sizeof(arg);
 	return (ndis_set_info(sc, OID_802_11_POWER_MODE, &arg, &len));
 }
@@ -537,10 +537,10 @@ static int
 ndis_nettype_chan(uint32_t type)
 {
 	switch (type) {
-	case NDIS_80211_NETTYPE_11FH:		return (IEEE80211_CHAN_FHSS);
-	case NDIS_80211_NETTYPE_11DS:		return (IEEE80211_CHAN_B);
-	case NDIS_80211_NETTYPE_11OFDM5:	return (IEEE80211_CHAN_A);
-	case NDIS_80211_NETTYPE_11OFDM24:	return (IEEE80211_CHAN_G);
+	case NDIS_802_11_NETTYPE_11FH:		return (IEEE80211_CHAN_FHSS);
+	case NDIS_802_11_NETTYPE_11DS:		return (IEEE80211_CHAN_B);
+	case NDIS_802_11_NETTYPE_11OFDM5:	return (IEEE80211_CHAN_A);
+	case NDIS_802_11_NETTYPE_11OFDM24:	return (IEEE80211_CHAN_G);
 	}
 	return (IEEE80211_CHAN_ANY);
 }
@@ -549,10 +549,10 @@ static int
 ndis_nettype_mode(uint32_t type)
 {
 	switch (type) {
-	case NDIS_80211_NETTYPE_11FH:		return (IEEE80211_MODE_FH);
-	case NDIS_80211_NETTYPE_11DS:		return (IEEE80211_MODE_11B);
-	case NDIS_80211_NETTYPE_11OFDM5:	return (IEEE80211_MODE_11A);
-	case NDIS_80211_NETTYPE_11OFDM24:	return (IEEE80211_MODE_11G);
+	case NDIS_802_11_NETTYPE_11FH:		return (IEEE80211_MODE_FH);
+	case NDIS_802_11_NETTYPE_11DS:		return (IEEE80211_MODE_11B);
+	case NDIS_802_11_NETTYPE_11OFDM5:	return (IEEE80211_MODE_11A);
+	case NDIS_802_11_NETTYPE_11OFDM24:	return (IEEE80211_MODE_11G);
 	}
 	return (IEEE80211_MODE_AUTO);
 }
@@ -561,14 +561,14 @@ static int
 ndis_auth_mode(uint32_t type)
 {
 	switch (type) {
-	case NDIS_80211_AUTHMODE_OPEN:		return (IEEE80211_AUTH_OPEN);
-	case NDIS_80211_AUTHMODE_SHARED:	return (IEEE80211_AUTH_SHARED);
-	case NDIS_80211_AUTHMODE_AUTO:		return (IEEE80211_AUTH_AUTO);
-	case NDIS_80211_AUTHMODE_WPA:
-	case NDIS_80211_AUTHMODE_WPAPSK:
-	case NDIS_80211_AUTHMODE_WPANONE:
-	case NDIS_80211_AUTHMODE_WPA2:
-	case NDIS_80211_AUTHMODE_WPA2PSK:	return (IEEE80211_AUTH_WPA);
+	case NDIS_802_11_AUTHMODE_OPEN:		return (IEEE80211_AUTH_OPEN);
+	case NDIS_802_11_AUTHMODE_SHARED:	return (IEEE80211_AUTH_SHARED);
+	case NDIS_802_11_AUTHMODE_AUTO:		return (IEEE80211_AUTH_AUTO);
+	case NDIS_802_11_AUTHMODE_WPA:
+	case NDIS_802_11_AUTHMODE_WPAPSK:
+	case NDIS_802_11_AUTHMODE_WPANONE:
+	case NDIS_802_11_AUTHMODE_WPA2:
+	case NDIS_802_11_AUTHMODE_WPA2PSK:	return (IEEE80211_AUTH_WPA);
 	}
 	return (IEEE80211_AUTH_NONE);
 }
@@ -905,20 +905,20 @@ nonettypes:
 		 * successfully.
 		 */
 		len = sizeof(arg);
-		arg = NDIS_80211_AUTHMODE_WPA;
+		arg = NDIS_802_11_AUTHMODE_WPA;
 		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
 		    &arg, &len) == 0) {
 			if (ndis_get_info(sc,
 			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
-				if (arg == NDIS_80211_AUTHMODE_WPA)
+				if (arg == NDIS_802_11_AUTHMODE_WPA)
 					ic->ic_caps |= IEEE80211_C_WPA1;
 		}
-		arg = NDIS_80211_AUTHMODE_WPA2;
+		arg = NDIS_802_11_AUTHMODE_WPA2;
 		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
 		    &arg, &len) == 0) {
 			if (ndis_get_info(sc,
 			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
-				if (arg == NDIS_80211_AUTHMODE_WPA2)
+				if (arg == NDIS_802_11_AUTHMODE_WPA2)
 					ic->ic_caps |= IEEE80211_C_WPA2;
 		}
 
@@ -930,7 +930,7 @@ nonettypes:
 		 * If only ENC1 works, then we have just WEP.
 		 */
 		len = sizeof(arg);
-		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENC3ENABLED;
 		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
 		    &arg, &len) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
@@ -938,21 +938,21 @@ nonettypes:
 					  |  IEEE80211_CRYPTO_AES_CCM;
 			goto got_crypto;
 		}
-		arg = NDIS_80211_WEPSTAT_ENC2ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENC2ENABLED;
 		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
 		    &arg, &len) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP;
 			goto got_crypto;
 		}
-		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENC1ENABLED;
 		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
 		    &arg, &len) == 0)
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
 		/* Disable encryption after messing with it */
 		len = sizeof(arg);
-		arg = NDIS_80211_WEPSTAT_DISABLED;
+		arg = NDIS_802_11_WEPSTAT_DISABLED;
 		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 		if (!ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
 		    &arg, &len))
@@ -1969,13 +1969,13 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 	size_t len;
 
 	if (cipher == WPA_CSE_WEP40 || cipher == WPA_CSE_WEP104)
-		arg = NDIS_80211_WEPSTAT_ENC1ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENC1ENABLED;
 	else if (cipher == WPA_CSE_TKIP)
-		arg = NDIS_80211_WEPSTAT_ENC2ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENC2ENABLED;
 	else if (cipher == WPA_CSE_CCMP)
-		arg = NDIS_80211_WEPSTAT_ENC3ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENC3ENABLED;
 	else
-		arg = NDIS_80211_WEPSTAT_DISABLED;
+		arg = NDIS_802_11_WEPSTAT_DISABLED;
 
 	DPRINTF(("Setting cipher to %d\n", arg));
 	len = sizeof(arg);
@@ -2020,9 +2020,9 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 		for (; n > 0; n--) {
 			w += 4;
 			if (w[0] == WPA_ASE_8021X_PSK)
-				arg = NDIS_80211_AUTHMODE_WPA2PSK;
+				arg = NDIS_802_11_AUTHMODE_WPA2PSK;
 			else
-				arg = NDIS_80211_AUTHMODE_WPA2;
+				arg = NDIS_802_11_AUTHMODE_WPA2;
 		}
 	} else if (w[0] == IEEE80211_ELEMID_VENDOR) {
 		/* Group Suite Selector */
@@ -2041,11 +2041,11 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 		for (; n > 0; n--) {
 			w += 4;
 			if (w[0] == WPA_ASE_8021X_PSK)
-				arg = NDIS_80211_AUTHMODE_WPAPSK;
+				arg = NDIS_802_11_AUTHMODE_WPAPSK;
 			else if (w[0] == WPA_ASE_8021X_UNSPEC)
-				arg = NDIS_80211_AUTHMODE_WPA;
+				arg = NDIS_802_11_AUTHMODE_WPA;
 			else
-				arg = NDIS_80211_AUTHMODE_WPANONE;
+				arg = NDIS_802_11_AUTHMODE_WPANONE;
 		}
 	} else
 		return (EINVAL);
@@ -2091,9 +2091,9 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 
 	/* Drop unencrypted? */
 	if (vap->iv_flags & IEEE80211_F_DROPUNENC)
-		arg = NDIS_80211_PRIVFILT_8021XWEP;
+		arg = NDIS_802_11_PRIVFILT_8021XWEP;
 	else
-		arg = NDIS_80211_PRIVFILT_ACCEPTALL;
+		arg = NDIS_802_11_PRIVFILT_ACCEPTALL;
 	len = sizeof(arg);
 	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 }
@@ -2106,9 +2106,9 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 
 	len = sizeof(arg);
 	if (opmode == IEEE80211_M_IBSS)
-		arg = NDIS_80211_NET_INFRA_IBSS;
+		arg = NDIS_802_11_NET_INFRA_IBSS;
 	else
-		arg = NDIS_80211_NET_INFRA_BSS;
+		arg = NDIS_802_11_NET_INFRA_BSS;
 	return (ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len));
 }
 
@@ -2182,18 +2182,18 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 
 	if (!(vap->iv_flags & IEEE80211_F_WPA)) {
 		/* Authentication to open */
-		arg = NDIS_80211_AUTHMODE_OPEN;
+		arg = NDIS_802_11_AUTHMODE_OPEN;
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
 	}
 	if (!(vap->iv_flags & IEEE80211_F_PRIVACY)) {
 		/* Encryption mode to off */
-		arg = NDIS_80211_WEPSTAT_DISABLED;
+		arg = NDIS_802_11_WEPSTAT_DISABLED;
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 	} else if (!(vap->iv_flags & IEEE80211_F_WPA)) {
 		/* Set up WEP */
-		arg = NDIS_80211_WEPSTAT_ENABLED;
+		arg = NDIS_802_11_WEPSTAT_ENABLED;
 		len = sizeof(arg);
 		if (ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len) != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
@@ -2269,7 +2269,7 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 			vap->iv_fragthreshold = arg;
 	if (ic->ic_caps & IEEE80211_C_PMGT)
 		if (!ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len)) {
-			if (arg == NDIS_80211_POWERMODE_CAM)
+			if (arg == NDIS_802_11_POWERMODE_CAM)
 				vap->iv_flags &= ~IEEE80211_F_PMGTON;
 			else
 				vap->iv_flags |= IEEE80211_F_PMGTON;
@@ -2285,16 +2285,16 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if (!ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len))
 		ni->ni_authmode = ndis_auth_mode(arg);
 	if (!ndis_get_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len)) {
-		if (arg == NDIS_80211_PRIVFILT_8021XWEP)
+		if (arg == NDIS_802_11_PRIVFILT_8021XWEP)
 			vap->iv_flags |= IEEE80211_F_DROPUNENC;
 		else
 			vap->iv_flags &= ~IEEE80211_F_DROPUNENC;
 	}
 	if (!ndis_get_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len)) {
 		switch (arg) {
-		case NDIS_80211_WEPSTAT_ENC1ENABLED:
-		case NDIS_80211_WEPSTAT_ENC2ENABLED:
-		case NDIS_80211_WEPSTAT_ENC3ENABLED:
+		case NDIS_802_11_WEPSTAT_ENC1ENABLED:
+		case NDIS_802_11_WEPSTAT_ENC2ENABLED:
+		case NDIS_802_11_WEPSTAT_ENC3ENABLED:
 			vap->iv_flags |= IEEE80211_F_PRIVACY;
 			break;
 		default:
@@ -2818,10 +2818,10 @@ ndis_scan_end(struct ieee80211com *ic)
 		if (wb->nwbx_config.nc_fhconfig.ncf_length != 0)
 			sp.fhdwell = wb->nwbx_config.nc_fhconfig.ncf_dwelltime;
 		switch (wb->nwbx_netinfra) {
-			case NDIS_80211_NET_INFRA_IBSS:
+			case NDIS_802_11_NET_INFRA_IBSS:
 				sp.capinfo |= IEEE80211_CAPINFO_IBSS;
 				break;
-			case NDIS_80211_NET_INFRA_BSS:
+			case NDIS_802_11_NET_INFRA_BSS:
 				sp.capinfo |= IEEE80211_CAPINFO_ESS;
 				break;
 		}
