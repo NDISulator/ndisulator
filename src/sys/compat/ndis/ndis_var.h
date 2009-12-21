@@ -530,8 +530,13 @@ typedef enum ndis_encryption_status ndis_encryption_status;
 
 #define	NDIS_80211_RELOADDEFAULT_WEP		0x00000000
 
-#define	NDIS_80211_STATUSTYPE_AUTH		0x00000000
-#define	NDIS_80211_STATUSTYPE_PMKIDLIST		0x00000001
+enum ndis_status_type {
+	NDIS_80211_STATUSTYPE_AUTHENTICATION,
+	NDIS_80211_STATUSTYPE_MEDIA_STREAM_MODE,
+	NDIS_80211_STATUSTYPE_PMKID_CANDIDATE_LIST,
+	NDIS_80211_STATUSTYPE_RADIO_STATE
+};
+typedef enum ndis_status_type ndis_status_type;
 
 struct ndis_80211_status_indication {
 	uint32_t	nsi_type;
