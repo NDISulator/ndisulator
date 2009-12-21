@@ -543,6 +543,13 @@ struct ndis_80211_status_indication {
 };
 typedef struct ndis_80211_status_indication ndis_80211_status_indication;
 
+enum ndis_radio_status {
+	NDIS_80211_RADIOSTATUS_ON,
+	NDIS_80211_RADIOSTATUS_HARDWARE_OFF,
+	NDIS_80211_RADIOSTATUS_SOFTWARE_OFF
+};
+typedef enum ndis_radio_status ndis_radio_status;
+
 #define	NDIS_802_11_AUTH_REQUEST_REAUTH			0x01
 #define	NDIS_802_11_AUTH_REQUEST_KEYUPDATE		0x02
 #define	NDIS_802_11_AUTH_REQUEST_PAIRWISE_ERROR		0x06
