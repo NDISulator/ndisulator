@@ -184,8 +184,8 @@ static int ndis_set_wpa(struct ndis_softc *, void *, int);
 static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
     const u_int8_t []);
 static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
-static int ndis_setfilter(struct ndis_softc *);
-static int ndis_setmulti(struct ndis_softc *);
+static int ndis_set_filter(struct ndis_softc *);
+static int ndis_set_multi(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 static void ndis_get_supported_oids(struct ndis_softc *);
 static int ndis_set_txpower(struct ndis_softc *);
@@ -257,7 +257,6 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 	default:
 		return (ENOTSUP);
 	}
-
 	return (0);
 }
 
@@ -330,12 +329,11 @@ ndis_set_fragthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
 }
 
 static int
-ndis_setfilter(struct ndis_softc *sc)
+ndis_set_filter(struct ndis_softc *sc)
 {
 	size_t len;
 
 	len = sizeof(sc->ndis_filter);
-
 	return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
 	    &sc->ndis_filter, &len));
 }
@@ -344,7 +342,7 @@ ndis_setfilter(struct ndis_softc *sc)
  * Program the 64-bit multicast hash filter.
  */
 static int
-ndis_setmulti(struct ndis_softc *sc)
+ndis_set_multi(struct ndis_softc *sc)
 {
 	struct ifnet *ifp = sc->ifp;
 	struct ifmultiaddr *ifma;
@@ -353,7 +351,7 @@ ndis_setmulti(struct ndis_softc *sc)
 
 	if (ifp->if_flags & IFF_ALLMULTI || ifp->if_flags & IFF_PROMISC) {
 		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
-		return (ndis_setfilter(sc));
+		return (ndis_set_filter(sc));
 	}
 
 	if (TAILQ_EMPTY(&ifp->if_multiaddrs))
@@ -375,8 +373,9 @@ ndis_setmulti(struct ndis_softc *sc)
 	TAILQ_FOREACH(ifma, &ifp->if_multiaddrs, ifma_link) {
 		if (ifma->ifma_addr->sa_family != AF_LINK)
 			continue;
-		bcopy(LLADDR((struct sockaddr_dl *)ifma->ifma_addr),
-		    mclist + (ETHER_ADDR_LEN * len), ETHER_ADDR_LEN);
+		memcpy(mclist + (ETHER_ADDR_LEN * len),
+		    LLADDR((struct sockaddr_dl *)ifma->ifma_addr),
+		    ETHER_ADDR_LEN);
 		len++;
 		if (len > mclistsz) {
 			if_maddr_runlock(ifp);
@@ -395,8 +394,7 @@ ndis_setmulti(struct ndis_softc *sc)
 	}
 out:
 	free(mclist, M_NDIS_DEV);
-
-	return (ndis_setfilter(sc));
+	return (ndis_set_filter(sc));
 }
 
 static int
@@ -451,7 +449,6 @@ ndis_set_offload(struct ndis_softc *sc)
 
 	error = ndis_set_info(sc, OID_TCP_TASK_OFFLOAD, ntoh, &len);
 	free(ntoh, M_NDIS_DEV);
-
 	return (error);
 }
 
@@ -968,8 +965,6 @@ got_crypto:
 		ic->ic_set_channel = ndis_set_channel;
 		ic->ic_scan_curchan = ndis_scan_curchan;
 		ic->ic_scan_mindwell = ndis_scan_mindwell;
-		ic->ic_bsschan = IEEE80211_CHAN_ANYC;
-		//ic->ic_bss->ni_chan = ic->ic_bsschan;
 		ic->ic_vap_create = ndis_vap_create;
 		ic->ic_vap_delete = ndis_vap_delete;
 		ic->ic_update_mcast = ndis_update_mcast;
@@ -993,7 +988,6 @@ got_crypto:
 fail:
 	if (error)
 		ndis_detach(dev);
-
 	return (error);
 }
 
@@ -1033,7 +1027,6 @@ ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
 	/* Install key handing routines */
 	vap->iv_key_set = ndis_key_set;
 	vap->iv_key_delete = ndis_key_delete;
-
 	return (vap);
 }
 
@@ -1134,7 +1127,6 @@ ndis_detach(device_t dev)
 		bus_dma_tag_destroy(sc->ndis_parent_tag);
 
 	mtx_destroy(&sc->ndis_mtx);
-
 	return (0);
 }
 
@@ -1149,7 +1141,6 @@ ndis_suspend(device_t dev)
 	if (NDIS_INITIALIZED(sc))
 		ndis_stop(sc);
 #endif
-
 	return (0);
 }
 
@@ -1162,7 +1153,6 @@ ndis_resume(device_t dev)
 
 	if (NDIS_INITIALIZED(sc))
 		ndis_init(sc);
-
 	return (0);
 }
 
@@ -1564,8 +1554,7 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf, size_t slen)
 			NDIS_UNLOCK(sc);
 			return;
 		}
-		bcopy((char *)sbuf,
-		    sc->ndis_evt[sc->ndis_evtpidx].ne_buf, slen);
+		memcpy(sc->ndis_evt[sc->ndis_evtpidx].ne_buf, sbuf, slen);
 	}
 
 	sc->ndis_evt[sc->ndis_evtpidx].ne_sts = status;
@@ -1640,12 +1629,9 @@ ndis_ticktask(device_object *d, void *xsc)
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
-	NDIS_LOCK(sc);
 	if (!NDIS_INITIALIZED(sc)) {
-		NDIS_UNLOCK(sc);
 		return;
 	}
-	NDIS_UNLOCK(sc);
 
 	if (sc->ndis_chars->nmc_checkhang_func != NULL) {
 		if (MSCALL1(sc->ndis_chars->nmc_checkhang_func,
@@ -1713,7 +1699,7 @@ ndis_update_mcast(struct ifnet *ifp)
 {
 	struct ndis_softc *sc = ifp->if_softc;
 
-	ndis_setmulti(sc);
+	ndis_set_multi(sc);
 }
 
 static void
@@ -1875,7 +1861,7 @@ ndis_init(void *xsc)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_BROADCAST;
 	if (ifp->if_flags & IFF_PROMISC)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_PROMISCUOUS;
-	if (ndis_setfilter(sc) != 0)
+	if (ndis_set_filter(sc) != 0)
 		device_printf(sc->ndis_dev, "set filter failed\n");
 
 	/* Set lookahead */
@@ -1884,7 +1870,7 @@ ndis_init(void *xsc)
 	ndis_set_info(sc, OID_GEN_CURRENT_LOOKAHEAD, &arg, &len);
 
 	/* Program the multicast filter, if necessary */
-	ndis_setmulti(sc);
+	ndis_set_multi(sc);
 
 	/* Setup task offload. */
 	ndis_set_offload(sc);
@@ -1927,7 +1913,6 @@ ndis_ifmedia_upd(struct ifnet *ifp)
 		ndis_stop(sc);
 		ndis_init(sc);
 	}
-
 	return (0);
 }
 
@@ -2123,6 +2108,17 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 }
 
 static void
+ndis_set_bssid(struct ndis_softc *sc, uint8_t *bssid)
+{
+	size_t len = IEEE80211_ADDR_LEN;
+
+	DPRINTF(("Setting BSSID to %6D\n", bssid, ":"));
+	if (ndis_set_info(sc, OID_802_11_BSSID, bssid, &len) != 0)
+		DPRINTF(("set BSSID failed\n"));
+
+}
+
+static void
 ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 {
 	struct ieee80211_node *ni = vap->iv_bss;
@@ -2137,14 +2133,14 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 		if (ssid.ns_ssidlen == 0)
 			ssid.ns_ssidlen = 1;
 		else
-			bcopy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
+			memcpy(ssid.ns_ssid, ni->ni_essid, ssid.ns_ssidlen);
 	} else { /* Hidden ssid */
 		if (sc->ndis_link == 0) {
 			if (vap->iv_des_nssid == 0)
 				ssid.ns_ssidlen = 1;
 			else {
 				ssid.ns_ssidlen = vap->iv_des_ssid[0].len;
-				bcopy(vap->iv_des_ssid[0].ssid, ssid.ns_ssid,
+				memcpy(ssid.ns_ssid, vap->iv_des_ssid[0].ssid,
 				    ssid.ns_ssidlen);
 			}
 		} else
@@ -2165,15 +2161,7 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 static void
 ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	ndis_80211_macaddr bssid;
-	size_t len = IEEE80211_ADDR_LEN;
-
-	IEEE80211_ADDR_COPY(vap->iv_bss->ni_bssid, bssid);
-	DPRINTF(("Setting BSSID to %6D\n", (uint8_t *)&bssid, ":"));
-	if (ndis_set_info(sc, OID_802_11_BSSID, &bssid, &len) != 0)
-		DPRINTF(("set BSSID failed\n"));
-
-	/* Set SSID -- always do this last. */
+	ndis_set_bssid(sc, vap->iv_bss->ni_bssid);
 	ndis_set_ssid(sc, vap, 0);
 }
 
@@ -2260,7 +2248,7 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	len = sizeof(ssid);
 	if (ndis_get_info(sc, OID_802_11_SSID, &ssid, &len))
 		return;
-	bcopy(ssid.ns_ssid, ni->ni_essid, ssid.ns_ssidlen);
+	memcpy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
 	ni->ni_esslen = ssid.ns_ssidlen;
 	if (vap->iv_opmode == IEEE80211_M_STA)
 		ni->ni_associd = 1 | 0xc000; /* fake associd */
@@ -2358,13 +2346,13 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 			    !(sc->ndis_if_flags & IFF_PROMISC)) {
 				sc->ndis_filter |=
 				    NDIS_PACKET_TYPE_PROMISCUOUS;
-				error = ndis_setfilter(sc);
+				error = ndis_set_filter(sc);
 			} else if (ifp->if_drv_flags & IFF_DRV_RUNNING &&
 			    !(ifp->if_flags & IFF_PROMISC) &&
 			    sc->ndis_if_flags & IFF_PROMISC) {
 				sc->ndis_filter &=
 				    ~NDIS_PACKET_TYPE_PROMISCUOUS;
-				error = ndis_setfilter(sc);
+				error = ndis_set_filter(sc);
 			} else
 				ndis_init(sc);
 		} else {
@@ -2375,7 +2363,7 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 		break;
 	case SIOCADDMULTI:
 	case SIOCDELMULTI:
-		error = ndis_setmulti(sc);
+		error = ndis_set_multi(sc);
 		break;
 	case SIOCGIFMEDIA:
 	case SIOCSIFMEDIA:
@@ -2393,7 +2381,6 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 		error = ether_ioctl(ifp, command, data);
 		break;
 	}
-
 	return (error);
 }
 
@@ -2552,11 +2539,10 @@ ndis_key_delete(struct ieee80211vap *vap, const struct ieee80211_key *key)
 		rkey.nk_keyidx = key->wk_keyix;
 		if (!(key->wk_flags & IEEE80211_KEY_GROUP))
 			rkey.nk_keyidx |= 1 << 30;
-		bcopy(key->wk_macaddr, rkey.nk_bssid, IEEE80211_ADDR_LEN);
+		memcpy(rkey.nk_bssid, key->wk_macaddr, IEEE80211_ADDR_LEN);
 		if (ndis_set_info(sc, OID_802_11_REMOVE_KEY, &rkey, &len) != 0)
 			return (0);
 	}
-
 	return (1);
 }
 
@@ -2579,7 +2565,7 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		nkey.nk_keylen = key->wk_keylen;
 		nkey.nk_len =
 		    sizeof(nkey) - sizeof(nkey.nk_keydata) + nkey.nk_keylen;
-		bcopy(key->wk_macaddr, nkey.nk_bssid, IEEE80211_ADDR_LEN);
+		memcpy(nkey.nk_bssid, key->wk_macaddr, IEEE80211_ADDR_LEN);
 		if (key->wk_keyix != IEEE80211_KEYIX_NONE)
 			nkey.nk_keyidx = key->wk_keyix;
 		else
@@ -2594,11 +2580,11 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 			nkey.nk_keyidx |= 1 << 29;
 		if (key->wk_cipher->ic_cipher == IEEE80211_CIPHER_TKIP &&
 		    key->wk_keylen == 32) {
-			bcopy(key->wk_key, nkey.nk_keydata, 16);
-			bcopy(key->wk_key + 16, nkey.nk_keydata + 24, 8);
-			bcopy(key->wk_key + 24, nkey.nk_keydata + 16, 8);
+			memcpy(nkey.nk_keydata, key->wk_key, 16);
+			memcpy(nkey.nk_keydata + 24, key->wk_key + 16, 8);
+			memcpy(nkey.nk_keydata + 16, key->wk_key + 24, 8);
 		} else
-			bcopy(key->wk_key, nkey.nk_keydata, key->wk_keylen);
+			memcpy(nkey.nk_keydata, key->wk_key, key->wk_keylen);
 		error = ndis_set_info(sc, OID_802_11_ADD_KEY, &nkey, &len);
 		break;
 	case IEEE80211_CIPHER_WEP:
@@ -2610,7 +2596,7 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		    sizeof(wep) - sizeof(wep.nw_keydata) + wep.nw_keylen;
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
 			wep.nw_keyidx |=  1 << 31;
-		bcopy(key->wk_key, wep.nw_keydata, wep.nw_keylen);
+		memcpy(wep.nw_keydata, key->wk_key, wep.nw_keylen);
 		error = ndis_set_info(sc, OID_802_11_ADD_WEP, &wep, &len);
 		break;
 	default:
@@ -2619,7 +2605,6 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 	}
 	if (error)
 		return (0);
-
 	return (1);
 }
 
@@ -2688,6 +2673,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		ieee80211_state_name[nstate]));
 
 	ostate = vap->iv_state;
+	vap->iv_state = nstate;
 
 	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
@@ -2696,8 +2682,10 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 			ndis_disassociate(sc);
 		break;
 	case IEEE80211_S_SCAN:
-		if (vap->iv_opmode == IEEE80211_M_STA)
+		if (vap->iv_opmode == IEEE80211_M_STA) {
+			ndis_set_bssid(sc, vap->iv_myaddr);
 			ndis_set_ssid(sc, vap, 1);
+		}
 		break;
 	case IEEE80211_S_RUN:
 		if (vap->iv_opmode == IEEE80211_M_IBSS) {
@@ -2708,12 +2696,10 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		break;
 	case IEEE80211_S_AUTH:
 		ndis_auth(sc, vap);
-		vap->iv_state = nstate;
 		ieee80211_new_state(vap, IEEE80211_S_ASSOC, 0);
 		break;
 	case IEEE80211_S_ASSOC:
 		ndis_assoc(sc, vap);
-		vap->iv_state = nstate;
 		break;
 	default:
 		break;
