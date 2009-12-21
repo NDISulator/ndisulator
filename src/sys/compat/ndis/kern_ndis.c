@@ -825,7 +825,7 @@ ndis_init_dma(void *arg)
 	return (0);
 }
 
-int
+void
 ndis_destroy_dma(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -846,8 +846,6 @@ ndis_destroy_dma(void *arg)
 
 	free(sc->ndis_tmaps, M_NDIS_KERN);
 	bus_dma_tag_destroy(sc->ndis_ttag);
-
-	return (0);
 }
 
 int

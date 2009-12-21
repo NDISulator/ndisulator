@@ -1633,7 +1633,7 @@ extern int ndis_pnpevent_nic(void *, int);
 extern int ndis_init_nic(void *);
 extern void ndis_return_packet(void *, void *);
 extern int ndis_init_dma(void *);
-extern int ndis_destroy_dma(void *);
+extern void ndis_destroy_dma(void *);
 extern int ndis_create_sysctls(void *);
 extern int ndis_add_sysctl(void *, char *, char *, char *, int);
 extern int32_t NdisAddDevice(driver_object *, device_object *);

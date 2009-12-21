@@ -715,8 +715,13 @@ ndis_attach(device_t dev)
 	ndis_get_supported_oids(sc);
 
 	/* If the NDIS module requested scatter/gather, init maps. */
-	if (sc->ndis_sc)
-		ndis_init_dma(sc);
+	if (sc->ndis_sc) {
+		error = ndis_init_dma(sc);
+		if (error) {
+			device_printf(dev, "failed to init maps");
+			goto fail;
+		}
+	}
 
 	/*
 	 * See if the OID_802_11_SSID OID is supported by this driver.
@@ -734,7 +739,7 @@ ndis_attach(device_t dev)
 	else
 		ifp = if_alloc(IFT_ETHER);
 	if (ifp == NULL) {
-		error = ENOSPC;
+		error = ENOMEM;
 		goto fail;
 	}
 	sc->ifp = ifp;
