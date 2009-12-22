@@ -664,7 +664,7 @@ typedef struct devobj_extension devobj_extension;
 #define	IRP_MJ_QUERY_QUOTA		0x19
 #define	IRP_MJ_SET_QUOTA		0x1a
 #define	IRP_MJ_PNP			0x1b
-#define	IRP_MJ_PNP_POWER		IRP_MJ_PNP      /* Obsolete.... */
+#define	IRP_MJ_PNP_POWER		IRP_MJ_PNP	/* Obsolete.... */
 #define	IRP_MJ_MAXIMUM_FUNCTION		0x1b
 #define	IRP_MJ_SCSI			IRP_MJ_INTERNAL_DEVICE_CONTROL
 

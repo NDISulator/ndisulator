@@ -1368,13 +1368,15 @@ NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
 		return (NDIS_STATUS_FAILURE);
 	block = adapter;
 
-	iw = IoAllocateWorkItem(block->nmb_deviceobj);
-	if (iw == NULL)
-		return (NDIS_STATUS_FAILURE);
-
 	w = malloc(sizeof(struct ndis_allocwork), M_NDIS_SUBR, M_NOWAIT);
 	if (w == NULL)
 		return (NDIS_STATUS_FAILURE);
+
+	iw = IoAllocateWorkItem(block->nmb_deviceobj);
+	if (iw == NULL) {
+		free(w, M_NDIS_SUBR);
+		return (NDIS_STATUS_FAILURE);
+	}
 
 	w->na_cached = cached;
 	w->na_len = len;

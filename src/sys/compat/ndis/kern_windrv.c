@@ -592,8 +592,7 @@ ctxsw_utow(void)
 	 * will have our special GDT entry. This is a problem for SMP
 	 * systems, so to deal with this, we check here to make sure
 	 * the TID for this processor has been initialized, and if it
-	 * hasn't, we need to do it right now or else things will
-	 * explode.
+	 * hasn't, we need to do it right now or else things will explode.
 	 */
 	if (t->tid_self != t)
 		x86_newldt(NULL);
