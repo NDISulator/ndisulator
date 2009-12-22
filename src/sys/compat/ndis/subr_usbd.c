@@ -735,7 +735,7 @@ usbd_func_vendorclass(irp *ip)
 	IRP_NDISUSB_EP(ip) = ne;
 	ip->irp_cancelfunc = (cancel_func)usbd_irpcancel_wrap;
 
-	nx = malloc(sizeof(struct ndisusb_xfer), M_USBDEV, M_NOWAIT | M_ZERO);
+	nx = malloc(sizeof(struct ndisusb_xfer), M_USBDEV, M_NOWAIT|M_ZERO);
 	if (nx == NULL) {
 		device_printf(IRP_NDIS_DEV(ip), "out of memory\n");
 		return (USBD_STATUS_NO_MEMORY);
@@ -796,8 +796,8 @@ usbd_xfer_complete(struct ndis_softc *sc, struct ndisusb_ep *ne,
 	struct ndisusb_xferdone *nd;
 	uint8_t irql;
 
-	nd = malloc(sizeof(struct ndisusb_xferdone), M_USBDEV,
-	    M_NOWAIT | M_ZERO);
+	nd = malloc(sizeof(struct ndisusb_xferdone),
+	    M_USBDEV, M_NOWAIT|M_ZERO);
 	if (nd == NULL) {
 		device_printf(sc->ndis_dev, "out of memory");
 		return;
@@ -994,28 +994,28 @@ next:
 
 		switch (urb->uu_hdr.uuh_func) {
 		case URB_FUNCTION_CLASS_DEVICE:
-			type = UT_CLASS | UT_DEVICE;
+			type = UT_CLASS|UT_DEVICE;
 			break;
 		case URB_FUNCTION_CLASS_INTERFACE:
-			type = UT_CLASS | UT_INTERFACE;
+			type = UT_CLASS|UT_INTERFACE;
 			break;
 		case URB_FUNCTION_CLASS_OTHER:
-			type = UT_CLASS | UT_OTHER;
+			type = UT_CLASS|UT_OTHER;
 			break;
 		case URB_FUNCTION_CLASS_ENDPOINT:
-			type = UT_CLASS | UT_ENDPOINT;
+			type = UT_CLASS|UT_ENDPOINT;
 			break;
 		case URB_FUNCTION_VENDOR_DEVICE:
-			type = UT_VENDOR | UT_DEVICE;
+			type = UT_VENDOR|UT_DEVICE;
 			break;
 		case URB_FUNCTION_VENDOR_INTERFACE:
-			type = UT_VENDOR | UT_INTERFACE;
+			type = UT_VENDOR|UT_INTERFACE;
 			break;
 		case URB_FUNCTION_VENDOR_OTHER:
-			type = UT_VENDOR | UT_OTHER;
+			type = UT_VENDOR|UT_OTHER;
 			break;
 		case URB_FUNCTION_VENDOR_ENDPOINT:
-			type = UT_VENDOR | UT_ENDPOINT;
+			type = UT_VENDOR|UT_ENDPOINT;
 			break;
 		default:
 			/* not reached. */
@@ -1192,7 +1192,7 @@ usbd_taskadd(irp *ip, unsigned type)
 	dev = IRP_NDIS_DEV(ip);
 	sc = device_get_softc(dev);
 
-	nt = malloc(sizeof(struct ndisusb_task), M_USBDEV, M_NOWAIT | M_ZERO);
+	nt = malloc(sizeof(struct ndisusb_task), M_USBDEV, M_NOWAIT|M_ZERO);
 	if (nt == NULL)
 		return (USBD_STATUS_NO_MEMORY);
 	nt->nt_type = type;
@@ -1291,7 +1291,7 @@ usbd_func_bulkintr(irp *ip)
 		return (USBD_STATUS_INVALID_PIPE_HANDLE);
 	}
 
-	nx = malloc(sizeof(struct ndisusb_xfer), M_USBDEV, M_NOWAIT | M_ZERO);
+	nx = malloc(sizeof(struct ndisusb_xfer), M_USBDEV, M_NOWAIT|M_ZERO);
 	if (nx == NULL) {
 		device_printf(IRP_NDIS_DEV(ip), "out of memory\n");
 		return (USBD_STATUS_NO_MEMORY);

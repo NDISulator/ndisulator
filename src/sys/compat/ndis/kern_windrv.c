@@ -509,7 +509,7 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, int ftype)
 	wrapcall = (vm_offset_t)&x86_64_wrap_call;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
@@ -645,7 +645,7 @@ windrv_wrap_fastcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	wraparg = (vm_offset_t)&x86_fastcall_wrap_arg;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
@@ -685,7 +685,7 @@ windrv_wrap_stdcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	wraparg = (vm_offset_t)&x86_stdcall_wrap_arg;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
@@ -717,7 +717,7 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 	wrapcall = (vm_offset_t)&x86_regparm_wrap_call;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT);
+	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 

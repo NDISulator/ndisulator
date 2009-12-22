@@ -267,7 +267,7 @@ ndis_get_supported_oids(struct ndis_softc *sc)
 	size_t len = 0;
 
 	ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, NULL, &len);
-	oids = malloc(len, M_NDIS_DEV, M_NOWAIT);
+	oids = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (oids == NULL)
 		return;
 	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, oids, &len) != 0) {
@@ -1554,7 +1554,7 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *sbuf, size_t slen)
 	/* Cache the event. */
 	if (slen) {
 		sc->ndis_evt[sc->ndis_evtpidx].ne_buf = malloc(slen,
-		    M_NDIS_DEV, M_NOWAIT);
+		    M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (sc->ndis_evt[sc->ndis_evtpidx].ne_buf == NULL) {
 			NDIS_UNLOCK(sc);
 			return;

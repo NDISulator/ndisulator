@@ -2178,7 +2178,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 		m = ExAllocatePoolWithTag(NonPagedPool,
 		    MmSizeOfMdl(vaddr, len), 0);
 	else {
-		m = uma_zalloc(mdl_zone, M_NOWAIT | M_ZERO);
+		m = uma_zalloc(mdl_zone, M_NOWAIT|M_ZERO);
 		zone++;
 	}
 	if (m == NULL)
@@ -2485,7 +2485,7 @@ IoAllocateWorkItem(device_object *dobj)
 {
 	io_workitem *iw;
 
-	iw = uma_zalloc(iw_zone, M_NOWAIT);
+	iw = uma_zalloc(iw_zone, M_NOWAIT|M_ZERO);
 	if (iw == NULL)
 		return (NULL);
 
@@ -3094,7 +3094,7 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	thread_context *tc;
 	struct proc *p;
 
-	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT);
+	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (tc == NULL)
 		return (STATUS_INSUFFICIENT_RESOURCES);
 
