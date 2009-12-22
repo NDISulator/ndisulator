@@ -283,12 +283,12 @@ static int
 ndis_set_txpower(struct ndis_softc *sc)
 {
 	struct ieee80211com *ic = sc->ifp->if_l2com;
-	uint32_t arg;
+	ndis_80211_power power;
 	size_t len;
 
-	arg = dBm2mW[ic->ic_txpowlimit];
-	len = sizeof(arg);
-	return (ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len));
+	power = dBm2mW[ic->ic_txpowlimit];
+	len = sizeof(power);
+	return (ndis_set_info(sc, OID_802_11_TX_POWER_LEVEL, &power, &len));
 }
 
 static int
@@ -308,24 +308,24 @@ ndis_set_powersave(struct ndis_softc *sc, struct ieee80211vap *vap)
 static int
 ndis_set_rtsthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	uint32_t arg;
+	ndis_80211_rtsthresh rts;
 	size_t len;
 
-	arg = vap->iv_rtsthreshold;
-	len = sizeof(arg);
-	return (ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len));
+	rts = vap->iv_rtsthreshold;
+	len = sizeof(rts);
+	return (ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &rts, &len));
 }
 
 static int
 ndis_set_fragthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	uint32_t arg;
+	ndis_80211_fragthresh frag;
 	size_t len;
 
-	arg = vap->iv_fragthreshold;
-	len = sizeof(arg);
+	frag = vap->iv_fragthreshold;
+	len = sizeof(frag);
 	return (ndis_set_info(sc,
-	    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len));
+	    OID_802_11_FRAGMENTATION_THRESHOLD, &frag, &len));
 }
 
 static int
@@ -334,8 +334,8 @@ ndis_set_filter(struct ndis_softc *sc)
 	size_t len;
 
 	len = sizeof(sc->ndis_filter);
-	return (ndis_set_info(sc, OID_GEN_CURRENT_PACKET_FILTER,
-	    &sc->ndis_filter, &len));
+	return (ndis_set_info(sc,
+	    OID_GEN_CURRENT_PACKET_FILTER, &sc->ndis_filter, &len));
 }
 
 /*
