@@ -203,6 +203,9 @@ static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t, uint32_t, void *,
 static void MmUnmapLockedPages(void *, mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
 static void RtlZeroMemory(void *, size_t);
+static void RtlSecureZeroMemory(void *, size_t);
+static void RtlFillMemory(void *, size_t, uint8_t);
+static void RtlMoveMemory(void *, const void *, size_t);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
 static ndis_status RtlUnicodeStringToInteger(unicode_string *, uint32_t,
@@ -2621,30 +2624,45 @@ ExQueueWorkItem(work_queue_item *w, uint32_t qtype)
 static void
 RtlZeroMemory(void *dst, size_t len)
 {
-	bzero(dst, len);
+	memset(dst, 0, len);
+}
+
+static void
+RtlSecureZeroMemory(void *dst, size_t len)
+{
+	memset(dst, 0, len);
+}
+
+static void
+RtlFillMemory(void *dst, size_t len, uint8_t c)
+{
+	memset(dst, c, len);
+}
+
+static void
+RtlMoveMemory(void *dst, const void *src, size_t len)
+{
+	memmove(dst, src, len);
 }
 
 static void
 RtlCopyMemory(void *dst, const void *src, size_t len)
 {
-	bcopy(src, dst, len);
+	memcpy(dst, src, len);
 }
 
 static size_t
 RtlCompareMemory(const void *s1, const void *s2, size_t len)
 {
-	size_t i, total = 0;
+	size_t i;
 	uint8_t *m1, *m2;
 
 	m1 = __DECONST(char *, s1);
 	m2 = __DECONST(char *, s2);
 
-	for (i = 0; i < len; i++) {
-		if (m1[i] == m2[i])
-			total++;
-	}
-
-	return (total);
+	for (i = 0; i < len && m1[i] == m2[i]; i++)
+		;
+	return (i);
 }
 
 void
@@ -3735,6 +3753,9 @@ dummy(void)
 
 image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlZeroMemory, 2),
+	IMPORT_SFUNC(RtlSecureZeroMemory, 2),
+	IMPORT_SFUNC(RtlFillMemory, 3),
+	IMPORT_SFUNC(RtlMoveMemory, 3),
 	IMPORT_SFUNC(RtlCopyMemory, 3),
 	IMPORT_SFUNC(RtlCompareMemory, 3),
 	IMPORT_SFUNC(RtlEqualUnicodeString, 3),
