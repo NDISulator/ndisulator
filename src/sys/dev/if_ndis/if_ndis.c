@@ -2240,15 +2240,13 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	struct ieee80211com *ic = sc->ifp->if_l2com;
 	struct ieee80211_node *ni = vap->iv_bss;
 	ndis_80211_config config;
-	ndis_80211_macaddr bssid;
 	ndis_80211_ssid ssid;
 	int chanflag = 0, i = 0;
 	uint32_t arg;
-	size_t len= IEEE80211_ADDR_LEN;
+	size_t len = IEEE80211_ADDR_LEN;
 
-	if (ndis_get_info(sc, OID_802_11_BSSID, &bssid, &len))
+	if (ndis_get_info(sc, OID_802_11_BSSID, ni->ni_bssid, &len))
 		return;
-	IEEE80211_ADDR_COPY(ni->ni_bssid, bssid);
 
 	len = sizeof(ssid);
 	if (ndis_get_info(sc, OID_802_11_SSID, &ssid, &len))

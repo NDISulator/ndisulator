@@ -2799,7 +2799,7 @@ NdisMRegisterUnloadHandler(ndis_handle handle, void *func)
 static void
 dummy(void)
 {
-	printf("NDIS dummy called...\n");
+	printf("ndis dummy called...\n");
 }
 
 /*
