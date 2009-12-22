@@ -387,8 +387,8 @@ NdisMRegisterMiniport(ndis_handle handle,
 		return (NDIS_STATUS_RESOURCES);
 	}
 
-	bzero((char *)ch, sizeof(ndis_miniport_characteristics));
-	bcopy((char *)characteristics, (char *)ch, len);
+	memset(ch, 0, sizeof(ndis_miniport_characteristics));
+	memcpy(ch, characteristics, len);
 
 	if (ch->nmc_version_major < 5 || ch->nmc_version_minor < 1) {
 		ch->nmc_shutdown_handler = NULL;
@@ -621,7 +621,7 @@ ndis_decode_parm(ndis_miniport_block *block, ndis_config_parm *parm, char *val)
 		ustr = &parm->ncp_parmdata.ncp_stringdata;
 		if (RtlUnicodeStringToAnsiString(&as, ustr, TRUE))
 			return (NDIS_STATUS_RESOURCES);
-		bcopy(as.as_buf, val, as.as_len);
+		memcpy(val, as.as_buf, as.as_len);
 		RtlFreeAnsiString(&as);
 		break;
 	case ndis_parm_int:
@@ -659,7 +659,7 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 	keystr = as.as_buf;
 
 	/* Decode the parameter into a string. */
-	bzero(val, sizeof(val));
+	memset(val, 0, sizeof(val));
 	*status = ndis_decode_parm(block, parm, val);
 	if (*status != NDIS_STATUS_SUCCESS) {
 		RtlFreeAnsiString(&as);
@@ -771,7 +771,7 @@ static void
 NdisInitializeReadWriteLock(ndis_rw_lock *lock)
 {
 	KeInitializeSpinLock(&lock->nrl_spinlock);
-	bzero((char *)&lock->nrl_rsvd, sizeof(lock->nrl_rsvd));
+	memset(&lock->nrl_rsvd, 0, sizeof(lock->nrl_rsvd));
 }
 
 static void
@@ -1116,7 +1116,7 @@ NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
 		return;
 	}
 
-	bcopy((char *)block->nmb_rlist, (char *)list, rsclen);
+	memcpy(list, block->nmb_rlist, rsclen);
 	*status = NDIS_STATUS_SUCCESS;
 }
 
@@ -1629,8 +1629,7 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
-
-	bzero((char *)pkt, sizeof(ndis_packet));
+	memset(pkt, 0, sizeof(ndis_packet));
 
 	/* Save pointer to the pool. */
 	pkt->np_private.npp_pool = pool;
@@ -2319,8 +2318,6 @@ ndis_find_sym(linker_file_t lf, char *filename, char *suffix, caddr_t *sym)
 	fullsym = ExAllocatePoolWithTag(NonPagedPool, MAXPATHLEN, 0);
 	if (fullsym == NULL)
 		return (ENOMEM);
-
-	bzero(fullsym, MAXPATHLEN);
 	strncpy(fullsym, filename, MAXPATHLEN);
 	if (strlen(filename) < 4) {
 		ExFreePool(fullsym);
@@ -2705,7 +2702,7 @@ NdisCopyFromPacketToPacket(ndis_packet *dpkt, uint32_t doff, uint32_t reqlen,
 		if (dcnt < len)
 			len = dcnt;
 
-		bcopy(sptr, dptr, len);
+		memcpy(dptr, sptr, len);
 
 		copied += len;
 		resid -= len;

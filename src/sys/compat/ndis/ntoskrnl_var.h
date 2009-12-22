@@ -991,7 +991,7 @@ typedef struct irp irp;
 		io_stack_location *src, *dst;				\
 		src = IoGetCurrentIrpStackLocation(irp);		\
 		dst = IoGetNextIrpStackLocation(irp);			\
-		bcopy((char *)src, (char *)dst,				\
+		memcpy(dst, src						\
 		    offsetof(io_stack_location, isl_completionfunc));	\
 	} while (0)
 

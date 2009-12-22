@@ -1321,7 +1321,7 @@ USBD_CreateConfigurationRequest(usb_config_descriptor_t *conf, uint16_t *len)
 	struct usbd_interface_list_entry list[2];
 	union usbd_urb *urb;
 
-	bzero(list, sizeof(struct usbd_interface_list_entry) * 2);
+	memset(list, 0, sizeof(struct usbd_interface_list_entry) * 2);
 	list[0].uil_intfdesc = USBD_ParseConfigurationDescriptorEx(conf, conf,
 	    -1, -1, -1, -1, -1);
 

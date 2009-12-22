@@ -679,8 +679,8 @@ ndis_attach(device_t dev)
 
 	/* Figure out how big to make the TX buffer pool */
 	len = sizeof(sc->ndis_maxpkts);
-	if (ndis_get_info(sc, OID_GEN_MAXIMUM_SEND_PACKETS,
-	    &sc->ndis_maxpkts, &len) != 0) {
+	if (ndis_get_info(sc,
+	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts, &len) != 0) {
 		device_printf(dev, "failed to get max TX packets\n");
 		error = ENXIO;
 		goto fail;
@@ -779,12 +779,12 @@ ndis_attach(device_t dev)
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
 
 		len = 0;
-		if (ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
-		    NULL, &len) != ENOSPC)
+		if (ndis_get_info(sc,
+		    OID_802_11_NETWORK_TYPES_SUPPORTED, NULL, &len) != ENOSPC)
 			goto nonettypes;
 		ntl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
-		if (ndis_get_info(sc, OID_802_11_NETWORK_TYPES_SUPPORTED,
-		    ntl, &len) != 0) {
+		if (ndis_get_info(sc,
+		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, &len) != 0) {
 			free(ntl, M_NDIS_DEV);
 			goto nonettypes;
 		}
@@ -804,8 +804,8 @@ nonettypes:
 		}
 		len = sizeof(rates);
 		memset(&rates, 0, len);
-		if (ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
-		    (void *)rates, &len) != 0)
+		if (ndis_get_info(sc,
+		    OID_802_11_SUPPORTED_RATES, rates, &len) != 0)
 			device_printf(dev, "get rates failed\n");
 		/*
 		 * Since the supported rates only up to 8 can be supported,
@@ -906,16 +906,16 @@ nonettypes:
 		 */
 		len = sizeof(arg);
 		arg = NDIS_802_11_AUTHMODE_WPA;
-		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
-		    &arg, &len) == 0) {
+		if (ndis_set_info(sc,
+		    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0) {
 			if (ndis_get_info(sc,
 			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
 				if (arg == NDIS_802_11_AUTHMODE_WPA)
 					ic->ic_caps |= IEEE80211_C_WPA1;
 		}
 		arg = NDIS_802_11_AUTHMODE_WPA2;
-		if (ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE,
-		    &arg, &len) == 0) {
+		if (ndis_set_info(sc,
+		    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0) {
 			if (ndis_get_info(sc,
 			    OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
 				if (arg == NDIS_802_11_AUTHMODE_WPA2)
@@ -931,31 +931,31 @@ nonettypes:
 		 */
 		len = sizeof(arg);
 		arg = NDIS_802_11_WEPSTAT_ENC3ENABLED;
-		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
-		    &arg, &len) == 0) {
+		if (ndis_set_info(sc,
+		    OID_802_11_ENCRYPTION_STATUS, &arg, &len) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP
 					  |  IEEE80211_CRYPTO_AES_CCM;
 			goto got_crypto;
 		}
 		arg = NDIS_802_11_WEPSTAT_ENC2ENABLED;
-		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
-		    &arg, &len) == 0) {
+		if (ndis_set_info(sc,
+		    OID_802_11_ENCRYPTION_STATUS, &arg, &len) == 0) {
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP
 					  |  IEEE80211_CRYPTO_TKIP;
 			goto got_crypto;
 		}
 		arg = NDIS_802_11_WEPSTAT_ENC1ENABLED;
-		if (ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS,
-		    &arg, &len) == 0)
+		if (ndis_set_info(sc,
+		    OID_802_11_ENCRYPTION_STATUS, &arg, &len) == 0)
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
 		/* Disable encryption after messing with it */
 		len = sizeof(arg);
 		arg = NDIS_802_11_WEPSTAT_DISABLED;
 		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
-		if (!ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
-		    &arg, &len))
+		if (!ndis_get_info(sc,
+		    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len))
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
 		if (!ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len))
 			ic->ic_caps |= IEEE80211_C_PMGT;
@@ -2079,13 +2079,13 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE) {
 		len = sizeof(rates);
 		memset(&rates, 0, len);
-		if (ndis_get_info(sc, OID_802_11_DESIRED_RATES,
-		    (void *)rates, &len) == 0) {
+		if (ndis_get_info(sc,
+		    OID_802_11_DESIRED_RATES, rates, &len) == 0) {
 			for (i = 0; i < len; i++)
 				if (rates[i] > tp->ucastrate)
 					rates[i] = 0;
-			ndis_set_info(sc, OID_802_11_DESIRED_RATES,
-			    (void *)rates, &len);
+			ndis_set_info(sc,
+			    OID_802_11_DESIRED_RATES, rates, &len);
 		}
 	}
 
@@ -2262,8 +2262,8 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if (!ndis_get_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len))
 		vap->iv_rtsthreshold = arg;
 	if (ic->ic_caps & IEEE80211_C_TXFRAG)
-		if (!ndis_get_info(sc, OID_802_11_FRAGMENTATION_THRESHOLD,
-		    &arg, &len))
+		if (!ndis_get_info(sc,
+		    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len))
 			vap->iv_fragthreshold = arg;
 	if (ic->ic_caps & IEEE80211_C_PMGT)
 		if (!ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len)) {
