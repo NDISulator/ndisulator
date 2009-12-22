@@ -584,8 +584,8 @@ ctxsw_utow(void)
 {
 	struct tid *t;
 
+	sched_pin();
 	t = &my_tids[curthread->td_oncpu];
-
 	/*
 	 * Ugly hack. During system bootstrap (cold == 1), only CPU 0
 	 * is running. So if we were loaded at bootstrap, only CPU 0
@@ -597,8 +597,6 @@ ctxsw_utow(void)
 	 */
 	if (t->tid_self != t)
 		x86_newldt(NULL);
-
-	sched_bind(curthread, curthread->td_oncpu);
 	x86_critical_enter();
 	t->tid_oldfs = x86_getfs();
 	x86_setfs(SEL_TO_FS(t->tid_selector));
@@ -620,7 +618,7 @@ ctxsw_wtou(void)
 	t = x86_gettid();
 	x86_setfs(t->tid_oldfs);
 	x86_critical_exit();
-	sched_unbind(curthread);
+	sched_unpin();
 
 	/* Welcome back to UNIX land, we missed you. */
 }
