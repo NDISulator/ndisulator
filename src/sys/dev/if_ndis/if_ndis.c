@@ -1567,19 +1567,14 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, size_t len)
 			nsi = buf;
 			switch (nsi->nsi_type) {
 			case NDIS_802_11_STATUSTYPE_AUTHENTICATION:
-				printf("auth\n");
 				break;
 			case NDIS_802_11_STATUSTYPE_MEDIA_STREAM_MODE:
-				printf("stream\n");
 				break;
 			case NDIS_802_11_STATUSTYPE_PMKID_CANDIDATE_LIST:
-				printf("pmkid\n");
 				break;
 			case NDIS_802_11_STATUSTYPE_RADIO_STATE:
-				printf("radio\n");
 				break;
 			default:
-				printf("unknown %d\n", nsi->nsi_type);
 				break;
 			}
 		}
@@ -2744,7 +2739,8 @@ ndis_set_channel(struct ieee80211com *ic)
 	ndis_80211_config config;
 	size_t len;
 
-	if (ic->ic_bsschan == IEEE80211_CHAN_ANYC)
+	if (sc->ndis_ifp->if_link_state == LINK_STATE_UP ||
+	    ic->ic_bsschan == IEEE80211_CHAN_ANYC)
 		return;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
