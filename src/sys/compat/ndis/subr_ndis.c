@@ -879,7 +879,7 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	dev = block->nmb_physdeviceobj->do_devext;
 	drv = block->nmb_deviceobj->do_drvobj;
 	sc = device_get_softc(dev);
-	ifp = sc->ifp;
+	ifp = sc->ndis_ifp;
 
 	if (ifp != NULL && ifp->if_flags & IFF_DEBUG) {
 		if (pe_get_message((vm_offset_t)drv->dro_driverstart,
@@ -1161,16 +1161,16 @@ NdisReadNetworkAddress(ndis_status *status, void **addr, uint32_t *addrlen,
 
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	if (sc->ifp == NULL) {
+	if (sc->ndis_ifp == NULL) {
 		*status = NDIS_STATUS_FAILURE;
 		return;
 	}
 
-	if (sc->ifp->if_addr == NULL ||
-	    bcmp(IF_LLADDR(sc->ifp), empty, ETHER_ADDR_LEN) == 0)
+	if (sc->ndis_ifp->if_addr == NULL ||
+	    bcmp(IF_LLADDR(sc->ndis_ifp), empty, ETHER_ADDR_LEN) == 0)
 		*status = NDIS_STATUS_FAILURE;
 	else {
-		*addr = IF_LLADDR(sc->ifp);
+		*addr = IF_LLADDR(sc->ndis_ifp);
 		*addrlen = ETHER_ADDR_LEN;
 		*status = NDIS_STATUS_SUCCESS;
 	}

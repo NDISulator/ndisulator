@@ -141,7 +141,7 @@ struct ndisusb_task {
 };
 
 struct ndis_softc {
-	struct ifnet		*ifp;
+	struct ifnet		*ndis_ifp;
 	struct ifmedia		ifmedia;	/* media info */
 	u_long			ndis_hwassist;
 	uint32_t		ndis_v4tx;
@@ -180,8 +180,6 @@ struct ndis_softc {
 	ndis_cfg		*ndis_regvals;
 	struct nch		ndis_cfglist_head;
 	uint8_t			ndis_80211;
-	uint8_t			ndis_link;
-	int32_t			ndis_sts;
 	uint32_t		ndis_filter;
 	int			ndis_if_flags;
 	uint32_t		ndis_devidx;

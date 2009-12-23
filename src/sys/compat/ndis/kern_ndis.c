@@ -190,29 +190,11 @@ static void
 ndis_status_func(ndis_handle adapter, ndis_status status, void *sbuf,
     uint32_t slen)
 {
-	ndis_miniport_block *block;
-	struct ndis_softc *sc;
-	struct ifnet *ifp;
-
-	block = adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	ifp = sc->ifp;
-	if (ifp->if_flags & IFF_DEBUG)
-		device_printf(sc->ndis_dev, "status: %x\n", status);
 }
 
 static void
 ndis_statusdone_func(ndis_handle adapter)
 {
-	ndis_miniport_block *block;
-	struct ndis_softc *sc;
-	struct ifnet *ifp;
-
-	block = adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	ifp = sc->ifp;
-	if (ifp->if_flags & IFF_DEBUG)
-		device_printf(sc->ndis_dev, "status complete\n");
 }
 
 static void
@@ -243,14 +225,10 @@ ndis_resetdone_func(ndis_handle adapter, ndis_status status,
 {
 	ndis_miniport_block *block;
 	struct ndis_softc *sc;
-	struct ifnet *ifp;
 
 	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	ifp = sc->ifp;
 
-	if (ifp->if_flags & IFF_DEBUG)
-		device_printf(sc->ndis_dev, "reset done...\n");
 	KeSetEvent(&block->nmb_resetevent, IO_NO_INCREMENT, FALSE);
 }
 
@@ -598,7 +576,7 @@ ndis_ptom(struct mbuf **m0, ndis_packet *p)
 	 * the 'oversize' frames.
 	 */
 	eh = mtod((*m0), struct ether_header *);
-	ifp = ((struct ndis_softc *)p->np_softc)->ifp;
+	ifp = ((struct ndis_softc *)p->np_softc)->ndis_ifp;
 	if (totlen > ETHER_MAX_FRAME(ifp, eh->ether_type, FALSE)) {
 		diff = totlen - ETHER_MAX_FRAME(ifp, eh->ether_type, FALSE);
 		totlen -= diff;
