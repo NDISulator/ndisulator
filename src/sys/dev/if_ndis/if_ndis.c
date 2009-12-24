@@ -176,7 +176,7 @@ static void ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
-static void ndis_disassociate(struct ndis_softc *);
+static void ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher(struct ndis_softc *, int);
 static int ndis_set_infra(struct ndis_softc *, int);
 static void ndis_set_ssid(struct ndis_softc *, struct ieee80211vap *, uint8_t);
@@ -2113,7 +2113,6 @@ ndis_set_bssid(struct ndis_softc *sc, uint8_t *bssid)
 {
 	size_t len = IEEE80211_ADDR_LEN;
 
-	DPRINTF(("Setting BSSID to %6D\n", bssid, ":"));
 	if (ndis_set_info(sc, OID_802_11_BSSID, bssid, &len) != 0)
 		DPRINTF(("set BSSID failed\n"));
 
@@ -2148,13 +2147,6 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 			return;
 	}
 
-#ifdef NDIS_DEBUG
-	if (ndis_debug > 0) {
-		printf("Setting ESSID to ");
-		ieee80211_print_essid(ssid.ns_ssid, ssid.ns_ssidlen);
-		printf("\n");
-	}
-#endif
 	if (ndis_set_info(sc, OID_802_11_SSID, &ssid, &len) != 0)
 		DPRINTF(("set ESSID failed\n"));
 }
@@ -2172,29 +2164,21 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 	uint32_t arg;
 	size_t len;
 
-	ndis_disassociate(sc);
-
-	ndis_setstate_80211(sc, vap);
-
 	if (!(vap->iv_flags & IEEE80211_F_WPA)) {
-		/* Authentication to open */
 		arg = NDIS_802_11_AUTHMODE_OPEN;
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len);
 	}
 	if (!(vap->iv_flags & IEEE80211_F_PRIVACY)) {
-		/* Encryption mode to off */
 		arg = NDIS_802_11_WEPSTAT_DISABLED;
 		len = sizeof(arg);
 		ndis_set_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len);
 	} else if (!(vap->iv_flags & IEEE80211_F_WPA)) {
-		/* Set up WEP */
 		arg = NDIS_802_11_WEPSTAT_ENABLED;
 		len = sizeof(arg);
 		if (ndis_set_info(sc, OID_802_11_WEP_STATUS, &arg, &len) != 0)
 			device_printf(sc->ndis_dev, "WEP setup failed\n");
 	} else if (vap->iv_appie_wpa != NULL) {
-		/* Set up WPA */
 		struct ieee80211_appie *ie = vap->iv_appie_wpa;
 
 		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
@@ -2206,11 +2190,13 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
  * Disassociate and turn off radio.
  */
 static void
-ndis_disassociate(struct ndis_softc *sc)
+ndis_disassociate(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	size_t len = 0;
 
 	ndis_set_info(sc, OID_802_11_DISASSOCIATE, NULL, &len);
+	if (vap->iv_opmode == IEEE80211_M_STA)
+		vap->iv_bss->ni_associd = 0;
 }
 
 static void
@@ -2664,26 +2650,24 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	struct ndis_vap *nvp = NDIS_VAP(vap);
 	struct ieee80211com *ic = vap->iv_ic;
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-	enum ieee80211_state ostate;
 
 	DPRINTF(("%s: %s -> %s\n", __func__,
 		ieee80211_state_name[vap->iv_state],
 		ieee80211_state_name[nstate]));
 
-	ostate = vap->iv_state;
 	vap->iv_state = nstate;
 
 	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
 	case IEEE80211_S_INIT:
-		if (ostate != IEEE80211_S_INIT)
-			ndis_disassociate(sc);
+		if (vap->iv_state != IEEE80211_S_INIT)
+			ndis_disassociate(sc, vap);
 		break;
 	case IEEE80211_S_SCAN:
-		if (vap->iv_opmode == IEEE80211_M_STA) {
-			ndis_set_bssid(sc, vap->iv_myaddr);
-			ndis_set_ssid(sc, vap, 1);
-		}
+		if (vap->iv_state == IEEE80211_S_RUN)
+			ndis_disassociate(sc, vap);
+		ndis_set_ssid(sc, vap, 1);
+		ndis_setstate_80211(sc, vap);
 		break;
 	case IEEE80211_S_RUN:
 		if (vap->iv_opmode == IEEE80211_M_IBSS) {
