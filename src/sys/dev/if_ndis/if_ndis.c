@@ -1235,6 +1235,8 @@ ndis_rxeof_done(ndis_handle adapter)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	if (!NDIS_INITIALIZED(sc))
+		return;
 
 	/* Schedule transfer/RX of queued packets. */
 	KeInsertQueueDpc(&sc->ndis_rxdpc, NULL, NULL);
@@ -1256,6 +1258,8 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct mbuf *m;
 
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	if (!NDIS_INITIALIZED(sc))
+		return;
 	ifp = sc->ndis_ifp;
 
 	KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
@@ -1320,6 +1324,8 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
 	struct mbuf *m;
 
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	if (!NDIS_INITIALIZED(sc))
+		return;
 	ifp = sc->ndis_ifp;
 
 	m = packet->np_m0;
@@ -1360,8 +1366,8 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
 static void
 ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 {
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
-	ndis_miniport_block *block;
 	ndis_packet *p;
 	uint32_t s;
 	ndis_tcpip_csum *csum;
@@ -1369,8 +1375,9 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 	struct mbuf *m0, *m;
 	int i;
 
-	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	if (!NDIS_INITIALIZED(sc))
+		return;
 	ifp = sc->ndis_ifp;
 
 	/*
@@ -1500,14 +1507,15 @@ ndis_inputtask(device_object *dobj, void *arg)
 static void
 ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 {
+	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
-	ndis_miniport_block *block;
 	struct ifnet *ifp;
 	int idx;
 	struct mbuf *m;
 
-	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	if (!NDIS_INITIALIZED(sc))
+		return;
 	ifp = sc->ndis_ifp;
 
 	m = packet->np_m0;
