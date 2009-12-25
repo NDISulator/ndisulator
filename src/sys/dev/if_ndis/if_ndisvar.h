@@ -166,7 +166,6 @@ struct ndis_softc {
 	device_t		ndis_dev;
 	ndis_miniport_block	*ndis_block;
 	ndis_miniport_characteristics	*ndis_chars;
-	interface_type		ndis_type;
 	struct callout		ndis_scan_callout;
 	struct callout		ndis_stat_callout;
 	uint32_t		ndis_maxpkts;
