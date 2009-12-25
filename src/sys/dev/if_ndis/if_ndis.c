@@ -176,6 +176,7 @@ static void ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void ndis_auth(struct ndis_softc *, struct ieee80211vap *);
+static void ndis_media_status(struct ifnet *, struct ifmediareq *);
 static void ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher(struct ndis_softc *, int);
 static int ndis_set_infra(struct ndis_softc *, int);
@@ -1024,8 +1025,7 @@ ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
 	vap->iv_reset = ndis_reset_vap;
 
 	/* Complete setup */
-	ieee80211_vap_attach(vap, ieee80211_media_change,
-	    ieee80211_media_status);
+	ieee80211_vap_attach(vap, ieee80211_media_change, ndis_media_status);
 	ic->ic_opmode = opmode;
 
 	/* Install key handing routines */
@@ -2060,6 +2060,23 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 }
 
 static void
+ndis_media_status(struct ifnet *ifp, struct ifmediareq *imr)
+{
+	struct ieee80211vap *vap = ifp->if_softc;
+	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
+	uint32_t arg;
+	size_t len;
+
+	if (!NDIS_INITIALIZED(sc))
+		return;
+
+	len = sizeof(arg);
+	if (!ndis_get_info(sc, OID_GEN_LINK_SPEED, &arg, &len))
+		vap->iv_bss->ni_txrate = arg / 5000;
+	ieee80211_media_status(ifp, imr);
+}
+
+static void
 ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
@@ -2161,8 +2178,8 @@ ndis_set_ssid(struct ndis_softc *sc, struct ieee80211vap *vap, uint8_t scan)
 static void
 ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	ndis_set_ssid(sc, vap, 0);
 	ndis_set_bssid(sc, vap->iv_bss->ni_bssid);
+	ndis_set_ssid(sc, vap, 0);
 }
 
 static void
@@ -2246,8 +2263,6 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		ni->ni_associd = 1 | 0xc000; /* fake associd */
 
 	len = sizeof(arg);
-	if (!ndis_get_info(sc, OID_GEN_LINK_SPEED, &arg, &len))
-		ni->ni_txrate = arg / 5000;
 	if (!ndis_get_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len))
 		vap->iv_rtsthreshold = arg;
 	if (ic->ic_caps & IEEE80211_C_TXFRAG)
@@ -2673,6 +2688,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	case IEEE80211_S_SCAN:
 		if (vap->iv_state == IEEE80211_S_RUN)
 			ndis_disassociate(sc, vap);
+		ndis_set_bssid(sc, vap->iv_myaddr);
 		ndis_set_ssid(sc, vap, 1);
 		ndis_setstate_80211(sc, vap);
 		break;
