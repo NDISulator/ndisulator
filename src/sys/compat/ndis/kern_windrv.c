@@ -368,8 +368,9 @@ skipreloc:
 
 	RtlInitAnsiString(&as, DUMMY_REGISTRY_PATH);
 	if (RtlAnsiStringToUnicodeString(&drv->dro_drivername, &as, TRUE)) {
-		free(new, M_NDIS_WINDRV);
+		free(drv->dro_driverext, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
+		free(new, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
@@ -381,6 +382,7 @@ skipreloc:
 	/* Now call the DriverEntry() function. */
 	if (MSCALL2(entry, drv, &drv->dro_drivername) != STATUS_SUCCESS) {
 		RtlFreeUnicodeString(&drv->dro_drivername);
+		free(drv->dro_driverext, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
 		free(new, M_NDIS_WINDRV);
 		return (ENODEV);
@@ -424,6 +426,8 @@ windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 	device_object *pdo;
 
 	pdo = windrv_find_pdo(drv, bsddev);
+	if (pdo == NULL)
+		return;
 
 	/* Remove reference to device_t */
 	pdo->do_devext = NULL;

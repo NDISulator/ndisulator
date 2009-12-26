@@ -619,9 +619,24 @@ ndis_attach(device_t dev)
 		pdrv = windrv_lookup(0, "PCI Bus");
 	else if (sc->ndis_iftype == PCMCIABus)
 		pdrv = windrv_lookup(0, "PCCARD Bus");
-	else
+	else if (sc->ndis_iftype == PNPBus)
 		pdrv = windrv_lookup(0, "USB Bus");
+	else {
+		device_printf(dev, "unsupported interface type\n");
+		error = ENXIO;
+		goto fail;
+	}
+	if (pdrv == NULL) {
+		device_printf(dev, "failed to lookup PDO\n");
+		error = ENXIO;
+		goto fail;
+	}
 	pdo = windrv_find_pdo(pdrv, dev);
+	if (pdo == NULL) {
+		device_printf(dev, "failed to find PDO\n");
+		error = ENXIO;
+		goto fail;
+	}
 
 	/*
 	 * Create a new functional device object for this
@@ -989,7 +1004,6 @@ got_crypto:
 		ifmedia_set(&sc->ifmedia, IFM_ETHER|IFM_AUTO);
 		ether_ifattach(ifp, eaddr);
 	}
-
 fail:
 	if (error)
 		ndis_detach(dev);
@@ -1121,11 +1135,12 @@ ndis_detach(device_t dev)
 		drv = windrv_lookup(0, "PCI Bus");
 	else if (sc->ndis_iftype == PCMCIABus)
 		drv = windrv_lookup(0, "PCCARD Bus");
-	else
+	else if (sc->ndis_iftype == PNPBus )
 		drv = windrv_lookup(0, "USB Bus");
-	if (drv == NULL)
-		panic("couldn't find driver object");
-	windrv_destroy_pdo(drv, dev);
+	else
+		drv = NULL;
+	if (drv != NULL)
+		windrv_destroy_pdo(drv, dev);
 
 	if (sc->ndis_iftype == PCIBus)
 		bus_dma_tag_destroy(sc->ndis_parent_tag);
