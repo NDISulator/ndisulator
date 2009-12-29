@@ -181,6 +181,7 @@ static void ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_cipher(struct ndis_softc *, int);
 static int ndis_set_infra(struct ndis_softc *, int);
 static void ndis_set_ssid(struct ndis_softc *, uint8_t *, uint8_t);
+static void ndis_set_bssid(struct ndis_softc *, ndis_80211_macaddr);
 static int ndis_set_wpa(struct ndis_softc *, void *, int);
 static int ndis_key_set(struct ieee80211vap *, const struct ieee80211_key *,
     const u_int8_t []);
@@ -275,6 +276,7 @@ ndis_get_supported_oids(struct ndis_softc *sc)
 		return;
 	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, oids, &len) != 0) {
 		free(oids, M_NDIS_DEV);
+		DPRINTF("get supported list failed\n");
 		return;
 	}
 
@@ -718,7 +720,7 @@ ndis_attach(device_t dev)
 	len = sizeof(sc->ndis_maxpkts);
 	if (ndis_get_info(sc,
 	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts, &len) != 0) {
-		device_printf(dev, "failed to get max TX packets\n");
+		device_printf(dev, "get max TX packets failed\n");
 		error = ENXIO;
 		goto fail;
 	}
@@ -821,6 +823,7 @@ ndis_attach(device_t dev)
 		ntl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (ndis_get_info(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, &len) != 0) {
+			DPRINTF("get network types failed\n");
 			free(ntl, M_NDIS_DEV);
 			goto nonettypes;
 		}
@@ -974,12 +977,12 @@ nonettypes:
 		if (ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_ENC1ENABLED) == 0)
 			ic->ic_cryptocaps |= IEEE80211_CRYPTO_WEP;
 got_crypto:
-		if (!ndis_get_info(sc,
-		    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len))
+		if (ndis_get_info(sc,
+		    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
-		if (!ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len))
+		if (ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_PMGT;
-		if (!ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len))
+		if (ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len) == 0)
 			ic->ic_caps |= IEEE80211_C_TXPMGT;
 
 		ieee80211_ifattach(ic, eaddr);
@@ -1998,8 +2001,6 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 		arg = NDIS_802_11_WEPSTAT_ENC3ENABLED;
 	else
 		arg = NDIS_802_11_WEPSTAT_DISABLED;
-
-	DPRINTF("Setting cipher to %d\n", arg);
 	return (ndis_set_encryption(sc, arg));
 }
 
@@ -2149,12 +2150,12 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 }
 
 static void
-ndis_set_bssid(struct ndis_softc *sc, uint8_t *bssid)
+ndis_set_bssid(struct ndis_softc *sc, ndis_80211_macaddr bssid)
 {
 	size_t len = IEEE80211_ADDR_LEN;
 
 	if (ndis_set_info(sc, OID_802_11_BSSID, bssid, &len) != 0)
-		DPRINTF("set BSSID failed\n");
+		DPRINTF("set bssid failed\n");
 }
 
 static void
@@ -2168,7 +2169,7 @@ ndis_set_ssid(struct ndis_softc *sc, uint8_t *essid, uint8_t esslen)
 	memcpy(ssid.ns_ssid, essid, esslen);
 	ssid.ns_ssidlen = esslen;
 	if (ndis_set_info(sc, OID_802_11_SSID, &ssid, &len) != 0)
-		DPRINTF("set ESSID failed\n");
+		DPRINTF("set ssid failed\n");
 }
 
 static void
@@ -2226,7 +2227,8 @@ ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 		*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (*bl == NULL)
 			return;
-		ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len);
+		if (ndis_get_info(sc, OID_802_11_BSSID_LIST, *bl, &len) != 0)
+			DPRINTF("get bssid list failed\n");
 	}
 }
 
@@ -2241,12 +2243,14 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	uint32_t arg;
 	size_t len = IEEE80211_ADDR_LEN;
 
-	if (ndis_get_info(sc, OID_802_11_BSSID, ni->ni_bssid, &len))
-		return;
+	if (ndis_get_info(sc, OID_802_11_BSSID, ni->ni_bssid, &len) != 0)
+		DPRINTF("get bssid failed\n");
 
 	len = sizeof(ssid);
-	if (ndis_get_info(sc, OID_802_11_SSID, &ssid, &len))
+	if (ndis_get_info(sc, OID_802_11_SSID, &ssid, &len) != 0) {
+		DPRINTF("get ssid failed\n");
 		return;
+	}
 	memcpy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
 	ni->ni_esslen = ssid.ns_ssidlen;
 	if (vap->iv_opmode == IEEE80211_M_STA)
@@ -2678,8 +2682,14 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	case IEEE80211_S_SCAN:
 		if (vap->iv_state == IEEE80211_S_RUN)
 			ndis_disassociate(sc, vap);
-		ndis_set_bssid(sc, vap->iv_myaddr);
-		ndis_set_ssid(sc, vap->iv_des_ssid[0].ssid, vap->iv_des_ssid[0].len);
+		if (vap->iv_flags & IEEE80211_F_DESBSSID)
+			ndis_set_bssid(sc, vap->iv_des_bssid);
+		else
+			ndis_set_bssid(sc, "\xff\xff\xff\xff\xff\xff");
+		if (vap->iv_des_nssid)
+			ndis_set_ssid(sc, vap->iv_des_ssid[0].ssid, vap->iv_des_ssid[0].len);
+		else
+			ndis_set_ssid(sc, NULL, 0);
 		ndis_setstate_80211(sc, vap);
 		break;
 	case IEEE80211_S_RUN:
@@ -2795,7 +2805,7 @@ ndis_scan_end(struct ieee80211com *ic)
 	if (bl == NULL)
 		return;
 
-	DPRINTF("%s: %d results\n", __func__, bl->nblx_items);
+	DPRINTF("%d scan results\n", bl->nblx_items);
 	wb = &bl->nblx_bssid[0];
 	for (i = 0; i < bl->nblx_items; i++) {
 		memset(&sp, 0, sizeof(sp));
