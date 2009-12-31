@@ -2088,7 +2088,7 @@ ndis_media_status(struct ifnet *ifp, struct ifmediareq *imr)
 		return;
 
 	len = sizeof(txrate);
-	if (!ndis_get_info(sc, OID_GEN_LINK_SPEED, &txrate, &len))
+	if (ndis_get_info(sc, OID_GEN_LINK_SPEED, &txrate, &len) == 0)
 		vap->iv_bss->ni_txrate = txrate / 5000;
 	ieee80211_media_status(ifp, imr);
 }
@@ -2138,15 +2138,15 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 static int
 ndis_set_infra(struct ndis_softc *sc, int opmode)
 {
-	uint32_t arg;
+	uint32_t mode;
 	size_t len;
 
-	len = sizeof(arg);
+	len = sizeof(mode);
 	if (opmode == IEEE80211_M_IBSS)
-		arg = NDIS_802_11_NET_INFRA_IBSS;
+		mode = NDIS_802_11_NET_INFRA_IBSS;
 	else
-		arg = NDIS_802_11_NET_INFRA_BSS;
-	return (ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &arg, &len));
+		mode = NDIS_802_11_NET_INFRA_BSS;
+	return (ndis_set_info(sc, OID_802_11_INFRASTRUCTURE_MODE, &mode, &len));
 }
 
 static void
@@ -2175,6 +2175,7 @@ ndis_set_ssid(struct ndis_softc *sc, uint8_t *essid, uint8_t esslen)
 static void
 ndis_assoc(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
+
 	ndis_set_bssid(sc, vap->iv_bss->ni_bssid);
 	ndis_set_ssid(sc, vap->iv_bss->ni_essid, vap->iv_bss->ni_esslen);
 }
@@ -2260,33 +2261,35 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if (!ndis_get_info(sc, OID_802_11_RTS_THRESHOLD, &arg, &len))
 		vap->iv_rtsthreshold = arg;
 	if (ic->ic_caps & IEEE80211_C_TXFRAG)
-		if (!ndis_get_info(sc,
-		    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len))
+		if (ndis_get_info(sc,
+		    OID_802_11_FRAGMENTATION_THRESHOLD, &arg, &len) == 0)
 			vap->iv_fragthreshold = arg;
 	if (ic->ic_caps & IEEE80211_C_PMGT)
-		if (!ndis_get_info(sc, OID_802_11_POWER_MODE, &arg, &len)) {
+		if (ndis_get_info(sc,
+		    OID_802_11_POWER_MODE, &arg, &len) == 0) {
 			if (arg == NDIS_802_11_POWERMODE_CAM)
 				vap->iv_flags &= ~IEEE80211_F_PMGTON;
 			else
 				vap->iv_flags |= IEEE80211_F_PMGTON;
 		}
 	if (ic->ic_caps & IEEE80211_C_TXPMGT)
-		if (!ndis_get_info(sc, OID_802_11_TX_POWER_LEVEL, &arg, &len)) {
+		if (ndis_get_info(sc,
+		    OID_802_11_TX_POWER_LEVEL, &arg, &len) == 0) {
 			for (i = 0; i < (sizeof(dBm2mW) / sizeof(dBm2mW[0]));
 			    i++)
 				if (dBm2mW[i] >= arg)
 					break;
 			ic->ic_txpowlimit = i;
 		}
-	if (!ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len))
+	if (ndis_get_info(sc, OID_802_11_AUTHENTICATION_MODE, &arg, &len) == 0)
 		ni->ni_authmode = ndis_auth_mode(arg);
-	if (!ndis_get_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len)) {
+	if (ndis_get_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len) == 0) {
 		if (arg == NDIS_802_11_PRIVFILT_8021XWEP)
 			vap->iv_flags |= IEEE80211_F_DROPUNENC;
 		else
 			vap->iv_flags &= ~IEEE80211_F_DROPUNENC;
 	}
-	if (!ndis_get_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len)) {
+	if (ndis_get_info(sc, OID_802_11_ENCRYPTION_STATUS, &arg, &len) == 0) {
 		switch (arg) {
 		case NDIS_802_11_WEPSTAT_ENC1ENABLED:
 		case NDIS_802_11_WEPSTAT_ENC2ENABLED:
@@ -2298,12 +2301,12 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 			break;
 		}
 	}
-	if (!ndis_get_info(sc, OID_802_11_NETWORK_TYPE_IN_USE, &arg, &len))
+	if (ndis_get_info(sc, OID_802_11_NETWORK_TYPE_IN_USE, &arg, &len) == 0)
 		chanflag = ndis_nettype_chan(arg);
 
 	len = sizeof(config);
 	memset(&config, 0, len);
-	if (!ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len)) {
+	if (ndis_get_info(sc, OID_802_11_CONFIGURATION, &config, &len) == 0) {
 		ic->ic_curchan = ieee80211_find_channel(ic,
 		    config.nc_dsconfig / 1000, chanflag);
 		if (ic->ic_curchan == NULL)
@@ -2409,7 +2412,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 	case SIOCGDRVSPEC:
 		if ((error = priv_check(curthread, PRIV_DRIVER)))
 			break;
-		error =  copyin(ifr->ifr_data, &oid, sizeof(oid));
+		error = copyin(ifr->ifr_data, &oid, sizeof(oid));
 		if (error)
 			break;
 		oidbuf = malloc(oid.len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
@@ -2417,7 +2420,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 			error = ENOMEM;
 			break;
 		}
-		error =  copyin(ifr->ifr_data + sizeof(oid), oidbuf, oid.len);
+		error = copyin(ifr->ifr_data + sizeof(oid), oidbuf, oid.len);
 		if (error) {
 			free(oidbuf, M_NDIS_DEV);
 			break;
@@ -2438,7 +2441,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 	case SIOCSDRVSPEC:
 		if ((error = priv_check(curthread, PRIV_DRIVER)))
 			break;
-		error =  copyin(ifr->ifr_data, &oid, sizeof(oid));
+		error = copyin(ifr->ifr_data, &oid, sizeof(oid));
 		if (error)
 			break;
 		oidbuf = malloc(oid.len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
@@ -2446,7 +2449,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 			error = ENOMEM;
 			break;
 		}
-		error =  copyin(ifr->ifr_data + sizeof(oid), oidbuf, oid.len);
+		error = copyin(ifr->ifr_data + sizeof(oid), oidbuf, oid.len);
 		if (error) {
 			free(oidbuf, M_NDIS_DEV);
 			break;
@@ -2473,7 +2476,7 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 			NDIS_UNLOCK(sc);
 			break;
 		}
-		error =  copyin(ifr->ifr_data, &evt, sizeof(evt));
+		error = copyin(ifr->ifr_data, &evt, sizeof(evt));
 		if (error) {
 			NDIS_UNLOCK(sc);
 			break;
@@ -2596,7 +2599,7 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 		wep.nw_len =
 		    sizeof(wep) - sizeof(wep.nw_keydata) + wep.nw_keylen;
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
-			wep.nw_keyidx |=  1 << 31;
+			wep.nw_keyidx |= 1 << 31;
 		memcpy(wep.nw_keydata, key->wk_key, wep.nw_keylen);
 		error = ndis_set_info(sc, OID_802_11_ADD_WEP, &wep, &len);
 		break;
@@ -2731,6 +2734,7 @@ ndis_scan_start(struct ieee80211com *ic)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	if (ndis_set_info(sc, OID_802_11_BSSID_LIST_SCAN, NULL, &len) != 0) {
+		DPRINTF("bssid list scan failed\n");
 		ieee80211_cancel_scan(vap);
 		return;
 	}
