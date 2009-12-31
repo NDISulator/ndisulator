@@ -189,7 +189,7 @@ static int ndis_key_delete(struct ieee80211vap *, const struct ieee80211_key *);
 static int ndis_set_filter(struct ndis_softc *, uint32_t);
 static int ndis_set_multi(struct ndis_softc *);
 static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
-static void ndis_get_supported_oids(struct ndis_softc *);
+static int ndis_get_oids(struct ndis_softc *, ndis_oid **, uint32_t *);
 static int ndis_set_txpower(struct ndis_softc *);
 static int ndis_set_powersave(struct ndis_softc *, struct ieee80211vap *);
 static int ndis_set_rtsthreshold(struct ndis_softc *, struct ieee80211vap *);
@@ -264,24 +264,22 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 	return (0);
 }
 
-static void
-ndis_get_supported_oids(struct ndis_softc *sc)
+static int
+ndis_get_oids(struct ndis_softc *sc, ndis_oid **oids, uint32_t *oidcnt)
 {
-	ndis_oid *oids;
 	size_t len = 0;
 
+	*oidcnt = 0;
 	ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, NULL, &len);
-	oids = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
-	if (oids == NULL)
-		return;
-	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, oids, &len) != 0) {
-		free(oids, M_NDIS_DEV);
-		DPRINTF("get supported list failed\n");
-		return;
+	*oids = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	if (*oids == NULL)
+		return (ENOMEM);
+	if (ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, *oids, &len) != 0) {
+		free(*oids, M_NDIS_DEV);
+		return (ENXIO);
 	}
-
-	sc->ndis_oids = oids;
-	sc->ndis_oidcnt = len / 4;
+	*oidcnt = len / 4;
+	return (0);
 }
 
 static int
@@ -744,20 +742,24 @@ ndis_attach(device_t dev)
 	    sc->ndis_maxpkts, PROTOCOL_RESERVED_SIZE_IN_PACKET);
 	if (i != NDIS_STATUS_SUCCESS) {
 		sc->ndis_txpool = NULL;
-		device_printf(dev, "failed to allocate TX packet pool");
+		device_printf(dev, "failed to allocate TX packet pool\n");
 		error = ENOMEM;
 		goto fail;
 	}
 
 	sc->ndis_txpending = sc->ndis_maxpkts;
 
-	ndis_get_supported_oids(sc);
+	error = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
+	if (error) {
+		device_printf(dev, "failed to get supported oids\n");
+		goto fail;
+	}
 
 	/* If the NDIS module requested scatter/gather, init maps. */
 	if (sc->ndis_sc) {
 		error = ndis_init_dma(sc);
 		if (error) {
-			device_printf(dev, "failed to init maps");
+			device_printf(dev, "failed to init maps\n");
 			goto fail;
 		}
 	}
@@ -1661,7 +1663,6 @@ ndis_tick(void *xsc)
 		    WORKQUEUE_CRITICAL, sc);
 		sc->ndis_hang_timer = sc->ndis_block->nmb_checkforhangsecs;
 	}
-
 	if (sc->ndis_tx_timer && --sc->ndis_tx_timer == 0) {
 		sc->ndis_ifp->if_oerrors++;
 		device_printf(sc->ndis_dev, "watchdog timeout\n");
@@ -1672,7 +1673,6 @@ ndis_tick(void *xsc)
 		    (io_workitem_func)ndis_starttask_wrap,
 		    WORKQUEUE_CRITICAL, sc->ndis_ifp);
 	}
-
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 }
 
