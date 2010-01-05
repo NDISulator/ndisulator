@@ -973,9 +973,8 @@ ndis_init_nic(void *arg)
 	NDIS_LOCK(sc);
 	block = sc->ndis_block;
 	initfunc = sc->ndis_chars->nmc_init_func;
+	block->nmb_timerlist = NULL;
 	NDIS_UNLOCK(sc);
-
-	sc->ndis_block->nmb_timerlist = NULL;
 
 	for (i = 0; i < NdisMediumMax; i++)
 		mediumarray[i] = i;
@@ -988,24 +987,13 @@ ndis_init_nic(void *arg)
 	if (MSCALL6(initfunc, &openstatus, &chosenmedium,
 	    mediumarray, NdisMediumMax, block, block) != NDIS_STATUS_SUCCESS) {
 		NDIS_LOCK(sc);
-		sc->ndis_block->nmb_miniportadapterctx = NULL;
+		block->nmb_miniportadapterctx = NULL;
 		NDIS_UNLOCK(sc);
 		return (ENXIO);
 	}
 
-	/*
-	 * This may look really goofy, but apparently it is possible
-	 * to halt a miniport too soon after it's been initialized.
-	 * After MiniportInitialize() finishes, pause for 1 second
-	 * to give the chip a chance to handle any short-lived timers
-	 * that were set in motion. If we call MiniportHalt() too soon,
-	 * some of the timers may not be cancelled, because the driver
-	 * expects them to fire before the halt is called.
-	 */
-	pause("ndwait", hz);
-
 	NDIS_LOCK(sc);
-	sc->ndis_block->nmb_devicectx = sc;
+	block->nmb_devicectx = sc;
 	NDIS_UNLOCK(sc);
 
 	return (0);
