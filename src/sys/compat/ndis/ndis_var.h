@@ -1533,7 +1533,6 @@ struct ndis_miniport_block {
 	nt_kevent		nmb_setevent;
 	nt_kevent		nmb_resetevent;
 	io_workitem		*nmb_returnitem;
-	ndis_miniport_timer	*nmb_timerlist;
 	ndis_handle		nmb_rxpool;
 	list_entry		nmb_returnlist;
 	kspin_lock		nmb_returnlock;

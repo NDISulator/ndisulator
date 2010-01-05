@@ -973,7 +973,6 @@ ndis_init_nic(void *arg)
 	NDIS_LOCK(sc);
 	block = sc->ndis_block;
 	initfunc = sc->ndis_chars->nmc_init_func;
-	block->nmb_timerlist = NULL;
 	NDIS_UNLOCK(sc);
 
 	for (i = 0; i < NdisMediumMax; i++)
