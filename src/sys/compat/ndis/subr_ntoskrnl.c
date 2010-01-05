@@ -206,6 +206,7 @@ static void RtlZeroMemory(void *, size_t);
 static void RtlSecureZeroMemory(void *, size_t);
 static void RtlFillMemory(void *, size_t, uint8_t);
 static void RtlMoveMemory(void *, const void *, size_t);
+static ndis_status RtlCharToInteger(const char *, uint32_t, uint32_t *);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
 static ndis_status RtlUnicodeStringToInteger(unicode_string *, uint32_t,
@@ -2645,6 +2646,56 @@ RtlMoveMemory(void *dst, const void *src, size_t len)
 	memmove(dst, src, len);
 }
 
+static ndis_status
+RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
+{
+	int negative = 0;
+	uint32_t res;
+
+	if (!src || !val)
+		return (STATUS_ACCESS_VIOLATION);
+	while (*src != '\0' && *src <= ' ')
+		src++;
+	if (*src == '+')
+		src++;
+	else if (*src == '-') {
+		src++;
+		negative = 1;
+	}
+	if (base == 0) {
+		base = 10;
+		if (*src == '0') {
+			src++;
+			if (*src == 'b') {
+				base = 2;
+				src++;
+			} else if (*src == 'o') {
+				base = 8;
+				src++;
+			} else if (*src == 'x') {
+				base = 16;
+				src++;
+			}
+		}
+	} else if (!(base == 2 || base == 8 || base == 10 || base == 16))
+		return (STATUS_INVALID_PARAMETER);
+
+	for (res = 0; *src; src++) {
+		int v;
+		if (isdigit(*src))
+			v = *src - '0';
+		else if (isxdigit(*src))
+			v = tolower(*src) - 'a' + 10;
+		else
+			v = base;
+		if (v >= base)
+			return (STATUS_INVALID_PARAMETER);
+		res = res * base + v;
+	}
+	*val = negative ? -res : res;
+	return (STATUS_SUCCESS);
+}
+
 static void
 RtlCopyMemory(void *dst, const void *src, size_t len)
 {
@@ -3756,6 +3807,7 @@ image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlSecureZeroMemory, 2),
 	IMPORT_SFUNC(RtlFillMemory, 3),
 	IMPORT_SFUNC(RtlMoveMemory, 3),
+	IMPORT_SFUNC(RtlCharToInteger, 3),
 	IMPORT_SFUNC(RtlCopyMemory, 3),
 	IMPORT_SFUNC(RtlCompareMemory, 3),
 	IMPORT_SFUNC(RtlEqualUnicodeString, 3),
