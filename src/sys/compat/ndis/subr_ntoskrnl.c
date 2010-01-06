@@ -231,10 +231,10 @@ static int32_t KeReadStateMutex(kmutant *);
 static ndis_status ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
     uint8_t, void **, void **);
 static void ObfDereferenceObject(void *);
-static int32_t ZwClose(ndis_handle);
-static int32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
-    void *);
-static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
+static ndis_status ZwClose(ndis_handle);
+static ndis_status WmiQueryTraceInformation(uint32_t, void *, uint32_t,
+    uint32_t, void *);
+static ndis_status WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static ndis_status IoWMIRegistrationControl(device_object *, uint32_t);
 static void *ntoskrnl_memset(void *, int, size_t);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
@@ -246,7 +246,7 @@ static ndis_status DbgPrint(char *, ...);
 static void DbgBreakPoint(void);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
-static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
+static ndis_status KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
 
