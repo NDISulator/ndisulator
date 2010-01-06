@@ -491,13 +491,15 @@ RtlEqualUnicodeString(unicode_string *str1, unicode_string *str2,
 }
 
 static void
-RtlCopyUnicodeString(unicode_string *dest, unicode_string *src)
+RtlCopyUnicodeString(unicode_string *dst, unicode_string *src)
 {
-	if (dest->us_maxlen >= src->us_len)
-		dest->us_len = src->us_len;
-	else
-		dest->us_len = dest->us_maxlen;
-	memcpy(dest->us_buf, src->us_buf, dest->us_len);
+	if (src != NULL && src->us_buf != NULL && dst->us_buf != NULL) {
+		dst->us_len = min(src->us_len, dst->us_maxlen);
+		memcpy(dst->us_buf, src->us_buf, dst->us_len);
+		if (dst->us_len < dst->us_maxlen)
+			dst->us_buf[dst->us_len / sizeof(dst->us_buf[0])] = 0;
+	} else
+		dst->us_len = 0;
 }
 
 static void
@@ -527,53 +529,53 @@ ntoskrnl_unicode_to_ascii(uint16_t *unicode, char *ascii, int len)
 }
 
 int32_t
-RtlUnicodeStringToAnsiString(ansi_string *dest, unicode_string *src,
+RtlUnicodeStringToAnsiString(ansi_string *dst, unicode_string *src,
     uint8_t allocate)
 {
-	if (dest == NULL || src == NULL)
+	if (dst == NULL || src == NULL)
 		return (STATUS_INVALID_PARAMETER);
 
-	dest->as_len = src->us_len / 2;
-	if (dest->as_maxlen < dest->as_len)
-		dest->as_len = dest->as_maxlen;
+	dst->as_len = src->us_len / 2;
+	if (dst->as_maxlen < dst->as_len)
+		dst->as_len = dst->as_maxlen;
 
 	if (allocate == TRUE) {
-		dest->as_buf = ExAllocatePoolWithTag(NonPagedPool,
+		dst->as_buf = ExAllocatePoolWithTag(NonPagedPool,
 		    (src->us_len / 2) + 1, 0);
-		if (dest->as_buf == NULL)
+		if (dst->as_buf == NULL)
 			return (STATUS_INSUFFICIENT_RESOURCES);
-		dest->as_len = dest->as_maxlen = src->us_len / 2;
+		dst->as_len = dst->as_maxlen = src->us_len / 2;
 	} else {
-		dest->as_len = src->us_len / 2; /* XXX */
-		if (dest->as_maxlen < dest->as_len)
-			dest->as_len = dest->as_maxlen;
+		dst->as_len = src->us_len / 2; /* XXX */
+		if (dst->as_maxlen < dst->as_len)
+			dst->as_len = dst->as_maxlen;
 	}
-	ntoskrnl_unicode_to_ascii(src->us_buf, dest->as_buf,
-	    dest->as_len * 2);
+	ntoskrnl_unicode_to_ascii(src->us_buf, dst->as_buf,
+	    dst->as_len * 2);
 
 	return (STATUS_SUCCESS);
 }
 
 int32_t
-RtlAnsiStringToUnicodeString(unicode_string *dest, ansi_string *src,
+RtlAnsiStringToUnicodeString(unicode_string *dst, ansi_string *src,
     uint8_t allocate)
 {
-	if (dest == NULL || src == NULL)
+	if (dst == NULL || src == NULL)
 		return (STATUS_INVALID_PARAMETER);
 
 	if (allocate == TRUE) {
-		dest->us_buf = ExAllocatePoolWithTag(NonPagedPool,
+		dst->us_buf = ExAllocatePoolWithTag(NonPagedPool,
 		    src->as_len * 2, 0);
-		if (dest->us_buf == NULL)
+		if (dst->us_buf == NULL)
 			return (STATUS_INSUFFICIENT_RESOURCES);
-		dest->us_len = dest->us_maxlen = strlen(src->as_buf) * 2;
+		dst->us_len = dst->us_maxlen = strlen(src->as_buf) * 2;
 	} else {
-		dest->us_len = src->as_len * 2; /* XXX */
-		if (dest->us_maxlen < dest->us_len)
-			dest->us_len = dest->us_maxlen;
+		dst->us_len = src->as_len * 2; /* XXX */
+		if (dst->us_maxlen < dst->us_len)
+			dst->us_len = dst->us_maxlen;
 	}
-	ntoskrnl_ascii_to_unicode(src->as_buf, dest->us_buf,
-	    dest->us_len / 2);
+	ntoskrnl_ascii_to_unicode(src->as_buf, dst->us_buf,
+	    dst->us_len / 2);
 
 	return (STATUS_SUCCESS);
 }
