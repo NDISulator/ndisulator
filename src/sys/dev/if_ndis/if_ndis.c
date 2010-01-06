@@ -192,8 +192,8 @@ static void ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t, int);
 static int ndis_get_oids(struct ndis_softc *, ndis_oid **, uint32_t *);
 static int ndis_set_txpower(struct ndis_softc *);
 static int ndis_set_powersave(struct ndis_softc *, struct ieee80211vap *);
-static int ndis_set_rtsthreshold(struct ndis_softc *, struct ieee80211vap *);
-static int ndis_set_fragthreshold(struct ndis_softc *, struct ieee80211vap *);
+static int ndis_set_rtsthreshold(struct ndis_softc *, uint16_t);
+static int ndis_set_fragthreshold(struct ndis_softc *, uint16_t);
 static int ndis_set_encryption(struct ndis_softc *, uint32_t);
 static int ndis_set_authmode(struct ndis_softc *, uint32_t);
 
@@ -309,23 +309,21 @@ ndis_set_powersave(struct ndis_softc *sc, struct ieee80211vap *vap)
 }
 
 static int
-ndis_set_rtsthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
+ndis_set_rtsthreshold(struct ndis_softc *sc, uint16_t nrts)
 {
-	ndis_80211_rtsthresh rts;
+	ndis_80211_rtsthresh rts = nrts;
 	size_t len;
 
-	rts = vap->iv_rtsthreshold;
 	len = sizeof(rts);
 	return (ndis_set_info(sc, OID_802_11_RTS_THRESHOLD, &rts, &len));
 }
 
 static int
-ndis_set_fragthreshold(struct ndis_softc *sc, struct ieee80211vap *vap)
+ndis_set_fragthreshold(struct ndis_softc *sc, uint16_t nfrag)
 {
-	ndis_80211_fragthresh frag;
+	ndis_80211_fragthresh frag = nfrag;
 	size_t len;
 
-	frag = vap->iv_fragthreshold;
 	len = sizeof(frag);
 	return (ndis_set_info(sc,
 	    OID_802_11_FRAGMENTATION_THRESHOLD, &frag, &len));
@@ -2103,9 +2101,10 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	int i;
 	size_t len;
 
-	ndis_set_rtsthreshold(sc, vap);
+	ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_DISABLED);
+	ndis_set_rtsthreshold(sc, vap->iv_rtsthreshold);
 	if (ic->ic_caps & IEEE80211_C_TXFRAG)
-		ndis_set_fragthreshold(sc, vap);
+		ndis_set_fragthreshold(sc, vap->iv_fragthreshold);
 	if (ic->ic_caps & IEEE80211_C_PMGT)
 		ndis_set_powersave(sc, vap);
 	if (ic->ic_caps & IEEE80211_C_TXPMGT)
@@ -2328,9 +2327,9 @@ ndis_reset_vap(struct ieee80211vap *vap, u_long cmd)
 	case IEEE80211_IOC_POWERSAVE:
 		return (ndis_set_powersave(sc, vap));
 	case IEEE80211_IOC_RTSTHRESHOLD:
-		return (ndis_set_rtsthreshold(sc, vap));
+		return (ndis_set_rtsthreshold(sc, vap->iv_rtsthreshold));
 	case IEEE80211_IOC_FRAGTHRESHOLD:
-		return (ndis_set_fragthreshold(sc, vap));
+		return (ndis_set_fragthreshold(sc, vap->iv_fragthreshold));
 	}
 	return (ENETRESET);
 }
