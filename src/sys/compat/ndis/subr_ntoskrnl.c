@@ -1048,7 +1048,7 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	io_stack_location *sl;
 	completion_func cf;
 
-	KASSERT(ip->irp_iostat.isb_status != STATUS_PENDING,
+	KASSERT(ip->irp_iostat.isb_status != NDIS_STATUS_PENDING,
 	    ("incorrect IRP(%p) status (NDIS_STATUS_PENDING)", ip));
 
 	sl = IoGetCurrentIrpStackLocation(ip);
