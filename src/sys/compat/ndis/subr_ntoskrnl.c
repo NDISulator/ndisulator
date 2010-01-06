@@ -114,7 +114,6 @@ struct callout_entry {
 	struct callout		ce_callout;
 	list_entry		ce_list;
 };
-
 typedef struct callout_entry callout_entry;
 
 static struct list_entry ntoskrnl_calllist;
@@ -2764,6 +2763,9 @@ RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 	char abuf[64];
 	char *astr;
 
+	if (val == NULL)
+		return (STATUS_ACCESS_VIOLATION);
+
 	uchr = ustr->us_buf;
 	len = ustr->us_len;
 	bzero(abuf, sizeof(abuf));
@@ -2793,7 +2795,8 @@ RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 			len -= 2;
 		} else
 			base = 10;
-	}
+	} else if (base != 2 && base != 8 && base != 10 && base != 16)
+		return (STATUS_INVALID_PARAMETER);
 
 	astr = abuf;
 	if (neg) {
