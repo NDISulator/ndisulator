@@ -2652,7 +2652,7 @@ RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 	int negative = 0;
 	uint32_t res;
 
-	if (!src || !val)
+	if (src == NULL || val == NULL)
 		return (STATUS_ACCESS_VIOLATION);
 	while (*src != '\0' && *src <= ' ')
 		src++;

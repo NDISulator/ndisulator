@@ -318,7 +318,7 @@ pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
 	for (i = 0; i < sections; i++) {
-		if (!strcmp ((char *)&sect_hdr->ish_name, name)) {
+		if (!strcmp((char *)&sect_hdr->ish_name, name)) {
 			bcopy((char *)sect_hdr, (char *)hdr,
 			    sizeof(image_section_header));
 			return (0);
