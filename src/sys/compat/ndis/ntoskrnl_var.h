@@ -1261,10 +1261,10 @@ extern void ntoskrnl_time(uint64_t *);
 extern uint16_t ExQueryDepthSList(slist_header *);
 extern slist_entry *InterlockedPushEntrySList(slist_header *, slist_entry *);
 extern slist_entry *InterlockedPopEntrySList(slist_header *);
-extern int32_t RtlUnicodeStringToAnsiString(ansi_string *, unicode_string *,
-    uint8_t);
-extern int32_t RtlAnsiStringToUnicodeString(unicode_string *, ansi_string *,
-    uint8_t);
+extern int32_t RtlUnicodeStringToAnsiString(ansi_string *,
+    const unicode_string *, uint8_t);
+extern int32_t RtlAnsiStringToUnicodeString(unicode_string *,
+    const ansi_string *, uint8_t);
 extern void RtlInitAnsiString(ansi_string *, char *);
 extern void RtlInitUnicodeString(unicode_string *, uint16_t *);
 extern void RtlFreeUnicodeString(unicode_string *);

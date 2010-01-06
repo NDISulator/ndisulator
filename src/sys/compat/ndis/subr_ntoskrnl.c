@@ -529,7 +529,7 @@ ntoskrnl_unicode_to_ascii(uint16_t *unicode, char *ascii, int len)
 }
 
 int32_t
-RtlUnicodeStringToAnsiString(ansi_string *dst, unicode_string *src,
+RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
     uint8_t allocate)
 {
 	if (dst == NULL || src == NULL)
@@ -557,7 +557,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, unicode_string *src,
 }
 
 int32_t
-RtlAnsiStringToUnicodeString(unicode_string *dst, ansi_string *src,
+RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
     uint8_t allocate)
 {
 	if (dst == NULL || src == NULL)
