@@ -383,8 +383,8 @@ NdisMRegisterMiniport(ndis_handle handle,
 	 */
 	if (IoAllocateDriverObjectExtension(drv, (void *)1,
 	    sizeof(ndis_miniport_characteristics), (void **)&ch) !=
-	    STATUS_SUCCESS) {
-		return (NDIS_STATUS_RESOURCES);
+	    NDIS_STATUS_SUCCESS) {
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 
 	memset(ch, 0, sizeof(ndis_miniport_characteristics));
@@ -406,7 +406,7 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 
 	mem = ExAllocatePoolWithTag(NonPagedPool, len, tag);
 	if (mem == NULL) {
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 	*vaddr = mem;
 
@@ -421,7 +421,7 @@ NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags,
 
 	mem = ExAllocatePoolWithTag(NonPagedPool, len, 0);
 	if (mem == NULL)
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	*vaddr = mem;
 
 	return (NDIS_STATUS_SUCCESS);
@@ -492,7 +492,7 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 	np = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(ndis_parmlist_entry), 0);
 	if (np == NULL)
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	InsertHeadList((&block->nmb_parmlist), (&np->np_list));
 	*parm = p = &np->np_parm;
 
@@ -511,7 +511,7 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 
 		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
 			ExFreePool(np);
-			return (NDIS_STATUS_RESOURCES);
+			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		}
 		break;
 	case ndis_parm_int:
@@ -563,7 +563,7 @@ NdisReadConfiguration(ndis_status *status, ndis_config_parm **parm,
 	}
 
 	if (RtlUnicodeStringToAnsiString(&as, key, TRUE)) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
@@ -620,7 +620,7 @@ ndis_decode_parm(ndis_miniport_block *block, ndis_config_parm *parm, char *val)
 	case ndis_parm_string:
 		ustr = &parm->ncp_parmdata.ncp_stringdata;
 		if (RtlUnicodeStringToAnsiString(&as, ustr, TRUE))
-			return (NDIS_STATUS_RESOURCES);
+			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		memcpy(val, as.as_buf, as.as_len);
 		RtlFreeAnsiString(&as);
 		break;
@@ -652,7 +652,7 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 
 	if (RtlUnicodeStringToAnsiString(&as, key, TRUE)) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
@@ -887,7 +887,7 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 			if (flags & MESSAGE_RESOURCE_UNICODE) {
 				RtlInitUnicodeString(&us, (uint16_t *)str);
 				if (RtlUnicodeStringToAnsiString(&as,
-				    &us, TRUE) == STATUS_SUCCESS)
+				    &us, TRUE) == NDIS_STATUS_SUCCESS)
 					str = as.as_buf;
 				else
 					str = NULL;
@@ -1197,7 +1197,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * physmapneeded,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (sc->ndis_mmaps == NULL)
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	if (bus_dma_tag_create(sc->ndis_parent_tag,
 			ETHER_ALIGN, 0,
@@ -1212,7 +1212,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 			NULL,
 			&sc->ndis_mtag) != 0) {
 		free(sc->ndis_mmaps, M_NDIS_SUBR);
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 
 	for (i = 0; i < physmapneeded; i++)
@@ -1512,7 +1512,7 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
 			NULL,
 			NULL,
 			&sc->ndis_ttag) != 0)
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	sc->ndis_sc = 1;
 
@@ -1529,7 +1529,7 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 
 	p = ExAllocatePoolWithTag(NonPagedPool, sizeof(ndis_packet_pool), 0);
 	if (p == NULL) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
@@ -1540,7 +1540,7 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 	    p->np_len, 0);
 	if (packets == NULL) {
 		ExFreePool(p);
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
@@ -1619,7 +1619,7 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 		KeReleaseSpinLock(&p->np_lock, irql);
 		printf("NDIS: tried to allocate packet from dead pool %p\n",
 		    pool);
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 #endif
@@ -1628,7 +1628,7 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 	KeReleaseSpinLock(&p->np_lock, irql);
 #endif
 	if (pkt == NULL) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 	memset(pkt, 0, sizeof(ndis_packet));
@@ -1755,7 +1755,7 @@ NdisAllocateBuffer(ndis_status *status, ndis_buffer **buffer, ndis_handle pool,
 
 	buf = IoAllocateMdl(vaddr, len, FALSE, FALSE, NULL);
 	if (buf == NULL) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 	MmBuildMdlForNonPagedPool(buf);
@@ -1869,7 +1869,7 @@ NdisWaitEvent(ndis_event *event, uint32_t msecs)
 	duetime = ((int64_t)msecs * -10000);
 	rval = KeWaitForSingleObject(event,
 	    0, 0, TRUE, msecs ? & duetime : NULL);
-	if (rval == STATUS_TIMEOUT)
+	if (rval == NDIS_STATUS_TIMEOUT)
 		return (FALSE);
 
 	return (TRUE);
@@ -1881,8 +1881,8 @@ NdisUnicodeStringToAnsiString(ansi_string *dstr, unicode_string *sstr)
 	uint32_t rval;
 
 	rval = RtlUnicodeStringToAnsiString(dstr, sstr, FALSE);
-	if (rval == STATUS_INSUFFICIENT_RESOURCES)
-		return (NDIS_STATUS_RESOURCES);
+	if (rval == NDIS_STATUS_INSUFFICIENT_RESOURCES)
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	if (rval)
 		return (NDIS_STATUS_FAILURE);
 
@@ -1895,8 +1895,8 @@ NdisAnsiStringToUnicodeString(unicode_string *dstr, ansi_string *sstr)
 	uint32_t rval;
 
 	rval = RtlAnsiStringToUnicodeString(dstr, sstr, FALSE);
-	if (rval == STATUS_INSUFFICIENT_RESOURCES)
-		return (NDIS_STATUS_RESOURCES);
+	if (rval == NDIS_STATUS_INSUFFICIENT_RESOURCES)
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	if (rval)
 		return (NDIS_STATUS_FAILURE);
 
@@ -1995,7 +1995,7 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 	intr->ni_rsvd = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(struct mtx), 0);
 	if (intr->ni_rsvd == NULL)
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	intr->ni_block = adapter;
 	intr->ni_isrreq = reqisr;
@@ -2011,7 +2011,7 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 
 	if (IoConnectInterrupt(&intr->ni_introbj,
 	    ndis_findwrap((funcptr)ndis_intr), sc, NULL,
-	    ivec, ilevel, 0, imode, shared, 0, FALSE) != STATUS_SUCCESS)
+	    ivec, ilevel, 0, imode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
 
 	block->nmb_interrupt = intr;
@@ -2372,7 +2372,7 @@ NdisCheckModule(linker_file_t lf, void *context)
 	return (1);
 }
 
-/* can also return NDIS_STATUS_RESOURCES/NDIS_STATUS_ERROR_READING_FILE */
+/* can also return NDIS_STATUS_INSUFFICIENT_RESOURCES/NDIS_STATUS_ERROR_READING_FILE */
 static void
 NdisOpenFile(ndis_status *status, ndis_handle *filehandle, 
     uint32_t *filelength, unicode_string *filename, ndis_physaddr highestaddr)
@@ -2387,7 +2387,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	ndis_fh *fh;
 
 	if (RtlUnicodeStringToAnsiString(&as, filename, TRUE)) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 	afilename = strdup(as.as_buf, M_NDIS_SUBR);
@@ -2396,7 +2396,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	fh = ExAllocatePoolWithTag(NonPagedPool, sizeof(ndis_fh), 0);
 	if (fh == NULL) {
 		free(afilename, M_NDIS_SUBR);
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
@@ -2444,7 +2444,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	if (path == NULL) {
 		ExFreePool(fh);
 		free(afilename, M_NDIS_SUBR);
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 	snprintf(path, MAXPATHLEN, "%s/%s", ndis_filepath, afilename);
@@ -2522,7 +2522,7 @@ NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
 
 	fh->nf_map = ExAllocatePoolWithTag(NonPagedPool, fh->nf_maplen, 0);
 	if (fh->nf_map == NULL) {
-		*status = NDIS_STATUS_RESOURCES;
+		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
@@ -2757,7 +2757,7 @@ NdisMRegisterDevice(ndis_handle handle, unicode_string *devname,
 
 	status = IoCreateDevice(handle, 0, devname,
 	    FILE_DEVICE_UNKNOWN, 0, FALSE, &dobj);
-	if (status == STATUS_SUCCESS) {
+	if (status == NDIS_STATUS_SUCCESS) {
 		*devobj = dobj;
 		*devhandle = dobj;
 	}
@@ -2785,7 +2785,7 @@ NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle handle)
 
 	RtlInitAnsiString(&as, __DECONST(char *, device_get_nameunit(dev)));
 	if (RtlAnsiStringToUnicodeString(name, &as, TRUE))
-		return (NDIS_STATUS_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	return (NDIS_STATUS_SUCCESS);
 }

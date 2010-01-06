@@ -1096,7 +1096,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 
 	status = IoCreateDevice(drv, sizeof(ndis_miniport_block), NULL,
 	    FILE_DEVICE_UNKNOWN, 0, FALSE, &fdo);
-	if (status != STATUS_SUCCESS)
+	if (status != NDIS_STATUS_SUCCESS)
 		return (status);
 
 	block = fdo->do_devext;
@@ -1152,7 +1152,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 
 	TAILQ_INSERT_TAIL(&ndis_devhead, block, link);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void

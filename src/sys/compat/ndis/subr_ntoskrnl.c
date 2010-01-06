@@ -532,7 +532,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
     uint8_t allocate)
 {
 	if (dst == NULL || src == NULL)
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	dst->as_len = src->us_len / 2;
 	if (dst->as_maxlen < dst->as_len)
@@ -542,7 +542,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
 		dst->as_buf = ExAllocatePoolWithTag(NonPagedPool,
 		    (src->us_len / 2) + 1, 0);
 		if (dst->as_buf == NULL)
-			return (STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		dst->as_len = dst->as_maxlen = src->us_len / 2;
 	} else {
 		dst->as_len = src->us_len / 2; /* XXX */
@@ -552,7 +552,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
 	ntoskrnl_unicode_to_ascii(src->us_buf, dst->as_buf,
 	    dst->as_len * 2);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 int32_t
@@ -560,13 +560,13 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
     uint8_t allocate)
 {
 	if (dst == NULL || src == NULL)
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	if (allocate == TRUE) {
 		dst->us_buf = ExAllocatePoolWithTag(NonPagedPool,
 		    src->as_len * 2, 0);
 		if (dst->us_buf == NULL)
-			return (STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		dst->us_len = dst->us_maxlen = strlen(src->as_buf) * 2;
 	} else {
 		dst->us_len = src->as_len * 2; /* XXX */
@@ -576,7 +576,7 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
 	ntoskrnl_ascii_to_unicode(src->as_buf, dst->us_buf,
 	    dst->us_len / 2);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void *
@@ -610,14 +610,14 @@ IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
 	ce = ExAllocatePoolWithTag(NonPagedPool, sizeof(custom_extension)
 	    + extlen, 0);
 	if (ce == NULL)
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	ce->ce_clid = clid;
 	InsertTailList((&drv->dro_driverext->dre_usrext), (&ce->ce_list));
 
 	*ext = (void *)(ce + 1);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void *
@@ -654,7 +654,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 
 	dev = ExAllocatePoolWithTag(NonPagedPool, sizeof(device_object), 0);
 	if (dev == NULL)
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	dev->do_type = devtype;
 	dev->do_drvobj = drv;
@@ -666,7 +666,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 		    devextlen, 0);
 		if (dev->do_devext == NULL) {
 			ExFreePool(dev);
-			return (STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		}
 		bzero(dev->do_devext, devextlen);
 	} else
@@ -695,7 +695,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 		if (dev->do_devext != NULL)
 			ExFreePool(dev->do_devext);
 		ExFreePool(dev);
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 
 	dev->do_devobj_ext->dve_type = 0;
@@ -718,7 +718,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	}
 	*newdev = dev;
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void
@@ -1049,7 +1049,7 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	completion_func cf;
 
 	KASSERT(ip->irp_iostat.isb_status != STATUS_PENDING,
-	    ("incorrect IRP(%p) status (STATUS_PENDING)", ip));
+	    ("incorrect IRP(%p) status (NDIS_STATUS_PENDING)", ip));
 
 	sl = IoGetCurrentIrpStackLocation(ip);
 	IoSkipCurrentIrpStackLocation(ip);
@@ -1064,15 +1064,15 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 			dobj = NULL;
 
 		if (sl->isl_completionfunc != NULL &&
-		    ((ip->irp_iostat.isb_status == STATUS_SUCCESS &&
+		    ((ip->irp_iostat.isb_status == NDIS_STATUS_SUCCESS &&
 		    sl->isl_ctl & SL_INVOKE_ON_SUCCESS) ||
-		    (ip->irp_iostat.isb_status != STATUS_SUCCESS &&
+		    (ip->irp_iostat.isb_status != NDIS_STATUS_SUCCESS &&
 		    sl->isl_ctl & SL_INVOKE_ON_ERROR) ||
 		    (ip->irp_cancel == TRUE &&
 		    sl->isl_ctl & SL_INVOKE_ON_CANCEL))) {
 			cf = sl->isl_completionfunc;
 			if (MSCALL3(cf, dobj, ip, sl->isl_completionctx) ==
-			    STATUS_MORE_PROCESSING_REQUIRED)
+			    NDIS_STATUS_MORE_PROCESSING_REQUIRED)
 				return;
 		} else {
 			if ((ip->irp_currentstackloc <= ip->irp_stackcnt) &&
@@ -1188,7 +1188,7 @@ IoConnectInterrupt(kinterrupt **iobj, void *svcfunc, void *svcctx,
 
 	*iobj = ExAllocatePoolWithTag(NonPagedPool, sizeof(kinterrupt), 0);
 	if (*iobj == NULL)
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	(*iobj)->ki_svcfunc = svcfunc;
 	(*iobj)->ki_svcctx = svcctx;
@@ -1203,7 +1203,7 @@ IoConnectInterrupt(kinterrupt **iobj, void *svcfunc, void *svcctx,
 	InsertHeadList((&ntoskrnl_intlist), (&(*iobj)->ki_list));
 	KeReleaseSpinLock(&ntoskrnl_intlock, curirql);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void
@@ -1512,7 +1512,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	wb_ext we;
 
 	if (obj == NULL)
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 
@@ -1528,7 +1528,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 		if (obj->dh_sigstate != INT32_MIN) {
 			ntoskrnl_satisfy_wait(obj, curthread);
 			mtx_unlock(&ntoskrnl_dispatchlock);
-			return (STATUS_SUCCESS);
+			return (NDIS_STATUS_SUCCESS);
 		} else {
 			/*
 			 * There's a limit to how many times we can
@@ -1591,11 +1591,11 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	/* We timed out. Leave the object alone and return status. */
 	if (error == EWOULDBLOCK) {
 		mtx_unlock(&ntoskrnl_dispatchlock);
-		return (STATUS_TIMEOUT);
+		return (NDIS_STATUS_TIMEOUT);
 	}
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 /*
 	return (KeWaitForMultipleObjects(1, &obj, WAITTYPE_ALL, reason,
 	    mode, alertable, duetime, &w));
@@ -1615,13 +1615,13 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 	int i, wcnt = 0, error = 0;
 	uint64_t curtime;
 	struct timespec t1, t2;
-	ndis_status status = STATUS_SUCCESS;
+	ndis_status status = NDIS_STATUS_SUCCESS;
 	wb_ext we;
 
 	if (cnt > MAX_WAIT_OBJECTS)
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 	if (cnt > THREAD_WAIT_OBJECTS && wb_array == NULL)
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 
@@ -1671,7 +1671,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 			 */
 			if (wtype == WAITTYPE_ANY) {
 				ntoskrnl_satisfy_wait(obj[i], td);
-				status = STATUS_WAIT_0 + i;
+				status = NDIS_STATUS_WAIT_0 + i;
 				goto wait_done;
 			} else {
 				w--;
@@ -1689,7 +1689,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 	if (wtype == WAITTYPE_ALL && wcnt == 0) {
 		for (i = 0; i < cnt; i++)
 			ntoskrnl_satisfy_wait(obj[i], td);
-		status = STATUS_SUCCESS;
+		status = NDIS_STATUS_SUCCESS;
 		goto wait_done;
 	}
 
@@ -1729,7 +1729,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 
 		/* Wait with timeout expired. */
 		if (error) {
-			status = STATUS_TIMEOUT;
+			status = NDIS_STATUS_TIMEOUT;
 			goto wait_done;
 		}
 
@@ -1750,7 +1750,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 				wcnt--;
 				if (wtype == WAITTYPE_ANY) {
 					status = w->wb_waitkey &
-					    STATUS_WAIT_0;
+					    NDIS_STATUS_WAIT_0;
 					goto wait_done;
 				}
 			}
@@ -1763,7 +1763,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 		 * someone, we can bail.
 		 */
 		if (wcnt == 0) {
-			status = STATUS_SUCCESS;
+			status = NDIS_STATUS_SUCCESS;
 			goto wait_done;
 		}
 
@@ -2654,7 +2654,7 @@ RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 	uint32_t res;
 
 	if (src == NULL || val == NULL)
-		return (STATUS_ACCESS_VIOLATION);
+		return (NDIS_STATUS_ACCESS_VIOLATION);
 	while (*src != '\0' && *src <= ' ')
 		src++;
 	if (*src == '+')
@@ -2679,7 +2679,7 @@ RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 			}
 		}
 	} else if (!(base == 2 || base == 8 || base == 10 || base == 16))
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	for (res = 0; *src; src++) {
 		int v;
@@ -2690,11 +2690,11 @@ RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 		else
 			v = base;
 		if (v >= base)
-			return (STATUS_INVALID_PARAMETER);
+			return (NDIS_STATUS_INVALID_PARAMETER);
 		res = res * base + v;
 	}
 	*val = negative ? -res : res;
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static void
@@ -2764,7 +2764,7 @@ RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 	char *astr;
 
 	if (val == NULL)
-		return (STATUS_ACCESS_VIOLATION);
+		return (NDIS_STATUS_ACCESS_VIOLATION);
 
 	uchr = ustr->us_buf;
 	len = ustr->us_len;
@@ -2796,7 +2796,7 @@ RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 		} else
 			base = 10;
 	} else if (base != 2 && base != 8 && base != 10 && base != 16)
-		return (STATUS_INVALID_PARAMETER);
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	astr = abuf;
 	if (neg) {
@@ -2807,7 +2807,7 @@ RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 	ntoskrnl_unicode_to_ascii(uchr, astr, len);
 	*val = strtoul(abuf, NULL, base);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void
@@ -2870,7 +2870,7 @@ static ndis_status
 IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
     void *fileobj, device_object *devobj)
 {
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static ndis_status
@@ -2889,11 +2889,11 @@ IoGetDeviceProperty(device_object *devobj, uint32_t regprop, uint32_t buflen,
 		*reslen = drv->dro_drivername.us_len;
 		break;
 	default:
-		return (STATUS_INVALID_PARAMETER_2);
+		return (NDIS_STATUS_INVALID_PARAMETER_2);
 		break;
 	}
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static void
@@ -2917,7 +2917,7 @@ KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
 	prevstate = kmutex->km_header.dh_sigstate;
 	if (kmutex->km_ownerthread != curthread) {
 		mtx_unlock(&ntoskrnl_dispatchlock);
-		return (STATUS_MUTANT_NOT_OWNED);
+		return (NDIS_STATUS_MUTANT_NOT_OWNED);
 	}
 
 	kmutex->km_header.dh_sigstate++;
@@ -3070,7 +3070,7 @@ ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
 
 	nr = malloc(sizeof(nt_objref), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (nr == NULL)
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	InitializeListHead((&nr->no_dh.dh_waitlisthead));
 	nr->no_obj = handle;
@@ -3081,7 +3081,7 @@ ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
 	TAILQ_INSERT_TAIL(&ntoskrnl_reflist, nr, link);
 	*object = nr;
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static void
@@ -3097,27 +3097,27 @@ ObfDereferenceObject(void *object)
 static ndis_status
 ZwClose(ndis_handle handle)
 {
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static ndis_status
 WmiQueryTraceInformation(uint32_t traceclass, void *traceinfo,
     uint32_t infolen, uint32_t reqlen, void *buf)
 {
-	return (STATUS_NOT_FOUND);
+	return (NDIS_STATUS_NOT_FOUND);
 }
 
 static ndis_status
 WmiTraceMessage(uint64_t loghandle, uint32_t messageflags,
     void *guid, uint16_t messagenum, ...)
 {
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static ndis_status
 IoWMIRegistrationControl(device_object *dobj, uint32_t action)
 {
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 /*
@@ -3152,7 +3152,7 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 
 	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (tc == NULL)
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	tc->tc_thrctx = thrctx;
 	tc->tc_thrfunc = thrfunc;
@@ -3161,13 +3161,13 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	if (kproc_create(ntoskrnl_thrfunc, tc, &p,
 	    RFHIGHPID, NDIS_KSTACK_PAGES, tname) != 0) {
 		free(tc, M_NDIS_NTOSKRNL);
-		return (STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 
 	*handle = p;
 	ntoskrnl_kth++;
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 /*
@@ -3210,7 +3210,7 @@ DbgPrint(char *fmt, ...)
 		vprintf(fmt, ap);
 	}
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static void
@@ -3753,7 +3753,7 @@ KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 	KeSetTimer(&timer, *interval, NULL);
 	KeWaitForSingleObject(&timer, 0, 0, alertable, NULL);
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static uint64_t

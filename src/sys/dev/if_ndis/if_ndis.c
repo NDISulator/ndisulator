@@ -664,7 +664,7 @@ ndis_attach(device_t dev)
 	 * device. This is what creates the miniport block
 	 * for this device instance.
 	 */
-	if (NdisAddDevice(sc->ndis_dobj, pdo) != STATUS_SUCCESS) {
+	if (NdisAddDevice(sc->ndis_dobj, pdo) != NDIS_STATUS_SUCCESS) {
 		device_printf(dev, "failed to create FDO\n");
 		error = ENXIO;
 		goto fail;
@@ -1430,7 +1430,8 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 				ndis_return_packet(block, p);
 		} else {
 #ifdef notdef
-			if (p->np_oob.npo_status == NDIS_STATUS_RESOURCES) {
+			if (p->np_oob.npo_status ==
+			    NDIS_STATUS_INSUFFICIENT_RESOURCES) {
 				m = m_dup(m0, M_DONTWAIT);
 				/*
 				 * NOTE: we want to destroy the mbuf here, but
@@ -1450,7 +1451,8 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 				p->np_oob.npo_status = NDIS_STATUS_PENDING;
 #endif
 			m = m_dup(m0, M_DONTWAIT);
-			if (p->np_oob.npo_status == NDIS_STATUS_RESOURCES)
+			if (p->np_oob.npo_status ==
+			    NDIS_STATUS_INSUFFICIENT_RESOURCES)
 				p->np_refcnt++;
 			else
 				p->np_oob.npo_status = NDIS_STATUS_PENDING;

@@ -380,7 +380,7 @@ skipreloc:
 	new->windrv_bustype = bustype;
 
 	/* Now call the DriverEntry() function. */
-	if (MSCALL2(entry, drv, &drv->dro_drivername) != STATUS_SUCCESS) {
+	if (MSCALL2(entry, drv, &drv->dro_drivername) != NDIS_STATUS_SUCCESS) {
 		RtlFreeUnicodeString(&drv->dro_drivername);
 		free(drv->dro_driverext, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
@@ -417,7 +417,7 @@ windrv_create_pdo(driver_object *drv, device_t bsddev)
 	/* Stash pointer to our BSD device handle. */
 	dev->do_devext = bsddev;
 
-	return (STATUS_SUCCESS);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 void
