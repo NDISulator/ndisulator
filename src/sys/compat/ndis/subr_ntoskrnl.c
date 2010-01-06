@@ -236,14 +236,14 @@ static int32_t ZwClose(ndis_handle);
 static int32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
     void *);
 static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
-static uint32_t IoWMIRegistrationControl(device_object *, uint32_t);
+static ndis_status IoWMIRegistrationControl(device_object *, uint32_t);
 static void *ntoskrnl_memset(void *, int, size_t);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
 static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(funcptr);
-static uint32_t DbgPrint(char *, ...);
+static ndis_status DbgPrint(char *, ...);
 static void DbgBreakPoint(void);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
@@ -1180,7 +1180,7 @@ KeSynchronizeExecution(kinterrupt *iobj, void *syncfunc, void *syncctx)
  * interrupts shared, but it's the only way to duplicate the
  * semantics of IoConnectInterrupt() and IoDisconnectInterrupt() properly.
  */
-uint32_t
+int32_t
 IoConnectInterrupt(kinterrupt **iobj, void *svcfunc, void *svcctx,
     kspin_lock *lock, uint32_t vector, uint8_t irql, uint8_t syncirql,
     uint8_t imode, uint8_t shared, uint32_t affinity, uint8_t savefloat)
@@ -1603,7 +1603,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 */
 }
 
-static int32_t
+static ndis_status
 KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
     uint32_t wtype, uint32_t reason, uint32_t mode, uint8_t alertable,
     int64_t *duetime, wait_block *wb_array)
@@ -2756,7 +2756,7 @@ RtlInitUnicodeString(unicode_string *dst, uint16_t *src)
 	}
 }
 
-ndis_status
+static ndis_status
 RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 {
 	uint16_t *uchr;
@@ -2905,7 +2905,7 @@ KeInitializeMutex(kmutant *kmutex, uint32_t level)
 	kmutex->km_ownerthread = NULL;
 }
 
-static int32_t
+static ndis_status
 KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
 {
 	int32_t prevstate;
@@ -3091,27 +3091,27 @@ ObfDereferenceObject(void *object)
 	free(nr, M_NDIS_NTOSKRNL);
 }
 
-static int32_t
+static ndis_status
 ZwClose(ndis_handle handle)
 {
 	return (STATUS_SUCCESS);
 }
 
-static int32_t
+static ndis_status
 WmiQueryTraceInformation(uint32_t traceclass, void *traceinfo,
     uint32_t infolen, uint32_t reqlen, void *buf)
 {
 	return (STATUS_NOT_FOUND);
 }
 
-static int32_t
+static ndis_status
 WmiTraceMessage(uint64_t loghandle, uint32_t messageflags,
     void *guid, uint16_t messagenum, ...)
 {
 	return (STATUS_SUCCESS);
 }
 
-static uint32_t
+static ndis_status
 IoWMIRegistrationControl(device_object *dobj, uint32_t action)
 {
 	return (STATUS_SUCCESS);
@@ -3197,7 +3197,7 @@ PsTerminateSystemThread(ndis_status status)
 	return (0);	/* notreached */
 }
 
-static uint32_t
+static ndis_status
 DbgPrint(char *fmt, ...)
 {
 	va_list ap;
@@ -3738,7 +3738,7 @@ KeReadStateTimer(ktimer *timer)
 	return (timer->k_header.dh_sigstate);
 }
 
-static int32_t
+static ndis_status
 KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 {
 	ktimer timer;

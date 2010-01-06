@@ -1304,7 +1304,7 @@ extern uint8_t KeSynchronizeExecution(kinterrupt *, void *, void *);
 extern uintptr_t InterlockedExchange(volatile uint32_t *, uintptr_t);
 extern void *ExAllocatePoolWithTag(uint32_t, size_t, uint32_t);
 extern void ExFreePool(void *);
-extern uint32_t IoConnectInterrupt(kinterrupt **, void *, void *, kspin_lock *,
+extern int32_t IoConnectInterrupt(kinterrupt **, void *, void *, kspin_lock *,
     uint32_t, uint8_t, uint8_t, uint8_t, uint8_t, uint32_t, uint8_t);
 extern void *MmMapIoSpace(uint64_t, uint32_t, uint32_t);
 extern void MmUnmapIoSpace(void *, size_t);
