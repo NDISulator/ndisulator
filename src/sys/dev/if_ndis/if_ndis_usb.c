@@ -199,7 +199,7 @@ static int
 ndisusb_detach(device_t self)
 {
 	struct ndis_softc *sc;
-	struct ndisusb_ep *ne;;
+	struct ndisusb_ep *ne;
 	int i;
 
 	sc = device_get_softc(self);
