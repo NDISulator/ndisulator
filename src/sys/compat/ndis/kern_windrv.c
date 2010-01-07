@@ -304,6 +304,8 @@ windrv_load(module_t mod, vm_offset_t img, size_t len, interface_type bustype,
 	uint32_t *ptr;
 	ansi_string as;
 
+	if (pe_validate_header(img))
+		return (ENOEXEC);
 	/*
 	 * First step: try to relocate and dynalink the executable
 	 * driver image.

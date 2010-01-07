@@ -193,6 +193,10 @@ struct image_optional_header {
 };
 typedef struct image_optional_header image_optional_header;
 
+/* Magic */
+#define	IMAGE_OPTIONAL_MAGIC_32			0x010B
+#define	IMAGE_OPTIONAL_MAGIC_64			0x020B
+
 struct image_nt_header {
 	uint32_t		inh_signature;
 	image_file_header	inh_filehdr;
@@ -499,6 +503,7 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 __BEGIN_DECLS
 extern int pe_get_dos_header(vm_offset_t, image_dos_header *);
 extern int pe_is_nt_image(vm_offset_t);
+extern int pe_validate_header(vm_offset_t);
 extern int pe_get_optional_header(vm_offset_t, image_optional_header *);
 extern int pe_get_file_header(vm_offset_t, image_file_header *);
 extern int pe_get_section_header(vm_offset_t, image_section_header *);

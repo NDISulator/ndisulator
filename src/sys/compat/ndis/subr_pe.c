@@ -84,8 +84,7 @@ pe_get_dos_header(vm_offset_t imgbase, image_dos_header *hdr)
 	if (signature != IMAGE_DOS_SIGNATURE)
 		return (ENOEXEC);
 
-	bcopy ((char *)imgbase, (char *)hdr, sizeof(image_dos_header));
-
+	bcopy((char *)imgbase, (char *)hdr, sizeof(image_dos_header));
 	return (0);
 }
 
@@ -112,6 +111,33 @@ pe_is_nt_image(vm_offset_t imgbase)
 	return (ENOEXEC);
 }
 
+int
+pe_validate_header(vm_offset_t imgbase)
+{
+	image_file_header file_hdr;
+	image_optional_header opt_hdr;
+
+	pe_get_file_header(imgbase, &file_hdr);
+	pe_get_optional_header(imgbase, &opt_hdr);
+#ifdef __amd64__
+	if (file_hdr.ifh_machine != IMAGE_FILE_MACHINE_AMD64)
+		return (ENOEXEC);
+#endif
+#ifdef __i386__
+	if (file_hdr.ifh_machine != IMAGE_FILE_MACHINE_I386)
+		return (ENOEXEC);
+#endif
+#ifdef __amd64__
+	if (opt_hdr.ioh_magic != IMAGE_OPTIONAL_MAGIC_64)
+		return (ENOEXEC);
+#endif
+#ifdef __i386__
+	if (opt_hdr.ioh_magic != IMAGE_OPTIONAL_MAGIC_32)
+		return (ENOEXEC);
+#endif
+	return (0);
+}
+
 /*
  * Return a copy of the optional header. This contains the
  * executable entry point and the directory listing which we
@@ -132,9 +158,8 @@ pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
 	dos_hdr = (image_dos_header *)(imgbase);
 	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
 
-	bcopy ((char *)&nt_hdr->inh_optionalhdr, (char *)hdr,
+	bcopy((char *)&nt_hdr->inh_optionalhdr, (char *)hdr,
 	    nt_hdr->inh_filehdr.ifh_optionalhdrlen);
-
 	return (0);
 }
 
@@ -164,9 +189,8 @@ pe_get_file_header(vm_offset_t imgbase, image_file_header *hdr)
 	 * non-variant portion of the nt_header structure, so we don't
 	 * bother copying the optional parts here.
 	 */
-	bcopy ((char *)&nt_hdr->inh_filehdr, (char *)hdr,
+	bcopy((char *)&nt_hdr->inh_filehdr, (char *)hdr,
 	    sizeof(image_file_header));
-
 	return (0);
 }
 
@@ -190,8 +214,7 @@ pe_get_section_header(vm_offset_t imgbase, image_section_header *hdr)
 	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
-	bcopy ((char *)sect_hdr, (char *)hdr, sizeof(image_section_header));
-
+	bcopy((char *)sect_hdr, (char *)hdr, sizeof(image_section_header));
 	return (0);
 }
 
@@ -325,7 +348,6 @@ pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
 		} else
 			sect_hdr++;
 	}
-
 	return (ENOEXEC);
 }
 
@@ -433,7 +455,6 @@ pe_get_import_descriptor(vm_offset_t imgbase, image_import_descriptor *desc,
 		}
 		imp_desc++;
 	}
-
 	return (ENOENT);
 }
 
