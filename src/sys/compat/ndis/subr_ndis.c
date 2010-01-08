@@ -405,9 +405,8 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 	void *mem;
 
 	mem = ExAllocatePoolWithTag(NonPagedPool, len, tag);
-	if (mem == NULL) {
+	if (mem == NULL)
 		return (NDIS_STATUS_FAILURE);
-	}
 	*vaddr = mem;
 
 	return (NDIS_STATUS_SUCCESS);
@@ -425,7 +424,6 @@ NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 {
 	if (len == 0)
 		return;
-
 	ExFreePool(vaddr);
 }
 
