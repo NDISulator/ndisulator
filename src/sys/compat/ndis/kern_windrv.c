@@ -111,8 +111,8 @@ windrv_libinit(void)
 	 * to modify the GDT on each CPU, since we never know
 	 * on which one we'll end up running.
 	 */
-	my_tids = ExAllocatePoolWithTag(NonPagedPool,
-	    sizeof(struct tid) * mp_ncpus, 0);
+	my_tids = malloc(sizeof(struct tid) * mp_ncpus,
+	    M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (my_tids == NULL)
 		panic("failed to allocate thread info blocks");
 	smp_rendezvous(NULL, x86_newldt, NULL, NULL);
@@ -138,7 +138,7 @@ windrv_libfini(void)
 	mtx_destroy(&drvdb_mtx);
 #ifdef __i386__
 	smp_rendezvous(NULL, x86_oldldt, NULL, NULL);
-	ExFreePool(my_tids);
+	free(my_tids, M_NDIS_WINDRV);
 #endif
 }
 
@@ -262,9 +262,7 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 	if (r == NULL || drv == NULL)
 		return (ENOENT);
 
-	/*
-	 * Destroy any custom extensions that may have been added.
-	 */
+	/* Destroy any custom extensions that may have been added. */
 	drv = r->windrv_object;
 	while (!IsListEmpty(&drv->dro_driverext->dre_usrext)) {
 		e = RemoveHeadList(&drv->dro_driverext->dre_usrext);
