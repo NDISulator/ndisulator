@@ -1996,11 +1996,6 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 	if (ch == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
-	intr->ni_rsvd = malloc(sizeof(struct mtx),
-	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
-	if (intr->ni_rsvd == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-
 	intr->ni_block = adapter;
 	intr->ni_isrreq = reqisr;
 	intr->ni_shared = shared;
@@ -2026,10 +2021,8 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 static void
 NdisMDeregisterInterrupt(ndis_miniport_interrupt *intr)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = intr->ni_block;
 	uint8_t irql;
-
-	block = intr->ni_block;
 
 	/* Should really be KeSynchronizeExecution() */
 	KeAcquireSpinLock(intr->ni_introbj->ki_lock, &irql);
