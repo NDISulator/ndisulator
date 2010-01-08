@@ -799,7 +799,7 @@ usbd_xfer_complete(struct ndis_softc *sc, struct ndisusb_ep *ne,
 	nd = malloc(sizeof(struct ndisusb_xferdone),
 	    M_USBDEV, M_NOWAIT|M_ZERO);
 	if (nd == NULL) {
-		device_printf(sc->ndis_dev, "out of memory");
+		device_printf(sc->ndis_dev, "out of memory\n");
 		return;
 	}
 	nd->nd_xfer = nx;
