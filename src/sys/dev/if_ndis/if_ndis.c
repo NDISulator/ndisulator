@@ -101,25 +101,24 @@ static const uint16_t dBm2mW[] = {
 MODULE_DEPEND(ndis, ether, 1, 1, 1);
 MODULE_DEPEND(ndis, wlan, 1, 1, 1);
 MODULE_DEPEND(ndis, ndisapi, 1, 1, 1);
-
 MODULE_VERSION(ndis, 1);
 
-int ndis_attach(device_t);
-int ndis_detach(device_t);
-int ndis_suspend(device_t);
-int ndis_resume(device_t);
-void ndis_shutdown(device_t);
-int ndisdrv_modevent(module_t, int, void *);
-
-static void ndis_txeof(ndis_handle, ndis_packet *, ndis_status);
-static void ndis_rxeof(ndis_handle, ndis_packet **, uint32_t);
-static void ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *, uint32_t,
-    void *, uint32_t, uint32_t);
-static void ndis_rxeof_done(ndis_handle);
-static void ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
-static void ndis_rxeof_xfr_done(ndis_handle, ndis_packet *, uint32_t, uint32_t);
-static void ndis_linksts(ndis_handle, ndis_status, void *, size_t);
-static void ndis_linksts_done(ndis_handle);
+int		ndis_attach(device_t);
+int		ndis_detach(device_t);
+int		ndis_suspend(device_t);
+int		ndis_resume(device_t);
+void		ndis_shutdown(device_t);
+int		ndisdrv_modevent(module_t, int, void *);
+static void	ndis_txeof(ndis_handle, ndis_packet *, ndis_status);
+static void	ndis_rxeof(ndis_handle, ndis_packet **, uint32_t);
+static void	ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *,
+			uint32_t, void *, uint32_t, uint32_t);
+static void	ndis_rxeof_done(ndis_handle);
+static void	ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
+static void	ndis_rxeof_xfr_done(ndis_handle, ndis_packet *, uint32_t,
+			uint32_t);
+static void	ndis_linksts(ndis_handle, ndis_status, void *, size_t);
+static void	ndis_linksts_done(ndis_handle);
 
 /* We need to wrap these functions for amd64. */
 static funcptr ndis_txeof_wrap;
