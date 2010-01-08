@@ -1976,17 +1976,18 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
     uint32_t ivec, uint32_t ilevel, uint8_t reqisr, uint8_t shared,
     ndis_interrupt_mode imode)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 	ndis_miniport_characteristics *ch;
 	struct ndis_softc *sc;
 
-	block = adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	ch = IoGetDriverObjectExtension(block->nmb_deviceobj->do_drvobj,
 	    (void *)1);
+	if (ch == NULL)
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
-	intr->ni_rsvd = ExAllocatePoolWithTag(NonPagedPool,
-	    sizeof(struct mtx), 0);
+	intr->ni_rsvd = malloc(sizeof(struct mtx),
+	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (intr->ni_rsvd == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 

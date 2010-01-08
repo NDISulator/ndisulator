@@ -1019,9 +1019,6 @@ struct ndis_request {
 };
 typedef struct ndis_request ndis_request;
 
-/*
- * Filler, not used.
- */
 struct ndis_miniport_interrupt {
 	kinterrupt		*ni_introbj;
 	ndis_kspin_lock		ni_dpccountlock;
