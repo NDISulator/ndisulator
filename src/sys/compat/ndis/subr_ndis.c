@@ -406,7 +406,7 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 
 	mem = ExAllocatePoolWithTag(NonPagedPool, len, tag);
 	if (mem == NULL) {
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_FAILURE);
 	}
 	*vaddr = mem;
 
@@ -417,14 +417,7 @@ static ndis_status
 NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags,
     ndis_physaddr highaddr)
 {
-	void *mem;
-
-	mem = ExAllocatePoolWithTag(NonPagedPool, len, 0);
-	if (mem == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-	*vaddr = mem;
-
-	return (NDIS_STATUS_SUCCESS);
+	return (NdisAllocateMemoryWithTag(vaddr, len, 0));
 }
 
 static void
