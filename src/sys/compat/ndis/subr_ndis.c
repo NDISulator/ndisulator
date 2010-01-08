@@ -151,6 +151,7 @@ static uint32_t NdisReadPciSlotInformation(ndis_handle, uint32_t, uint32_t,
 static uint32_t NdisWritePciSlotInformation(ndis_handle, uint32_t, uint32_t,
     void *, uint32_t);
 static void NdisWriteErrorLogEntry(ndis_handle, ndis_error_code, uint32_t, ...);
+static bus_addr_t ndis_dmasize(uint8_t dmasize);
 static void ndis_map_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMStartBufferPhysicalMapping(ndis_handle, ndis_buffer *,
     uint32_t, uint8_t, ndis_paddr_unit *, uint32_t *);
@@ -1174,6 +1175,17 @@ NdisQueryMapRegisterCount(uint32_t bustype, uint32_t *cnt)
 	return (NDIS_STATUS_SUCCESS);
 }
 
+static bus_addr_t
+ndis_dmasize(uint8_t dmasize)
+{
+	switch (dmasize) {
+	case NDIS_DMA_24BITS:	return (BUS_SPACE_MAXADDR_24BIT);
+	case NDIS_DMA_32BITS:	return (BUS_SPACE_MAXADDR_32BIT);
+	case NDIS_DMA_64BITS:	return (BUS_SPACE_MAXADDR);
+	}
+	return (BUS_SPACE_MAXADDR_24BIT);
+}
+
 static ndis_status
 NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
     uint8_t dmasize, uint32_t physmapneeded, uint32_t maxmap)
@@ -1192,7 +1204,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 
 	if (bus_dma_tag_create(sc->ndis_parent_tag,
 			ETHER_ALIGN, 0,
-			BUS_SPACE_MAXADDR_32BIT,
+			ndis_dmasize(dmasize),
 			BUS_SPACE_MAXADDR,
 			NULL, NULL,
 			maxmap * nseg,
