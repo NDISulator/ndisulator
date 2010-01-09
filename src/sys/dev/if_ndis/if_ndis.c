@@ -2740,7 +2740,7 @@ ndis_scan_start(struct ieee80211com *ic)
 		return;
 	}
 	/* Set a timer to collect the results */
-	callout_reset(&sc->ndis_scan_callout, hz * 6, ndis_scan, vap);
+	callout_reset(&sc->ndis_scan_callout, hz, ndis_scan, vap);
 }
 
 static void
