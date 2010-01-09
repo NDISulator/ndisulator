@@ -184,7 +184,8 @@ static int	ndis_set_fragthreshold(struct ndis_softc *, uint16_t);
 static int	ndis_set_infra(struct ndis_softc *, int);
 static int	ndis_set_multi(struct ndis_softc *);
 static int	ndis_set_offload(struct ndis_softc *);
-static int	ndis_set_powersave(struct ndis_softc *, struct ieee80211vap *);
+static int	ndis_set_powersave(struct ndis_softc *, uint32_t);
+static void	ndis_set_privacy_filter(struct ndis_softc *, uint32_t);
 static int	ndis_set_rtsthreshold(struct ndis_softc *, uint16_t);
 static void	ndis_set_ssid(struct ndis_softc *, uint8_t *, uint8_t);
 static int	ndis_set_txpower(struct ndis_softc *);
@@ -296,12 +297,12 @@ ndis_set_txpower(struct ndis_softc *sc)
 }
 
 static int
-ndis_set_powersave(struct ndis_softc *sc, struct ieee80211vap *vap)
+ndis_set_powersave(struct ndis_softc *sc, uint32_t flags)
 {
 	uint32_t arg;
 	size_t len;
 
-	if (vap->iv_flags & IEEE80211_F_PMGTON)
+	if (flags & IEEE80211_F_PMGTON)
 		arg = NDIS_802_11_POWERMODE_FAST_PSP;
 	else
 		arg = NDIS_802_11_POWERMODE_CAM;
@@ -357,6 +358,20 @@ ndis_set_filter(struct ndis_softc *sc, uint32_t filter)
 	len = sizeof(filter);
 	return (ndis_set_info(sc,
 	    OID_GEN_CURRENT_PACKET_FILTER, &filter, &len));
+}
+
+static void
+ndis_set_privacy_filter(struct ndis_softc *sc, uint32_t filter)
+{
+	uint32_t arg;
+	size_t len;
+
+	len = sizeof(arg);
+	if (filter & IEEE80211_F_DROPUNENC)
+		arg = NDIS_802_11_PRIVFILT_8021XWEP;
+	else
+		arg = NDIS_802_11_PRIVFILT_ACCEPTALL;
+	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
 }
 
 /*
@@ -711,7 +726,11 @@ ndis_attach(device_t dev)
 
 	/* Get station address from the driver */
 	len = sizeof(eaddr);
-	ndis_get_info(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, &len);
+	if (ndis_get_info(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, &len) != 0) {
+		device_printf(dev, "get current address failed\n");
+		error = ENXIO;
+		goto fail;
+	}
 
 	/* Figure out how big to make the TX buffer pool */
 	len = sizeof(sc->ndis_maxpkts);
@@ -2099,7 +2118,6 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
 	const struct ieee80211_txparam *tp;
 	ndis_80211_rates rates;
-	uint32_t arg;
 	int i;
 	size_t len;
 
@@ -2108,7 +2126,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if (ic->ic_caps & IEEE80211_C_TXFRAG)
 		ndis_set_fragthreshold(sc, vap->iv_fragthreshold);
 	if (ic->ic_caps & IEEE80211_C_PMGT)
-		ndis_set_powersave(sc, vap);
+		ndis_set_powersave(sc, vap->iv_flags);
 	if (ic->ic_caps & IEEE80211_C_TXPMGT)
 		ndis_set_txpower(sc);
 
@@ -2127,13 +2145,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		}
 	}
 
-	/* Drop unencrypted? */
-	if (vap->iv_flags & IEEE80211_F_DROPUNENC)
-		arg = NDIS_802_11_PRIVFILT_8021XWEP;
-	else
-		arg = NDIS_802_11_PRIVFILT_ACCEPTALL;
-	len = sizeof(arg);
-	ndis_set_info(sc, OID_802_11_PRIVACY_FILTER, &arg, &len);
+	ndis_set_privacy_filter(sc, vap->iv_flags);
 }
 
 static int
@@ -2187,19 +2199,19 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 
 	if (!(vap->iv_flags & IEEE80211_F_WPA)) {
 		if (ndis_set_authmode(sc, NDIS_802_11_AUTHMODE_OPEN) != 0)
-			device_printf(sc->ndis_dev, "OPEN authmode failed\n");
+			DPRINTF("OPEN authmode failed\n");
 	}
 	if (!(vap->iv_flags & IEEE80211_F_PRIVACY)) {
 		if (ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_DISABLED) != 0)
-			device_printf(sc->ndis_dev, "OPEN setup failed\n");
+			DPRINTF("OPEN setup failed\n");
 	} else if (!(vap->iv_flags & IEEE80211_F_WPA)) {
 		if (ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_ENABLED) != 0)
-			device_printf(sc->ndis_dev, "WEP setup failed\n");
+			DPRINTF("WEP setup failed\n");
 	} else if (vap->iv_appie_wpa != NULL) {
 		struct ieee80211_appie *ie = vap->iv_appie_wpa;
 
 		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
-			device_printf(sc->ndis_dev, "WPA setup failed\n");
+			DPRINTF("WPA setup failed\n");
 	}
 }
 
@@ -2327,7 +2339,7 @@ ndis_reset_vap(struct ieee80211vap *vap, u_long cmd)
 	case IEEE80211_IOC_TXPOWER:
 		return (ndis_set_txpower(sc));
 	case IEEE80211_IOC_POWERSAVE:
-		return (ndis_set_powersave(sc, vap));
+		return (ndis_set_powersave(sc, vap->iv_flags));
 	case IEEE80211_IOC_RTSTHRESHOLD:
 		return (ndis_set_rtsthreshold(sc, vap->iv_rtsthreshold));
 	case IEEE80211_IOC_FRAGTHRESHOLD:
