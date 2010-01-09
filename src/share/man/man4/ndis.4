@@ -30,16 +30,30 @@
 .\"
 .\" $FreeBSD$
 .\"
-.Dd October 13, 2006
-.Dt NDIS 4 i386
+.Dd January 9, 2010
+.Dt NDIS 4
 .Os
 .Sh NAME
 .Nm ndis
 .Nd NDIS miniport driver wrapper
 .Sh SYNOPSIS
+To compile this driver into the kernel,
+place the following lines in your
+kernel configuration file:
+.Bd -ragged -offset indent
 .Cd "options NDISAPI"
 .Cd "device ndis"
+.Cd "device pccard"
+.Cd "device usb"
 .Cd "device wlan"
+.Ed
+.Pp
+Alternatively, to load the driver as a
+module at boot time, place the following line in
+.Xr loader.conf 5 :
+.Bd -literal -offset indent
+if_ndis_load="YES"
+.Ed
 .Sh DESCRIPTION
 The
 .Nm
@@ -120,6 +134,17 @@ driver-specific registry keys to control the media setting
 which can be configured via the
 .Xr sysctl 8
 command.
+.Pp
+The
+.Nm
+driver supports
+.Cm station
+and
+.Cm adhoc
+mode operation.
+Only one virtual interface may be configured at any time.
+For more information on configuring this device, see
+.Xr ifconfig 8 .
 .Sh DIAGNOSTICS
 .Bl -diag
 .It "ndis%d: watchdog timeout"
@@ -127,14 +152,34 @@ A packet was queued for transmission and a transmit command was
 issued, however the device failed to acknowledge the transmission
 before a timeout expired.
 .El
+.Sh EXAMPLES
+Join a specific BSS network with WEP encryption:
+.Bd -literal -offset indent
+ifconfig wlan0 create wlandev ndis0
+ifconfig wlan0 inet 192.168.0.20 netmask 0xffffff00 ssid my_net \e
+	wepmode on wepkey 0x8736639624 weptxkey 1 up
+.Ed
+.Pp
+Join/create an 802.11 IBSS network with network name
+.Dq Li my_net :
+.Bd -literal -offset indent
+ifconfig wlan0 create wlandev ndis0 wlanmode adhoc
+ifconfig wlan0 inet 192.168.0.22 netmask 0xffffff00 ssid my_net up
+.Ed
 .Sh SEE ALSO
 .Xr altq 4 ,
 .Xr arp 4 ,
+.Xr ifconfig 8 ,
+.Xr intro 4 ,
+.Xr ndiscvt 8 ,
+.Xr ndisgen 8 ,
 .Xr netintro 4 ,
 .Xr ng_ether 4 ,
-.Xr ifconfig 8 ,
-.Xr ndiscvt 8 ,
-.Xr ndisgen 8
+.Xr pccard(4) ,
+.Xr pci(4) ,
+.Xr usb(4) ,
+.Xr wlan 4 ,
+.Xr wpa_supplicant 8
 .Rs
 .%T "NDIS 5.1 specification"
 .%O http://www.microsoft.com
