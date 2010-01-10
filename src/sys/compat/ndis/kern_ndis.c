@@ -975,25 +975,23 @@ ndis_init_nic(void *arg)
 	struct ndis_softc *sc = arg;
 	ndis_miniport_block *block;
 	ndis_init_handler initfunc;
-	ndis_status openstatus = 0;
-	ndis_medium mediumarray[NdisMediumMax];
-	uint32_t chosenmedium, i;
+	ndis_status status = 0;
+	ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
+	uint32_t chosen_medium = 0;
 
 	NDIS_LOCK(sc);
 	block = sc->ndis_block;
 	initfunc = sc->ndis_chars->nmc_init_func;
 	NDIS_UNLOCK(sc);
 
-	for (i = 0; i < NdisMediumMax; i++)
-		mediumarray[i] = i;
-
 	/*
 	 * If the init fails, blow away the other exported routines
 	 * we obtained from the driver so we can't call them later.
 	 * If the init failed, none of these will work.
 	 */
-	if (MSCALL6(initfunc, &openstatus, &chosenmedium,
-	    mediumarray, NdisMediumMax, block, block) != NDIS_STATUS_SUCCESS) {
+	if (MSCALL6(initfunc, &status, &chosen_medium,
+	    medium_array, sizeof(medium_array) / sizeof(medium_array[0]),
+	    block, block) != NDIS_STATUS_SUCCESS) {
 		NDIS_LOCK(sc);
 		block->nmb_miniportadapterctx = NULL;
 		NDIS_UNLOCK(sc);

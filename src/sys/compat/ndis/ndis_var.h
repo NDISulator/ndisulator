@@ -289,25 +289,25 @@ typedef uint8_t ndis_kirql;
  * These are the possible power states for
  * OID_PNP_SET_POWER and OID_PNP_QUERY_POWER.
  */
-enum ndis_powerstate {
+enum ndis_power_state {
 	NDIS_POWERSTATE_UNSPEC,
 	NDIS_POWERSTATE_D0,
 	NDIS_POWERSTATE_D1,
 	NDIS_POWERSTATE_D2,
 	NDIS_POWERSTATE_D3
 };
-typedef enum ndis_powerstate ndis_powerstate;
+typedef enum ndis_power_state ndis_power_state;
 
 /*
  * These are used with the MiniportPnpEventNotify() method.
  */
-enum ndis_powerprofile {
+enum ndis_power_profile {
 	NDIS_POWER_PROFILE_BATTERY,
 	NDIS_POWER_PROFILE_ACONLINE
 };
-typedef enum ndis_powerprofile ndis_powerprofile;
+typedef enum ndis_power_profile ndis_power_profile;
 
-enum ndis_pnpevent {
+enum ndis_pnp_event {
 	NDIS_PNP_EVENT_QUERY_REMOVED,
 	NDIS_PNP_EVENT_REMOVED,
 	NDIS_PNP_EVENT_SURPRISE_REMOVED,
@@ -315,7 +315,31 @@ enum ndis_pnpevent {
 	NDIS_PNP_EVENT_STOPPED,
 	NDIS_PNP_EVENT_POWER_PROFILE_CHANGED
 };
-typedef enum ndis_pnpevent ndis_pnpevent;
+typedef enum ndis_pnp_event ndis_pnp_event;
+
+enum ndis_physical_medium {
+	NDIS_PHYSICAL_MEDIUM_UNSPECIFIED,
+	NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN,
+	NDIS_PHYSICAL_MEDIUM_CABLE_MODEM,
+	NDIS_PHYSICAL_MEDIUM_PHONE_LINE,
+	NDIS_PHYSICAL_MEDIUM_POWER_LINE,
+	NDIS_PHYSICAL_MEDIUM_DSL,
+	NDIS_PHYSICAL_MEDIUM_FIBRE_CHANNEL,
+	NDIS_PHYSICAL_MEDIUM_1394,
+	NDIS_PHYSICAL_MEDIUM_WIRELESS_WAN,
+	NDIS_PHYSICAL_MEDIUM_NATIVE802_11,
+	NDIS_PHYSICAL_MEDIUM_BLUETOOTH,
+	NDIS_PHYSICAL_MEDIUM_INFINIBAND,
+	NDIS_PHYSICAL_MEDIUM_WIMAX,
+	NDIS_PHYSICAL_MEDIUM_UWB,
+	NDIS_PHYSICAL_MEDIUM_802_3,
+	NDIS_PHYSICAL_MEDIUM_802_5,
+	NDIS_PHYSICAL_MEDIUM_IRDA,
+	NDIS_PHYSICAL_MEDIUM_WIRED_WAN,
+	NDIS_PHYSICAL_MEDIUM_WIRED_COWAN,
+	NDIS_PHYSICAL_MEDIUM_OTHER
+};
+typedef enum ndis_physical_medium ndis_physical_medium;
 
 /* PnP/PM Statistics (Optional). */
 #define	OID_PNP_WAKE_UP_OK			0xFD020200
@@ -1270,21 +1294,21 @@ typedef struct ndis_filterdbs ndis_filterdbs;
 #define	nf_ethdb u.nf_ethdb
 
 enum ndis_medium {
-    NdisMedium802_3,
-    NdisMedium802_5,
-    NdisMediumFddi,
-    NdisMediumWan,
-    NdisMediumLocalTalk,
-    NdisMediumDix,              /* defined for convenience, not a real medium */
-    NdisMediumArcnetRaw,
-    NdisMediumArcnet878_2,
-    NdisMediumAtm,
-    NdisMediumWirelessWan,
-    NdisMediumIrda,
-    NdisMediumBpc,
-    NdisMediumCoWan,
-    NdisMedium1394,
-    NdisMediumMax
+    NDIS_MEDIUM_802_3,
+    NDIS_MEDIUM_802_5,
+    NDIS_MEDIUM_FDDI,
+    NDIS_MEDIUM_WAN,
+    NDIS_MEDIUM_LOCAL_TALK,
+    NDIS_MEDIUM_DIX,
+    NDIS_MEDIUM_ARCNET_RAW,
+    NDIS_MEDIUM_ARCNET_878_2,
+    NDIS_MEDIUM_ATM,
+    NDIS_MEDIUM_WIRELESS_WAN,
+    NDIS_MEDIUM_IRDA,
+    NDIS_MEDIUM_BPC,
+    NDIS_MEDIUM_COWAN,
+    NDIS_MEDIUM_1394,
+    NDIS_MEDIUM_MAX
 };
 typedef enum ndis_medium ndis_medium;
 /*

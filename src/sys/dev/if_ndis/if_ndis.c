@@ -164,6 +164,7 @@ static void	ndis_media_status(struct ifnet *, struct ifmediareq *);
 static int	ndis_nettype_chan(uint32_t);
 static int	ndis_nettype_mode(uint32_t);
 static int	ndis_newstate(struct ieee80211vap *, enum ieee80211_state, int);
+static int	ndis_get_physical_medium(struct ndis_softc *, uint32_t *);
 static int	ndis_probe_offload(struct ndis_softc *);
 static int	ndis_raw_xmit(struct ieee80211_node *, struct mbuf *,
 			const struct ieee80211_bpf_params *);
@@ -284,6 +285,15 @@ ndis_get_oids(struct ndis_softc *sc, ndis_oid **oids, uint32_t *oidcnt)
 	}
 	*oidcnt = len / 4;
 	return (0);
+}
+
+static int
+ndis_get_physical_medium(struct ndis_softc *sc, uint32_t *medium)
+{
+	size_t len;
+
+	len = sizeof(*medium);
+	return (ndis_get_info(sc, OID_GEN_PHYSICAL_MEDIUM, medium, &len));
 }
 
 static int
@@ -794,12 +804,6 @@ ndis_attach(device_t dev)
 
 	sc->ndis_txpending = sc->ndis_maxpkts;
 
-	error = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
-	if (error) {
-		device_printf(dev, "failed to get supported oids\n");
-		goto fail;
-	}
-
 	/* If the NDIS module requested scatter/gather, init maps. */
 	if (sc->ndis_sc) {
 		error = ndis_init_dma(sc);
@@ -809,17 +813,20 @@ ndis_attach(device_t dev)
 		}
 	}
 
-	/*
-	 * See if the OID_802_11_SSID OID is supported by this driver.
-	 * If it is, then this an 802.11 wireless driver, and we should
-	 * set up media for wireless.
-	 */
-	for (i = 0; i < sc->ndis_oidcnt; i++)
-		if (sc->ndis_oids[i] == OID_802_11_SSID) {
-			sc->ndis_80211++;
-			break;
-		}
+	error = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
+	if (error) {
+		device_printf(dev, "failed to get supported oids\n");
+		goto fail;
+	}
 
+	error = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
+	if (error) {
+		device_printf(dev, "failed to get physical medium\n");
+		goto fail;
+	}
+
+	if (sc->ndis_physical_medium == NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN)
+		sc->ndis_80211 = 1;
 	if (sc->ndis_80211)
 		ifp = if_alloc(IFT_IEEE80211);
 	else
