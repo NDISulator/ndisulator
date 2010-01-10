@@ -205,7 +205,8 @@ ndisusb_detach(device_t self)
 	sc = device_get_softc(self);
 	sc->ndisusb_status |= NDISUSB_STATUS_DETACH;
 
-	ndis_pnpevent_nic(self, NDIS_PNP_EVENT_SURPRISE_REMOVED);
+	if (ndis_pnpevent_nic(self, NDIS_PNP_EVENT_SURPRISE_REMOVED, 0))
+		device_printf(sc->ndis_dev, "safe unplug failed\n");
 
 	if (sc->ndisusb_status & NDISUSB_STATUS_SETUP_EP) {
 		usbd_transfer_unsetup(sc->ndisusb_dread_ep.ne_xfer, 1);

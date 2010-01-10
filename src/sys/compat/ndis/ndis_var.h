@@ -302,8 +302,8 @@ typedef enum ndis_powerstate ndis_powerstate;
  * These are used with the MiniportPnpEventNotify() method.
  */
 enum ndis_powerprofile {
-	NDIS_POWERPROFILE_BATTERY,
-	NDIS_POWERPROFILE_ACONLINE
+	NDIS_POWER_PROFILE_BATTERY,
+	NDIS_POWER_PROFILE_ACONLINE
 };
 typedef enum ndis_powerprofile ndis_powerprofile;
 
@@ -313,7 +313,7 @@ enum ndis_pnpevent {
 	NDIS_PNP_EVENT_SURPRISE_REMOVED,
 	NDIS_PNP_EVENT_QUERY_STOPPED,
 	NDIS_PNP_EVENT_STOPPED,
-	NDIS_PNP_EVENT_PROFILECHANGED
+	NDIS_PNP_EVENT_POWER_PROFILE_CHANGED
 };
 typedef enum ndis_pnpevent ndis_pnpevent;
 
@@ -1638,7 +1638,7 @@ extern void ndis_free_bufs(ndis_buffer *);
 extern int ndis_reset_nic(void *);
 extern int ndis_halt_nic(void *);
 extern int ndis_shutdown_nic(void *);
-extern int ndis_pnpevent_nic(void *, int);
+extern int32_t ndis_pnpevent_nic(void *, uint32_t, uint32_t);
 extern int ndis_init_nic(void *);
 extern void ndis_return_packet(void *, void *);
 extern int ndis_init_dma(void *);

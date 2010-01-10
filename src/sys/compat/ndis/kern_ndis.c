@@ -936,8 +936,8 @@ ndis_shutdown_nic(void *arg)
 	return (0);
 }
 
-int
-ndis_pnpevent_nic(void *arg, int type)
+int32_t
+ndis_pnpevent_nic(void *arg, uint32_t event, uint32_t profile)
 {
 	struct ndis_softc *sc;
 	ndis_handle adapter;
@@ -951,11 +951,21 @@ ndis_pnpevent_nic(void *arg, int type)
 	if (adapter == NULL || pnpeventfunc == NULL)
 		return (EIO);
 
-	if (sc->ndis_chars->nmc_rsvd0 == NULL)
-		MSCALL4(pnpeventfunc, adapter, type, NULL, 0);
-	else
-		MSCALL4(pnpeventfunc, sc->ndis_chars->nmc_rsvd0, type, NULL, 0);
-
+	switch (event) {
+	case NDIS_PNP_EVENT_SURPRISE_REMOVED:
+		if (sc->ndis_block->nmb_flags &
+		   NDIS_ATTRIBUTE_SURPRISE_REMOVE_OK)
+			MSCALL4(pnpeventfunc, adapter, event, NULL, 0);
+		else
+			return (ENOTSUP);
+		break;
+	case NDIS_PNP_EVENT_POWER_PROFILE_CHANGED:
+		MSCALL4(pnpeventfunc, adapter, event,
+		    &profile, sizeof(profile));
+		break;
+	default:
+		return (EINVAL);
+	}
 	return (0);
 }
 
