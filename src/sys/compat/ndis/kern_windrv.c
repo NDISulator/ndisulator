@@ -374,11 +374,6 @@ skipreloc:
 		return (ENOMEM);
 	}
 
-	new->windrv_object = drv;
-	new->windrv_regvals = regvals;
-	new->windrv_devlist = devlist;
-	new->windrv_bustype = bustype;
-
 	/* Now call the DriverEntry() function. */
 	if (MSCALL2(entry, drv, &drv->dro_drivername) != NDIS_STATUS_SUCCESS) {
 		RtlFreeUnicodeString(&drv->dro_drivername);
@@ -387,6 +382,11 @@ skipreloc:
 		free(new, M_NDIS_WINDRV);
 		return (ENODEV);
 	}
+
+	new->windrv_object = drv;
+	new->windrv_regvals = regvals;
+	new->windrv_devlist = devlist;
+	new->windrv_bustype = bustype;
 
 	mtx_lock(&drvdb_mtx);
 	STAILQ_INSERT_HEAD(&drvdb_head, new, link);

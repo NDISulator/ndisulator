@@ -856,21 +856,6 @@ struct ndis_ansi_string {
 };
 typedef struct ndis_ansi_string ndis_ansi_string;
 
-#ifdef notdef
-/*
- * nus_buf is really a wchar_t *, but it's inconvenient to include
- * all the necessary header goop needed to define it, and it's a
- * pointer anyway, so for now, just make it a uint16_t *.
- */
-struct ndis_unicode_string {
-	uint16_t	nus_len;
-	uint16_t	nus_maxlen;
-	uint16_t	*nus_buf;
-};
-typedef struct ndis_unicode_string ndis_unicode_string;
-#endif
-typedef unicode_string ndis_unicode_string;
-
 enum ndis_parm_type {
 	ndis_parm_int,
 	ndis_parm_hexint,
@@ -894,7 +879,7 @@ struct ndis_config_parm {
 	ndis_parm_type		ncp_type;
 	union {
 		uint32_t		ncp_intdata;
-		ndis_unicode_string	ncp_stringdata;
+		unicode_string		ncp_stringdata;
 		ndis_binary_data	ncp_binarydata;
 	} ncp_parmdata;
 };
@@ -907,8 +892,8 @@ struct ndis_parmlist_entry {
 typedef struct ndis_parmlist_entry ndis_parmlist_entry;
 
 struct ndis_bind_paths {
-	uint32_t		nbp_number;
-	ndis_unicode_string	nbp_paths[1];
+	uint32_t	nbp_number;
+	unicode_string	nbp_paths[1];
 };
 typedef struct ndis_bind_paths ndis_bind_paths;
 
@@ -1455,7 +1440,7 @@ struct ndis_miniport_block {
 	ndis_miniport_block	*nmb_nextminiport;
 	ndis_mdriver_block	*nmb_driverhandle;
 	ndis_handle		nmb_miniportadapterctx;
-	ndis_unicode_string	nmb_name;
+	unicode_string		nmb_name;
 	ndis_bind_paths		*nmb_bindpaths;
 	ndis_handle		nmb_openqueue;
 	ndis_reference		nmb_ref;
@@ -1480,8 +1465,8 @@ struct ndis_miniport_block {
 	uint32_t		nmb_pnpcaps;
 	cm_resource_list	*nmb_resources;
 	ndis_timer		nmb_wkupdpctimer;
-	ndis_unicode_string	nmb_basename;
-	ndis_unicode_string	nmb_symlinkname;
+	unicode_string		nmb_basename;
+	unicode_string		nmb_symlinkname;
 	uint32_t		nmb_checkforhangsecs;
 	uint16_t		nmb_cfhticks;
 	uint16_t		nmb_cfhcurrticks;
@@ -1507,7 +1492,7 @@ struct ndis_miniport_block {
 	uint16_t		nmb_maxsendpkts;
 	ndis_status		nmb_fakestatus;
 	void			*nmb_lockhandler;
-	ndis_unicode_string	*nmb_adapterinstancename;
+	unicode_string		*nmb_adapterinstancename;
 	void			*nmb_timerqueue;
 	uint32_t		nmb_mactoptions;
 	ndis_request		*nmb_pendingreq;
