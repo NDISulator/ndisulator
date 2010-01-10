@@ -1063,7 +1063,8 @@ got_crypto:
 fail:
 	if (error)
 		ndis_detach(dev);
-	ndis_stop(sc);
+	else
+		ndis_stop(sc);
 	return (error);
 }
 
