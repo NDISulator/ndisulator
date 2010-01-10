@@ -719,7 +719,7 @@ ndis_attach(device_t dev)
 
 	/* Call driver's init routine. */
 	if (ndis_init_nic(sc)) {
-		device_printf(dev, "init handler failed\n");
+		device_printf(dev, "failed to initialize device\n");
 		error = ENXIO;
 		goto fail;
 	}
