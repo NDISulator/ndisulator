@@ -3153,7 +3153,6 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (tc == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-
 	tc->tc_thrctx = thrctx;
 	tc->tc_thrfunc = thrfunc;
 
@@ -3161,7 +3160,7 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	if (kproc_create(ntoskrnl_thrfunc, tc, &p,
 	    RFHIGHPID, NDIS_KSTACK_PAGES, tname) != 0) {
 		free(tc, M_NDIS_NTOSKRNL);
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_FAILURE);
 	}
 
 	*handle = p;
