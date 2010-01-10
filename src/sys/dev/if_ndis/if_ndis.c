@@ -1210,11 +1210,8 @@ ndis_suspend(device_t dev)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
-
-#ifdef notdef
 	if (NDIS_INITIALIZED(sc))
 		ndis_stop(sc);
-#endif
 	return (0);
 }
 
@@ -1224,7 +1221,6 @@ ndis_resume(device_t dev)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
-
 	if (NDIS_INITIALIZED(sc))
 		ndis_init(sc);
 	return (0);
