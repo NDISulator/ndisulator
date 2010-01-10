@@ -127,12 +127,12 @@ ndisusb_devcompare(interface_type bustype, struct ndis_usb_type *t,
 }
 
 static int
-ndisusb_match(device_t self)
+ndisusb_match(device_t dev)
 {
 	struct usb_attach_arg *uaa;
 	struct drvdb_ent *db;
 
-	uaa = device_get_ivars(self);
+	uaa = device_get_ivars(dev);
 	if (uaa->usb_mode != USB_MODE_HOST)
 		return (ENXIO);
 	if (uaa->info.bConfigIndex != NDISUSB_CONFIG_NO)
@@ -142,7 +142,7 @@ ndisusb_match(device_t self)
 	if (windrv_lookup(0, "USB Bus") == NULL)
 		return (ENXIO);
 
-	db = windrv_match((matchfuncptr)ndisusb_devcompare, self);
+	db = windrv_match((matchfuncptr)ndisusb_devcompare, dev);
 	if (db == NULL)
 		return (ENXIO);
 	uaa->driver_ivar = db;
@@ -151,7 +151,7 @@ ndisusb_match(device_t self)
 }
 
 static int
-ndisusb_attach(device_t self)
+ndisusb_attach(device_t dev)
 {
 	const struct drvdb_ent *db;
 	struct ndisusb_softc *dummy;
@@ -161,12 +161,12 @@ ndisusb_attach(device_t self)
 	driver_object *drv;
 	int devidx = 0;
 
-	device_set_usb_desc(self);
-	dummy = device_get_softc(self);
-	uaa = device_get_ivars(self);
+	device_set_usb_desc(dev);
+	dummy = device_get_softc(dev);
+	uaa = device_get_ivars(dev);
 	db = uaa->driver_ivar;
 	sc = (struct ndis_softc *)dummy;
-	sc->ndis_dev = self;
+	sc->ndis_dev = dev;
 	mtx_init(&sc->ndisusb_mtx, "NDIS USB", MTX_NETWORK_LOCK, MTX_DEF);
 	sc->ndis_dobj = db->windrv_object;
 	sc->ndis_regvals = db->windrv_regvals;
@@ -175,7 +175,7 @@ ndisusb_attach(device_t self)
 
 	/* Create PDO for this device instance */
 	drv = windrv_lookup(0, "USB Bus");
-	windrv_create_pdo(drv, self);
+	windrv_create_pdo(drv, dev);
 
 	/* Figure out exactly which device we matched. */
 	t = db->windrv_devlist;
@@ -189,23 +189,23 @@ ndisusb_attach(device_t self)
 		devidx++;
 	}
 
-	if (ndis_attach(self) != 0)
+	if (ndis_attach(dev) != 0)
 		return (ENXIO);
 
 	return (0);
 }
 
 static int
-ndisusb_detach(device_t self)
+ndisusb_detach(device_t dev)
 {
 	struct ndis_softc *sc;
 	struct ndisusb_ep *ne;
 	int i;
 
-	sc = device_get_softc(self);
+	sc = device_get_softc(dev);
 	sc->ndisusb_status |= NDISUSB_STATUS_DETACH;
 
-	if (ndis_pnpevent_nic(self, NDIS_PNP_EVENT_SURPRISE_REMOVED, 0))
+	if (ndis_pnpevent_nic(dev, NDIS_PNP_EVENT_SURPRISE_REMOVED, 0))
 		device_printf(sc->ndis_dev, "safe unplug failed\n");
 
 	if (sc->ndisusb_status & NDISUSB_STATUS_SETUP_EP) {
@@ -217,7 +217,7 @@ ndisusb_detach(device_t self)
 		usbd_transfer_unsetup(ne->ne_xfer, 1);
 	}
 
-	(void)ndis_detach(self);
+	(void)ndis_detach(dev);
 
 	mtx_destroy(&sc->ndisusb_mtx);
 
