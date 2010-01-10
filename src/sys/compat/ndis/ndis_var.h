@@ -301,9 +301,11 @@ typedef enum ndis_powerstate ndis_powerstate;
 /*
  * These are used with the MiniportPnpEventNotify() method.
  */
-
-#define	NDIS_POWERPROFILE_BATTERY		0
-#define	NDIS_POWERPROFILE_ACONLINE		1
+enum ndis_powerprofile {
+	NDIS_POWERPROFILE_BATTERY,
+	NDIS_POWERPROFILE_ACONLINE
+};
+typedef enum ndis_powerprofile ndis_powerprofile;
 
 enum ndis_pnpevent {
 	NDIS_PNP_EVENT_QUERY_REMOVED,
