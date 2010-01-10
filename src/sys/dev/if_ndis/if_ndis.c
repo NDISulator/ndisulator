@@ -825,6 +825,7 @@ ndis_attach(device_t dev)
 	else
 		ifp = if_alloc(IFT_ETHER);
 	if (ifp == NULL) {
+		device_printf(dev, "failed to if_alloc()\n");
 		error = ENOMEM;
 		goto fail;
 	}
