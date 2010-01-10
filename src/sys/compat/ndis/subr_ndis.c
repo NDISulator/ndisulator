@@ -477,9 +477,6 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 	ndis_parmlist_entry *np;
 	unicode_string *us;
 	ansi_string as;
-	int base = 0;
-	uint32_t val;
-	char tmp[32];
 
 	np = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(ndis_parmlist_entry), 0);
@@ -487,49 +484,31 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	InsertHeadList((&block->nmb_parmlist), (&np->np_list));
 	*parm = p = &np->np_parm;
+	p->ncp_type = type;
 
 	switch (type) {
 	case ndis_parm_string:
-		/* See if this might be a number. */
-		val = strtoul((char *)oid->oid_arg1, NULL, 10);
 		us = &p->ncp_parmdata.ncp_stringdata;
-		p->ncp_type = ndis_parm_string;
-		if (val) {
-			snprintf(tmp, 32, "%x", val);
-			RtlInitAnsiString(&as, tmp);
-		} else {
-			RtlInitAnsiString(&as, (char *)oid->oid_arg1);
-		}
-
+		RtlInitAnsiString(&as, (char *)oid->oid_arg1);
 		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
 			ExFreePool(np);
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		}
 		break;
 	case ndis_parm_int:
-		if (strncmp((char *)oid->oid_arg1, "0x", 2) == 0)
-			base = 16;
-		else
-			base = 10;
-		p->ncp_type = ndis_parm_int;
 		p->ncp_parmdata.ncp_intdata =
-		    strtol((char *)oid->oid_arg1, NULL, base);
+		    strtol((char *)oid->oid_arg1, NULL, 0);
 		break;
 	case ndis_parm_hexint:
-#ifdef notdef
-		if (strncmp((char *)oid->oid_arg1, "0x", 2) == 0)
-			base = 16;
-		else
-			base = 10;
-#endif
-		base = 16;
-		p->ncp_type = ndis_parm_hexint;
 		p->ncp_parmdata.ncp_intdata =
-		    strtoul((char *)oid->oid_arg1, NULL, base);
+		    strtoul((char *)oid->oid_arg1, NULL, 16);
+		break;
+	case ndis_parm_binary:
+		p->ncp_parmdata.ncp_intdata =
+		    strtoul((char *)oid->oid_arg1, NULL, 2);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
-		break;
 	}
 
 	return (NDIS_STATUS_SUCCESS);
@@ -617,14 +596,19 @@ ndis_decode_parm(ndis_miniport_block *block, ndis_config_parm *parm, char *val)
 		RtlFreeAnsiString(&as);
 		break;
 	case ndis_parm_int:
-		sprintf(val, "%d", parm->ncp_parmdata.ncp_intdata);
+		snprintf(val, sizeof(uint32_t), "%d",
+		    parm->ncp_parmdata.ncp_intdata);
 		break;
 	case ndis_parm_hexint:
-		sprintf(val, "%xu", parm->ncp_parmdata.ncp_intdata);
+		snprintf(val, sizeof(uint32_t), "%x",
+		    parm->ncp_parmdata.ncp_intdata);
+		break;
+	case ndis_parm_binary:
+		snprintf(val, sizeof(uint32_t), "%u",
+		    parm->ncp_parmdata.ncp_intdata);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
-		break;
 	}
 	return (NDIS_STATUS_SUCCESS);
 }

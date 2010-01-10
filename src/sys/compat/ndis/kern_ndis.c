@@ -365,12 +365,11 @@ ndis_return(device_object *dobj, void *arg)
 {
 	ndis_miniport_block *block = arg;
 	ndis_miniport_characteristics *ch;
-	ndis_handle adapter;
+	ndis_handle adapter = block->nmb_miniportadapterctx;
 	ndis_packet *p;
 	uint8_t irql;
 	list_entry *l;
 
-	adapter = block->nmb_miniportadapterctx;
 	if (adapter == NULL)
 		return;
 
