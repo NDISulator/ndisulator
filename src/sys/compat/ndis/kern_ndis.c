@@ -952,14 +952,14 @@ ndis_pnpevent_nic(void *arg, uint32_t event, uint32_t profile)
 		return (EIO);
 
 	switch (event) {
-	case NDIS_PNP_EVENT_SURPRISE_REMOVED:
+	case NDIS_DEVICE_PNP_EVENT_SURPRISE_REMOVED:
 		if (sc->ndis_block->nmb_flags &
 		   NDIS_ATTRIBUTE_SURPRISE_REMOVE_OK)
 			MSCALL4(pnpeventfunc, adapter, event, NULL, 0);
 		else
 			return (ENOTSUP);
 		break;
-	case NDIS_PNP_EVENT_POWER_PROFILE_CHANGED:
+	case NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED:
 		MSCALL4(pnpeventfunc, adapter, event,
 		    &profile, sizeof(profile));
 		break;

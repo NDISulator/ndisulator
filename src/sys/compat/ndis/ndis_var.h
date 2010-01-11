@@ -307,15 +307,15 @@ enum ndis_power_profile {
 };
 typedef enum ndis_power_profile ndis_power_profile;
 
-enum ndis_pnp_event {
-	NDIS_PNP_EVENT_QUERY_REMOVED,
-	NDIS_PNP_EVENT_REMOVED,
-	NDIS_PNP_EVENT_SURPRISE_REMOVED,
-	NDIS_PNP_EVENT_QUERY_STOPPED,
-	NDIS_PNP_EVENT_STOPPED,
-	NDIS_PNP_EVENT_POWER_PROFILE_CHANGED
+enum ndis_device_pnp_event {
+	NDIS_DEVICE_PNP_EVENT_QUERY_REMOVED,
+	NDIS_DEVICE_PNP_EVENT_REMOVED,
+	NDIS_DEVICE_PNP_EVENT_SURPRISE_REMOVED,
+	NDIS_DEVICE_PNP_EVENT_QUERY_STOPPED,
+	NDIS_DEVICE_PNP_EVENT_STOPPED,
+	NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED
 };
-typedef enum ndis_pnp_event ndis_pnp_event;
+typedef enum ndis_device_pnp_event ndis_device_pnp_event;
 
 enum ndis_physical_medium {
 	NDIS_PHYSICAL_MEDIUM_UNSPECIFIED,
