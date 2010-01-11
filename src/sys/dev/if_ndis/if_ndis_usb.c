@@ -105,7 +105,7 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, uhub, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndisusb_devcompare(interface_type bustype, struct ndis_usb_type *t,
+ndisusb_devcompare(ndis_interface_type bustype, struct ndis_usb_type *t,
     device_t dev)
 {
 	struct usb_attach_arg *uaa;

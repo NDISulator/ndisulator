@@ -1311,38 +1311,6 @@ enum ndis_medium {
     NDIS_MEDIUM_MAX
 };
 typedef enum ndis_medium ndis_medium;
-/*
-enum interface_type {
-	InterfaceTypeUndefined = -1,
-	Internal,
-	Isa,
-	Eisa,
-	MicroChannel,
-	TurboChannel,
-	PCIBus,
-	VMEBus,
-	NuBus,
-	PCMCIABus,
-	CBus,
-	MPIBus,
-	MPSABus,
-	ProcessorInternal,
-	InternalPowerBus,
-	PNPISABus,
-	PNPBus,
-	MaximumInterfaceType
-};
-*/
-enum ndis_interface_type {
-	NdisInterfaceInternal = Internal,
-	NdisInterfaceIsa = Isa,
-	NdisInterfaceEisa = Eisa,
-	NdisInterfaceMca = MicroChannel,
-	NdisInterfaceTurboChannel = TurboChannel,
-	NdisInterfacePci = PCIBus,
-	NdisInterfacePcMcia = PCMCIABus
-};
-typedef enum ndis_interface_type ndis_interface_type;
 
 struct ndis_paddr_unit {
 	ndis_physaddr	npu_physaddr;

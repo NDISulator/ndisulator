@@ -183,7 +183,7 @@ struct ndis_softc {
 	uint32_t		ndis_filter;
 	int			ndis_if_flags;
 	uint32_t		ndis_devidx;
-	interface_type		ndis_iftype;
+	ndis_interface_type	ndis_iftype;
 	driver_object		*ndis_dobj;
 	io_workitem		*ndis_tickitem;
 	io_workitem		*ndis_startitem;

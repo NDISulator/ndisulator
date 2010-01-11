@@ -46,7 +46,7 @@ struct physaddr {
 };
 typedef struct physaddr physaddr;
 
-enum interface_type {
+enum ndis_interface_type {
 	InterfaceTypeUndefined = -1,
 	Internal,
 	Isa,
@@ -66,7 +66,7 @@ enum interface_type {
 	PNPBus,
 	MaximumInterfaceType
 };
-typedef enum interface_type interface_type;
+typedef enum ndis_interface_type ndis_interface_type;
 
 #define	CmResourceTypeNull		0	/* ResType_All or ResType_None (0x0000) */
 #define	CmResourceTypePort		1	/* ResType_IO (0x0002) */
@@ -170,7 +170,7 @@ struct cm_partial_resource_list {
 typedef struct cm_partial_resource_list cm_partial_resource_list;
 
 struct cm_full_resource_list {
-	interface_type			cfrl_type;
+	ndis_interface_type		cfrl_type;
 	uint32_t			cfrl_busnum;
 	cm_partial_resource_desc	cfrl_partiallist;
 };
