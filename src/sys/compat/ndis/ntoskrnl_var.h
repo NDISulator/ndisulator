@@ -566,9 +566,9 @@ typedef struct kinterrupt kinterrupt;
  * device-specific softc structure.
  */
 struct device_object {
-	uint16_t		do_type;
+	int16_t			do_type;
 	uint16_t		do_size;
-	uint32_t		do_refcnt;
+	int32_t			do_refcnt;
 	struct driver_object	*do_drvobj;
 	struct device_object	*do_nextdev;
 	struct device_object	*do_attacheddev;
@@ -578,7 +578,6 @@ struct device_object {
 	uint32_t		do_characteristics;
 	void			*do_vpb;
 	void			*do_devext;
-	uint32_t		do_devtype;
 	uint8_t			do_stacksize;
 	union {
 		list_entry	do_listent;

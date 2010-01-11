@@ -2737,7 +2737,7 @@ NdisMRegisterDevice(ndis_handle handle, unicode_string *devname,
 	device_object *dobj;
 
 	status = IoCreateDevice(handle, 0, devname,
-	    FILE_DEVICE_UNKNOWN, 0, FALSE, &dobj);
+	    FILE_DEVICE_NETWORK, 0, FALSE, &dobj);
 	if (status == NDIS_STATUS_SUCCESS) {
 		*devobj = dobj;
 		*devhandle = dobj;

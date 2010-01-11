@@ -677,7 +677,6 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	dev->do_refcnt = 1;
 	dev->do_attacheddev = NULL;
 	dev->do_nextdev = NULL;
-	dev->do_devtype = devtype;
 	dev->do_stacksize = 1;
 	dev->do_alignreq = 1;
 	dev->do_characteristics = devchars;
