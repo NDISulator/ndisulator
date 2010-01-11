@@ -298,9 +298,6 @@ enum ndis_power_state {
 };
 typedef enum ndis_power_state ndis_power_state;
 
-/*
- * These are used with the MiniportPnpEventNotify() method.
- */
 enum ndis_power_profile {
 	NDIS_POWER_PROFILE_BATTERY,
 	NDIS_POWER_PROFILE_ACONLINE
@@ -316,6 +313,34 @@ enum ndis_device_pnp_event {
 	NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED
 };
 typedef enum ndis_device_pnp_event ndis_device_pnp_event;
+
+enum net_pnp_event_code {
+	NET_EVENT_SET_POWER,
+	NET_EVENT_QUERY_POWER,
+	NET_EVENT_QUERY_REMOVE_DEVICE,
+	NET_EVENT_CANCEL_REMOVE_DEVICE,
+	NET_EVENT_RECONFIGURE,
+	NET_EVENT_BIND_LIST,
+	NET_EVENT_BINDS_COMPLETE,
+	NET_EVENT_PNP_CAPABILITIES
+};
+typedef enum ndis_pnp_event_code ndis_device_pnp_event_code;
+
+enum ndis_request_type {
+	NDIS_REQUEST_QUERY_INFORMATION,
+	NDIS_REQUEST_SET_INFORMATION,
+	NDIS_REQUEST_QUERY_STATISTICS,
+	NDIS_REQUEST_OPEN,
+	NDIS_REQUEST_CLOSE,
+	NDIS_REQUEST_SEND,
+	NDIS_REQUEST_TRANSFER_DATA,
+	NDIS_REQUEST_RESET,
+	NDIS_REQUEST_GENERIC_1,
+	NDIS_REQUEST_GENERIC_2,
+	NDIS_REQUEST_GENERIC_3,
+	NDIS_REQUEST_GENERIC_4
+};
+typedef enum ndis_request_type ndis_request_type;
 
 enum ndis_physical_medium {
 	NDIS_PHYSICAL_MEDIUM_UNSPECIFIED,
@@ -396,10 +421,6 @@ typedef enum ndis_physical_medium ndis_physical_medium;
 #define	OID_802_11_POWER_MODE			0x0D010216	/* QSrR */
 #define	OID_802_11_BSSID_LIST			0x0D010217	/* QsrM */
 #define	OID_802_11_ENCRYPTION_STATUS		OID_802_11_WEP_STATUS
-
-/*
- * Structures/definitions for 802.11
- */
 
 enum ndis_nettype {
 	NDIS_802_11_NETTYPE_11FH,
@@ -723,8 +744,6 @@ struct ndis_80211_enc_indication {
 	ndis_80211_pmkid_candidate_list nei_pmkidlist;
 };
 typedef struct ndis_80211_enc_indication ndis_80211_enc_indication;
-
-/* TCP OIDs. */
 
 #define	OID_TCP_TASK_OFFLOAD			0xFC010201
 #define	OID_TCP_TASK_IPSEC_ADD_SA		0xFC010202
