@@ -600,10 +600,8 @@ ctxsw_utow(void)
 	 */
 	if (t->tid_self != t)
 		x86_newldt(NULL);
-	x86_critical_enter();
 	t->tid_oldfs = x86_getfs();
 	x86_setfs(SEL_TO_FS(t->tid_selector));
-	x86_critical_exit();
 
 	/* Now entering Windows land, population: you. */
 }
@@ -617,10 +615,8 @@ ctxsw_wtou(void)
 {
 	struct tid *t;
 
-	x86_critical_enter();
 	t = x86_gettid();
 	x86_setfs(t->tid_oldfs);
-	x86_critical_exit();
 	sched_unpin();
 
 	/* Welcome back to UNIX land, we missed you. */
