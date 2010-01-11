@@ -637,7 +637,7 @@ ndis_mtop(struct mbuf *m0, ndis_packet **p)
 }
 
 int
-ndis_set_info(void *arg, ndis_oid oid, void *buf, size_t *buflen)
+ndis_set_info(void *arg, ndis_oid oid, void *buf, uint32_t *buflen)
 {
 	struct ndis_softc *sc = arg;
 	ndis_status rval;
@@ -1022,7 +1022,7 @@ ndis_intrsetup(kdpc *dpc, device_object *dobj, irp *ip, struct ndis_softc *sc)
 }
 
 int
-ndis_get_info(void *arg, ndis_oid oid, void *buf, size_t *buflen)
+ndis_get_info(void *arg, ndis_oid oid, void *buf, uint32_t *buflen)
 {
 	struct ndis_softc *sc = arg;
 	ndis_status rval;
