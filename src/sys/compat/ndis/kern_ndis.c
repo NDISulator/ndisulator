@@ -466,7 +466,7 @@ ndis_convert_res(void *arg)
 				prd->cprd_type = CmResourceTypePort;
 				prd->cprd_flags = CM_RESOURCE_PORT_IO;
 				prd->cprd_sharedisp =
-				    CmResourceShareDeviceExclusive;
+				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
 				prd->u.cprd_port.cprd_start.np_quad =
 				    brle->start;
 				prd->u.cprd_port.cprd_len = brle->count;
@@ -476,7 +476,7 @@ ndis_convert_res(void *arg)
 				prd->cprd_flags =
 				    CM_RESOURCE_MEMORY_READ_WRITE;
 				prd->cprd_sharedisp =
-				    CmResourceShareDeviceExclusive;
+				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
 				prd->u.cprd_mem.cprd_start.np_quad =
 				    brle->start;
 				prd->u.cprd_mem.cprd_len = brle->count;
@@ -489,7 +489,7 @@ ndis_convert_res(void *arg)
 				 * shared, since in our implementation,
 				 * they will be.
 				 */
-				prd->cprd_sharedisp = CmResourceShareShared;
+				prd->cprd_sharedisp = CM_RESOURCE_SHARE_SHARED;
 				prd->u.cprd_intr.cprd_level = brle->start;
 				prd->u.cprd_intr.cprd_vector = brle->start;
 				prd->u.cprd_intr.cprd_affinity = 0;

@@ -82,10 +82,10 @@ typedef enum ndis_interface_type ndis_interface_type;
 #define	CmResourceTypePcCardConfig	130	/* ResType_PcCardConfig (0x8002) */
 
 enum cm_share_disposition {
-    CmResourceShareUndetermined = 0,	/* Reserved */
-    CmResourceShareDeviceExclusive,
-    CmResourceShareDriverExclusive,
-    CmResourceShareShared
+    CM_RESOURCE_SHARE_UNDETERMINED = 0,
+    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE,
+    CM_RESOURCE_SHARE_DRIVER_EXCLUSIVE,
+    CM_RESOURCE_SHARE_SHARED
 };
 typedef enum cm_share_disposition cm_share_disposition;
 
