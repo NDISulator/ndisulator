@@ -190,7 +190,7 @@ typedef uint8_t ndis_kirql;
 #define	EVENT_NDIS_RESET_FAILURE_CORRECTION		0x800013AA
 
 /*
- * NDIS OIDs used by the queryinfo/setinfo routines.
+ * NDIS OIDs used by the query_info/set_info routines.
  * Some are required by all NDIS drivers, some are specific to
  * a particular type of device, and some are purely optional.
  * Unfortunately, one of the purely optional OIDs is the one
@@ -1305,7 +1305,7 @@ typedef struct ndis_packet_pool ndis_packet_pool;
 /* mtx type for NDIS */
 #define	MTX_NDIS_LOCK "NDIS lock"
 
-struct ndis_filterdbs {
+struct ndis_filter_dbs {
 	union {
 		void	*nf_ethdb;
 		void	*nf_nulldb;
@@ -1314,7 +1314,7 @@ struct ndis_filterdbs {
 	void	*nf_fddidb;
 	void	*nf_arcdb;
 };
-typedef struct ndis_filterdbs ndis_filterdbs;
+typedef struct ndis_filter_dbs ndis_filter_dbs;
 
 #define	nf_ethdb u.nf_ethdb
 
@@ -1359,23 +1359,23 @@ struct ndis_miniport_driver_characteristics {
 	uint8_t		nmc_version_minor;
 	uint16_t	nmc_pad;
 	uint32_t	nmc_rsvd;
-	void *		nmc_checkhang_func;
+	void *		nmc_check_hang_func;
 	void *		nmc_disable_interrupts_func;
 	void *		nmc_enable_interrupts_func;
 	void *		nmc_halt_func;
 	void *		nmc_interrupt_func;
 	void *		nmc_init_func;
 	void *		nmc_isr_func;
-	void *		nmc_queryinfo_func;
+	void *		nmc_query_info_func;
 	void *		nmc_reconfig_func;
 	void *		nmc_reset_func;
-	void *		nmc_sendsingle_func;
-	void *		nmc_setinfo_func;
-	void *		nmc_transferdata_func;
+	void *		nmc_send_single_func;
+	void *		nmc_set_info_func;
+	void *		nmc_transfer_data_func;
 
 	/* NDIS 4.0 extentions */
 	void *		nmc_return_packet_func;
-	void *		nmc_sendmulti_func;
+	void *		nmc_send_multi_func;
 	void *		nmc_allocate_complete_func;
 
 	/* NDIS 5.0 extensions */
@@ -1387,7 +1387,7 @@ struct ndis_miniport_driver_characteristics {
 	void *		nmc_corequest_func;
 
 	/* NDIS 5.1 extentions */
-	void *		nmc_canceltxpkts_func;
+	void *		nmc_cancel_tx_func;
 	void *		nmc_pnpevent_func;
 	void *		nmc_shutdown_func;
 	void *		nmc_rsvd0;
@@ -1467,79 +1467,79 @@ struct ndis_miniport_block {
 	ndis_reference		nmb_ref;
 	ndis_handle		nmb_devicectx;
 	uint8_t			nmb_padding;
-	uint8_t			nmb_lockacquired;
+	uint8_t			nmb_lock_acquired;
 	uint8_t			nmb_pmodeopens;
-	uint8_t			nmb_assignedcpu;
+	uint8_t			nmb_assigned_cpu;
 	ndis_kspin_lock		nmb_lock;
-	ndis_request		*nmb_mediarequest;
+	ndis_request		*nmb_media_request;
 	ndis_miniport_interrupt	*nmb_interrupt;
 	uint32_t		nmb_flags;
-	uint32_t		nmb_pnpflags;
-	list_entry		nmb_packetlist;
-	ndis_packet		*nmb_firstpendingtxpacket;
-	ndis_packet		*nmb_returnpacketqueue;
-	uint32_t		nmb_requestbuffer;
-	void			*nmb_setmcastbuf;
-	ndis_miniport_block	*nmb_primaryminiport;
-	void			*nmb_wrapperctx;
-	void			*nmb_busdatactx;
-	uint32_t		nmb_pnpcaps;
+	uint32_t		nmb_pnp_flags;
+	list_entry		nmb_packet_list;
+	ndis_packet		*nmb_first_pending_tx_packet;
+	ndis_packet		*nmb_return_packet_queue;
+	uint32_t		nmb_request_buffer;
+	void			*nmb_set_mcast_buffer;
+	ndis_miniport_block	*nmb_primary_miniport;
+	void			*nmb_wrapper_ctx;
+	void			*nmb_busdata_ctx;
+	uint32_t		nmb_pnp_caps;
 	cm_resource_list	*nmb_resources;
 	ndis_timer		nmb_wkupdpctimer;
-	unicode_string		nmb_basename;
-	unicode_string		nmb_symlinkname;
-	uint32_t		nmb_checkforhangsecs;
-	uint16_t		nmb_cfhticks;
-	uint16_t		nmb_cfhcurrticks;
-	ndis_status		nmb_resetstatus;
-	ndis_handle		nmb_resetopen;
-	ndis_filterdbs		nmb_filterdbs;
-	void			*nmb_pktind_func;
-	void			*nmb_senddone_func;
-	void			*nmb_sendrsrc_func;
-	void			*nmb_resetdone_func;
+	unicode_string		nmb_base_name;
+	unicode_string		nmb_symlink_name;
+	uint32_t		nmb_check_for_hang_secs;
+	uint16_t		nmb_cfh_ticks;
+	uint16_t		nmb_cfh_curr_ticks;
+	ndis_status		nmb_reset_status;
+	ndis_handle		nmb_reset_open;
+	ndis_filter_dbs		nmb_filter_dbs;
+	void			*nmb_pkt_indicate_func;
+	void			*nmb_send_done_func;
+	void			*nmb_send_rsrc_func;
+	void			*nmb_reset_done_func;
 	ndis_medium		nmb_medium;
-	uint32_t		nmb_busnum;
-	uint32_t		nmb_bustype;
-	uint32_t		nmb_adaptertype;
+	uint32_t		nmb_bus_num;
+	uint32_t		nmb_bus_type;
+	uint32_t		nmb_adapter_type;
 	device_object		*nmb_deviceobj; /* Functional device */
 	device_object		*nmb_physdeviceobj; /* Physical device */
 	device_object		*nmb_nextdeviceobj; /* Next dev in stack */
 	void			*nmb_mapreg;
 	void			*nmb_callmgraflist;
-	void			*nmb_miniportthread;
-	void			*nmb_setinfobuf;
-	uint16_t		nmb_setinfobuflen;
-	uint16_t		nmb_maxsendpkts;
-	ndis_status		nmb_fakestatus;
-	void			*nmb_lockhandler;
-	unicode_string		*nmb_adapterinstancename;
-	void			*nmb_timerqueue;
-	uint32_t		nmb_mactoptions;
-	ndis_request		*nmb_pendingreq;
-	uint32_t		nmb_maxlongaddrs;
-	uint32_t		nmb_maxshortaddrs;
-	uint32_t		nmb_currlookahead;
-	uint32_t		nmb_maxlookahead;
+	void			*nmb_miniport_thread;
+	void			*nmb_set_infobuf;
+	uint16_t		nmb_set_infobuflen;
+	uint16_t		nmb_max_send_pkts;
+	ndis_status		nmb_fake_status;
+	void			*nmb_lock_handler;
+	unicode_string		*nmb_adapter_instance_name;
+	void			*nmb_timer_queue;
+	uint32_t		nmb_mact_options;
+	ndis_request		*nmb_pending_request;
+	uint32_t		nmb_max_long_address;
+	uint32_t		nmb_max_short_address;
+	uint32_t		nmb_current_lookahead;
+	uint32_t		nmb_max_lookahead;
 	void			*nmb_interrupt_func;
-	void			*nmb_disableintr_func;
-	void			*nmb_enableintr_func;
-	void			*nmb_sendpkts_func;
-	void			*nmb_deferredsend_func;
-	void			*nmb_ethrxindicate_func;
-	void			*nmb_txrxindicate_func;
-	void			*nmb_fddirxindicate_func;
-	void			*nmb_ethrxdone_func;
-	void			*nmb_txrxdone_func;
+	void			*nmb_disable_interrupt_func;
+	void			*nmb_enable_interrupt_func;
+	void			*nmb_send_pkts_func;
+	void			*nmb_deferred_send_func;
+	void			*nmb_ethrx_indicate_func;
+	void			*nmb_txrx_indicate_func;
+	void			*nmb_fddirx_indicate_func;
+	void			*nmb_ethrx_done_func;
+	void			*nmb_txrx_done_func;
 	void			*nmb_fddirxcond_func;
 	void			*nmb_status_func;
-	void			*nmb_statusdone_func;
+	void			*nmb_status_done_func;
 	void			*nmb_tdcond_func;
-	void			*nmb_querydone_func;
-	void			*nmb_setdone_func;
-	void			*nmb_wantxdone_func;
+	void			*nmb_query_done_func;
+	void			*nmb_set_done_func;
+	void			*nmb_wantx_done_func;
 	void			*nmb_wanrx_func;
-	void			*nmb_wanrxdone_func;
+	void			*nmb_wanrx_done_func;
 
 	/*
 	 * End of windows-specific portion of miniport block. Everything
@@ -1561,29 +1561,31 @@ struct ndis_miniport_block {
 
 TAILQ_HEAD(nd_head, ndis_miniport_block);
 
+typedef ndis_status (*driver_entry)(void *, unicode_string *);
+typedef uint8_t (*ndis_checkforhang_func)(ndis_handle);
+typedef void (*ndis_disable_interrupts_func)(ndis_handle);
+typedef void (*ndis_enable_interrupts_func)(ndis_handle);
+typedef void (*ndis_halt_func)(ndis_handle);
+typedef void (*ndis_interrupt_func)(ndis_handle);
 typedef ndis_status (*ndis_init_func)(ndis_status *, uint32_t *,
     ndis_medium *, uint32_t, ndis_handle, ndis_handle);
-typedef ndis_status (*ndis_queryinfo_func)(ndis_handle, ndis_oid, void *,
-    uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_setinfo_func)(ndis_handle, ndis_oid, void *,
-    uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_sendsingle_func)(ndis_handle, ndis_packet *,
-    uint32_t);
-typedef ndis_status (*ndis_sendmulti_func)(ndis_handle, ndis_packet **,
-    uint32_t);
 typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, ndis_handle);
-typedef void (*ndis_interrupt_func)(ndis_handle);
+typedef ndis_status (*ndis_query_info_func)(ndis_handle, ndis_oid, void *,
+    uint32_t, uint32_t *, uint32_t *);
 typedef int (*ndis_reset_func)(uint8_t *, ndis_handle);
-typedef void (*ndis_halt_func)(ndis_handle);
+typedef ndis_status (*ndis_send_single_func)(ndis_handle, ndis_packet *,
+    uint32_t);
+typedef ndis_status (*ndis_set_info_func)(ndis_handle, ndis_oid, void *,
+    uint32_t, uint32_t *, uint32_t *);
+typedef ndis_status (*ndis_transfer_data_func)(ndis_handle, ndis_packet *,
+    uint32_t *, uint32_t);
 typedef void (*ndis_return_func)(ndis_handle, ndis_packet *);
-typedef void (*ndis_enable_interrupts_func)(ndis_handle);
-typedef void (*ndis_disable_interrupts_func)(ndis_handle);
-typedef void (*ndis_shutdown_func)(void *);
+typedef ndis_status (*ndis_send_multi_func)(ndis_handle, ndis_packet **,
+    uint32_t);
+typedef void (*ndis_allocate_complete_func)(ndis_handle, void *,
+    ndis_physaddr *, uint32_t, void *);
 typedef void (*ndis_pnpevent_func)(void *, int, void *, uint32_t);
-typedef void (*ndis_allocdone_func)(ndis_handle, void *, ndis_physaddr *,
-    uint32_t, void *);
-typedef uint8_t (*ndis_checkforhang_func)(ndis_handle);
-typedef ndis_status (*driver_entry)(void *, unicode_string *);
+typedef void (*ndis_shutdown_func)(void *);
 extern image_patch_table ndis_functbl[];
 
 #define	NDIS_TASKQUEUE 1

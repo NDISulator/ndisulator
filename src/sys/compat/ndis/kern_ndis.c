@@ -74,24 +74,25 @@ __FBSDID("$FreeBSD$");
 
 #define	NDIS_DUMMY_PATH "\\\\some\\bogus\\path"
 
-static void ndis_status_func(ndis_handle, ndis_status, void *, uint32_t);
-static void ndis_statusdone_func(ndis_handle);
-static void ndis_setdone_func(ndis_handle, ndis_status);
-static void ndis_getdone_func(ndis_handle, ndis_status);
-static void ndis_resetdone_func(ndis_handle, ndis_status, uint8_t);
-static void ndis_sendrsrcavail_func(ndis_handle);
-static void ndis_intrsetup(kdpc *, device_object *, irp *, struct ndis_softc *);
-static void ndis_return(device_object *, void *);
-static void ndis_flush_sysctls(void *);
+static void	ndis_status_func(ndis_handle, ndis_status, void *, uint32_t);
+static void	ndis_status_done_func(ndis_handle);
+static void	ndis_set_done_func(ndis_handle, ndis_status);
+static void	ndis_get_done_func(ndis_handle, ndis_status);
+static void	ndis_reset_done_func(ndis_handle, ndis_status, uint8_t);
+static void	ndis_send_rsrcavail_func(ndis_handle);
+static void	ndis_intr_setup(kdpc *, device_object *, irp *,
+		    struct ndis_softc *);
+static void	ndis_return(device_object *, void *);
+static void	ndis_flush_sysctls(void *);
 
 static image_patch_table kernndis_functbl[] = {
 	IMPORT_SFUNC(ndis_status_func, 4),
-	IMPORT_SFUNC(ndis_statusdone_func, 1),
-	IMPORT_SFUNC(ndis_setdone_func, 2),
-	IMPORT_SFUNC(ndis_getdone_func, 2),
-	IMPORT_SFUNC(ndis_resetdone_func, 3),
-	IMPORT_SFUNC(ndis_sendrsrcavail_func, 1),
-	IMPORT_SFUNC(ndis_intrsetup, 4),
+	IMPORT_SFUNC(ndis_status_done_func, 1),
+	IMPORT_SFUNC(ndis_set_done_func, 2),
+	IMPORT_SFUNC(ndis_get_done_func, 2),
+	IMPORT_SFUNC(ndis_reset_done_func, 3),
+	IMPORT_SFUNC(ndis_send_rsrcavail_func, 1),
+	IMPORT_SFUNC(ndis_intr_setup, 4),
 	IMPORT_SFUNC(ndis_return, 1),
 	{ NULL, NULL, NULL }
 };
@@ -182,7 +183,7 @@ DEV_MODULE(ndisapi, ndis_modevent, NULL);
 MODULE_VERSION(ndisapi, 1);
 
 static void
-ndis_sendrsrcavail_func(ndis_handle adapter)
+ndis_send_rsrcavail_func(ndis_handle adapter)
 {
 }
 
@@ -193,12 +194,12 @@ ndis_status_func(ndis_handle adapter, ndis_status status, void *sbuf,
 }
 
 static void
-ndis_statusdone_func(ndis_handle adapter)
+ndis_status_done_func(ndis_handle adapter)
 {
 }
 
 static void
-ndis_setdone_func(ndis_handle adapter, ndis_status status)
+ndis_set_done_func(ndis_handle adapter, ndis_status status)
 {
 	ndis_miniport_block *block;
 
@@ -209,7 +210,7 @@ ndis_setdone_func(ndis_handle adapter, ndis_status status)
 }
 
 static void
-ndis_getdone_func(ndis_handle adapter, ndis_status status)
+ndis_get_done_func(ndis_handle adapter, ndis_status status)
 {
 	ndis_miniport_block *block;
 
@@ -220,7 +221,7 @@ ndis_getdone_func(ndis_handle adapter, ndis_status status)
 }
 
 static void
-ndis_resetdone_func(ndis_handle adapter, ndis_status status,
+ndis_reset_done_func(ndis_handle adapter, ndis_status status,
     uint8_t addressingreset)
 {
 	ndis_miniport_block *block;
@@ -659,7 +660,7 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 	if (request == NDIS_REQUEST_QUERY_INFORMATION) {
 		KeResetEvent(&sc->ndis_block->nmb_getevent);
 		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-		rval = MSCALL6(sc->ndis_chars->nmc_queryinfo_func,
+		rval = MSCALL6(sc->ndis_chars->nmc_query_info_func,
 		    sc->ndis_block->nmb_miniportadapterctx,
 		    oid, buf, buflen, written, needed);
 		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
@@ -672,7 +673,7 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 	} else if (request == NDIS_REQUEST_SET_INFORMATION) {
 		KeResetEvent(&sc->ndis_block->nmb_setevent);
 		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-		rval = MSCALL6(sc->ndis_chars->nmc_setinfo_func,
+		rval = MSCALL6(sc->ndis_chars->nmc_set_info_func,
 		    sc->ndis_block->nmb_miniportadapterctx,
 		    oid, buf, buflen, written, needed);
 		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
@@ -732,15 +733,15 @@ ndis_set_info(void *arg, ndis_oid oid, void *buf, uint32_t buflen,
 	    arg, oid, buf, buflen, written, needed));
 }
 
-typedef void (*ndis_senddone_func) (ndis_handle, ndis_packet *, ndis_status);
+typedef void (*ndis_send_done_func) (ndis_handle, ndis_packet *, ndis_status);
 
 int
 ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 {
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
-	ndis_sendmulti_func sendfunc;
-	ndis_senddone_func senddonefunc;
+	ndis_send_multi_func sendfunc;
+	ndis_send_done_func senddonefunc;
 	int i;
 	ndis_packet *p;
 	uint8_t irql = 0;
@@ -748,8 +749,8 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 	adapter = sc->ndis_block->nmb_miniportadapterctx;
 	if (adapter == NULL)
 		return (ENXIO);
-	sendfunc = sc->ndis_chars->nmc_sendmulti_func;
-	senddonefunc = sc->ndis_block->nmb_senddone_func;
+	sendfunc = sc->ndis_chars->nmc_send_multi_func;
+	senddonefunc = sc->ndis_block->nmb_send_done_func;
 
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
@@ -781,15 +782,15 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
 	ndis_status status;
-	ndis_sendsingle_func sendfunc;
-	ndis_senddone_func senddonefunc;
+	ndis_send_single_func sendfunc;
+	ndis_send_done_func senddonefunc;
 	uint8_t irql = 0;
 
 	adapter = sc->ndis_block->nmb_miniportadapterctx;
 	if (adapter == NULL)
 		return (ENXIO);
-	sendfunc = sc->ndis_chars->nmc_sendsingle_func;
-	senddonefunc = sc->ndis_block->nmb_senddone_func;
+	sendfunc = sc->ndis_chars->nmc_send_single_func;
+	senddonefunc = sc->ndis_block->nmb_send_done_func;
 
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
@@ -1034,7 +1035,7 @@ ndis_init_nic(void *arg)
 }
 
 static void
-ndis_intrsetup(kdpc *dpc, device_object *dobj, irp *ip, struct ndis_softc *sc)
+ndis_intr_setup(kdpc *dpc, device_object *dobj, irp *ip, struct ndis_softc *sc)
 {
 	ndis_miniport_interrupt *intr;
 
@@ -1071,7 +1072,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 		return (status);
 
 	block = fdo->do_devext;
-	block->nmb_filterdbs.nf_ethdb = block;
+	block->nmb_filter_dbs.nf_ethdb = block;
 	block->nmb_deviceobj = fdo;
 	block->nmb_physdeviceobj = pdo;
 	block->nmb_nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
@@ -1096,7 +1097,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	 * If the driver has a MiniportTransferData() function,
 	 * we should allocate a private RX packet pool.
 	 */
-	if (sc->ndis_chars->nmc_transferdata_func != NULL) {
+	if (sc->ndis_chars->nmc_transfer_data_func != NULL) {
 		NdisAllocatePacketPool(&status, &block->nmb_rxpool,
 		    32, PROTOCOL_RESERVED_SIZE_IN_PACKET);
 		if (status != NDIS_STATUS_SUCCESS) {
@@ -1104,7 +1105,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 			IoDeleteDevice(fdo);
 			return (status);
 		}
-		InitializeListHead((&block->nmb_packetlist));
+		InitializeListHead((&block->nmb_packet_list));
 	}
 
 	/* Give interrupt handling priority over timers. */
@@ -1114,11 +1115,11 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	/* Finish up BSD-specific setup. */
 	block->nmb_signature = (void *)0xcafebabe;
 	block->nmb_status_func = kernndis_functbl[0].ipt_wrap;
-	block->nmb_statusdone_func = kernndis_functbl[1].ipt_wrap;
-	block->nmb_setdone_func = kernndis_functbl[2].ipt_wrap;
-	block->nmb_querydone_func = kernndis_functbl[3].ipt_wrap;
-	block->nmb_resetdone_func = kernndis_functbl[4].ipt_wrap;
-	block->nmb_sendrsrc_func = kernndis_functbl[5].ipt_wrap;
+	block->nmb_status_done_func = kernndis_functbl[1].ipt_wrap;
+	block->nmb_set_done_func = kernndis_functbl[2].ipt_wrap;
+	block->nmb_query_done_func = kernndis_functbl[3].ipt_wrap;
+	block->nmb_reset_done_func = kernndis_functbl[4].ipt_wrap;
+	block->nmb_send_rsrc_func = kernndis_functbl[5].ipt_wrap;
 
 	TAILQ_INSERT_TAIL(&ndis_devhead, block, link);
 
@@ -1142,7 +1143,7 @@ ndis_unload_driver(void *arg)
 
 	TAILQ_REMOVE(&ndis_devhead, sc->ndis_block, link);
 
-	if (sc->ndis_chars->nmc_transferdata_func != NULL)
+	if (sc->ndis_chars->nmc_transfer_data_func != NULL)
 		NdisFreePacketPool(sc->ndis_block->nmb_rxpool);
 	fdo = sc->ndis_block->nmb_deviceobj;
 	IoFreeWorkItem(sc->ndis_block->nmb_returnitem);

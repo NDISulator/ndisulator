@@ -700,15 +700,15 @@ ndis_attach(device_t dev)
 		sc->ndis_block->nmb_rlist = NULL;
 
 	/* Install our RX and TX interrupt handlers. */
-	sc->ndis_block->nmb_senddone_func = ndis_txeof_wrap;
-	sc->ndis_block->nmb_pktind_func = ndis_rxeof_wrap;
-	sc->ndis_block->nmb_ethrxindicate_func = ndis_rxeof_eth_wrap;
-	sc->ndis_block->nmb_ethrxdone_func = ndis_rxeof_done_wrap;
+	sc->ndis_block->nmb_send_done_func = ndis_txeof_wrap;
+	sc->ndis_block->nmb_pkt_indicate_func = ndis_rxeof_wrap;
+	sc->ndis_block->nmb_ethrx_indicate_func = ndis_rxeof_eth_wrap;
+	sc->ndis_block->nmb_ethrx_done_func = ndis_rxeof_done_wrap;
 	sc->ndis_block->nmb_tdcond_func = ndis_rxeof_xfr_done_wrap;
 
 	/* Override the status handler so we can detect link changes. */
 	sc->ndis_block->nmb_status_func = ndis_linksts_wrap;
-	sc->ndis_block->nmb_statusdone_func = ndis_linksts_done_wrap;
+	sc->ndis_block->nmb_status_done_func = ndis_linksts_done_wrap;
 
 	/* Set up work item handlers. */
 	sc->ndis_tickitem = IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
@@ -1260,7 +1260,7 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 	if (!NDIS_SERIALIZED(block))
 		KeAcquireSpinLock(&block->nmb_lock, &irql);
 
-	InsertTailList((&block->nmb_packetlist), (&p->np_list));
+	InsertTailList((&block->nmb_packet_list), (&p->np_list));
 
 	if (!NDIS_SERIALIZED(block))
 		KeReleaseSpinLock(&block->nmb_lock, irql);
@@ -1294,7 +1294,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct ndis_softc *sc;
 	ndis_packet *p;
 	list_entry *l;
-	uint32_t status;
+	ndis_status status;
 	ndis_ethpriv *priv;
 	struct ifnet *ifp;
 	struct mbuf *m;
@@ -1306,9 +1306,9 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 
 	KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
 
-	l = block->nmb_packetlist.nle_flink;
-	while (!IsListEmpty(&block->nmb_packetlist)) {
-		l = RemoveHeadList((&block->nmb_packetlist));
+	l = block->nmb_packet_list.nle_flink;
+	while (!IsListEmpty(&block->nmb_packet_list)) {
+		l = RemoveHeadList((&block->nmb_packet_list));
 		p = CONTAINING_RECORD(l, ndis_packet, np_list);
 		InitializeListHead((&p->np_list));
 
@@ -1319,7 +1319,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 
 		KeReleaseSpinLockFromDpcLevel(&block->nmb_lock);
 
-		status = MSCALL6(sc->ndis_chars->nmc_transferdata_func,
+		status = MSCALL6(sc->ndis_chars->nmc_transfer_data_func,
 		    p, &p->np_private.npp_totlen, block, priv->nep_ctx,
 		    m->m_len, m->m_pkthdr.len - m->m_len);
 
@@ -1347,7 +1347,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 			m_freem(m);
 
 		/* Advance to next packet */
-		l = block->nmb_packetlist.nle_flink;
+		l = block->nmb_packet_list.nle_flink;
 	}
 
 	KeReleaseSpinLockFromDpcLevel(&block->nmb_lock);
@@ -1680,7 +1680,7 @@ ndis_tick(void *xsc)
 		IoQueueWorkItem(sc->ndis_tickitem,
 		    (io_workitem_func)ndis_ticktask_wrap,
 		    WORKQUEUE_CRITICAL, sc);
-		sc->ndis_hang_timer = sc->ndis_block->nmb_checkforhangsecs;
+		sc->ndis_hang_timer = sc->ndis_block->nmb_check_for_hang_secs;
 	}
 	if (sc->ndis_tx_timer && --sc->ndis_tx_timer == 0) {
 		sc->ndis_ifp->if_oerrors++;
@@ -1703,8 +1703,8 @@ ndis_ticktask(device_object *d, void *xsc)
 	if (!NDIS_INITIALIZED(sc))
 		return;
 
-	if (sc->ndis_chars->nmc_checkhang_func != NULL) {
-		if (MSCALL1(sc->ndis_chars->nmc_checkhang_func,
+	if (sc->ndis_chars->nmc_check_hang_func != NULL) {
+		if (MSCALL1(sc->ndis_chars->nmc_check_hang_func,
 		    sc->ndis_block->nmb_miniportadapterctx) == TRUE)
 			ndis_reset_nic(sc);
 	}
@@ -1891,7 +1891,7 @@ ndis_start(struct ifnet *ifp)
 	 * a MiniportSendPackets() routine, we prefer that over
 	 * a MiniportSend() routine (which sends just a single packet).
 	 */
-	if (sc->ndis_chars->nmc_sendmulti_func != NULL)
+	if (sc->ndis_chars->nmc_send_multi_func != NULL)
 		ndis_send_packets(sc, p0, pcnt);
 	else
 		ndis_send_packet(sc, p);
@@ -1931,14 +1931,14 @@ ndis_init(void *xsc)
 
 	/*
 	 * Some drivers don't set this value. The NDIS spec says
-	 * the default checkforhang timeout is "approximately 2
+	 * the default check_for_hang timeout is "approximately 2
 	 * seconds." We use 3 seconds, because it seems for some
 	 * drivers, exactly 2 seconds is too fast.
 	 */
-	if (sc->ndis_block->nmb_checkforhangsecs == 0)
-		sc->ndis_block->nmb_checkforhangsecs = 3;
+	if (sc->ndis_block->nmb_check_for_hang_secs == 0)
+		sc->ndis_block->nmb_check_for_hang_secs = 3;
 
-	sc->ndis_hang_timer = sc->ndis_block->nmb_checkforhangsecs;
+	sc->ndis_hang_timer = sc->ndis_block->nmb_check_for_hang_secs;
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 	NDIS_UNLOCK(sc);
 

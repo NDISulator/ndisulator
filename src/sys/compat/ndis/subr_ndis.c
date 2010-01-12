@@ -434,7 +434,7 @@ NdisMSetAttributesEx(ndis_handle adapter_handle, ndis_handle adapter_ctx,
 	 */
 	block = (ndis_miniport_block *)adapter_handle;
 	block->nmb_miniportadapterctx = adapter_ctx;
-	block->nmb_checkforhangsecs = hangsecs;
+	block->nmb_check_for_hang_secs = hangsecs;
 	block->nmb_flags = flags;
 
 	return (NDIS_STATUS_SUCCESS);
@@ -1318,7 +1318,7 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	struct ndis_allocwork *w;
 	void *vaddr;
 	ndis_physaddr paddr;
-	ndis_allocdone_func donefunc;
+	ndis_allocate_complete_func donefunc;
 
 	w = arg;
 	block = (ndis_miniport_block *)dobj->do_devext;
@@ -2559,18 +2559,18 @@ NdisSystemProcessorCount(void)
 	return (mp_ncpus);
 }
 
-typedef void (*ndis_statusdone_func)(ndis_handle);
 typedef void (*ndis_status_func)(ndis_handle, ndis_status,
     void *, uint32_t);
+typedef void (*ndis_status_done_func)(ndis_handle);
 
 static void
 NdisMIndicateStatusComplete(ndis_handle adapter)
 {
 	ndis_miniport_block *block;
-	ndis_statusdone_func statusdonefunc;
+	ndis_status_done_func statusdonefunc;
 
 	block = (ndis_miniport_block *)adapter;
-	statusdonefunc = block->nmb_statusdone_func;
+	statusdonefunc = block->nmb_status_done_func;
 
 	MSCALL1(statusdonefunc, adapter);
 }
