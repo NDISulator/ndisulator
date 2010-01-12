@@ -300,7 +300,9 @@ ndis_set_txpower(struct ndis_softc *sc)
 	ndis_80211_power power;
 
 	power = dBm2mW[ic->ic_txpowlimit];
-	return (ndis_set_int(sc, OID_802_11_TX_POWER_LEVEL, power));
+	if (ndis_set_int(sc, OID_802_11_TX_POWER_LEVEL, power))
+		return (EINVAL);
+	return (0);
 }
 
 static int
@@ -1005,10 +1007,10 @@ nonettypes:
 got_crypto:
 		if (!ndis_get_int(sc, OID_802_11_FRAGMENTATION_THRESHOLD, &arg))
 			ic->ic_caps |= IEEE80211_C_TXFRAG;
-		if (!ndis_get_int(sc, OID_802_11_POWER_MODE, &arg))
-			ic->ic_caps |= IEEE80211_C_PMGT;
 		if (!ndis_get_int(sc, OID_802_11_TX_POWER_LEVEL, &arg))
 			ic->ic_caps |= IEEE80211_C_TXPMGT;
+		if (!ndis_get_int(sc, OID_802_11_POWER_MODE, &arg))
+			ic->ic_caps |= IEEE80211_C_PMGT;
 
 		ieee80211_ifattach(ic, eaddr);
 		ic->ic_send_mgmt = ndis_send_mgmt;
