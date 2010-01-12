@@ -261,7 +261,7 @@ static void NdisCloseFile(ndis_handle);
 static uint8_t NdisSystemProcessorCount(void);
 static void NdisMIndicateStatusComplete(ndis_handle);
 static void NdisMIndicateStatus(ndis_handle, ndis_status, void *, uint32_t);
-static uint8_t ndis_intr(kinterrupt *, void *);
+static uint8_t ndis_interrupt_nic(kinterrupt *, void *);
 static void ndis_intrhand(kdpc *, ndis_miniport_interrupt *, void *, void *);
 static funcptr ndis_findwrap(funcptr);
 static void NdisCopyFromPacketToPacket(ndis_packet *, uint32_t, uint32_t,
@@ -433,7 +433,7 @@ NdisMSetAttributesEx(ndis_handle adapter_handle, ndis_handle adapter_ctx,
 	 * the driver's internal functions.
 	 */
 	block = (ndis_miniport_block *)adapter_handle;
-	block->nmb_miniportadapterctx = adapter_ctx;
+	block->nmb_miniport_adapter_ctx = adapter_ctx;
 	block->nmb_check_for_hang_secs = hangsecs;
 	block->nmb_flags = flags;
 
@@ -1318,7 +1318,6 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	struct ndis_allocwork *w;
 	void *vaddr;
 	ndis_physaddr paddr;
-	ndis_allocate_complete_func donefunc;
 
 	w = arg;
 	block = (ndis_miniport_block *)dobj->do_devext;
@@ -1327,10 +1326,13 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	vaddr = NULL;
 	paddr.np_quad = 0;
 
-	donefunc = sc->ndis_chars->nmc_allocate_complete_func;
 	NdisMAllocateSharedMemory(block, w->na_len,
 	    w->na_cached, &vaddr, &paddr);
-	MSCALL5(donefunc, block, vaddr, &paddr, w->na_len, w->na_ctx);
+	KASSERT(block != NULL, ("no block"));
+	KASSERT(sc->ndis_chars->nmc_allocate_complete_func != NULL,
+	    ("no allocate_complete"));
+	MSCALL5(sc->ndis_chars->nmc_allocate_complete_func,
+	    block, vaddr, &paddr, w->na_len, w->na_ctx);
 
 	IoFreeWorkItem(w->na_iw);
 	free(w, M_NDIS_SUBR);
@@ -1899,7 +1901,7 @@ NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
 }
 
 static uint8_t
-ndis_intr(kinterrupt *iobj, void *arg)
+ndis_interrupt_nic(kinterrupt *iobj, void *arg)
 {
 	struct ndis_softc *sc = arg;
 	uint8_t is_our_intr = FALSE;
@@ -1907,15 +1909,15 @@ ndis_intr(kinterrupt *iobj, void *arg)
 	ndis_miniport_interrupt *intr;
 
 	intr = sc->ndis_block->nmb_interrupt;
-	if (intr == NULL || sc->ndis_block->nmb_miniportadapterctx == NULL)
+	if (intr == NULL || sc->ndis_block->nmb_miniport_adapter_ctx == NULL)
 		return (FALSE);
 
 	if (sc->ndis_block->nmb_interrupt->ni_isrreq == TRUE)
 		MSCALL3(intr->ni_isrfunc, &is_our_intr, &call_isr,
-		    sc->ndis_block->nmb_miniportadapterctx);
+		    sc->ndis_block->nmb_miniport_adapter_ctx);
 	else {
 		MSCALL1(sc->ndis_chars->nmc_disable_interrupts_func,
-		    sc->ndis_block->nmb_miniportadapterctx);
+		    sc->ndis_block->nmb_miniport_adapter_ctx);
 		call_isr = 1;
 	}
 	if (call_isr)
@@ -1933,7 +1935,7 @@ ndis_intrhand(kdpc *dpc, ndis_miniport_interrupt *intr, void *sysarg1,
 	ndis_handle adapter;
 
 	block = intr->ni_block;
-	adapter = block->nmb_miniportadapterctx;
+	adapter = block->nmb_miniport_adapter_ctx;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 
 	if (NDIS_SERIALIZED(sc->ndis_block))
@@ -1987,7 +1989,7 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 	KeSetImportanceDpc(&intr->ni_dpc, KDPC_IMPORTANCE_LOW);
 
 	if (IoConnectInterrupt(&intr->ni_introbj,
-	    ndis_findwrap((funcptr)ndis_intr), sc, NULL,
+	    ndis_findwrap((funcptr)ndis_interrupt_nic), sc, NULL,
 	    ivec, ilevel, 0, imode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
 
@@ -2028,7 +2030,7 @@ NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	sc->ndis_chars->nmc_shutdown_func = shutdownfunc;
-	sc->ndis_chars->nmc_rsvd0 = shutdownctx;
+	sc->ndis_chars->nmc_reserved0 = shutdownctx;
 }
 
 static void
@@ -2042,7 +2044,7 @@ NdisMDeregisterAdapterShutdownHandler(ndis_handle adapter)
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	sc->ndis_chars->nmc_shutdown_func = NULL;
-	sc->ndis_chars->nmc_rsvd0 = NULL;
+	sc->ndis_chars->nmc_reserved0 = NULL;
 }
 
 static uint32_t
@@ -2567,12 +2569,11 @@ static void
 NdisMIndicateStatusComplete(ndis_handle adapter)
 {
 	ndis_miniport_block *block;
-	ndis_status_done_func statusdonefunc;
 
 	block = (ndis_miniport_block *)adapter;
-	statusdonefunc = block->nmb_status_done_func;
-
-	MSCALL1(statusdonefunc, adapter);
+	KASSERT(adapter != NULL, ("no adapter"));
+	KASSERT(block->nmb_status_done_func != NULL, ("no status_done"));
+	MSCALL1(block->nmb_status_done_func, adapter);
 }
 
 static void
@@ -2580,12 +2581,11 @@ NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
     uint32_t slen)
 {
 	ndis_miniport_block *block;
-	ndis_status_func statusfunc;
 
 	block = (ndis_miniport_block *)adapter;
-	statusfunc = block->nmb_status_func;
-
-	MSCALL4(statusfunc, adapter, status, sbuf, slen);
+	KASSERT(adapter != NULL, ("no adapter"));
+	KASSERT(block->nmb_status_func != NULL, ("no status"));
+	MSCALL4(block->nmb_status_func, adapter, status, sbuf, slen);
 }
 
 /*
@@ -2903,7 +2903,7 @@ image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisMRegisterUnloadHandler, 2),
 	IMPORT_SFUNC(ndis_timercall, 4),
 	IMPORT_SFUNC(ndis_asyncmem_complete, 2),
-	IMPORT_SFUNC(ndis_intr, 2),
+	IMPORT_SFUNC(ndis_interrupt_nic, 2),
 	IMPORT_SFUNC(ndis_intrhand, 4),
 
 	/*

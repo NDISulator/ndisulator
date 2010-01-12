@@ -2960,7 +2960,6 @@ KeResetEvent(nt_kevent *kevent)
 	prevstate = kevent->k_header.dh_sigstate;
 	kevent->k_header.dh_sigstate = FALSE;
 	mtx_unlock(&ntoskrnl_dispatchlock);
-
 	return (prevstate);
 }
 
@@ -2976,7 +2975,6 @@ KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 	mtx_lock(&ntoskrnl_dispatchlock);
 	prevstate = kevent->k_header.dh_sigstate;
 	dh = &kevent->k_header;
-
 	if (IsListEmpty(&dh->dh_waitlisthead))
 		/*
 		 * If there's nobody in the waitlist, just set
@@ -3011,9 +3009,7 @@ KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 			    w->wb_oldpri - (increment * 4) : PRI_MIN_KERN);
 		}
 	}
-
 	mtx_unlock(&ntoskrnl_dispatchlock);
-
 	return (prevstate);
 }
 

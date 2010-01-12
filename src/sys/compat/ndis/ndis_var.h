@@ -1379,21 +1379,21 @@ struct ndis_miniport_driver_characteristics {
 	void *		nmc_allocate_complete_func;
 
 	/* NDIS 5.0 extensions */
-	void *		nmc_cocreatevc_func;
-	void *		nmc_codeletevc_func;
-	void *		nmc_coactivatevc_func;
-	void *		nmc_codeactivatevc_func;
-	void *		nmc_comultisend_func;
-	void *		nmc_corequest_func;
+	void *		nmc_co_create_vc_func;
+	void *		nmc_co_delete_vc_func;
+	void *		nmc_co_activate_vc_func;
+	void *		nmc_co_deactivate_vc_func;
+	void *		nmc_co_multisend_func;
+	void *		nmc_co_request_func;
 
 	/* NDIS 5.1 extentions */
 	void *		nmc_cancel_tx_func;
-	void *		nmc_pnpevent_func;
+	void *		nmc_pnp_event_notify_func;
 	void *		nmc_shutdown_func;
-	void *		nmc_rsvd0;
-	void *		nmc_rsvd1;
-	void *		nmc_rsvd2;
-	void *		nmc_rsvd3;
+	void *		nmc_reserved0;
+	void *		nmc_reserved1;
+	void *		nmc_reserved2;
+	void *		nmc_reserved3;
 };
 typedef struct ndis_miniport_driver_characteristics ndis_miniport_driver_characteristics;
 
@@ -1458,17 +1458,17 @@ struct ndis_miniport_block {
 	 * DRIVERS WILL NOT WORK.
 	 */
 	void			*nmb_signature;	/* magic number */
-	ndis_miniport_block	*nmb_nextminiport;
-	ndis_mdriver_block	*nmb_driverhandle;
-	ndis_handle		nmb_miniportadapterctx;
+	ndis_miniport_block	*nmb_next_miniport;
+	ndis_mdriver_block	*nmb_driver_handle;
+	ndis_handle		nmb_miniport_adapter_ctx;
 	unicode_string		nmb_name;
 	ndis_bind_paths		*nmb_bindpaths;
 	ndis_handle		nmb_openqueue;
 	ndis_reference		nmb_ref;
-	ndis_handle		nmb_devicectx;
+	ndis_handle		nmb_device_ctx;
 	uint8_t			nmb_padding;
 	uint8_t			nmb_lock_acquired;
-	uint8_t			nmb_pmodeopens;
+	uint8_t			nmb_pmode_opens;
 	uint8_t			nmb_assigned_cpu;
 	ndis_kspin_lock		nmb_lock;
 	ndis_request		*nmb_media_request;
@@ -1482,15 +1482,15 @@ struct ndis_miniport_block {
 	void			*nmb_set_mcast_buffer;
 	ndis_miniport_block	*nmb_primary_miniport;
 	void			*nmb_wrapper_ctx;
-	void			*nmb_busdata_ctx;
+	void			*nmb_bus_data_ctx;
 	uint32_t		nmb_pnp_caps;
 	cm_resource_list	*nmb_resources;
-	ndis_timer		nmb_wkupdpctimer;
+	ndis_timer		nmb_wakekup_dpc_timer;
 	unicode_string		nmb_base_name;
 	unicode_string		nmb_symlink_name;
 	uint32_t		nmb_check_for_hang_secs;
-	uint16_t		nmb_cfh_ticks;
-	uint16_t		nmb_cfh_curr_ticks;
+	uint16_t		nmb_check_for_hang_ticks;
+	uint16_t		nmb_check_for_hang_current_tick;
 	ndis_status		nmb_reset_status;
 	ndis_handle		nmb_reset_open;
 	ndis_filter_dbs		nmb_filter_dbs;
@@ -1542,8 +1542,8 @@ struct ndis_miniport_block {
 	void			*nmb_wanrx_done_func;
 
 	/*
-	 * End of windows-specific portion of miniport block. Everything
-	 * below is BSD-specific.
+	 * End of windows-specific portion of miniport block.
+	 * Everything below is BSD-specific.
 	 */
 	list_entry		nmb_parmlist;
 	ndis_resource_list	*nmb_rlist;
@@ -1584,7 +1584,7 @@ typedef ndis_status (*ndis_send_multi_func)(ndis_handle, ndis_packet **,
     uint32_t);
 typedef void (*ndis_allocate_complete_func)(ndis_handle, void *,
     ndis_physaddr *, uint32_t, void *);
-typedef void (*ndis_pnpevent_func)(void *, int, void *, uint32_t);
+typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
 typedef void (*ndis_shutdown_func)(void *);
 extern image_patch_table ndis_functbl[];
 
@@ -1661,10 +1661,11 @@ extern int	ndis_convert_res(void *);
 extern void	ndis_free_packet(ndis_packet *);
 extern void	ndis_free_bufs(ndis_buffer *);
 extern int	ndis_reset_nic(void *);
-extern int	ndis_halt_nic(void *);
-extern int	ndis_shutdown_nic(void *);
-extern int32_t	ndis_pnpevent_nic(void *, uint32_t, uint32_t);
-extern int	ndis_init_nic(void *);
+extern void	ndis_halt_nic(void *);
+extern void	ndis_shutdown_nic(void *);
+extern void	ndis_pnp_event_nic(void *, uint32_t, uint32_t);
+extern uint8_t	ndis_check_for_hang_nic(void *);
+extern int32_t	ndis_init_nic(void *);
 extern void	ndis_return_packet(void *, void *);
 extern int	ndis_init_dma(void *);
 extern void	ndis_destroy_dma(void *);

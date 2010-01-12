@@ -625,8 +625,8 @@ ndis_attach(device_t dev)
 	driver_object *pdrv;
 	device_object *pdo;
 	struct ifnet *ifp = NULL;
-	int error = 0, mode, i = 0;
-	uint32_t len;
+	int mode, i = 0;
+	uint32_t rval, len;
 	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
@@ -642,10 +642,10 @@ ndis_attach(device_t dev)
 	callout_init(&sc->ndis_stat_callout, CALLOUT_MPSAFE);
 
 	if (sc->ndis_iftype == PCMCIABus) {
-		error = ndis_alloc_amem(sc);
-		if (error) {
+		rval = ndis_alloc_amem(sc);
+		if (rval) {
 			device_printf(dev, "failed to allocate "
-			    "attribute memory\n");
+			    "attribute memory: 0x%X\n", rval);
 			goto fail;
 		}
 	}
@@ -662,29 +662,28 @@ ndis_attach(device_t dev)
 		pdrv = windrv_lookup(0, "USB Bus");
 	else {
 		device_printf(dev, "unsupported interface type\n");
-		error = ENXIO;
+		rval = ENXIO;
 		goto fail;
 	}
 	if (pdrv == NULL) {
 		device_printf(dev, "failed to lookup PDO\n");
-		error = ENXIO;
+		rval = ENXIO;
 		goto fail;
 	}
 	pdo = windrv_find_pdo(pdrv, dev);
 	if (pdo == NULL) {
 		device_printf(dev, "failed to find PDO\n");
-		error = ENXIO;
+		rval = ENXIO;
 		goto fail;
 	}
 
 	/*
-	 * Create a new functional device object for this
-	 * device. This is what creates the miniport block
-	 * for this device instance.
+	 * Create a new functional device object for this device.
+	 * This is what creates the miniport block for this device instance.
 	 */
 	if (NdisAddDevice(sc->ndis_dobj, pdo) != NDIS_STATUS_SUCCESS) {
 		device_printf(dev, "failed to create FDO\n");
-		error = ENXIO;
+		rval = ENXIO;
 		goto fail;
 	}
 
@@ -721,28 +720,27 @@ ndis_attach(device_t dev)
 	    IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
 	KeInitializeDpc(&sc->ndis_rxdpc, ndis_rxeof_xfr_wrap, sc->ndis_block);
 
-	/* Call driver's init routine. */
-	if (ndis_init_nic(sc)) {
-		device_printf(dev, "failed to initialize device\n");
-		error = ENXIO;
+	rval = ndis_init_nic(sc);
+	if (rval) {
+		device_printf(dev, "failed to initialize device: 0x%X\n", rval);
 		goto fail;
 	}
 
 	if (!ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i))
-		device_printf(dev, "Driver Version: 0x%x\n", i);
+		device_printf(dev, "Driver Version: 0x%X\n", i);
 
 	/* Get station address from the driver */
-	if (ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr))) {
+	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
+	if (rval) {
 		device_printf(dev, "get current address failed\n");
-		error = ENXIO;
 		goto fail;
 	}
 
 	/* Figure out how big to make the TX buffer pool */
-	if (ndis_get_int(sc,
-	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts)) {
+	rval = ndis_get_int(sc,
+	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts);
+	if (rval) {
 		device_printf(dev, "get max TX packets failed\n");
-		error = ENXIO;
 		goto fail;
 	}
 
@@ -759,14 +757,18 @@ ndis_attach(device_t dev)
 
 	sc->ndis_txarray = malloc(sizeof(ndis_packet *) *
 	    sc->ndis_maxpkts, M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	if (sc->ndis_txarray == NULL) {
+		device_printf(dev, "failed to allocate TX array\n");
+		rval = ENOMEM;
+		goto fail;
+	}
 
 	/* Allocate a pool of ndis_packets for TX encapsulation. */
-	NdisAllocatePacketPool(&i, &sc->ndis_txpool,
-	    sc->ndis_maxpkts, PROTOCOL_RESERVED_SIZE_IN_PACKET);
-	if (i != NDIS_STATUS_SUCCESS) {
+	NdisAllocatePacketPool(&rval, &sc->ndis_txpool, sc->ndis_maxpkts,
+	    PROTOCOL_RESERVED_SIZE_IN_PACKET);
+	if (rval) {
 		sc->ndis_txpool = NULL;
 		device_printf(dev, "failed to allocate TX packet pool\n");
-		error = ENOMEM;
 		goto fail;
 	}
 
@@ -774,22 +776,22 @@ ndis_attach(device_t dev)
 
 	/* If the NDIS module requested scatter/gather, init maps. */
 	if (sc->ndis_sc) {
-		error = ndis_init_dma(sc);
-		if (error) {
+		rval = ndis_init_dma(sc);
+		if (rval) {
 			device_printf(dev, "failed to init maps\n");
 			goto fail;
 		}
 	}
 
-	error = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
-	if (error) {
+	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
+	if (rval) {
 		device_printf(dev, "failed to get supported oids\n");
 		goto fail;
 	}
 
-	error = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
-	if (error) {
-		device_printf(dev, "failed to get physical medium\n");
+	rval = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
+	if (rval) {
+		device_printf(dev, "failed to get physical medium: 0x%X", rval);
 		goto fail;
 	}
 
@@ -801,7 +803,7 @@ ndis_attach(device_t dev)
 		ifp = if_alloc(IFT_ETHER);
 	if (ifp == NULL) {
 		device_printf(dev, "failed to if_alloc()\n");
-		error = ENOMEM;
+		rval = ENOMEM;
 		goto fail;
 	}
 	sc->ndis_ifp = ifp;
@@ -838,18 +840,18 @@ ndis_attach(device_t dev)
 			IEEE80211_C_IBSS;
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
 
-		error = ndis_get_info(sc,
+		rval = ndis_get_info(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, NULL, 0, NULL, &len);
-		if (!(error == NDIS_STATUS_INVALID_LENGTH ||
-		    error == NDIS_STATUS_BUFFER_TOO_SHORT))
+		if (!(rval == NDIS_STATUS_INVALID_LENGTH ||
+		    rval == NDIS_STATUS_BUFFER_TOO_SHORT))
 			goto nonettypes;
 		ntl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
-		error = ndis_get(sc,
+		rval = ndis_get(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, len);
-		if (error){
+		if (rval){
 			DPRINTF("get network types failed\n");
 			free(ntl, M_NDIS_DEV);
-			error = 0;
+			rval = 0;
 			goto nonettypes;
 		}
 		for (i = 0; i < ntl->ntl_items; i++) {
@@ -1036,11 +1038,11 @@ got_crypto:
 		ether_ifattach(ifp, eaddr);
 	}
 fail:
-	if (error)
+	if (rval)
 		ndis_detach(dev);
 	else
 		ndis_stop(sc);
-	return (error);
+	return (rval);
 }
 
 static struct ieee80211vap *
@@ -1318,11 +1320,9 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 		p->np_m0 = NULL;
 
 		KeReleaseSpinLockFromDpcLevel(&block->nmb_lock);
-
 		status = MSCALL6(sc->ndis_chars->nmc_transfer_data_func,
 		    p, &p->np_private.npp_totlen, block, priv->nep_ctx,
 		    m->m_len, m->m_pkthdr.len - m->m_len);
-
 		KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
 
 		/*
@@ -1696,18 +1696,14 @@ ndis_tick(void *xsc)
 }
 
 static void
-ndis_ticktask(device_object *d, void *xsc)
+ndis_ticktask(device_object *d, void *arg)
 {
-	struct ndis_softc *sc = xsc;
+	struct ndis_softc *sc = arg;
 
 	if (!NDIS_INITIALIZED(sc))
 		return;
-
-	if (sc->ndis_chars->nmc_check_hang_func != NULL) {
-		if (MSCALL1(sc->ndis_chars->nmc_check_hang_func,
-		    sc->ndis_block->nmb_miniportadapterctx) == TRUE)
-			ndis_reset_nic(sc);
-	}
+	if (ndis_check_for_hang_nic(sc))
+		ndis_reset_nic(sc);
 }
 
 static void
@@ -2646,10 +2642,7 @@ ndis_stop(struct ndis_softc *sc)
 void
 ndis_shutdown(device_t dev)
 {
-	struct ndis_softc *sc;
-
-	sc = device_get_softc(dev);
-	ndis_stop(sc);
+	ndis_shutdown_nic(device_get_softc(dev));
 }
 
 static int
