@@ -391,12 +391,6 @@ NdisMRegisterMiniport(ndis_handle handle,
 	memset(ch, 0, sizeof(ndis_miniport_characteristics));
 	memcpy(ch, characteristics, len);
 
-	if (ch->nmc_version_major < 5 || ch->nmc_version_minor < 1) {
-		ch->nmc_canceltxpkts_func = NULL;
-		ch->nmc_pnpevent_func = NULL;
-		ch->nmc_shutdown_func = NULL;
-	}
-
 	return (NDIS_STATUS_SUCCESS);
 }
 
@@ -2027,32 +2021,28 @@ NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
     ndis_shutdown_func shutdownfunc)
 {
 	ndis_miniport_block *block;
-	ndis_miniport_characteristics *chars;
 	struct ndis_softc *sc;
 
 	if (adapter == NULL)
 		return;
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	chars = sc->ndis_chars;
-	chars->nmc_shutdown_func = shutdownfunc;
-	chars->nmc_rsvd0 = shutdownctx;
+	sc->ndis_chars->nmc_shutdown_func = shutdownfunc;
+	sc->ndis_chars->nmc_rsvd0 = shutdownctx;
 }
 
 static void
 NdisMDeregisterAdapterShutdownHandler(ndis_handle adapter)
 {
 	ndis_miniport_block *block;
-	ndis_miniport_characteristics *chars;
 	struct ndis_softc *sc;
 
 	if (adapter == NULL)
 		return;
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	chars = sc->ndis_chars;
-	chars->nmc_shutdown_func = NULL;
-	chars->nmc_rsvd0 = NULL;
+	sc->ndis_chars->nmc_shutdown_func = NULL;
+	sc->ndis_chars->nmc_rsvd0 = NULL;
 }
 
 static uint32_t

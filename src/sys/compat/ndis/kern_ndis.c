@@ -985,6 +985,7 @@ ndis_pnpevent_nic(void *arg, uint32_t event, uint32_t profile)
 			MSCALL4(pnpeventfunc, adapter, event, NULL, 0);
 		else
 			return (ENOTSUP);
+		ndis_shutdown_nic(sc);
 		break;
 	case NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED:
 		MSCALL4(pnpeventfunc, adapter, event,

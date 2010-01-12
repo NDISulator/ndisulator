@@ -625,7 +625,7 @@ ndis_attach(device_t dev)
 	driver_object *pdrv;
 	device_object *pdo;
 	struct ifnet *ifp = NULL;
-	int error = 0, mode, i;
+	int error = 0, mode, i = 0;
 	uint32_t len;
 	uint8_t bands = 0;
 
@@ -727,6 +727,9 @@ ndis_attach(device_t dev)
 		error = ENXIO;
 		goto fail;
 	}
+
+	if (!ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i))
+		device_printf(dev, "Driver Version: 0x%x\n", i);
 
 	/* Get station address from the driver */
 	if (ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr))) {
