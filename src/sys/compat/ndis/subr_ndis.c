@@ -221,7 +221,7 @@ static ndis_status NdisMRegisterInterrupt(ndis_miniport_interrupt *,
     ndis_handle, uint32_t, uint32_t, uint8_t, uint8_t, ndis_interrupt_mode);
 static void NdisMDeregisterInterrupt(ndis_miniport_interrupt *);
 static void NdisMRegisterAdapterShutdownHandler(ndis_handle, void *,
-    ndis_shutdown_handler);
+    ndis_shutdown_func);
 static void NdisMDeregisterAdapterShutdownHandler(ndis_handle);
 static uint32_t NDIS_BUFFER_TO_SPAN_PAGES(ndis_buffer *);
 static void NdisGetBufferPhysicalArraySize(ndis_buffer *, uint32_t *);
@@ -392,9 +392,9 @@ NdisMRegisterMiniport(ndis_handle handle,
 	memcpy(ch, characteristics, len);
 
 	if (ch->nmc_version_major < 5 || ch->nmc_version_minor < 1) {
-		ch->nmc_shutdown_handler = NULL;
-		ch->nmc_canceltxpkts_handler = NULL;
-		ch->nmc_pnpevent_handler = NULL;
+		ch->nmc_canceltxpkts_func = NULL;
+		ch->nmc_pnpevent_func = NULL;
+		ch->nmc_shutdown_func = NULL;
 	}
 
 	return (NDIS_STATUS_SUCCESS);
@@ -1324,7 +1324,7 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	struct ndis_allocwork *w;
 	void *vaddr;
 	ndis_physaddr paddr;
-	ndis_allocdone_handler donefunc;
+	ndis_allocdone_func donefunc;
 
 	w = arg;
 	block = (ndis_miniport_block *)dobj->do_devext;
@@ -2024,7 +2024,7 @@ NdisMDeregisterInterrupt(ndis_miniport_interrupt *intr)
 
 static void
 NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
-    ndis_shutdown_handler shutdownfunc)
+    ndis_shutdown_func shutdownfunc)
 {
 	ndis_miniport_block *block;
 	ndis_miniport_characteristics *chars;
@@ -2035,7 +2035,7 @@ NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	chars = sc->ndis_chars;
-	chars->nmc_shutdown_handler = shutdownfunc;
+	chars->nmc_shutdown_func = shutdownfunc;
 	chars->nmc_rsvd0 = shutdownctx;
 }
 
@@ -2051,7 +2051,7 @@ NdisMDeregisterAdapterShutdownHandler(ndis_handle adapter)
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
 	chars = sc->ndis_chars;
-	chars->nmc_shutdown_handler = NULL;
+	chars->nmc_shutdown_func = NULL;
 	chars->nmc_rsvd0 = NULL;
 }
 
@@ -2569,15 +2569,15 @@ NdisSystemProcessorCount(void)
 	return (mp_ncpus);
 }
 
-typedef void (*ndis_statusdone_handler)(ndis_handle);
-typedef void (*ndis_status_handler)(ndis_handle, ndis_status,
+typedef void (*ndis_statusdone_func)(ndis_handle);
+typedef void (*ndis_status_func)(ndis_handle, ndis_status,
     void *, uint32_t);
 
 static void
 NdisMIndicateStatusComplete(ndis_handle adapter)
 {
 	ndis_miniport_block *block;
-	ndis_statusdone_handler statusdonefunc;
+	ndis_statusdone_func statusdonefunc;
 
 	block = (ndis_miniport_block *)adapter;
 	statusdonefunc = block->nmb_statusdone_func;
@@ -2590,7 +2590,7 @@ NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
     uint32_t slen)
 {
 	ndis_miniport_block *block;
-	ndis_status_handler statusfunc;
+	ndis_status_func statusfunc;
 
 	block = (ndis_miniport_block *)adapter;
 	statusfunc = block->nmb_status_func;

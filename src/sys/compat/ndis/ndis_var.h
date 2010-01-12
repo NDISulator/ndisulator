@@ -257,6 +257,12 @@ typedef uint8_t ndis_kirql;
 #define	OID_GEN_GET_NETCARD_TIME			0x00020210
 #define	OID_GEN_NETCARD_LOAD				0x00020211
 #define	OID_GEN_DEVICE_PROFILE				0x00020212
+#define	OID_GEN_INIT_TIME_MS				0x00020213
+#define	OID_GEN_RESET_COUNTS				0x00020214
+#define	OID_GEN_MEDIA_SENSE_COUNTS			0x00020215
+#define	OID_GEN_FRIENDLY_NAME				0x00020216
+#define	OID_GEN_MINIPORT_INFO				0x00020217
+#define	OID_GEN_RESET_VERIFY_PARAMETERS			0x00020218
 
 /* 802.3 (ethernet) OIDs */
 #define	OID_802_3_PERMANENT_ADDRESS			0x01010101
@@ -1381,9 +1387,9 @@ struct ndis_miniport_characteristics {
 	void *		nmc_corequest_func;
 
 	/* NDIS 5.1 extentions */
-	void *		nmc_canceltxpkts_handler;
-	void *		nmc_pnpevent_handler;
-	void *		nmc_shutdown_handler;
+	void *		nmc_canceltxpkts_func;
+	void *		nmc_pnpevent_func;
+	void *		nmc_shutdown_func;
 	void *		nmc_rsvd0;
 	void *		nmc_rsvd1;
 	void *		nmc_rsvd2;
@@ -1555,28 +1561,28 @@ struct ndis_miniport_block {
 
 TAILQ_HEAD(nd_head, ndis_miniport_block);
 
-typedef ndis_status (*ndis_init_handler)(ndis_status *, uint32_t *,
+typedef ndis_status (*ndis_init_func)(ndis_status *, uint32_t *,
     ndis_medium *, uint32_t, ndis_handle, ndis_handle);
-typedef ndis_status (*ndis_queryinfo_handler)(ndis_handle, ndis_oid, void *,
+typedef ndis_status (*ndis_queryinfo_func)(ndis_handle, ndis_oid, void *,
     uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_setinfo_handler)(ndis_handle, ndis_oid, void *,
+typedef ndis_status (*ndis_setinfo_func)(ndis_handle, ndis_oid, void *,
     uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_sendsingle_handler)(ndis_handle, ndis_packet *,
+typedef ndis_status (*ndis_sendsingle_func)(ndis_handle, ndis_packet *,
     uint32_t);
-typedef ndis_status (*ndis_sendmulti_handler)(ndis_handle, ndis_packet **,
+typedef ndis_status (*ndis_sendmulti_func)(ndis_handle, ndis_packet **,
     uint32_t);
-typedef void (*ndis_isr_handler)(uint8_t *, uint8_t *, ndis_handle);
-typedef void (*ndis_interrupt_handler)(ndis_handle);
-typedef int (*ndis_reset_handler)(uint8_t *, ndis_handle);
-typedef void (*ndis_halt_handler)(ndis_handle);
-typedef void (*ndis_return_handler)(ndis_handle, ndis_packet *);
-typedef void (*ndis_enable_interrupts_handler)(ndis_handle);
-typedef void (*ndis_disable_interrupts_handler)(ndis_handle);
-typedef void (*ndis_shutdown_handler)(void *);
-typedef void (*ndis_pnpevent_handler)(void *, int, void *, uint32_t);
-typedef void (*ndis_allocdone_handler)(ndis_handle, void *, ndis_physaddr *,
+typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, ndis_handle);
+typedef void (*ndis_interrupt_func)(ndis_handle);
+typedef int (*ndis_reset_func)(uint8_t *, ndis_handle);
+typedef void (*ndis_halt_func)(ndis_handle);
+typedef void (*ndis_return_func)(ndis_handle, ndis_packet *);
+typedef void (*ndis_enable_interrupts_func)(ndis_handle);
+typedef void (*ndis_disable_interrupts_func)(ndis_handle);
+typedef void (*ndis_shutdown_func)(void *);
+typedef void (*ndis_pnpevent_func)(void *, int, void *, uint32_t);
+typedef void (*ndis_allocdone_func)(ndis_handle, void *, ndis_physaddr *,
     uint32_t, void *);
-typedef uint8_t (*ndis_checkforhang_handler)(ndis_handle);
+typedef uint8_t (*ndis_checkforhang_func)(ndis_handle);
 typedef ndis_status (*driver_entry)(void *, unicode_string *);
 extern image_patch_table ndis_functbl[];
 

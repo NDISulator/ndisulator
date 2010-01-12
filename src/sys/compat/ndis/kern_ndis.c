@@ -739,7 +739,7 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 {
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
-	ndis_sendmulti_handler sendfunc;
+	ndis_sendmulti_func sendfunc;
 	ndis_senddone_func senddonefunc;
 	int i;
 	ndis_packet *p;
@@ -781,7 +781,7 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
 	ndis_status status;
-	ndis_sendsingle_handler sendfunc;
+	ndis_sendsingle_func sendfunc;
 	ndis_senddone_func senddonefunc;
 	uint8_t irql = 0;
 
@@ -857,7 +857,7 @@ ndis_reset_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
-	ndis_reset_handler resetfunc;
+	ndis_reset_func resetfunc;
 	uint8_t addressing_reset;
 	int rval;
 	uint8_t irql = 0;
@@ -892,7 +892,7 @@ ndis_halt_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
-	ndis_halt_handler haltfunc;
+	ndis_halt_func haltfunc;
 	ndis_miniport_block *block;
 	int empty = 0;
 	uint8_t irql;
@@ -944,11 +944,11 @@ ndis_shutdown_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
 	ndis_handle adapter;
-	ndis_shutdown_handler shutdownfunc;
+	ndis_shutdown_func shutdownfunc;
 
 	NDIS_LOCK(sc);
 	adapter = sc->ndis_block->nmb_miniportadapterctx;
-	shutdownfunc = sc->ndis_chars->nmc_shutdown_handler;
+	shutdownfunc = sc->ndis_chars->nmc_shutdown_func;
 	NDIS_UNLOCK(sc);
 	if (adapter == NULL || shutdownfunc == NULL)
 		return (EIO);
@@ -968,12 +968,12 @@ ndis_pnpevent_nic(void *arg, uint32_t event, uint32_t profile)
 {
 	struct ndis_softc *sc;
 	ndis_handle adapter;
-	ndis_pnpevent_handler pnpeventfunc;
+	ndis_pnpevent_func pnpeventfunc;
 
 	sc = device_get_softc(arg);
 	NDIS_LOCK(sc);
 	adapter = sc->ndis_block->nmb_miniportadapterctx;
-	pnpeventfunc = sc->ndis_chars->nmc_pnpevent_handler;
+	pnpeventfunc = sc->ndis_chars->nmc_pnpevent_func;
 	NDIS_UNLOCK(sc);
 	if (adapter == NULL || pnpeventfunc == NULL)
 		return (EIO);
@@ -1001,7 +1001,7 @@ ndis_init_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
 	ndis_miniport_block *block;
-	ndis_init_handler initfunc;
+	ndis_init_func initfunc;
 	ndis_status status = 0;
 	ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
 	uint32_t chosen_medium = 0;
