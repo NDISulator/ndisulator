@@ -364,7 +364,7 @@ static void
 ndis_return(device_object *dobj, void *arg)
 {
 	ndis_miniport_block *block = arg;
-	ndis_miniport_characteristics *ch;
+	ndis_miniport_driver_characteristics *ch;
 	ndis_handle adapter = block->nmb_miniportadapterctx;
 	ndis_packet *p;
 	uint8_t irql;

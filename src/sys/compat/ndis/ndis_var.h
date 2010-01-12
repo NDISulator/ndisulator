@@ -1353,7 +1353,7 @@ struct ndis_map_arg {
  * Miniport characteristics were originally defined in the NDIS 3.0
  * spec and then extended twice, in NDIS 4.0 and 5.0.
  */
-struct ndis_miniport_characteristics {
+struct ndis_miniport_driver_characteristics {
 	/* NDIS 3.0 */
 	uint8_t		nmc_version_major;
 	uint8_t		nmc_version_minor;
@@ -1395,12 +1395,12 @@ struct ndis_miniport_characteristics {
 	void *		nmc_rsvd2;
 	void *		nmc_rsvd3;
 };
-typedef struct ndis_miniport_characteristics ndis_miniport_characteristics;
+typedef struct ndis_miniport_driver_characteristics ndis_miniport_driver_characteristics;
 
 struct ndis_driver_object {
-	char				*ndo_ifname;
-	void				*ndo_softc;
-	ndis_miniport_characteristics	ndo_chars;
+	char					*ndo_ifname;
+	void					*ndo_softc;
+	ndis_miniport_driver_characteristics	ndo_chars;
 };
 typedef struct ndis_driver_object ndis_driver_object;
 
