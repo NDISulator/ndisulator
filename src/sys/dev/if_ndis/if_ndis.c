@@ -1113,8 +1113,8 @@ ndis_detach(device_t dev)
 	sc = device_get_softc(dev);
 
 	if (device_is_attached(dev)) {
-		ndis_stop(sc);
 		if (sc->ndis_ifp != NULL) {
+			ndis_stop(sc);
 			if (sc->ndis_80211)
 				ieee80211_ifdetach(sc->ndis_ifp->if_l2com);
 			else
@@ -2610,7 +2610,6 @@ ndis_resettask(device_object *d, void *arg)
 static void
 ndis_stop(struct ndis_softc *sc)
 {
-	struct ifnet *ifp = sc->ndis_ifp;
 	int i;
 
 	callout_drain(&sc->ndis_stat_callout);
@@ -2620,7 +2619,7 @@ ndis_stop(struct ndis_softc *sc)
 	NDIS_LOCK(sc);
 	sc->ndis_tx_timer = 0;
 	if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
-	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
+	sc->ndis_ifp->if_drv_flags &= ~(IFF_DRV_RUNNING|IFF_DRV_OACTIVE);
 	for (i = 0; i < NDIS_EVENTS; i++) {
 		if (sc->ndis_evt[i].ne_sts && sc->ndis_evt[i].ne_buf != NULL) {
 			free(sc->ndis_evt[i].ne_buf, M_NDIS_DEV);
