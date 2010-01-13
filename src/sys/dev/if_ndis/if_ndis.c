@@ -730,7 +730,9 @@ ndis_attach(device_t dev)
 
 	if (bootverbose) {
 		ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i);
-		device_printf(dev, "Driver Version: 0x%X\n", i);
+		device_printf(dev, "Vendor Driver Version: 0x%X\n", i);
+		ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i);
+		device_printf(dev, "Hardware Status: %d\n", i);
 	}
 
 	/* Get station address from the driver */
@@ -1939,7 +1941,7 @@ ndis_init(void *xsc)
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 	NDIS_UNLOCK(sc);
 
-	ndis_set_powerstate(sc, NDIS_POWERSTATE_D0);
+	ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D0);
 
 	if (sc->ndis_80211)
 		ieee80211_start_all(ic);	/* start all vap's */
@@ -2632,7 +2634,7 @@ ndis_stop(struct ndis_softc *sc)
 	sc->ndis_evtpidx = 0;
 	NDIS_UNLOCK(sc);
 
-	ndis_set_powerstate(sc, NDIS_POWERSTATE_D3);
+	ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D3);
 }
 
 /*

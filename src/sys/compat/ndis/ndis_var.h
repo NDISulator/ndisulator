@@ -291,18 +291,27 @@ typedef uint8_t ndis_kirql;
 #define	OID_PNP_WAKE_UP_PATTERN_LIST			0xFD010105
 #define	OID_PNP_ENABLE_WAKE_UP				0xFD010106
 
+enum ndis_hardware_status {
+	NDIS_HARDWARE_STATUS_READY,
+	NDIS_HARDWARE_STATUS_INITIALIZING,
+	NDIS_HARDWARE_STATUS_RESET,
+	NDIS_HARDWARE_STATUS_CLOSING,
+	NDIS_HARDWARE_STATUS_NOT_READY
+};
+typedef enum ndis_hardware_status ndis_hardware_status;
+
 /*
  * These are the possible power states for
  * OID_PNP_SET_POWER and OID_PNP_QUERY_POWER.
  */
-enum ndis_power_state {
-	NDIS_POWERSTATE_UNSPEC,
-	NDIS_POWERSTATE_D0,
-	NDIS_POWERSTATE_D1,
-	NDIS_POWERSTATE_D2,
-	NDIS_POWERSTATE_D3
+enum ndis_device_state {
+	NDIS_DEVICE_STATE_UNSPEC,
+	NDIS_DEVICE_STATE_D0,
+	NDIS_DEVICE_STATE_D1,
+	NDIS_DEVICE_STATE_D2,
+	NDIS_DEVICE_STATE_D3
 };
-typedef enum ndis_power_state ndis_power_state;
+typedef enum ndis_device ndis_device_state;
 
 enum ndis_power_profile {
 	NDIS_POWER_PROFILE_BATTERY,
