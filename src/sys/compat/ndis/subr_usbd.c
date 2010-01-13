@@ -457,7 +457,7 @@ usbd_func_getdesc(irp *ip)
 			goto exit;
 		}
 		/* Get minimum length */
-		len = MIN(UGETW(cdp->wTotalLength), ctldesc->ucd_trans_buflen);
+		len = min(UGETW(cdp->wTotalLength), ctldesc->ucd_trans_buflen);
 		/* Copy out config descriptor */
 		memcpy(ctldesc->ucd_trans_buf, cdp, len);
 		/* Set actual length */
@@ -913,7 +913,7 @@ next:
 		nx->nx_shortxfer = (ubi->ubi_trans_flags &
 		    USBD_SHORT_TRANSFER_OK) ? 1 : 0;
 extra:
-		len = MIN(usbd_xfer_max_len(xfer), nx->nx_urblen);
+		len = min(usbd_xfer_max_len(xfer), nx->nx_urblen);
 		pc = usbd_xfer_get_frame(xfer, 0);
 		if (UE_GET_DIR(ep->bEndpointAddress) == UE_DIR_OUT)
 			usbd_copy_in(pc, 0, nx->nx_urbbuf, len);
@@ -1046,7 +1046,7 @@ next:
 				    "warning: not enough buffer space (%d).\n",
 				    vcreq->uvc_trans_buflen);
 			usbd_xfer_set_frame_len(xfer, 1,
-			    MIN(usbd_xfer_max_len(xfer),
+			    min(usbd_xfer_max_len(xfer),
 				    vcreq->uvc_trans_buflen));
 			usbd_xfer_set_frames(xfer, 2);
 		} else {
