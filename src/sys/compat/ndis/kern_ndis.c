@@ -426,7 +426,7 @@ ndis_free_bufs(ndis_buffer *b0)
 void
 ndis_free_packet(ndis_packet *p)
 {
-	KASSERT(p != NULL, ("no ndis_packet"));
+	KASSERT(p != NULL, ("no packet"));
 	ndis_free_bufs(p->np_private.npp_head);
 	NdisFreePacket(p);
 }
