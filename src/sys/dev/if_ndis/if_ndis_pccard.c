@@ -165,10 +165,9 @@ ndis_attach_pccard(device_t dev)
 	struct ndis_pccard_type *t;
 	struct drvdb_ent *db;
 	const char *prodstr, *vendstr;
-	int devidx = 0, unit, error = 0, rid;
+	int devidx = 0, error = 0, rid;
 
 	sc = device_get_softc(dev);
-	unit = device_get_unit(dev);
 	sc->ndis_dev = dev;
 
 	db = windrv_match((matchfuncptr)ndis_devcompare, dev);
