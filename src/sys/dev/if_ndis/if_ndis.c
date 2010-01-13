@@ -689,10 +689,10 @@ ndis_attach(device_t dev)
 		goto fail;
 	}
 
-	/* Tell the user what version of the API the driver is using. */
-	device_printf(dev, "NDIS API version: %d.%d\n",
-	    sc->ndis_chars->nmc_version_major,
-	    sc->ndis_chars->nmc_version_minor);
+	if (bootverbose)
+		device_printf(dev, "NDIS API version: %d.%d\n",
+		    sc->ndis_chars->nmc_version_major,
+		    sc->ndis_chars->nmc_version_minor);
 
 	/* Do resource conversion. */
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus)
@@ -728,8 +728,10 @@ ndis_attach(device_t dev)
 		goto fail;
 	}
 
-	if (!ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i))
+	if (bootverbose) {
+		ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i);
 		device_printf(dev, "Driver Version: 0x%X\n", i);
+	}
 
 	/* Get station address from the driver */
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
