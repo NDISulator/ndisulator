@@ -1118,11 +1118,8 @@ ndis_detach(device_t dev)
 			else
 				ether_ifdetach(sc->ndis_ifp);
 		}
-	}
-
-	if (sc->ndis_iftype != PNPBus || (sc->ndis_iftype == PNPBus &&
-	    !(sc->ndisusb_status & NDISUSB_STATUS_DETACH) && ndisusb_halt != 0))
 		ndis_halt_nic(sc);
+	}
 
 	if (sc->ndis_tickitem != NULL)
 		IoFreeWorkItem(sc->ndis_tickitem);
