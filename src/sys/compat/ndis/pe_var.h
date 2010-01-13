@@ -501,21 +501,13 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 #endif /* __amd64__ */
 
 __BEGIN_DECLS
-extern int pe_get_dos_header(vm_offset_t, image_dos_header *);
-extern int pe_is_nt_image(vm_offset_t);
 extern int pe_validate_header(vm_offset_t);
 extern int pe_get_optional_header(vm_offset_t, image_optional_header *);
-extern int pe_get_file_header(vm_offset_t, image_file_header *);
-extern int pe_get_section_header(vm_offset_t, image_section_header *);
 extern int pe_numsections(vm_offset_t);
-extern vm_offset_t pe_imagebase(vm_offset_t);
-extern vm_offset_t pe_directory_offset(vm_offset_t, uint32_t);
 extern vm_offset_t pe_translate_addr (vm_offset_t, vm_offset_t);
-extern int pe_get_section(vm_offset_t, image_section_header *, const char *);
 extern int pe_relocate(vm_offset_t);
 extern int pe_get_import_descriptor(vm_offset_t, image_import_descriptor *, char *);
 extern int pe_patch_imports(vm_offset_t, char *, image_patch_table *);
-extern int pe_get_messagetable(vm_offset_t, message_resource_data **);
 extern int pe_get_message(vm_offset_t, uint32_t, char **, int *, uint16_t *);
 __END_DECLS
 

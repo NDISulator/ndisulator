@@ -66,32 +66,9 @@ __FBSDID("$FreeBSD$");
 static vm_offset_t pe_functbl_match(image_patch_table *, char *);
 
 /*
- * Check for an MS-DOS executable header. All Windows binaries
- * have a small MS-DOS executable prepended to them to print out
- * the "This program requires Windows" message. Even .SYS files
- * have this header, in spite of the fact that you're can't actually
- * run them directly.
- */
-int
-pe_get_dos_header(vm_offset_t imgbase, image_dos_header *hdr)
-{
-	uint16_t signature;
-
-	if (imgbase == 0 || hdr == NULL)
-		return (EINVAL);
-
-	signature = *(uint16_t *)imgbase;
-	if (signature != IMAGE_DOS_SIGNATURE)
-		return (ENOEXEC);
-
-	bcopy((char *)imgbase, (char *)hdr, sizeof(image_dos_header));
-	return (0);
-}
-
-/*
  * Verify that this image has a Windows NT PE signature.
  */
-int
+static int
 pe_is_nt_image(vm_offset_t imgbase)
 {
 	uint32_t signature;
@@ -109,6 +86,62 @@ pe_is_nt_image(vm_offset_t imgbase)
 	}
 
 	return (ENOEXEC);
+}
+
+/*
+ * Return a copy of the optional header. This contains the
+ * executable entry point and the directory listing which we
+ * need to find the relocations and imports later.
+ */
+int
+pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
+{
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
+
+	if (imgbase == 0 || hdr == NULL)
+		return (EINVAL);
+
+	if (pe_is_nt_image(imgbase))
+		return (EINVAL);
+
+	dos_hdr = (image_dos_header *)(imgbase);
+	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
+
+	bcopy((char *)&nt_hdr->inh_optionalhdr, (char *)hdr,
+	    nt_hdr->inh_filehdr.ifh_optionalhdrlen);
+	return (0);
+}
+
+/*
+ * Return a copy of the file header. Contains the number of
+ * sections in this image.
+ */
+static int
+pe_get_file_header(vm_offset_t imgbase, image_file_header *hdr)
+{
+	image_dos_header *dos_hdr;
+	image_nt_header *nt_hdr;
+
+	if (imgbase == 0 || hdr == NULL)
+		return (EINVAL);
+
+	if (pe_is_nt_image(imgbase))
+		return (EINVAL);
+
+	dos_hdr = (image_dos_header *)imgbase;
+	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
+
+	/*
+	 * Note: the size of the nt_header is variable since it
+	 * can contain optional fields, as indicated by ifh_optionalhdrlen.
+	 * However it happens we're only interested in fields in the
+	 * non-variant portion of the nt_header structure, so we don't
+	 * bother copying the optional parts here.
+	 */
+	bcopy((char *)&nt_hdr->inh_filehdr, (char *)hdr,
+	    sizeof(image_file_header));
+	return (0);
 }
 
 int
@@ -145,86 +178,6 @@ pe_validate_header(vm_offset_t imgbase)
 }
 
 /*
- * Return a copy of the optional header. This contains the
- * executable entry point and the directory listing which we
- * need to find the relocations and imports later.
- */
-int
-pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
-{
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
-
-	if (imgbase == 0 || hdr == NULL)
-		return (EINVAL);
-
-	if (pe_is_nt_image(imgbase))
-		return (EINVAL);
-
-	dos_hdr = (image_dos_header *)(imgbase);
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
-
-	bcopy((char *)&nt_hdr->inh_optionalhdr, (char *)hdr,
-	    nt_hdr->inh_filehdr.ifh_optionalhdrlen);
-	return (0);
-}
-
-/*
- * Return a copy of the file header. Contains the number of
- * sections in this image.
- */
-int
-pe_get_file_header(vm_offset_t imgbase, image_file_header *hdr)
-{
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
-
-	if (imgbase == 0 || hdr == NULL)
-		return (EINVAL);
-
-	if (pe_is_nt_image(imgbase))
-		return (EINVAL);
-
-	dos_hdr = (image_dos_header *)imgbase;
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
-
-	/*
-	 * Note: the size of the nt_header is variable since it
-	 * can contain optional fields, as indicated by ifh_optionalhdrlen.
-	 * However it happens we're only interested in fields in the
-	 * non-variant portion of the nt_header structure, so we don't
-	 * bother copying the optional parts here.
-	 */
-	bcopy((char *)&nt_hdr->inh_filehdr, (char *)hdr,
-	    sizeof(image_file_header));
-	return (0);
-}
-
-/*
- * Return the header of the first section in this image (usually .text).
- */
-int
-pe_get_section_header(vm_offset_t imgbase, image_section_header *hdr)
-{
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
-	image_section_header *sect_hdr;
-
-	if (imgbase == 0 || hdr == NULL)
-		return (EINVAL);
-
-	if (pe_is_nt_image(imgbase))
-		return (EINVAL);
-
-	dos_hdr = (image_dos_header *)imgbase;
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
-	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
-
-	bcopy((char *)sect_hdr, (char *)hdr, sizeof(image_section_header));
-	return (0);
-}
-
-/*
  * Return the number of sections in this executable, or 0 on error.
  */
 int
@@ -242,7 +195,7 @@ pe_numsections(vm_offset_t imgbase)
  * Return the base address that this image was linked for.
  * This helps us calculate relocation addresses later.
  */
-vm_offset_t
+static vm_offset_t
 pe_imagebase(vm_offset_t imgbase)
 {
 	image_optional_header optional_hdr;
@@ -257,7 +210,7 @@ pe_imagebase(vm_offset_t imgbase)
  * Return the offset of a given directory structure within the
  * image. Directories reside within sections.
  */
-vm_offset_t
+static vm_offset_t
 pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 {
 	image_optional_header opt_hdr;
@@ -325,7 +278,7 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
  * section names can be anything, but there are some standard
  * ones (.text, .data, .rdata, .reloc).
  */
-int
+static int
 pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
     const char *name)
 {
@@ -464,7 +417,7 @@ pe_get_import_descriptor(vm_offset_t imgbase, image_import_descriptor *desc,
 	return (ENOENT);
 }
 
-int
+static int
 pe_get_messagetable(vm_offset_t imgbase, message_resource_data **md)
 {
 	image_resource_directory *rdir, *rtype;
