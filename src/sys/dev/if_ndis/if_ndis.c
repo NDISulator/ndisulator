@@ -647,7 +647,7 @@ ndis_attach(device_t dev)
 		rval = ndis_alloc_amem(sc);
 		if (rval) {
 			device_printf(dev, "failed to allocate "
-			    "attribute memory: 0x%X\n", rval);
+			    "attribute memory\n");
 			goto fail;
 		}
 	}
@@ -664,18 +664,15 @@ ndis_attach(device_t dev)
 		pdrv = windrv_lookup(0, "USB Bus");
 	else {
 		device_printf(dev, "unsupported interface type\n");
-		rval = ENXIO;
 		goto fail;
 	}
 	if (pdrv == NULL) {
 		device_printf(dev, "failed to lookup PDO\n");
-		rval = ENXIO;
 		goto fail;
 	}
 	pdo = windrv_find_pdo(pdrv, dev);
 	if (pdo == NULL) {
 		device_printf(dev, "failed to find PDO\n");
-		rval = ENXIO;
 		goto fail;
 	}
 
@@ -685,14 +682,8 @@ ndis_attach(device_t dev)
 	 */
 	if (NdisAddDevice(sc->ndis_dobj, pdo) != NDIS_STATUS_SUCCESS) {
 		device_printf(dev, "failed to create FDO\n");
-		rval = ENXIO;
 		goto fail;
 	}
-
-	if (bootverbose)
-		device_printf(dev, "NDIS API version: %d.%d\n",
-		    sc->ndis_chars->nmc_version_major,
-		    sc->ndis_chars->nmc_version_minor);
 
 	/* Do resource conversion. */
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus)
@@ -724,13 +715,26 @@ ndis_attach(device_t dev)
 
 	rval = ndis_init_nic(sc);
 	if (rval) {
-		device_printf(dev, "failed to initialize device: 0x%X\n", rval);
+		device_printf(dev, "failed to initialize device;"
+		    "status: 0x%0X\n", rval);
 		goto fail;
 	}
 
+	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
+	if (rval) {
+		device_printf(dev, "failed to get supported oids;"
+		    "status: 0x%0X\n", rval);
+		goto fail;
+	}
 	if (bootverbose) {
+		device_printf(dev, "NDIS API version: %d.%d\n",
+		    sc->ndis_chars->nmc_version_major,
+		    sc->ndis_chars->nmc_version_minor);
+		device_printf(dev,"Supported oids:\n");
+		for (i = 0; i < sc->ndis_oidcnt; i++)
+			printf("\t0x%08X\n", sc->ndis_oids[i]);
 		ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i);
-		device_printf(dev, "Vendor Driver Version: 0x%X\n", i);
+		device_printf(dev, "Vendor Driver Version: 0x%0X\n", i);
 		ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i);
 		device_printf(dev, "Hardware Status: %d\n", i);
 	}
@@ -738,7 +742,8 @@ ndis_attach(device_t dev)
 	/* Get station address from the driver */
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
 	if (rval) {
-		device_printf(dev, "get current address failed\n");
+		device_printf(dev, "get current address failed;"
+		     "status: 0x%0X\n", rval);
 		goto fail;
 	}
 
@@ -746,7 +751,8 @@ ndis_attach(device_t dev)
 	rval = ndis_get_int(sc,
 	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts);
 	if (rval) {
-		device_printf(dev, "get max TX packets failed\n");
+		device_printf(dev, "get max TX packets failed;"
+		    "status: 0x%0X\n", rval);
 		goto fail;
 	}
 
@@ -765,7 +771,6 @@ ndis_attach(device_t dev)
 	    sc->ndis_maxpkts, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (sc->ndis_txarray == NULL) {
 		device_printf(dev, "failed to allocate TX array\n");
-		rval = ENOMEM;
 		goto fail;
 	}
 
@@ -789,15 +794,10 @@ ndis_attach(device_t dev)
 		}
 	}
 
-	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
-	if (rval) {
-		device_printf(dev, "failed to get supported oids\n");
-		goto fail;
-	}
-
 	rval = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
 	if (rval) {
-		device_printf(dev, "failed to get physical medium: 0x%X", rval);
+		device_printf(dev, "failed to get physical medium;"
+		    "status: 0x%0X", rval);
 		goto fail;
 	}
 
@@ -809,7 +809,6 @@ ndis_attach(device_t dev)
 		ifp = if_alloc(IFT_ETHER);
 	if (ifp == NULL) {
 		device_printf(dev, "failed to if_alloc()\n");
-		rval = ENOMEM;
 		goto fail;
 	}
 	sc->ndis_ifp = ifp;
@@ -854,8 +853,9 @@ ndis_attach(device_t dev)
 		ntl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		rval = ndis_get(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, len);
-		if (rval){
-			DPRINTF("get network types failed\n");
+		if (rval) {
+			DPRINTF("failed to get network types;"
+			    "status: 0x%0X\n", rval);
 			free(ntl, M_NDIS_DEV);
 			rval = 0;
 			goto nonettypes;
@@ -875,9 +875,11 @@ nonettypes:
 			setbit(&bands, IEEE80211_MODE_11B);
 		}
 		memset(&rates, 0, len);
-		if (ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
-		    rates, sizeof(rates), &len, NULL))
-			DPRINTF("get rates failed\n");
+		rval = ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
+		    rates, sizeof(rates), &len, NULL);
+		if (rval)
+			DPRINTF("failed to get rates;"
+			    "status: 0x%0X\n", rval);
 		/*
 		 * Since the supported rates only up to 8 can be supported,
 		 * if this is not 802.11b we're just going to be faking it
@@ -1043,12 +1045,11 @@ got_crypto:
 		ifmedia_set(&sc->ifmedia, IFM_ETHER|IFM_AUTO);
 		ether_ifattach(ifp, eaddr);
 	}
+	ndis_stop(sc);
+	return (0);
 fail:
-	if (rval)
-		ndis_detach(dev);
-	else
-		ndis_stop(sc);
-	return (rval);
+	ndis_detach(dev);
+	return (ENXIO);
 }
 
 static struct ieee80211vap *
