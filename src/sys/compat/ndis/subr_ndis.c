@@ -115,7 +115,7 @@ SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
 static void NdisInitializeWrapper(ndis_handle *, driver_object *, void *,
     void *);
 static ndis_status NdisMRegisterMiniport(ndis_handle,
-    ndis_miniport_driver_characteristics *, int);
+    ndis_miniport_driver_characteristics *, uint32_t);
 static ndis_status NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
 static ndis_status NdisAllocateMemory(void **, uint32_t, uint32_t,
     ndis_physaddr);
@@ -366,22 +366,23 @@ NdisTerminateWrapper(ndis_handle handle, void *syspec)
 
 static ndis_status
 NdisMRegisterMiniport(ndis_handle handle,
-    ndis_miniport_driver_characteristics *characteristics, int len)
+    ndis_miniport_driver_characteristics *characteristics, uint32_t len)
 {
 	ndis_miniport_driver_characteristics *ch = NULL;
 	driver_object *drv;
 
-	drv = (driver_object *)handle;
+	if (characteristics->nmc_version_major < 4)
+		return (NDIS_STATUS_BAD_VERSION);
 
 	/*
-	 * We need to save the NDIS miniport characteristics
-	 * somewhere. This data is per-driver, not per-device
-	 * (all devices handled by the same driver have the
-	 * same characteristics) so we hook it onto the driver
-	 * object using IoAllocateDriverObjectExtension().
+	 * We must save the NDIS miniport characteristics somewhere.
+	 * This data is per-driver, not per-device (all devices handled
+	 * by the same driver have the same characteristics) so we hook
+	 * it onto the driver object using IoAllocateDriverObjectExtension().
 	 * The extra extension info is automagically deleted when
 	 * the driver is unloaded (see windrv_unload()).
 	 */
+	drv = (driver_object *)handle;
 	if (IoAllocateDriverObjectExtension(drv, (void *)1,
 	    sizeof(ndis_miniport_driver_characteristics), (void **)&ch) !=
 	    NDIS_STATUS_SUCCESS) {
