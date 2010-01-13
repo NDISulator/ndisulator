@@ -117,7 +117,7 @@ static void	ndis_rxeof_done(ndis_handle);
 static void	ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
 static void	ndis_rxeof_xfr_done(ndis_handle, ndis_packet *, uint32_t,
 			uint32_t);
-static void	ndis_linksts(ndis_handle, ndis_status, void *, size_t);
+static void	ndis_linksts(ndis_handle, ndis_status, void *, uint32_t);
 static void	ndis_linksts_done(ndis_handle);
 
 /* We need to wrap these functions for amd64. */
