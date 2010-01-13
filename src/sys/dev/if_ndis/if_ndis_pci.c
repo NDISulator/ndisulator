@@ -144,10 +144,6 @@ ndis_probe_pci(device_t dev)
 	return (ENXIO);
 }
 
-/*
- * Attach the interface. Allocate softc structures, do ifmedia
- * setup and ethernet/BPF attach.
- */
 static int
 ndis_attach_pci(device_t dev)
 {
