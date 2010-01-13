@@ -1907,14 +1907,16 @@ ndis_interrupt_nic(kinterrupt *iobj, void *arg)
 	struct ndis_softc *sc = arg;
 	uint8_t is_our_intr = FALSE;
 	int call_isr = 0;
-	ndis_miniport_interrupt *intr;
 
-	intr = sc->ndis_block->nmb_interrupt;
-	if (intr == NULL || sc->ndis_block->nmb_miniport_adapter_ctx == NULL)
+	KASSERT(sc->ndis_block != NULL, ("no block"));
+	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	    ("no adapter"));
+	if (sc->ndis_block->nmb_interrupt == NULL)
 		return (FALSE);
 
 	if (sc->ndis_block->nmb_interrupt->ni_isrreq == TRUE)
-		MSCALL3(intr->ni_isrfunc, &is_our_intr, &call_isr,
+		MSCALL3(sc->ndis_block->nmb_interrupt->ni_isrfunc,
+		    &is_our_intr, &call_isr,
 		    sc->ndis_block->nmb_miniport_adapter_ctx);
 	else {
 		MSCALL1(sc->ndis_chars->nmc_disable_interrupts_func,
@@ -1923,7 +1925,6 @@ ndis_interrupt_nic(kinterrupt *iobj, void *arg)
 	}
 	if (call_isr)
 		IoRequestDpc(sc->ndis_block->nmb_deviceobj, NULL, sc);
-
 	return (is_our_intr);
 }
 
