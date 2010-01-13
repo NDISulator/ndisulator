@@ -1294,7 +1294,6 @@ extern int32_t IofCallDriver(device_object *, irp *);
 extern void IofCompleteRequest(irp *, uint8_t);
 extern void IoAcquireCancelSpinLock(uint8_t *);
 extern void IoReleaseCancelSpinLock(uint8_t);
-extern uint8_t IoCancelIrp(irp *);
 extern void IoDetachDevice(device_object *);
 extern device_object *IoAttachDeviceToDeviceStack(device_object *,
     device_object *);

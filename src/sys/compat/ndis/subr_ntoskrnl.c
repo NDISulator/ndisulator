@@ -134,6 +134,7 @@ static irp *IoBuildDeviceIoControlRequest(uint32_t, device_object *, void *,
     uint32_t, void *, uint32_t, uint8_t, nt_kevent *, io_status_block *);
 static irp *IoAllocateIrp(uint8_t, uint8_t);
 static void IoReuseIrp(irp *, uint32_t);
+static uint8_t IoCancelIrp(irp *);
 static void IoFreeIrp(irp *);
 static void IoInitializeIrp(irp *, uint16_t, uint8_t);
 static irp *IoMakeAssociatedIrp(irp *, uint8_t);
@@ -998,7 +999,7 @@ IoReleaseCancelSpinLock(uint8_t irql)
 	KeReleaseSpinLock(&ntoskrnl_cancellock, irql);
 }
 
-uint8_t
+static uint8_t
 IoCancelIrp(irp *ip)
 {
 	cancel_func cfunc;
