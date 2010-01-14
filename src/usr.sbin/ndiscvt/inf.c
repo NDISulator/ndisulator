@@ -567,6 +567,9 @@ dump_editreg(const struct section *s, const struct reg *r)
 			continue;
 		if (strcasecmp(reg->key, "LimitText") == 0)
 			fprintf(ofp, " [maxchars=%s]", reg->value);
+		if (strcasecmp(reg->key, "UpperCase") == 0 &&
+		    strcmp(reg->value, "1") == 0)
+			fprintf(ofp, " [uppercase]");
 		if (strcasecmp(reg->key, "Optional") == 0 &&
 		    strcmp(reg->value, "1") == 0)
 			fprintf(ofp, " [optional]");
