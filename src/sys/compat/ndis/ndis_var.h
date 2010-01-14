@@ -311,7 +311,7 @@ enum ndis_device_state {
 	NDIS_DEVICE_STATE_D2,
 	NDIS_DEVICE_STATE_D3
 };
-typedef enum ndis_device ndis_device_state;
+typedef enum ndis_device_state ndis_device_state;
 
 enum ndis_power_profile {
 	NDIS_POWER_PROFILE_BATTERY,
