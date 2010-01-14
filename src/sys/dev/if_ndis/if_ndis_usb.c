@@ -219,7 +219,6 @@ ndisusb_detach(device_t dev)
 	(void)ndis_detach(dev);
 
 	mtx_destroy(&sc->ndisusb_mtx);
-
 	return (0);
 }
 

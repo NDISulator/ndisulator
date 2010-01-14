@@ -2874,7 +2874,10 @@ static ndis_status
 IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
     void *fileobj, device_object *devobj)
 {
-	return (NDIS_STATUS_SUCCESS);
+	/* TODO */
+	devobj = NULL;
+	fileobj = NULL;
+	return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 }
 
 static ndis_status
