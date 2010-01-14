@@ -264,7 +264,7 @@ dump_usb_id(const char *s)
 }
 
 static void
-dump_deviceids_pci()
+dump_deviceids_pci(void)
 {
 	struct assign *manf, *dev, *assign;
 	struct section *sec;
