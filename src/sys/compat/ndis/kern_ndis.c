@@ -952,8 +952,8 @@ ndis_pnp_event_nic(void *arg, uint32_t event, uint32_t profile)
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
-	KASSERT(sc->ndis_chars->nmc_pnp_event_notify_func != NULL,
-	    ("no pnp_event_notify"));
+	if (sc->ndis_chars->nmc_pnp_event_notify_func == NULL)
+		return;
 	switch (event) {
 	case NDIS_DEVICE_PNP_EVENT_SURPRISE_REMOVED:
 		if (sc->ndis_block->nmb_flags &
