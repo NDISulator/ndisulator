@@ -83,7 +83,6 @@ static void	ndis_send_rsrcavail_func(ndis_handle);
 static void	ndis_interrupt_setup(kdpc *, device_object *, irp *,
 		    struct ndis_softc *);
 static void	ndis_return_packet_nic(device_object *, void *);
-static void	ndis_flush_sysctls(void *);
 
 static image_patch_table kernndis_functbl[] = {
 	IMPORT_SFUNC(ndis_status_func, 4),
@@ -233,7 +232,7 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 	KeSetEvent(&block->nmb_resetevent, IO_NO_INCREMENT, FALSE);
 }
 
-int
+void
 ndis_create_sysctls(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -263,7 +262,6 @@ ndis_create_sysctls(void *arg)
 				break;
 			oidp = NULL;
 		}
-
 		if (oidp != NULL) {
 			vals++;
 			continue;
@@ -275,35 +273,28 @@ ndis_create_sysctls(void *arg)
 	}
 
 	/* Now add a couple of builtin keys. */
-
 	/*
 	 * Environment can be either Windows (0) or WindowsNT (1).
 	 * We qualify as the latter.
 	 */
 	ndis_add_sysctl(sc, "Environment",
 	    "Windows environment", "1", CTLFLAG_RD);
-
 	/* NDIS version should be 5.1. */
 	ndis_add_sysctl(sc, "NdisVersion",
 	    "NDIS API Version", "0x00050001", CTLFLAG_RD);
-
 	/* Bus type (PCI, PCMCIA, etc...) */
 	sprintf(buf, "%d", (int)sc->ndis_iftype);
 	ndis_add_sysctl(sc, "BusType", "Bus Type", buf, CTLFLAG_RD);
-
 	if (sc->ndis_res_io != NULL) {
 		sprintf(buf, "0x%lx", rman_get_start(sc->ndis_res_io));
 		ndis_add_sysctl(sc, "IOBaseAddress",
 		    "Base I/O Address", buf, CTLFLAG_RD);
 	}
-
 	if (sc->ndis_irq != NULL) {
 		sprintf(buf, "%lu", rman_get_start(sc->ndis_irq));
 		ndis_add_sysctl(sc, "InterruptNumber",
 		    "Interrupt Number", buf, CTLFLAG_RD);
 	}
-
-	return (0);
 }
 
 int
@@ -335,13 +326,7 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
 	return (0);
 }
 
-/*
- * Somewhere, somebody decided "hey, let's automatically create
- * a sysctl tree for each device instance as it's created -- it'll
- * make life so much easier!" Lies. Why must they turn the kernel
- * into a house of lies?
- */
-static void
+void
 ndis_flush_sysctls(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -891,6 +876,34 @@ ndis_check_for_hang_nic(void *arg)
 }
 
 void
+ndis_disable_interrupts_nic(void *arg)
+{
+	struct ndis_softc *sc = arg;
+
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
+	KASSERT(sc->ndis_block != NULL, ("no block"));
+	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	    ("no adapter"));
+	if (sc->ndis_chars->nmc_disable_interrupts_func != NULL)
+		MSCALL1(sc->ndis_chars->nmc_disable_interrupts_func,
+		    sc->ndis_block->nmb_miniport_adapter_ctx);
+}
+
+void
+ndis_enable_interrupts_nic(void *arg)
+{
+	struct ndis_softc *sc = arg;
+
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
+	KASSERT(sc->ndis_block != NULL, ("no block"));
+	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	    ("no adapter"));
+	if (sc->ndis_chars->nmc_enable_interrupts_func != NULL)
+		MSCALL1(sc->ndis_chars->nmc_enable_interrupts_func,
+		    sc->ndis_block->nmb_miniport_adapter_ctx);
+}
+
+void
 ndis_halt_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
@@ -998,11 +1011,11 @@ ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_interrupt != NULL, ("no interrupt"));
 	intr = sc->ndis_block->nmb_interrupt;
-	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpccountlock);
-	KeResetEvent(&intr->ni_dpcevt);
-	if (KeInsertQueueDpc(&intr->ni_dpc, NULL, NULL) == TRUE)
-		intr->ni_dpccnt++;
-	KeReleaseSpinLockFromDpcLevel(&intr->ni_dpccountlock);
+	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpc_count_lock);
+	KeResetEvent(&intr->ni_dpcs_completed_event);
+	if (KeInsertQueueDpc(&intr->ni_interrupt_dpc, NULL, NULL) == TRUE)
+		intr->ni_dpc_count++;
+	KeReleaseSpinLockFromDpcLevel(&intr->ni_dpc_count_lock);
 }
 
 int32_t
@@ -1015,10 +1028,14 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 
 	sc = device_get_softc(pdo->do_devext);
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus) {
-		if (bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
+		status = bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
 		    INTR_TYPE_NET|INTR_MPSAFE, NULL, ntoskrnl_intr, NULL,
-		    &sc->ndis_intrhand) != 0)
+		    &sc->ndis_intrhand);
+		if (status) {
+			device_printf(sc->ndis_dev, "couldn't setup"
+			    "interrupt; (%d)\n", status);
 			return (NDIS_STATUS_FAILURE);
+		}
 	}
 
 	status = IoCreateDevice(drv, sizeof(ndis_miniport_block), NULL,
@@ -1087,14 +1104,12 @@ ndis_unload_driver(void *arg)
 	struct ndis_softc *sc = arg;
 	device_object *fdo;
 
-	if (sc->ndis_intrhand)
+	if (sc->ndis_intrhand) /* FIXME: doesn't belong here */
 		bus_teardown_intr(sc->ndis_dev,
 		    sc->ndis_irq, sc->ndis_intrhand);
 
 	if (sc->ndis_block->nmb_rlist != NULL)
 		free(sc->ndis_block->nmb_rlist, M_NDIS_KERN);
-
-	ndis_flush_sysctls(sc);
 
 	TAILQ_REMOVE(&ndis_devhead, sc->ndis_block, link);
 	if (sc->ndis_chars->nmc_transfer_data_func != NULL)

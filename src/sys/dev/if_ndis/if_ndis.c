@@ -632,7 +632,6 @@ ndis_attach(device_t dev)
 	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
-
 	mtx_init(&sc->ndis_mtx, device_get_nameunit(dev), MTX_NETWORK_LOCK,
 	    MTX_DEF);
 	KeInitializeSpinLock(&sc->ndis_rxlock);
@@ -651,8 +650,6 @@ ndis_attach(device_t dev)
 			goto fail;
 		}
 	}
-
-	/* Create sysctl registry nodes */
 	ndis_create_sysctls(sc);
 
 	/* Find the PDO for this device instance. */
@@ -732,14 +729,13 @@ ndis_attach(device_t dev)
 		    sc->ndis_chars->nmc_version_minor);
 		device_printf(dev,"Supported oids:\n");
 		for (i = 0; i < sc->ndis_oidcnt; i++)
-			printf("\t0x%08X\n", sc->ndis_oids[i]);
+			device_printf(dev, "0x%08X\n", sc->ndis_oids[i]);
 		ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i);
 		device_printf(dev, "Vendor Driver Version: 0x%0X\n", i);
 		ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i);
 		device_printf(dev, "Hardware Status: %d\n", i);
 	}
 
-	/* Get station address from the driver */
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
 	if (rval) {
 		device_printf(dev, "get current address failed;"
@@ -747,7 +743,6 @@ ndis_attach(device_t dev)
 		goto fail;
 	}
 
-	/* Figure out how big to make the TX buffer pool */
 	rval = ndis_get_int(sc,
 	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts);
 	if (rval) {
@@ -756,10 +751,6 @@ ndis_attach(device_t dev)
 		goto fail;
 	}
 
-	/*
-	 * If this is a deserialized miniport, we don't have
-	 * to honor the OID_GEN_MAXIMUM_SEND_PACKETS result.
-	 */
 	if (!NDIS_SERIALIZED(sc->ndis_block))
 		sc->ndis_maxpkts = NDIS_TXPKTS;
 
@@ -782,7 +773,6 @@ ndis_attach(device_t dev)
 		device_printf(dev, "failed to allocate TX packet pool\n");
 		goto fail;
 	}
-
 	sc->ndis_txpending = sc->ndis_maxpkts;
 
 	/* If the NDIS module requested scatter/gather, init maps. */
@@ -1111,10 +1101,8 @@ int
 ndis_detach(device_t dev)
 {
 	struct ndis_softc *sc;
-	driver_object *drv;
 
 	sc = device_get_softc(dev);
-
 	if (device_is_attached(dev)) {
 		if (sc->ndis_ifp != NULL) {
 			ndis_stop(sc);
@@ -1139,8 +1127,8 @@ ndis_detach(device_t dev)
 	if (sc->ndisusb_taskitem != NULL)
 		IoFreeWorkItem(sc->ndisusb_taskitem);
 
-	bus_generic_detach(dev);
 	ndis_unload_driver(sc);
+	bus_generic_detach(dev);
 
 	if (sc->ndis_irq != NULL)
 		bus_release_resource(dev, SYS_RES_IRQ, 0, sc->ndis_irq);
@@ -1167,22 +1155,15 @@ ndis_detach(device_t dev)
 		NdisFreePacketPool(sc->ndis_txpool);
 	if (sc->ndis_oids != NULL)
 		free(sc->ndis_oids, M_NDIS_DEV);
-
-	/* Destroy the PDO for this device. */
-	if (sc->ndis_iftype == PCIBus)
-		drv = windrv_lookup(0, "PCI Bus");
-	else if (sc->ndis_iftype == PCMCIABus)
-		drv = windrv_lookup(0, "PCCARD Bus");
-	else if (sc->ndis_iftype == PNPBus )
-		drv = windrv_lookup(0, "USB Bus");
-	else
-		drv = NULL;
-	if (drv != NULL)
-		windrv_destroy_pdo(drv, dev);
-
-	if (sc->ndis_iftype == PCIBus)
+	if (sc->ndis_iftype == PCIBus) {
+		windrv_destroy_pdo(windrv_lookup(0, "PCI Bus"), dev);
 		bus_dma_tag_destroy(sc->ndis_parent_tag);
-
+	} else if (sc->ndis_iftype == PCMCIABus) {
+		windrv_destroy_pdo(windrv_lookup(0, "PCCARD Bus"), dev);
+	} else if (sc->ndis_iftype == PNPBus) {
+		windrv_destroy_pdo(windrv_lookup(0, "USB Bus"), dev);
+	}
+	ndis_flush_sysctls(sc);
 	mtx_destroy(&sc->ndis_mtx);
 	return (0);
 }

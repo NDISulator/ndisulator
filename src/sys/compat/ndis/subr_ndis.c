@@ -1913,14 +1913,12 @@ ndis_interrupt_nic(kinterrupt *iobj, void *arg)
 	    ("no adapter"));
 	if (sc->ndis_block->nmb_interrupt == NULL)
 		return (FALSE);
-
-	if (sc->ndis_block->nmb_interrupt->ni_isrreq == TRUE)
-		MSCALL3(sc->ndis_block->nmb_interrupt->ni_isrfunc,
+	if (sc->ndis_block->nmb_interrupt->ni_isr_requested == TRUE)
+		MSCALL3(sc->ndis_block->nmb_interrupt->ni_isr_func,
 		    &is_our_intr, &call_isr,
 		    sc->ndis_block->nmb_miniport_adapter_ctx);
 	else {
-		MSCALL1(sc->ndis_chars->nmc_disable_interrupts_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx);
+		ndis_disable_interrupts_nic(sc);
 		call_isr = 1;
 	}
 	if (call_isr)
@@ -1933,34 +1931,29 @@ ndis_intrhand(kdpc *dpc, ndis_miniport_interrupt *intr, void *sysarg1,
     void *sysarg2)
 {
 	struct ndis_softc *sc;
-	ndis_miniport_block *block;
-	ndis_handle adapter;
 
-	block = intr->ni_block;
-	adapter = block->nmb_miniport_adapter_ctx;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-
+	KASSERT(intr != NULL, ("no intr"));
+	KASSERT(intr->ni_block != NULL, ("no block"));
+	KASSERT(intr->ni_block->nmb_miniport_adapter_ctx != NULL,
+	    ("no adapter"));
+	sc = device_get_softc(intr->ni_block->nmb_physdeviceobj->do_devext);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
-
-	MSCALL1(intr->ni_dpcfunc, adapter);
-
-	/* If there's a MiniportEnableInterrupt() routine, call it. */
-	if (sc->ndis_chars->nmc_enable_interrupts_func != NULL)
-		MSCALL1(sc->ndis_chars->nmc_enable_interrupts_func, adapter);
-
+		KeAcquireSpinLockAtDpcLevel(&intr->ni_block->nmb_lock);
+	MSCALL1(intr->ni_dpc_func, intr->ni_block->nmb_miniport_adapter_ctx);
+	ndis_enable_interrupts_nic(sc);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeReleaseSpinLockFromDpcLevel(&block->nmb_lock);
+		KeReleaseSpinLockFromDpcLevel(&intr->ni_block->nmb_lock);
 
 	/*
 	 * Set the completion event if we've drained all
 	 * pending interrupts.
 	 */
-	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpccountlock);
-	intr->ni_dpccnt--;
-	if (intr->ni_dpccnt == 0)
-		KeSetEvent(&intr->ni_dpcevt, IO_NO_INCREMENT, FALSE);
-	KeReleaseSpinLockFromDpcLevel(&intr->ni_dpccountlock);
+	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpc_count_lock);
+	intr->ni_dpc_count--;
+	if (intr->ni_dpc_count == 0)
+		KeSetEvent(&intr->ni_dpcs_completed_event,
+		    IO_NO_INCREMENT, FALSE);
+	KeReleaseSpinLockFromDpcLevel(&intr->ni_dpc_count_lock);
 }
 
 static ndis_status
@@ -1979,18 +1972,19 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	intr->ni_block = adapter;
-	intr->ni_isrreq = reqisr;
-	intr->ni_shared = shared;
-	intr->ni_dpccnt = 0;
-	intr->ni_isrfunc = ch->nmc_isr_func;
-	intr->ni_dpcfunc = ch->nmc_interrupt_func;
+	intr->ni_isr_requested = reqisr;
+	intr->ni_shared_interrupt = shared;
+	intr->ni_dpc_count = 0;
+	intr->ni_isr_func = ch->nmc_isr_func;
+	intr->ni_dpc_func = ch->nmc_interrupt_func;
 
-	KeInitializeEvent(&intr->ni_dpcevt, EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeDpc(&intr->ni_dpc,
+	KeInitializeEvent(&intr->ni_dpcs_completed_event,
+	    EVENT_TYPE_NOTIFY, TRUE);
+	KeInitializeDpc(&intr->ni_interrupt_dpc,
 	    ndis_findwrap((funcptr)ndis_intrhand), intr);
-	KeSetImportanceDpc(&intr->ni_dpc, KDPC_IMPORTANCE_LOW);
+	KeSetImportanceDpc(&intr->ni_interrupt_dpc, KDPC_IMPORTANCE_LOW);
 
-	if (IoConnectInterrupt(&intr->ni_introbj,
+	if (IoConnectInterrupt(&intr->ni_interrupt_object,
 	    ndis_findwrap((funcptr)ndis_interrupt_nic), sc, NULL,
 	    ivec, ilevel, 0, imode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
@@ -2003,21 +1997,21 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 static void
 NdisMDeregisterInterrupt(ndis_miniport_interrupt *intr)
 {
-	ndis_miniport_block *block = intr->ni_block;
 	uint8_t irql;
 
 	/* Should really be KeSynchronizeExecution() */
-	KeAcquireSpinLock(intr->ni_introbj->ki_lock, &irql);
-	block->nmb_interrupt = NULL;
-	KeReleaseSpinLock(intr->ni_introbj->ki_lock, irql);
+	KeAcquireSpinLock(intr->ni_interrupt_object->ki_lock, &irql);
+	intr->ni_block->nmb_interrupt = NULL;
+	KeReleaseSpinLock(intr->ni_interrupt_object->ki_lock, irql);
 /*
 	KeFlushQueuedDpcs();
 */
 	/* Disconnect our ISR */
-	IoDisconnectInterrupt(intr->ni_introbj);
+	IoDisconnectInterrupt(intr->ni_interrupt_object);
 
-	KeWaitForSingleObject(&intr->ni_dpcevt, 0, 0, FALSE, NULL);
-	KeResetEvent(&intr->ni_dpcevt);
+	KeWaitForSingleObject(&intr->ni_dpcs_completed_event,
+	    0, 0, FALSE, NULL);
+	KeResetEvent(&intr->ni_dpcs_completed_event);
 }
 
 static void
@@ -2189,7 +2183,9 @@ static uint8_t
 NdisMSynchronizeWithInterrupt(ndis_miniport_interrupt *intr, void *syncfunc,
     void *syncctx)
 {
-	return (KeSynchronizeExecution(intr->ni_introbj, syncfunc, syncctx));
+	KASSERT(intr != NULL, ("no intr"));
+	return (KeSynchronizeExecution(intr->ni_interrupt_object,
+	    syncfunc, syncctx));
 }
 
 static void

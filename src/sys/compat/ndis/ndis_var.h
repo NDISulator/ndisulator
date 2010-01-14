@@ -1067,18 +1067,18 @@ struct ndis_request {
 typedef struct ndis_request ndis_request;
 
 struct ndis_miniport_interrupt {
-	kinterrupt		*ni_introbj;
-	ndis_kspin_lock		ni_dpccountlock;
+	kinterrupt		*ni_interrupt_object;
+	ndis_kspin_lock		ni_dpc_count_lock;
 	void			*ni_rsvd;
-	void			*ni_isrfunc;
-	void			*ni_dpcfunc;
-	kdpc			ni_dpc;
+	void			*ni_isr_func;
+	void			*ni_dpc_func;
+	kdpc			ni_interrupt_dpc;
 	ndis_miniport_block	*ni_block;
-	uint8_t			ni_dpccnt;
+	uint8_t			ni_dpc_count;
 	uint8_t			ni_filler1;
-	struct nt_kevent	ni_dpcevt;
-	uint8_t			ni_shared;
-	uint8_t			ni_isrreq;
+	struct nt_kevent	ni_dpcs_completed_event;
+	uint8_t			ni_shared_interrupt;
+	uint8_t			ni_isr_requested;
 };
 typedef struct ndis_miniport_interrupt ndis_miniport_interrupt;
 
@@ -1670,6 +1670,8 @@ extern int	ndis_convert_res(void *);
 extern void	ndis_free_packet(ndis_packet *);
 extern void	ndis_free_bufs(ndis_buffer *);
 extern int	ndis_reset_nic(void *);
+extern void	ndis_disable_interrupts_nic(void *);
+extern void	ndis_enable_interrupts_nic(void *);
 extern void	ndis_halt_nic(void *);
 extern void	ndis_shutdown_nic(void *);
 extern void	ndis_pnp_event_nic(void *, uint32_t, uint32_t);
@@ -1678,7 +1680,8 @@ extern int32_t	ndis_init_nic(void *);
 extern void	ndis_return_packet(void *, void *);
 extern int	ndis_init_dma(void *);
 extern void	ndis_destroy_dma(void *);
-extern int	ndis_create_sysctls(void *);
+extern void	ndis_create_sysctls(void *);
+extern void	ndis_flush_sysctls(void *);
 extern int	ndis_add_sysctl(void *, char *, char *, char *, int);
 extern int32_t	NdisAddDevice(driver_object *, device_object *);
 extern void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
