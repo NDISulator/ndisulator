@@ -1158,6 +1158,9 @@ KeSynchronizeExecution(kinterrupt *iobj, void *syncfunc, void *syncctx)
 {
 	uint8_t irql;
 
+	KASSERT(iobj != NULL, ("no iobj"));
+	KASSERT(syncfunc != NULL, ("no syncfunc"));
+	KASSERT(syncctx != NULL, ("no syncctx"));
 	KeAcquireSpinLock(&ntoskrnl_intlock, &irql);
 	MSCALL1(syncfunc, syncctx);
 	KeReleaseSpinLock(&ntoskrnl_intlock, irql);
