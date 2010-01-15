@@ -770,29 +770,9 @@ NdisReadPciSlotInformation(ndis_handle adapter, uint32_t slot,
 	device_t dev;
 
 	block = (ndis_miniport_block *)adapter;
-	if (block == NULL)
-		return (0);
-
 	dev = block->nmb_physdeviceobj->do_devext;
-
-	/*
-	 * I have a test system consisting of a Sun w2100z
-	 * dual 2.4Ghz Opteron machine and an Atheros 802.11a/b/g
-	 * "Aries" miniPCI NIC. (The NIC is installed in the
-	 * machine using a miniPCI to PCI bus adapter card.)
-	 * When running in SMP mode, I found that
-	 * performing a large number of consecutive calls to
-	 * NdisReadPciSlotInformation() would result in a
-	 * sudden system reset (or in some cases a freeze).
-	 * My suspicion is that the multiple reads are somehow
-	 * triggering a fatal PCI bus error that leads to a
-	 * machine check. The 1us delay in the loop below
-	 * seems to prevent this problem.
-	 */
-	for (i = 0; i < len; i++) {
-		DELAY(1);
+	for (i = 0; i < len; i++)
 		dest[i] = pci_read_config(dev, i + offset, 1);
-	}
 
 	return (len);
 }
@@ -807,14 +787,9 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
 	device_t dev;
 
 	block = (ndis_miniport_block *)adapter;
-	if (block == NULL)
-		return (0);
-
 	dev = block->nmb_physdeviceobj->do_devext;
-	for (i = 0; i < len; i++) {
-		DELAY(1);
+	for (i = 0; i < len; i++)
 		pci_write_config(dev, i + offset, dest[i], 1);
-	}
 
 	return (len);
 }
