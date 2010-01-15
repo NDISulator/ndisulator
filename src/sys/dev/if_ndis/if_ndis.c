@@ -712,14 +712,14 @@ ndis_attach(device_t dev)
 
 	rval = ndis_init_nic(sc);
 	if (rval) {
-		device_printf(dev, "failed to initialize device;"
+		device_printf(dev, "failed to initialize device; "
 		    "status: 0x%0X\n", rval);
 		goto fail;
 	}
 
 	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
 	if (rval) {
-		device_printf(dev, "failed to get supported oids;"
+		device_printf(dev, "failed to get supported oids; "
 		    "status: 0x%0X\n", rval);
 		goto fail;
 	}
@@ -738,7 +738,7 @@ ndis_attach(device_t dev)
 
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
 	if (rval) {
-		device_printf(dev, "get current address failed;"
+		device_printf(dev, "get current address failed; "
 		     "status: 0x%0X\n", rval);
 		goto fail;
 	}
@@ -746,7 +746,7 @@ ndis_attach(device_t dev)
 	rval = ndis_get_int(sc,
 	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts);
 	if (rval) {
-		device_printf(dev, "get max TX packets failed;"
+		device_printf(dev, "get max TX packets failed; "
 		    "status: 0x%0X\n", rval);
 		goto fail;
 	}
@@ -786,7 +786,7 @@ ndis_attach(device_t dev)
 
 	rval = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
 	if (rval) {
-		device_printf(dev, "failed to get physical medium;"
+		device_printf(dev, "failed to get physical medium; "
 		    "status: 0x%0X", rval);
 		goto fail;
 	}
@@ -850,7 +850,7 @@ ndis_attach(device_t dev)
 		rval = ndis_get(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, len);
 		if (rval) {
-			DPRINTF("failed to get network types;"
+			DPRINTF("failed to get network types; "
 			    "status: 0x%0X\n", rval);
 			free(ntl, M_NDIS_DEV);
 			rval = 0;
@@ -874,7 +874,7 @@ nonettypes:
 		rval = ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
 		    rates, sizeof(rates), &len, NULL);
 		if (rval)
-			DPRINTF("failed to get rates;"
+			DPRINTF("failed to get rates; "
 			    "status: 0x%0X\n", rval);
 		/*
 		 * Since the supported rates only up to 8 can be supported,
