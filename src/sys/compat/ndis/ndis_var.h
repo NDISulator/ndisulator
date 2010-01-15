@@ -1406,13 +1406,6 @@ struct ndis_miniport_driver_characteristics {
 };
 typedef struct ndis_miniport_driver_characteristics ndis_miniport_driver_characteristics;
 
-struct ndis_driver_object {
-	char					*ndo_ifname;
-	void					*ndo_softc;
-	ndis_miniport_driver_characteristics	ndo_chars;
-};
-typedef struct ndis_driver_object ndis_driver_object;
-
 struct ndis_reference {
 	ndis_kspin_lock	nr_spinlock;
 	uint16_t	nr_refcnt;
