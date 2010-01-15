@@ -218,7 +218,7 @@ usbd_libfini(void)
 	windrv_unwrap(usbd_iodispatch_wrap);
 	windrv_unwrap(usbd_ioinvalid_wrap);
 
-	ExFreePool(usbd_driver.dro_driver_name.us_buf);
+	RtlFreeUnicodeString(&usbd_driver.dro_driver_name);
 }
 
 static int32_t
