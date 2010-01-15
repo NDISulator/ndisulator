@@ -355,7 +355,7 @@ NdisInitializeWrapper(ndis_handle *wrapper, driver_object *drv, void *path,
 	 * AddDevice function that'll be invoked when a new device
 	 * instance appears.
 	 */
-	drv->dro_driverext->dre_adddevicefunc = NdisAddDevice;
+	drv->dro_driver_extension->dre_adddevicefunc = NdisAddDevice;
 }
 
 static void
@@ -847,7 +847,7 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	ifp = sc->ndis_ifp;
 
 	if (ifp != NULL && ifp->if_flags & IFF_DEBUG) {
-		if (pe_get_message((vm_offset_t)drv->dro_driverstart,
+		if (pe_get_message((vm_offset_t)drv->dro_driver_start,
 		    code, &str, &i, &flags) == 0) {
 			if (flags & MESSAGE_RESOURCE_UNICODE) {
 				RtlInitUnicodeString(&us, (uint16_t *)str);

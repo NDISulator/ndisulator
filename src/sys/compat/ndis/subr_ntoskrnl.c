@@ -613,7 +613,8 @@ IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	ce->ce_clid = clid;
-	InsertTailList((&drv->dro_driverext->dre_usrext), (&ce->ce_list));
+	InsertTailList((&drv->dro_driver_extension->dre_usrext),
+	    (&ce->ce_list));
 
 	*ext = (void *)(ce + 1);
 
@@ -630,11 +631,11 @@ IoGetDriverObjectExtension(driver_object *drv, void *clid)
 	 * Sanity check. Our dummy bus drivers don't have
 	 * any driver extentions.
 	 */
-	if (drv->dro_driverext == NULL)
+	if (drv->dro_driver_extension == NULL)
 		return (NULL);
 
-	e = drv->dro_driverext->dre_usrext.nle_flink;
-	while (e != &drv->dro_driverext->dre_usrext) {
+	e = drv->dro_driver_extension->dre_usrext.nle_flink;
+	while (e != &drv->dro_driver_extension->dre_usrext) {
 		ce = (custom_extension *)e;
 		if (ce->ce_clid == clid)
 			return ((void *)(ce + 1));
@@ -708,12 +709,12 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	 * routine must explicitly call IoAddDeviceToDeviceStack()
 	 * to do that.
 	 */
-	if (drv->dro_devobj == NULL) {
-		drv->dro_devobj = dev;
+	if (drv->dro_device_object == NULL) {
+		drv->dro_device_object = dev;
 		dev->do_nextdev = NULL;
 	} else {
-		dev->do_nextdev = drv->dro_devobj;
-		drv->dro_devobj = dev;
+		dev->do_nextdev = drv->dro_device_object;
+		drv->dro_device_object = dev;
 	}
 	*newdev = dev;
 
@@ -733,9 +734,9 @@ IoDeleteDevice(device_object *dev)
 		ExFreePool(dev->do_devext);
 
 	/* Unlink the device from the driver's device list. */
-	prev = dev->do_drvobj->dro_devobj;
+	prev = dev->do_drvobj->dro_device_object;
 	if (prev == dev)
-		dev->do_drvobj->dro_devobj = dev->do_nextdev;
+		dev->do_drvobj->dro_device_object = dev->do_nextdev;
 	else {
 		while (prev->do_nextdev != dev)
 			prev = prev->do_nextdev;
@@ -2890,8 +2891,8 @@ IoGetDeviceProperty(device_object *devobj, uint32_t regprop, uint32_t buflen,
 	switch (regprop) {
 	case DEVPROP_DRIVER_KEYNAME:
 		name = prop;
-		*name = drv->dro_drivername.us_buf;
-		*reslen = drv->dro_drivername.us_len;
+		*name = drv->dro_driver_name.us_buf;
+		*reslen = drv->dro_driver_name.us_len;
 		break;
 	default:
 		return (NDIS_STATUS_INVALID_PARAMETER_2);

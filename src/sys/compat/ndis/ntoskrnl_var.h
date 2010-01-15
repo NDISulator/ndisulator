@@ -1018,21 +1018,21 @@ typedef uint32_t (*driver_dispatch)(device_object *, irp *);
  * NdisInitializeWrapper() and/or NdisMRegisterMiniport() routines.
  */
 struct driver_object {
-	int16_t		dro_type;
-	int16_t		dro_size;
-	device_object	*dro_devobj;
-	uint32_t	dro_flags;
-	void		*dro_driverstart;
-	uint32_t	dro_driversize;
-	void		*dro_driversection;
-	driver_extension	*dro_driverext;
-	unicode_string	dro_drivername;
-	unicode_string	*dro_hwdb;
-	void		*dro_pfastiodispatch;
-	void		*dro_driverinitfunc;
-	void		*dro_driverstartiofunc;
-	void		*dro_driverunloadfunc;
-	driver_dispatch	dro_dispatch[IRP_MJ_MAXIMUM_FUNCTION + 1];
+	int16_t			dro_type;
+	int16_t			dro_size;
+	device_object		*dro_device_object;
+	uint32_t		dro_flags;
+	void			*dro_driver_start;
+	uint32_t		dro_driver_size;
+	void			*dro_driver_section;
+	driver_extension	*dro_driver_extension;
+	unicode_string		dro_driver_name;
+	unicode_string		*dro_hardware_database;
+	void			*dro_fast_io_dispatch;
+	void			*dro_driver_init_func;
+	void			*dro_driver_start_io_func;
+	void			*dro_driver_unload_func;
+	driver_dispatch		dro_dispatch[IRP_MJ_MAXIMUM_FUNCTION + 1];
 };
 typedef struct driver_object driver_object;
 

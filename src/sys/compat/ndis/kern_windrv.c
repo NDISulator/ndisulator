@@ -132,8 +132,8 @@ windrv_libfini(void)
 	}
 	mtx_unlock(&drvdb_mtx);
 
-	RtlFreeUnicodeString(&fake_pci_driver.dro_drivername);
-	RtlFreeUnicodeString(&fake_pccard_driver.dro_drivername);
+	RtlFreeUnicodeString(&fake_pci_driver.dro_driver_name);
+	RtlFreeUnicodeString(&fake_pccard_driver.dro_driver_name);
 
 	mtx_destroy(&drvdb_mtx);
 #ifdef __i386__
@@ -164,8 +164,8 @@ windrv_lookup(vm_offset_t img, char *name)
 
 	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(d, &drvdb_head, link) {
-		if (d->windrv_object->dro_driverstart == (void *)img ||
-		    (bcmp((char *)d->windrv_object->dro_drivername.us_buf,
+		if (d->windrv_object->dro_driver_start == (void *)img ||
+		    (bcmp((char *)d->windrv_object->dro_driver_name.us_buf,
 		    (char *)us.us_buf, us.us_len) == 0 && us.us_len)) {
 			mtx_unlock(&drvdb_mtx);
 			if (name != NULL)
@@ -235,7 +235,7 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 		 */
 		if (db->windrv_devlist != NULL)
 			continue;
-		pdo = db->windrv_object->dro_devobj;
+		pdo = db->windrv_object->dro_device_object;
 		while (pdo != NULL) {
 			d = pdo->do_attacheddev;
 			if (d->do_drvobj != drv) {
@@ -251,7 +251,7 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 	}
 
 	STAILQ_FOREACH(db, &drvdb_head, link) {
-		if (db->windrv_object->dro_driverstart == (void *)img) {
+		if (db->windrv_object->dro_driver_start == (void *)img) {
 			r = db;
 			STAILQ_REMOVE(&drvdb_head, db, drvdb_ent, link);
 			break;
@@ -264,16 +264,16 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 
 	/* Destroy any custom extensions that may have been added. */
 	drv = r->windrv_object;
-	while (!IsListEmpty(&drv->dro_driverext->dre_usrext)) {
-		e = RemoveHeadList(&drv->dro_driverext->dre_usrext);
+	while (!IsListEmpty(&drv->dro_driver_extension->dre_usrext)) {
+		e = RemoveHeadList(&drv->dro_driver_extension->dre_usrext);
 		ExFreePool(e);
 	}
 
 	/* Free the driver extension */
-	free(drv->dro_driverext, M_NDIS_WINDRV);
+	free(drv->dro_driver_extension, M_NDIS_WINDRV);
 
 	/* Free the driver name */
-	RtlFreeUnicodeString(&drv->dro_drivername);
+	RtlFreeUnicodeString(&drv->dro_driver_name);
 
 	/* Free driver object */
 	free(drv, M_NDIS_WINDRV);
@@ -353,31 +353,31 @@ skipreloc:
 	}
 
 	/* Allocate a driver extension structure too. */
-	drv->dro_driverext = malloc(sizeof(driver_extension),
+	drv->dro_driver_extension = malloc(sizeof(driver_extension),
 	    M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
-	if (drv->dro_driverext == NULL) {
+	if (drv->dro_driver_extension == NULL) {
 		free(new, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
-	InitializeListHead((&drv->dro_driverext->dre_usrext));
+	InitializeListHead((&drv->dro_driver_extension->dre_usrext));
 
-	drv->dro_driverstart = (void *)img;
-	drv->dro_driversize = len;
+	drv->dro_driver_start = (void *)img;
+	drv->dro_driver_size = len;
 
 	RtlInitAnsiString(&as, DUMMY_REGISTRY_PATH);
-	if (RtlAnsiStringToUnicodeString(&drv->dro_drivername, &as, TRUE)) {
-		free(drv->dro_driverext, M_NDIS_WINDRV);
+	if (RtlAnsiStringToUnicodeString(&drv->dro_driver_name, &as, TRUE)) {
+		free(drv->dro_driver_extension, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
 		free(new, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}
 
 	/* Now call the DriverEntry() function. */
-	if (MSCALL2(entry, drv, &drv->dro_drivername) != NDIS_STATUS_SUCCESS) {
-		RtlFreeUnicodeString(&drv->dro_drivername);
-		free(drv->dro_driverext, M_NDIS_WINDRV);
+	if (MSCALL2(entry, drv, &drv->dro_driver_name) != NDIS_STATUS_SUCCESS) {
+		RtlFreeUnicodeString(&drv->dro_driver_name);
+		free(drv->dro_driver_extension, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
 		free(new, M_NDIS_WINDRV);
 		return (ENODEV);
@@ -446,7 +446,7 @@ windrv_find_pdo(driver_object *drv, device_t bsddev)
 	device_object *pdo;
 
 	mtx_lock(&drvdb_mtx);
-	pdo = drv->dro_devobj;
+	pdo = drv->dro_device_object;
 	while (pdo != NULL) {
 		if (pdo->do_devext == bsddev) {
 			mtx_unlock(&drvdb_mtx);
@@ -474,7 +474,7 @@ windrv_bus_attach(driver_object *drv, char *name)
 		return (ENOMEM);
 
 	RtlInitAnsiString(&as, name);
-	if (RtlAnsiStringToUnicodeString(&drv->dro_drivername, &as, TRUE))
+	if (RtlAnsiStringToUnicodeString(&drv->dro_driver_name, &as, TRUE))
 	{
 		free(new, M_NDIS_WINDRV);
 		return (ENOMEM);
@@ -484,7 +484,7 @@ windrv_bus_attach(driver_object *drv, char *name)
 	 * Set up a fake image pointer to avoid false matches
 	 * in windrv_lookup().
 	 */
-	drv->dro_driverstart = (void *)0xFFFFFFFF;
+	drv->dro_driver_start = (void *)0xFFFFFFFF;
 
 	new->windrv_object = drv;
 	new->windrv_devlist = NULL;
