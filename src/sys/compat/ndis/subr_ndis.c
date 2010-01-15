@@ -629,7 +629,6 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 
 	keystr = as.as_buf;
 
-	/* Decode the parameter into a string. */
 	memset(val, 0, sizeof(val));
 	*status = ndis_decode_parm(block, parm, val);
 	if (*status != NDIS_STATUS_SUCCESS) {
@@ -637,20 +636,16 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 		return;
 	}
 
-	/* See if the key already exists. */
 	TAILQ_FOREACH(e, device_get_sysctl_ctx(sc->ndis_dev), link) {
 		oidp = e->entry;
 		if (strcasecmp(oidp->oid_name, keystr) == 0) {
-			/* Found it, set the value. */
 			strcpy((char *)oidp->oid_arg1, val);
 			RtlFreeAnsiString(&as);
 			return;
 		}
 	}
 
-	/* Not found, add a new key with the specified value. */
 	ndis_add_sysctl(sc, keystr, "(dynamically set key)", val, CTLFLAG_RW);
-
 	RtlFreeAnsiString(&as);
 	*status = NDIS_STATUS_SUCCESS;
 }
@@ -664,7 +659,6 @@ NdisCloseConfiguration(ndis_handle cfg)
 	ndis_config_parm *p;
 
 	block = (ndis_miniport_block *)cfg;
-
 	while (!IsListEmpty(&block->nmb_parmlist)) {
 		e = RemoveHeadList(&block->nmb_parmlist);
 		pe = CONTAINING_RECORD(e, ndis_parmlist_entry, np_list);
