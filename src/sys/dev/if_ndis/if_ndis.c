@@ -724,16 +724,16 @@ ndis_attach(device_t dev)
 		goto fail;
 	}
 	if (bootverbose) {
-		device_printf(dev, "NDIS API version: %d.%d\n",
+		device_printf(dev, "NDIS API %d.%d\n",
 		    sc->ndis_chars->nmc_version_major,
 		    sc->ndis_chars->nmc_version_minor);
-		device_printf(dev,"Supported oids:\n");
+		device_printf(dev,"supported oids:\n");
 		for (i = 0; i < sc->ndis_oidcnt; i++)
-			device_printf(dev, "0x%08X\n", sc->ndis_oids[i]);
-		ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i);
-		device_printf(dev, "Vendor Driver Version: 0x%0X\n", i);
-		ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i);
-		device_printf(dev, "Hardware Status: %d\n", i);
+			device_printf(dev, "\t\t0x%08X\n", sc->ndis_oids[i]);
+		if (!ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i))
+			device_printf(dev, "driver version: 0x%0X\n", i);
+		if (!ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i))
+			device_printf(dev, "hardware status: %d\n", i);
 	}
 
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
@@ -835,6 +835,12 @@ ndis_attach(device_t dev)
 			IEEE80211_C_IBSS;
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
 
+		if (!ndis_get_int(sc, OID_802_11_NUMBER_OF_ANTENNAS, &arg))
+			device_printf(dev, "number of antennas: %d\n", arg);
+		if (!ndis_get_int(sc, OID_802_11_RX_ANTENNA_SELECTED, &arg))
+			device_printf(dev, "rx antenna: %d\n", arg);
+		if (!ndis_get_int(sc, OID_802_11_TX_ANTENNA_SELECTED, &arg))
+			device_printf(dev, "tx antenna: %d\n", arg);
 		rval = ndis_get_info(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, NULL, 0, NULL, &len);
 		if (!(rval == NDIS_STATUS_INVALID_LENGTH ||
@@ -864,7 +870,7 @@ nonettypes:
 			setbit(ic->ic_modecaps, IEEE80211_MODE_11B);
 			setbit(&bands, IEEE80211_MODE_11B);
 		}
-		memset(&rates, 0, len);
+		memset(&rates, 0, sizeof(rates));
 		rval = ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
 		    rates, sizeof(rates), &len, NULL);
 		if (rval)
@@ -2656,7 +2662,8 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		else
 			ndis_set_bssid(sc, "\xff\xff\xff\xff\xff\xff");
 		if (vap->iv_des_nssid)
-			ndis_set_ssid(sc, vap->iv_des_ssid[0].ssid, vap->iv_des_ssid[0].len);
+			ndis_set_ssid(sc,
+			    vap->iv_des_ssid[0].ssid, vap->iv_des_ssid[0].len);
 		else
 			ndis_set_ssid(sc, NULL, 0);
 		ndis_setstate_80211(sc, vap);
