@@ -269,17 +269,10 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 		ExFreePool(e);
 	}
 
-	/* Free the driver extension */
 	free(drv->dro_driver_extension, M_NDIS_WINDRV);
-
-	/* Free the driver name */
 	RtlFreeUnicodeString(&drv->dro_driver_name);
-
-	/* Free driver object */
 	free(drv, M_NDIS_WINDRV);
-
-	/* Free our DB handle */
-	free(r, M_NDIS_WINDRV);
+	free(r, M_NDIS_WINDRV);		/* Free our DB handle */
 
 	return (0);
 }
@@ -428,8 +421,6 @@ windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 	pdo = windrv_find_pdo(drv, bsddev);
 	if (pdo == NULL)
 		return;
-
-	/* Remove reference to device_t */
 	pdo->do_devext = NULL;
 
 	mtx_lock(&drvdb_mtx);
