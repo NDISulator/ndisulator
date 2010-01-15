@@ -384,9 +384,7 @@ ntoskrnl_libfini(void)
 		patch++;
 	}
 
-	/* Stop the workitem queues. */
 	ntoskrnl_destroy_workitem_threads();
-	/* Stop the DPC queues. */
 	ntoskrnl_destroy_dpc_threads();
 
 	ExFreePool(kq_queues);
