@@ -633,10 +633,10 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 		written = &w;
 	if (!needed)
 		needed = &n;
+	KASSERT(sc->ndis_chars != NULL, ("no ndis_chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars != NULL, ("no ndis_chars"));
 	KASSERT(sc->ndis_chars->nmc_query_info_func != NULL, ("no query_info"));
 	KASSERT(sc->ndis_chars->nmc_set_info_func != NULL, ("no set_info"));
 	/*
@@ -673,7 +673,6 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 		}
 	} else
 		return (NDIS_STATUS_NOT_SUPPORTED);
-
 	return (rval);
 }
 
@@ -731,11 +730,11 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 	ndis_packet *p;
 	uint8_t irql = 0;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
 	KASSERT(sc->ndis_block->nmb_send_done_func != NULL, ("no send_done"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_chars->nmc_send_multi_func != NULL, ("no send_multi"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
@@ -766,11 +765,11 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 	ndis_status status;
 	uint8_t irql = 0;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
 	KASSERT(sc->ndis_block->nmb_send_done_func != NULL, ("no send_done"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_chars->nmc_send_single_func != NULL,
 	    ("no send_single"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
@@ -840,10 +839,10 @@ ndis_reset_nic(void *arg)
 	int rval;
 	uint8_t irql = 0;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_chars->nmc_reset_func != NULL, ("no reset"));
 	KeResetEvent(&sc->ndis_block->nmb_resetevent);
 	if (NDIS_SERIALIZED(sc->ndis_block))
@@ -866,11 +865,11 @@ ndis_check_for_hang_nic(void *arg)
 	struct ndis_softc *sc = arg;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
-	if (sc->ndis_chars->nmc_check_hang_func == NULL)
-		return (FALSE);
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
+	if (sc->ndis_chars->nmc_check_hang_func == NULL)
+		return (FALSE);
 	return (MSCALL1(sc->ndis_chars->nmc_check_hang_func,
 	    sc->ndis_block->nmb_miniport_adapter_ctx));
 }
@@ -910,19 +909,16 @@ ndis_halt_nic(void *arg)
 
 	if (!cold)
 		KeFlushQueuedDpcs();
-	NDIS_LOCK(sc);
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	sc->ndis_block->nmb_device_ctx = NULL;
-	NDIS_UNLOCK(sc);
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_chars->nmc_halt_func != NULL, ("no halt"));
+	NDIS_LOCK(sc);
+	sc->ndis_block->nmb_device_ctx = NULL;
+	NDIS_UNLOCK(sc);
 	MSCALL1(sc->ndis_chars->nmc_halt_func,
 	    sc->ndis_block->nmb_miniport_adapter_ctx);
-	NDIS_LOCK(sc);
-	sc->ndis_block->nmb_miniport_adapter_ctx = NULL;
-	NDIS_UNLOCK(sc);
 }
 
 void
@@ -930,10 +926,10 @@ ndis_shutdown_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_chars->nmc_shutdown_func != NULL, ("no shutdown"));
 	if (sc->ndis_chars->nmc_reserved0 == NULL)
 		MSCALL1(sc->ndis_chars->nmc_shutdown_func,
@@ -948,10 +944,10 @@ ndis_pnp_event_nic(void *arg, uint32_t event, uint32_t profile)
 {
 	struct ndis_softc *sc =  arg;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	if (sc->ndis_chars->nmc_pnp_event_notify_func == NULL)
 		return;
 	switch (event) {
@@ -980,10 +976,10 @@ ndis_init_nic(void *arg)
 	ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
 	uint32_t chosen_medium = 0;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_chars->nmc_init_func != NULL, ("no init"));
 	rval = MSCALL6(sc->ndis_chars->nmc_init_func, &status, &chosen_medium,
 	    medium_array, sizeof(medium_array) / sizeof(medium_array[0]),
@@ -1008,7 +1004,10 @@ ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
 {
 	ndis_miniport_interrupt *intr;
 
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
+	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	    ("no adapter"));
 	KASSERT(sc->ndis_block->nmb_interrupt != NULL, ("no interrupt"));
 	intr = sc->ndis_block->nmb_interrupt;
 	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpc_count_lock);
