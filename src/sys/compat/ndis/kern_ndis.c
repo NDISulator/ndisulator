@@ -1084,7 +1084,6 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	KeSetImportanceDpc(&fdo->do_dpc, KDPC_IMPORTANCE_HIGH);
 
 	/* Finish up BSD-specific setup. */
-	block->nmb_signature = (void *)0xcafebabe;
 	block->nmb_status_func = kernndis_functbl[0].ipt_wrap;
 	block->nmb_status_done_func = kernndis_functbl[1].ipt_wrap;
 	block->nmb_set_done_func = kernndis_functbl[2].ipt_wrap;
