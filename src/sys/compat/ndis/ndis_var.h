@@ -1546,6 +1546,7 @@ struct ndis_miniport_block {
 	nt_kevent		getevent;
 	ndis_status		setstat;
 	nt_kevent		setevent;
+	ndis_status		resetstat;
 	nt_kevent		resetevent;
 	io_workitem		*returnitem;
 	ndis_handle		rxpool;

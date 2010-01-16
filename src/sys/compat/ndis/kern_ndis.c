@@ -200,22 +200,18 @@ ndis_status_done_func(ndis_handle adapter)
 static void
 ndis_set_done_func(ndis_handle adapter, ndis_status status)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 
-	block = adapter;
 	block->setstat = status;
-
 	KeSetEvent(&block->setevent, IO_NO_INCREMENT, FALSE);
 }
 
 static void
 ndis_get_done_func(ndis_handle adapter, ndis_status status)
 {
-	ndis_miniport_block *block;
+	ndis_miniport_block *block = adapter;
 
-	block = adapter;
 	block->getstat = status;
-
 	KeSetEvent(&block->getevent, IO_NO_INCREMENT, FALSE);
 }
 
@@ -223,12 +219,9 @@ static void
 ndis_reset_done_func(ndis_handle adapter, ndis_status status,
     uint8_t addressingreset)
 {
-	ndis_miniport_block *block;
-	struct ndis_softc *sc;
+	ndis_miniport_block *block = adapter;
 
-	block = adapter;
-	sc = device_get_softc(block->physdeviceobj->devext);
-
+	block->resetstat = status;
 	KeSetEvent(&block->resetevent, IO_NO_INCREMENT, FALSE);
 }
 
