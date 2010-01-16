@@ -293,6 +293,7 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 	struct drvdb_ent *new;
 	struct driver_object *drv;
 	uint32_t *ptr;
+	ndis_status rval;
 	ansi_string as;
 
 	if (pe_validate_header(img))
@@ -368,11 +369,13 @@ skipreloc:
 	}
 
 	/* Now call the DriverEntry() function. */
-	if (MSCALL2(entry, drv, &drv->driver_name) != NDIS_STATUS_SUCCESS) {
+	rval = MSCALL2(entry, drv, &drv->driver_name);
+	if (rval) {
 		RtlFreeUnicodeString(&drv->driver_name);
 		free(drv->driver_extension, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
 		free(new, M_NDIS_WINDRV);
+		printf("NDIS: driver entry failed; status: 0x%08X\n", rval);
 		return (ENODEV);
 	}
 
