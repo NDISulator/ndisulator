@@ -613,7 +613,7 @@ IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	ce->ce_clid = clid;
-	InsertTailList((&drv->dro_driver_extension->dre_usrext),
+	InsertTailList((&drv->driver_extension->usrext),
 	    (&ce->ce_list));
 
 	*ext = (void *)(ce + 1);
@@ -631,11 +631,11 @@ IoGetDriverObjectExtension(driver_object *drv, void *clid)
 	 * Sanity check. Our dummy bus drivers don't have
 	 * any driver extentions.
 	 */
-	if (drv->dro_driver_extension == NULL)
+	if (drv->driver_extension == NULL)
 		return (NULL);
 
-	e = drv->dro_driver_extension->dre_usrext.nle_flink;
-	while (e != &drv->dro_driver_extension->dre_usrext) {
+	e = drv->driver_extension->usrext.nle_flink;
+	while (e != &drv->driver_extension->usrext) {
 		ce = (custom_extension *)e;
 		if (ce->ce_clid == clid)
 			return ((void *)(ce + 1));
@@ -698,9 +698,9 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 
-	dev->devobj_ext->dve_type = 0;
-	dev->devobj_ext->dve_size = sizeof(devobj_extension);
-	dev->devobj_ext->dve_devobj = dev;
+	dev->devobj_ext->type = 0;
+	dev->devobj_ext->size = sizeof(devobj_extension);
+	dev->devobj_ext->devobj = dev;
 
 	/*
 	 * Attach this device to the driver object's list
@@ -709,12 +709,12 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	 * routine must explicitly call IoAddDeviceToDeviceStack()
 	 * to do that.
 	 */
-	if (drv->dro_device_object == NULL) {
-		drv->dro_device_object = dev;
+	if (drv->device_object == NULL) {
+		drv->device_object = dev;
 		dev->nextdev = NULL;
 	} else {
-		dev->nextdev = drv->dro_device_object;
-		drv->dro_device_object = dev;
+		dev->nextdev = drv->device_object;
+		drv->device_object = dev;
 	}
 	*newdev = dev;
 
@@ -734,9 +734,9 @@ IoDeleteDevice(device_object *dev)
 		ExFreePool(dev->devext);
 
 	/* Unlink the device from the driver's device list. */
-	prev = dev->drvobj->dro_device_object;
+	prev = dev->drvobj->device_object;
 	if (prev == dev)
-		dev->drvobj->dro_device_object = dev->nextdev;
+		dev->drvobj->device_object = dev->nextdev;
 	else {
 		while (prev->nextdev != dev)
 			prev = prev->nextdev;
@@ -1035,7 +1035,7 @@ IofCallDriver(device_object *dobj, irp *ip)
 
 	sl->isl_devobj = dobj;
 
-	disp = drvobj->dro_dispatch[sl->isl_major];
+	disp = drvobj->dispatch[sl->isl_major];
 	status = MSCALL2(disp, dobj, ip);
 
 	return (status);
@@ -2891,8 +2891,8 @@ IoGetDeviceProperty(device_object *devobj, uint32_t regprop, uint32_t buflen,
 	switch (regprop) {
 	case DEVPROP_DRIVER_KEYNAME:
 		name = prop;
-		*name = drv->dro_driver_name.us_buf;
-		*reslen = drv->dro_driver_name.us_len;
+		*name = drv->driver_name.us_buf;
+		*reslen = drv->driver_name.us_len;
 		break;
 	default:
 		return (NDIS_STATUS_INVALID_PARAMETER_2);

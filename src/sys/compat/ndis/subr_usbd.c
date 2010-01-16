@@ -186,16 +186,16 @@ usbd_libinit(void)
 
 	/* Set up our dipatch routine. */
 	for (i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++)
-		usbd_driver.dro_dispatch[i] =
+		usbd_driver.dispatch[i] =
 			(driver_dispatch)usbd_ioinvalid_wrap;
 
-	usbd_driver.dro_dispatch[IRP_MJ_INTERNAL_DEVICE_CONTROL] =
+	usbd_driver.dispatch[IRP_MJ_INTERNAL_DEVICE_CONTROL] =
 	    (driver_dispatch)usbd_iodispatch_wrap;
-	usbd_driver.dro_dispatch[IRP_MJ_DEVICE_CONTROL] =
+	usbd_driver.dispatch[IRP_MJ_DEVICE_CONTROL] =
 	    (driver_dispatch)usbd_iodispatch_wrap;
-	usbd_driver.dro_dispatch[IRP_MJ_POWER] =
+	usbd_driver.dispatch[IRP_MJ_POWER] =
 	    (driver_dispatch)usbd_power_wrap;
-	usbd_driver.dro_dispatch[IRP_MJ_PNP] =
+	usbd_driver.dispatch[IRP_MJ_PNP] =
 	    (driver_dispatch)usbd_pnp_wrap;
 }
 
@@ -218,7 +218,7 @@ usbd_libfini(void)
 	windrv_unwrap(usbd_iodispatch_wrap);
 	windrv_unwrap(usbd_ioinvalid_wrap);
 
-	RtlFreeUnicodeString(&usbd_driver.dro_driver_name);
+	RtlFreeUnicodeString(&usbd_driver.driver_name);
 }
 
 static int32_t

@@ -513,17 +513,17 @@ struct driver_object;
 struct devobj_extension;
 
 struct driver_extension {
-	struct driver_object	*dre_driverobj;
-	void			*dre_adddevicefunc;
-	uint32_t		dre_reinitcnt;
-	unicode_string		dre_srvname;
+	struct driver_object	*driverobj;
+	void			*adddevicefunc;
+	uint32_t		reinitcnt;
+	unicode_string		srvname;
 
 	/*
 	 * Drivers are allowed to add one or more custom extensions
 	 * to the driver object, but there's no special pointer
 	 * for them. Hang them off here for now.
 	 */
-	list_entry dre_usrext;
+	list_entry 		usrext;
 };
 typedef struct driver_extension driver_extension;
 
@@ -597,9 +597,9 @@ struct device_object {
 typedef struct device_object device_object;
 
 struct devobj_extension {
-	uint16_t	dve_type;
-	uint16_t	dve_size;
-	device_object	*dve_devobj;
+	uint16_t	type;
+	uint16_t	size;
+	device_object	*devobj;
 };
 typedef struct devobj_extension devobj_extension;
 
@@ -1018,21 +1018,21 @@ typedef uint32_t (*driver_dispatch)(device_object *, irp *);
  * NdisInitializeWrapper() and/or NdisMRegisterMiniport() routines.
  */
 struct driver_object {
-	int16_t			dro_type;
-	int16_t			dro_size;
-	device_object		*dro_device_object;
-	uint32_t		dro_flags;
-	void			*dro_driver_start;
-	uint32_t		dro_driver_size;
-	void			*dro_driver_section;
-	driver_extension	*dro_driver_extension;
-	unicode_string		dro_driver_name;
-	unicode_string		*dro_hardware_database;
-	void			*dro_fast_io_dispatch;
-	void			*dro_driver_init_func;
-	void			*dro_driver_start_io_func;
-	void			*dro_driver_unload_func;
-	driver_dispatch		dro_dispatch[IRP_MJ_MAXIMUM_FUNCTION + 1];
+	int16_t			type;
+	int16_t			size;
+	device_object		*device_object;
+	uint32_t		flags;
+	void			*driver_start;
+	uint32_t		driver_size;
+	void			*driver_section;
+	driver_extension	*driver_extension;
+	unicode_string		driver_name;
+	unicode_string		*hardware_database;
+	void			*fast_io_dispatch;
+	void			*driver_init_func;
+	void			*driver_start_io_func;
+	void			*driver_unload_func;
+	driver_dispatch		dispatch[IRP_MJ_MAXIMUM_FUNCTION + 1];
 };
 typedef struct driver_object driver_object;
 
