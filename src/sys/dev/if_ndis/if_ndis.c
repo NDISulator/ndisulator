@@ -2591,12 +2591,8 @@ static void
 ndis_resettask(device_object *d, void *arg)
 {
 	struct ndis_softc *sc = arg;
-	ndis_status rval;
 
-	rval = ndis_reset_nic(sc);
-	if (rval)
-		device_printf(sc->ndis_dev, "failed to reset device; "
-		    "status: 0x%08X\n", rval);
+	ndis_reset_nic(sc);
 }
 
 /*

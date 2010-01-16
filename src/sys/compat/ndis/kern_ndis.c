@@ -849,6 +849,9 @@ ndis_reset_nic(void *arg)
 		    0, 0, FALSE, NULL);
 		rval = sc->ndis_block->resetstat;
 	}
+	if (rval)
+		device_printf(sc->ndis_dev, "failed to reset device; "
+		    "status: 0x%08X\n", rval);
 	return (rval);
 }
 
