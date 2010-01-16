@@ -971,8 +971,6 @@ ndis_init_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
 	KASSERT(sc->ndis_chars->init_func != NULL, ("no init"));
 	rval = MSCALL6(sc->ndis_chars->init_func, &status, &chosen_medium,
 	    medium_array, sizeof(medium_array) / sizeof(medium_array[0]),
