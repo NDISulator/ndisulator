@@ -979,14 +979,7 @@ ndis_init_nic(void *arg)
 	    medium_array, sizeof(medium_array) / sizeof(medium_array[0]),
 	    sc->ndis_block, sc->ndis_block);
 	NDIS_LOCK(sc);
-	if (rval)
-		/*
-		 * If the init fails, blow away the other exported routines
-		 * we obtained from the driver so we can't call them later.
-		 * If the init failed, none of these will work.
-		 */
-		sc->ndis_block->miniport_adapter_ctx = NULL;
-	else
+	if (rval == NDIS_STATUS_SUCCESS)
 		sc->ndis_block->device_ctx = sc;
 	NDIS_UNLOCK(sc);
 	return (rval);
