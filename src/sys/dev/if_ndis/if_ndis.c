@@ -465,28 +465,28 @@ ndis_set_task_offload(struct ndis_softc *sc)
 	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
-	ntoh->ntoh_vers = NDIS_TASK_OFFLOAD_VERSION;
-	ntoh->ntoh_len = sizeof(ndis_task_offload_hdr);
-	ntoh->ntoh_offset_firsttask = sizeof(ndis_task_offload_hdr);
-	ntoh->ntoh_encapfmt.nef_encaphdrlen = sizeof(struct ether_header);
-	ntoh->ntoh_encapfmt.nef_encap = NDIS_ENCAP_IEEE802_3;
-	ntoh->ntoh_encapfmt.nef_flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
+	ntoh->vers = NDIS_TASK_OFFLOAD_VERSION;
+	ntoh->len = sizeof(ndis_task_offload_hdr);
+	ntoh->offset_firsttask = sizeof(ndis_task_offload_hdr);
+	ntoh->encapfmt.encaphdrlen = sizeof(struct ether_header);
+	ntoh->encapfmt.encap = NDIS_ENCAP_IEEE802_3;
+	ntoh->encapfmt.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
 
 	nto = (ndis_task_offload *)((char *)ntoh +
-	    ntoh->ntoh_offset_firsttask);
-	nto->nto_vers = NDIS_TASK_OFFLOAD_VERSION;
-	nto->nto_len = sizeof(ndis_task_offload);
-	nto->nto_task = NDIS_TASK_TCPIP_CSUM;
-	nto->nto_offset_nexttask = 0;
-	nto->nto_taskbuflen = sizeof(ndis_task_tcpip_csum);
+	    ntoh->offset_firsttask);
+	nto->vers = NDIS_TASK_OFFLOAD_VERSION;
+	nto->len = sizeof(ndis_task_offload);
+	nto->task = NDIS_TASK_TCPIP_CSUM;
+	nto->offset_nexttask = 0;
+	nto->taskbuflen = sizeof(ndis_task_tcpip_csum);
 
-	nttc = (ndis_task_tcpip_csum *)nto->nto_taskbuf;
+	nttc = (ndis_task_tcpip_csum *)nto->taskbuf;
 
 	if (ifp->if_capenable & IFCAP_TXCSUM)
-		nttc->nttc_v4tx = sc->ndis_v4tx;
+		nttc->v4tx = sc->ndis_v4tx;
 
 	if (ifp->if_capenable & IFCAP_RXCSUM)
-		nttc->nttc_v4rx = sc->ndis_v4rx;
+		nttc->v4rx = sc->ndis_v4rx;
 
 	error = ndis_set(sc, OID_TCP_TASK_OFFLOAD, ntoh, len);
 	free(ntoh, M_NDIS_DEV);
@@ -512,11 +512,11 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
-	ntoh->ntoh_vers = NDIS_TASK_OFFLOAD_VERSION;
-	ntoh->ntoh_len = sizeof(ndis_task_offload_hdr);
-	ntoh->ntoh_encapfmt.nef_encaphdrlen = sizeof(struct ether_header);
-	ntoh->ntoh_encapfmt.nef_encap = NDIS_ENCAP_IEEE802_3;
-	ntoh->ntoh_encapfmt.nef_flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
+	ntoh->vers = NDIS_TASK_OFFLOAD_VERSION;
+	ntoh->len = sizeof(ndis_task_offload_hdr);
+	ntoh->encapfmt.encaphdrlen = sizeof(struct ether_header);
+	ntoh->encapfmt.encap = NDIS_ENCAP_IEEE802_3;
+	ntoh->encapfmt.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
 
 	error = ndis_get(sc, OID_TCP_TASK_OFFLOAD, ntoh, len);
 	if (error) {
@@ -524,17 +524,17 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 		return (error);
 	}
 
-	if (ntoh->ntoh_vers != NDIS_TASK_OFFLOAD_VERSION) {
+	if (ntoh->vers != NDIS_TASK_OFFLOAD_VERSION) {
 		free(ntoh, M_NDIS_DEV);
 		return (EINVAL);
 	}
 
 	nto = (ndis_task_offload *)((char *)ntoh +
-	    ntoh->ntoh_offset_firsttask);
+	    ntoh->offset_firsttask);
 	for (;;) {
-		switch (nto->nto_task) {
+		switch (nto->task) {
 		case NDIS_TASK_TCPIP_CSUM:
-			nttc = (ndis_task_tcpip_csum *)nto->nto_taskbuf;
+			nttc = (ndis_task_tcpip_csum *)nto->taskbuf;
 			break;
 		/* Don't handle these yet. */
 		case NDIS_TASK_IPSEC:
@@ -542,10 +542,10 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 		default:
 			break;
 		}
-		if (nto->nto_offset_nexttask == 0)
+		if (nto->offset_nexttask == 0)
 			break;
 		nto = (ndis_task_offload *)((char *)nto +
-		    nto->nto_offset_nexttask);
+		    nto->offset_nexttask);
 	}
 
 	if (nttc == NULL) {
@@ -553,22 +553,22 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 		return (ENOENT);
 	}
 
-	sc->ndis_v4tx = nttc->nttc_v4tx;
-	sc->ndis_v4rx = nttc->nttc_v4rx;
+	sc->ndis_v4tx = nttc->v4tx;
+	sc->ndis_v4rx = nttc->v4rx;
 
-	if (nttc->nttc_v4tx & NDIS_TCPSUM_FLAGS_IP_CSUM)
+	if (nttc->v4tx & NDIS_TCPSUM_FLAGS_IP_CSUM)
 		sc->ndis_hwassist |= CSUM_IP;
-	if (nttc->nttc_v4tx & NDIS_TCPSUM_FLAGS_TCP_CSUM)
+	if (nttc->v4tx & NDIS_TCPSUM_FLAGS_TCP_CSUM)
 		sc->ndis_hwassist |= CSUM_TCP;
-	if (nttc->nttc_v4tx & NDIS_TCPSUM_FLAGS_UDP_CSUM)
+	if (nttc->v4tx & NDIS_TCPSUM_FLAGS_UDP_CSUM)
 		sc->ndis_hwassist |= CSUM_UDP;
 	if (sc->ndis_hwassist)
 		ifp->if_capabilities |= IFCAP_TXCSUM;
-	if (nttc->nttc_v4rx & NDIS_TCPSUM_FLAGS_IP_CSUM)
+	if (nttc->v4rx & NDIS_TCPSUM_FLAGS_IP_CSUM)
 		ifp->if_capabilities |= IFCAP_RXCSUM;
-	if (nttc->nttc_v4rx & NDIS_TCPSUM_FLAGS_TCP_CSUM)
+	if (nttc->v4rx & NDIS_TCPSUM_FLAGS_TCP_CSUM)
 		ifp->if_capabilities |= IFCAP_RXCSUM;
-	if (nttc->nttc_v4rx & NDIS_TCPSUM_FLAGS_UDP_CSUM)
+	if (nttc->v4rx & NDIS_TCPSUM_FLAGS_UDP_CSUM)
 		ifp->if_capabilities |= IFCAP_RXCSUM;
 
 	free(ntoh, M_NDIS_DEV);
@@ -686,28 +686,28 @@ ndis_attach(device_t dev)
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus)
 		ndis_convert_res(sc);
 	else
-		sc->ndis_block->nmb_rlist = NULL;
+		sc->ndis_block->rlist = NULL;
 
 	/* Install our RX and TX interrupt handlers. */
-	sc->ndis_block->nmb_send_done_func = ndis_txeof_wrap;
-	sc->ndis_block->nmb_pkt_indicate_func = ndis_rxeof_wrap;
-	sc->ndis_block->nmb_ethrx_indicate_func = ndis_rxeof_eth_wrap;
-	sc->ndis_block->nmb_ethrx_done_func = ndis_rxeof_done_wrap;
-	sc->ndis_block->nmb_tdcond_func = ndis_rxeof_xfr_done_wrap;
+	sc->ndis_block->send_done_func = ndis_txeof_wrap;
+	sc->ndis_block->pkt_indicate_func = ndis_rxeof_wrap;
+	sc->ndis_block->ethrx_indicate_func = ndis_rxeof_eth_wrap;
+	sc->ndis_block->ethrx_done_func = ndis_rxeof_done_wrap;
+	sc->ndis_block->tdcond_func = ndis_rxeof_xfr_done_wrap;
 
 	/* Override the status handler so we can detect link changes. */
-	sc->ndis_block->nmb_status_func = ndis_linksts_wrap;
-	sc->ndis_block->nmb_status_done_func = ndis_linksts_done_wrap;
+	sc->ndis_block->status_func = ndis_linksts_wrap;
+	sc->ndis_block->status_done_func = ndis_linksts_done_wrap;
 
 	/* Set up work item handlers. */
-	sc->ndis_tickitem = IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
-	sc->ndis_startitem = IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
-	sc->ndis_resetitem = IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
-	sc->ndis_inputitem = IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
+	sc->ndis_tickitem = IoAllocateWorkItem(sc->ndis_block->deviceobj);
+	sc->ndis_startitem = IoAllocateWorkItem(sc->ndis_block->deviceobj);
+	sc->ndis_resetitem = IoAllocateWorkItem(sc->ndis_block->deviceobj);
+	sc->ndis_inputitem = IoAllocateWorkItem(sc->ndis_block->deviceobj);
 	sc->ndisusb_xferdoneitem =
-	    IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
+	    IoAllocateWorkItem(sc->ndis_block->deviceobj);
 	sc->ndisusb_taskitem =
-	    IoAllocateWorkItem(sc->ndis_block->nmb_deviceobj);
+	    IoAllocateWorkItem(sc->ndis_block->deviceobj);
 	KeInitializeDpc(&sc->ndis_rxdpc, ndis_rxeof_xfr_wrap, sc->ndis_block);
 
 	rval = ndis_init_nic(sc);
@@ -725,8 +725,8 @@ ndis_attach(device_t dev)
 	}
 	if (bootverbose) {
 		device_printf(dev, "NDIS API %d.%d\n",
-		    sc->ndis_chars->nmc_version_major,
-		    sc->ndis_chars->nmc_version_minor);
+		    sc->ndis_chars->version_major,
+		    sc->ndis_chars->version_minor);
 		device_printf(dev,"supported oids:\n");
 		for (i = 0; i < sc->ndis_oidcnt; i++)
 			device_printf(dev, "\t\t0x%08X\n", sc->ndis_oids[i]);
@@ -1229,7 +1229,7 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 	m_copyback(m, hdrlen, lookaheadlen, lookahead);
 
 	/* Now create a fake NDIS_PACKET to hold the data */
-	NdisAllocatePacket(&status, &p, block->nmb_rxpool);
+	NdisAllocatePacket(&status, &p, block->rxpool);
 	if (status != NDIS_STATUS_SUCCESS) {
 		m_freem(m);
 		return;
@@ -1243,20 +1243,20 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 		return;
 	}
 
-	p->np_private.npp_head = p->np_private.npp_tail = b;
-	p->np_private.npp_totlen = m->m_pkthdr.len;
+	p->np_private.head = p->np_private.tail = b;
+	p->np_private.totlen = m->m_pkthdr.len;
 
 	/* Save the packet RX context somewhere. */
 	priv = (ndis_ethpriv *)&p->np_protocolreserved;
 	priv->nep_ctx = ctx;
 
 	if (!NDIS_SERIALIZED(block))
-		KeAcquireSpinLock(&block->nmb_lock, &irql);
+		KeAcquireSpinLock(&block->lock, &irql);
 
-	InsertTailList((&block->nmb_packet_list), (&p->np_list));
+	InsertTailList((&block->packet_list), (&p->np_list));
 
 	if (!NDIS_SERIALIZED(block))
-		KeReleaseSpinLock(&block->nmb_lock, irql);
+		KeReleaseSpinLock(&block->lock, irql);
 }
 
 /*
@@ -1269,7 +1269,7 @@ ndis_rxeof_done(ndis_handle adapter)
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 
@@ -1292,16 +1292,16 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
 
-	KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
+	KeAcquireSpinLockAtDpcLevel(&block->lock);
 
-	l = block->nmb_packet_list.nle_flink;
-	while (!IsListEmpty(&block->nmb_packet_list)) {
-		l = RemoveHeadList((&block->nmb_packet_list));
+	l = block->packet_list.nle_flink;
+	while (!IsListEmpty(&block->packet_list)) {
+		l = RemoveHeadList((&block->packet_list));
 		p = CONTAINING_RECORD(l, ndis_packet, np_list);
 		InitializeListHead((&p->np_list));
 
@@ -1310,11 +1310,11 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 		p->np_softc = sc;
 		p->np_m0 = NULL;
 
-		KeReleaseSpinLockFromDpcLevel(&block->nmb_lock);
-		status = MSCALL6(sc->ndis_chars->nmc_transfer_data_func,
-		    p, &p->np_private.npp_totlen, block, priv->nep_ctx,
+		KeReleaseSpinLockFromDpcLevel(&block->lock);
+		status = MSCALL6(sc->ndis_chars->transfer_data_func,
+		    p, &p->np_private.totlen, block, priv->nep_ctx,
 		    m->m_len, m->m_pkthdr.len - m->m_len);
-		KeAcquireSpinLockAtDpcLevel(&block->nmb_lock);
+		KeAcquireSpinLockAtDpcLevel(&block->lock);
 
 		/*
 		 * If status is NDIS_STATUS_PENDING, do nothing and wait
@@ -1324,7 +1324,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 		m->m_pkthdr.rcvif = ifp;
 
 		if (status == NDIS_STATUS_SUCCESS) {
-			IoFreeMdl(p->np_private.npp_head);
+			IoFreeMdl(p->np_private.head);
 			NdisFreePacket(p);
 			KeAcquireSpinLockAtDpcLevel(&sc->ndis_rxlock);
 			_IF_ENQUEUE(&sc->ndis_rxqueue, m);
@@ -1338,10 +1338,10 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 			m_freem(m);
 
 		/* Advance to next packet */
-		l = block->nmb_packet_list.nle_flink;
+		l = block->packet_list.nle_flink;
 	}
 
-	KeReleaseSpinLockFromDpcLevel(&block->nmb_lock);
+	KeReleaseSpinLockFromDpcLevel(&block->lock);
 }
 
 /*
@@ -1356,13 +1356,13 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
 
 	m = packet->np_m0;
-	IoFreeMdl(packet->np_private.npp_head);
+	IoFreeMdl(packet->np_private.head);
 	NdisFreePacket(packet);
 
 	if (status != NDIS_STATUS_SUCCESS) {
@@ -1408,7 +1408,7 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 	struct mbuf *m0, *m;
 	int i;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
@@ -1475,14 +1475,14 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 
 			/* Deal with checksum offload. */
 			if (ifp->if_capenable & IFCAP_RXCSUM &&
-			    p->np_ext.npe_info[ndis_tcpipcsum_info] != NULL) {
+			    p->np_ext.info[NDIS_TCPIPCSUM_INFO] != NULL) {
 				s = (uintptr_t)
-				    p->np_ext.npe_info[ndis_tcpipcsum_info];
+				    p->np_ext.info[NDIS_TCPIPCSUM_INFO];
 				csum = (ndis_tcpip_csum *)&s;
-				if (csum->u.ntc_rxflags & NDIS_RXCSUM_IP_PASSED)
+				if (csum->u.rxflags & NDIS_RXCSUM_IP_PASSED)
 					m0->m_pkthdr.csum_flags |=
 					    CSUM_IP_CHECKED|CSUM_IP_VALID;
-				if (csum->u.ntc_rxflags &
+				if (csum->u.rxflags &
 				    (NDIS_RXCSUM_TCP_PASSED |
 				    NDIS_RXCSUM_UDP_PASSED)) {
 					m0->m_pkthdr.csum_flags |=
@@ -1547,7 +1547,7 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 	int idx;
 	struct mbuf *m;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
@@ -1585,7 +1585,7 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 	struct ieee80211com *ic;
 	struct ieee80211vap *vap;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	if ((sc->ndis_ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
@@ -1644,7 +1644,7 @@ ndis_linksts_done(ndis_handle adapter)
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 
@@ -1671,7 +1671,7 @@ ndis_tick(void *xsc)
 		IoQueueWorkItem(sc->ndis_tickitem,
 		    (io_workitem_func)ndis_ticktask_wrap,
 		    WORKQUEUE_CRITICAL, sc);
-		sc->ndis_hang_timer = sc->ndis_block->nmb_check_for_hang_secs;
+		sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	}
 	if (sc->ndis_tx_timer && --sc->ndis_tx_timer == 0) {
 		sc->ndis_ifp->if_oerrors++;
@@ -1708,11 +1708,11 @@ ndis_map_sclist(void *arg, bus_dma_segment_t *segs, int nseg,
 		return;
 
 	sclist = arg;
-	sclist->nsl_frags = nseg;
+	sclist->frags = nseg;
 
 	for (i = 0; i < nseg; i++) {
-		sclist->nsl_elements[i].nse_addr.np_quad = segs[i].ds_addr;
-		sclist->nsl_elements[i].nse_len = segs[i].ds_len;
+		sclist->elements[i].addr.np_quad = segs[i].ds_addr;
+		sclist->elements[i].len = segs[i].ds_len;
 	}
 }
 
@@ -1817,22 +1817,22 @@ ndis_start(struct ifnet *ifp)
 			bus_dmamap_sync(sc->ndis_ttag,
 			    sc->ndis_tmaps[sc->ndis_txidx],
 			    BUS_DMASYNC_PREREAD);
-			p->np_ext.npe_info[ndis_sclist_info] = &p->np_sclist;
+			p->np_ext.info[NDIS_SCLIST_INFO] = &p->np_sclist;
 		}
 
 		/* Handle checksum offload. */
 		if (ifp->if_capenable & IFCAP_TXCSUM &&
 		    m->m_pkthdr.csum_flags) {
 			csum = (ndis_tcpip_csum *)
-				&p->np_ext.npe_info[ndis_tcpipcsum_info];
-			csum->u.ntc_txflags = NDIS_TXCSUM_DO_IPV4;
+				&p->np_ext.info[NDIS_TCPIPCSUM_INFO];
+			csum->u.txflags = NDIS_TXCSUM_DO_IPV4;
 			if (m->m_pkthdr.csum_flags & CSUM_IP)
-				csum->u.ntc_txflags |= NDIS_TXCSUM_DO_IP;
+				csum->u.txflags |= NDIS_TXCSUM_DO_IP;
 			if (m->m_pkthdr.csum_flags & CSUM_TCP)
-				csum->u.ntc_txflags |= NDIS_TXCSUM_DO_TCP;
+				csum->u.txflags |= NDIS_TXCSUM_DO_TCP;
 			if (m->m_pkthdr.csum_flags & CSUM_UDP)
-				csum->u.ntc_txflags |= NDIS_TXCSUM_DO_UDP;
-			p->np_private.npp_flags = NDIS_PROTOCOL_ID_TCP_IP;
+				csum->u.txflags |= NDIS_TXCSUM_DO_UDP;
+			p->np_private.flags = NDIS_PROTOCOL_ID_TCP_IP;
 		}
 
 		NDIS_INC(sc);
@@ -1878,7 +1878,7 @@ ndis_start(struct ifnet *ifp)
 	 * a MiniportSendPackets() routine, we prefer that over
 	 * a MiniportSend() routine (which sends just a single packet).
 	 */
-	if (sc->ndis_chars->nmc_send_multi_func != NULL)
+	if (sc->ndis_chars->send_multi_func != NULL)
 		ndis_send_packets(sc, p0, pcnt);
 	else
 		ndis_send_packet(sc, p);
@@ -1922,10 +1922,10 @@ ndis_init(void *xsc)
 	 * seconds." We use 3 seconds, because it seems for some
 	 * drivers, exactly 2 seconds is too fast.
 	 */
-	if (sc->ndis_block->nmb_check_for_hang_secs == 0)
-		sc->ndis_block->nmb_check_for_hang_secs = 3;
+	if (sc->ndis_block->check_for_hang_secs == 0)
+		sc->ndis_block->check_for_hang_secs = 3;
 
-	sc->ndis_hang_timer = sc->ndis_block->nmb_check_for_hang_secs;
+	sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 	NDIS_UNLOCK(sc);
 
@@ -2151,8 +2151,8 @@ ndis_set_ssid(struct ndis_softc *sc, uint8_t *essid, uint8_t esslen)
 	ndis_80211_ssid ssid;
 
 	memset(&ssid, 0, sizeof(ssid));
-	memcpy(ssid.ns_ssid, essid, esslen);
-	ssid.ns_ssidlen = esslen;
+	memcpy(ssid.ssid, essid, esslen);
+	ssid.len = esslen;
 	if (ndis_set(sc, OID_802_11_SSID, &ssid, sizeof(ssid)))
 		DPRINTF("set ssid failed\n");
 }
@@ -2237,8 +2237,8 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		DPRINTF("get ssid failed\n");
 		return;
 	}
-	memcpy(ni->ni_essid, ssid.ns_ssid, ssid.ns_ssidlen);
-	ni->ni_esslen = ssid.ns_ssidlen;
+	memcpy(ni->ni_essid, ssid.ssid, ssid.len);
+	ni->ni_esslen = ssid.len;
 	if (vap->iv_opmode == IEEE80211_M_STA)
 		ni->ni_associd = 1 | 0xc000; /* fake associd */
 
@@ -2288,12 +2288,12 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	memset(&config, 0, sizeof(config));
 	if (!ndis_get(sc, OID_802_11_CONFIGURATION, &config, sizeof(config))) {
 		ic->ic_curchan = ieee80211_find_channel(ic,
-		    config.nc_dsconfig / 1000, chanflag);
+		    config.dsconfig / 1000, chanflag);
 		if (ic->ic_curchan == NULL)
 			ic->ic_curchan = &ic->ic_channels[0];
 		ni->ni_chan = ic->ic_curchan;
 		ic->ic_bsschan = ic->ic_curchan;
-		ni->ni_intval = config.nc_beaconperiod;
+		ni->ni_intval = config.beaconperiod;
 	}
 }
 
@@ -2728,20 +2728,20 @@ ndis_set_channel(struct ieee80211com *ic)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	memset(&config, 0, sizeof(config));
-	config.nc_length = sizeof(config);
-	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
+	config.len = sizeof(config);
+	config.fhconfig.len = sizeof(ndis_80211_config_fh);
 	if (ndis_get(sc, OID_802_11_CONFIGURATION, &config, sizeof(config)))
 		return;
 
-	config.nc_beaconperiod = ic->ic_bintval;
-	if (config.nc_atimwin == 0)
-		config.nc_atimwin = 100;
-	if (config.nc_fhconfig.ncf_dwelltime == 0)
-		config.nc_fhconfig.ncf_dwelltime = 100;
-	config.nc_dsconfig = ic->ic_bsschan->ic_freq * 1000;
-	config.nc_length = sizeof(config);
-	config.nc_fhconfig.ncf_length = sizeof(ndis_80211_config_fh);
-	DPRINTF("Setting channel to %ukHz\n", config.nc_dsconfig);
+	config.beaconperiod = ic->ic_bintval;
+	if (config.atimwin == 0)
+		config.atimwin = 100;
+	if (config.fhconfig.dwelltime == 0)
+		config.fhconfig.dwelltime = 100;
+	config.dsconfig = ic->ic_bsschan->ic_freq * 1000;
+	config.len = sizeof(config);
+	config.fhconfig.len = sizeof(ndis_80211_config_fh);
+	DPRINTF("Setting channel to %ukHz\n", config.dsconfig);
 	ndis_set(sc, OID_802_11_CONFIGURATION, &config, sizeof(config));
 }
 
@@ -2780,20 +2780,20 @@ ndis_scan_end(struct ieee80211com *ic)
 		return;
 	}
 
-	DPRINTF("%d scan results\n", bl->nblx_items);
-	wb = &bl->nblx_bssid[0];
-	for (i = 0; i < bl->nblx_items; i++) {
+	DPRINTF("%d scan results\n", bl->items);
+	wb = &bl->bssid[0];
+	for (i = 0; i < bl->items; i++) {
 		memset(&sp, 0, sizeof(sp));
-		memcpy(wh.i_addr2, wb->nwbx_macaddr, sizeof(wh.i_addr2));
-		memcpy(wh.i_addr3, wb->nwbx_macaddr, sizeof(wh.i_addr3));
-		rssi = 100 * (wb->nwbx_rssi - -96) / (-32 - -96);
+		memcpy(wh.i_addr2, wb->macaddr, sizeof(wh.i_addr2));
+		memcpy(wh.i_addr3, wb->macaddr, sizeof(wh.i_addr3));
+		rssi = 100 * (wb->rssi - -96) / (-32 - -96);
 		rssi = max(0, min(rssi, 100));	/* limit 0 <= rssi <= 100 */
-		if (wb->nwbx_privacy)
+		if (wb->privacy)
 			sp.capinfo |= IEEE80211_CAPINFO_PRIVACY;
-		sp.bintval = wb->nwbx_config.nc_beaconperiod;
-		if (wb->nwbx_config.nc_fhconfig.ncf_length != 0)
-			sp.fhdwell = wb->nwbx_config.nc_fhconfig.ncf_dwelltime;
-		switch (wb->nwbx_netinfra) {
+		sp.bintval = wb->config.beaconperiod;
+		if (wb->config.fhconfig.len != 0)
+			sp.fhdwell = wb->config.fhconfig.dwelltime;
+		switch (wb->netinfra) {
 			case NDIS_802_11_NET_INFRA_IBSS:
 				sp.capinfo |= IEEE80211_CAPINFO_IBSS;
 				break;
@@ -2804,19 +2804,19 @@ ndis_scan_end(struct ieee80211com *ic)
 		sp.rates = &rates[0];
 		for (j = 0; j < IEEE80211_RATE_MAXSIZE; j++) {
 			/* XXX - check units */
-			if (wb->nwbx_supportedrates[j] == 0)
+			if (wb->supportedrates[j] == 0)
 				break;
 			rates[2 + j] =
-			wb->nwbx_supportedrates[j] & 0x7f;
+			wb->supportedrates[j] & 0x7f;
 		}
 		rates[1] = j;
 		sp.ssid = (uint8_t *)&ssid[0];
-		memcpy(sp.ssid + 2, &wb->nwbx_ssid.ns_ssid,
-		    wb->nwbx_ssid.ns_ssidlen);
-		sp.ssid[1] = wb->nwbx_ssid.ns_ssidlen;
+		memcpy(sp.ssid + 2, &wb->ssid.ssid,
+		    wb->ssid.len);
+		sp.ssid[1] = wb->ssid.len;
 
-		chanflag = ndis_nettype_chan(wb->nwbx_nettype);
-		freq = wb->nwbx_config.nc_dsconfig / 1000;
+		chanflag = ndis_nettype_chan(wb->nettype);
+		freq = wb->config.dsconfig / 1000;
 		sp.chan = sp.bchan = ieee80211_mhz2ieee(freq, chanflag);
 		/* Hack ic->ic_curchan to be in sync with the scan result */
 		ic->ic_curchan = ieee80211_find_channel(ic, freq, chanflag);
@@ -2824,9 +2824,9 @@ ndis_scan_end(struct ieee80211com *ic)
 			ic->ic_curchan = &ic->ic_channels[0];
 
 		/* Process extended info from AP */
-		if (wb->nwbx_len > sizeof(ndis_wlan_bssid)) {
-			frm = (uint8_t *)&wb->nwbx_ies;
-			efrm = frm + wb->nwbx_ielen;
+		if (wb->len > sizeof(ndis_wlan_bssid)) {
+			frm = (uint8_t *)&wb->ies;
+			efrm = frm + wb->ielen;
 			if (efrm - frm < 12)
 				goto done;
 			sp.tstamp = frm;			frm += 8;
@@ -2837,10 +2837,10 @@ ndis_scan_end(struct ieee80211com *ic)
 		}
 done:
 		DPRINTF("scan: bssid %s chan %dMHz (%d/%d) rssi %d\n",
-		    ether_sprintf(wb->nwbx_macaddr), freq, sp.bchan, chanflag,
+		    ether_sprintf(wb->macaddr), freq, sp.bchan, chanflag,
 		    rssi);
 		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, -96);
-		wb = (ndis_wlan_bssid_ex *)((char *)wb + wb->nwbx_len);
+		wb = (ndis_wlan_bssid_ex *)((char *)wb + wb->len);
 	}
 	free(bl, M_NDIS_DEV);
 	/* Restore the channel after messing with it */

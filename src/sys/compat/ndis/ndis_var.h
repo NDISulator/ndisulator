@@ -291,6 +291,62 @@ typedef uint8_t ndis_kirql;
 #define	OID_PNP_WAKE_UP_PATTERN_LIST			0xFD010105
 #define	OID_PNP_ENABLE_WAKE_UP				0xFD010106
 
+/* PnP/PM Statistics (Optional). */
+#define	OID_PNP_WAKE_UP_OK			0xFD020200
+#define	OID_PNP_WAKE_UP_ERROR			0xFD020201
+
+/* The following bits are defined for OID_PNP_ENABLE_WAKE_UP */
+#define	NDIS_PNP_WAKE_UP_MAGIC_PACKET		0x00000001
+#define	NDIS_PNP_WAKE_UP_PATTERN_MATCH		0x00000002
+#define	NDIS_PNP_WAKE_UP_LINK_CHANGE		0x00000004
+
+/*
+ * 802.11 OIDs
+ *
+ * q - query not supported	Q - query supported
+ * s - set not supported	S - set supported
+ *
+ * 2000 & Me			XP and later
+ * m - mandatory		M - mandatory
+ * r - recommended		R - recommended
+ * o - optional			O - optional
+ */
+#define	OID_802_11_BSSID			0x0D010101	/* QSmM */
+#define	OID_802_11_SSID				0x0D010102	/* QSmM */
+#define	OID_802_11_INFRASTRUCTURE_MODE		0x0D010108	/* QSrM */
+#define	OID_802_11_ADD_WEP			0x0D010113	/* qSmM */
+#define	OID_802_11_REMOVE_WEP			0x0D010114	/* qSrM */
+#define	OID_802_11_DISASSOCIATE			0x0D010115	/* qSoM */
+#define	OID_802_11_AUTHENTICATION_MODE		0x0D010118	/* QSrM */
+#define	OID_802_11_PRIVACY_FILTER		0x0D010119	/* QSoO */
+#define	OID_802_11_BSSID_LIST_SCAN		0x0D01011A	/* qSrM */
+#define	OID_802_11_WEP_STATUS			0x0D01011B	/* QSrM */
+#define	OID_802_11_RELOAD_DEFAULTS		0x0D01011C	/* qSrM */
+#define	OID_802_11_ADD_KEY			0x0D01011D	/* qSoO */
+#define	OID_802_11_REMOVE_KEY			0x0D01011E	/* qSoO */
+#define	OID_802_11_ASSOCIATION_INFORMATION	0x0D01011F	/* QsoO */
+#define	OID_802_11_TEST				0x0D010120	/* qSoO */
+#define	OID_802_11_MEDIA_STREAM_MODE		0x0D010121	/* QSrR */
+#define	OID_802_11_CAPABILITY			0x0D010122	/* QsoO */
+#define	OID_802_11_PMKID			0x0D010123	/* QSoO */
+#define	OID_802_11_NETWORK_TYPES_SUPPORTED	0x0D010203	/* QsrR */
+#define	OID_802_11_NETWORK_TYPE_IN_USE		0x0D010204	/* QSoM */
+#define	OID_802_11_TX_POWER_LEVEL		0x0D010205	/* QSoO */
+#define	OID_802_11_RSSI				0x0D010206	/* QsoM */
+#define	OID_802_11_RSSI_TRIGGER			0x0D010207	/* QSoO */
+#define	OID_802_11_FRAGMENTATION_THRESHOLD	0x0D010209	/* QSoO */
+#define	OID_802_11_RTS_THRESHOLD		0x0D01020A	/* QSoO */
+#define	OID_802_11_NUMBER_OF_ANTENNAS		0x0D01020B	/* QsoO */
+#define	OID_802_11_RX_ANTENNA_SELECTED		0x0D01020C	/* QSoO */
+#define	OID_802_11_TX_ANTENNA_SELECTED		0x0D01020D	/* QSoO */
+#define	OID_802_11_SUPPORTED_RATES		0x0D01020E	/* QsoM */
+#define	OID_802_11_DESIRED_RATES		0x0D010210	/* QSoO */
+#define	OID_802_11_CONFIGURATION		0x0D010211	/* QSoM */
+#define	OID_802_11_STATISTICS			0x0D020212	/* QsrR */
+#define	OID_802_11_POWER_MODE			0x0D010216	/* QSrR */
+#define	OID_802_11_BSSID_LIST			0x0D010217	/* QsrM */
+#define	OID_802_11_ENCRYPTION_STATUS		OID_802_11_WEP_STATUS
+
 enum ndis_hardware_status {
 	NDIS_HARDWARE_STATUS_READY,
 	NDIS_HARDWARE_STATUS_INITIALIZING,
@@ -300,10 +356,6 @@ enum ndis_hardware_status {
 };
 typedef enum ndis_hardware_status ndis_hardware_status;
 
-/*
- * These are the possible power states for
- * OID_PNP_SET_POWER and OID_PNP_QUERY_POWER.
- */
 enum ndis_device_state {
 	NDIS_DEVICE_STATE_UNSPEC,
 	NDIS_DEVICE_STATE_D0,
@@ -381,61 +433,6 @@ enum ndis_physical_medium {
 };
 typedef enum ndis_physical_medium ndis_physical_medium;
 
-/* PnP/PM Statistics (Optional). */
-#define	OID_PNP_WAKE_UP_OK			0xFD020200
-#define	OID_PNP_WAKE_UP_ERROR			0xFD020201
-
-/* The following bits are defined for OID_PNP_ENABLE_WAKE_UP */
-#define	NDIS_PNP_WAKE_UP_MAGIC_PACKET		0x00000001
-#define	NDIS_PNP_WAKE_UP_PATTERN_MATCH		0x00000002
-#define	NDIS_PNP_WAKE_UP_LINK_CHANGE		0x00000004
-
-/*
- * 802.11 OIDs
- *
- * q - query not supported	Q - query supported
- * s - set not supported	S - set supported
- *
- * 2000 & Me			XP and later
- * m - mandatory		M - mandatory
- * r - recommended		R - recommended
- * o - optional			O - optional
- */
-#define	OID_802_11_BSSID			0x0D010101	/* QSmM */
-#define	OID_802_11_SSID				0x0D010102	/* QSmM */
-#define	OID_802_11_INFRASTRUCTURE_MODE		0x0D010108	/* QSrM */
-#define	OID_802_11_ADD_WEP			0x0D010113	/* qSmM */
-#define	OID_802_11_REMOVE_WEP			0x0D010114	/* qSrM */
-#define	OID_802_11_DISASSOCIATE			0x0D010115	/* qSoM */
-#define	OID_802_11_AUTHENTICATION_MODE		0x0D010118	/* QSrM */
-#define	OID_802_11_PRIVACY_FILTER		0x0D010119	/* QSoO */
-#define	OID_802_11_BSSID_LIST_SCAN		0x0D01011A	/* qSrM */
-#define	OID_802_11_WEP_STATUS			0x0D01011B	/* QSrM */
-#define	OID_802_11_RELOAD_DEFAULTS		0x0D01011C	/* qSrM */
-#define	OID_802_11_ADD_KEY			0x0D01011D	/* qSoO */
-#define	OID_802_11_REMOVE_KEY			0x0D01011E	/* qSoO */
-#define	OID_802_11_ASSOCIATION_INFORMATION	0x0D01011F	/* QsoO */
-#define	OID_802_11_TEST				0x0D010120	/* qSoO */
-#define	OID_802_11_MEDIA_STREAM_MODE		0x0D010121	/* QSrR */
-#define	OID_802_11_CAPABILITY			0x0D010122	/* QsoO */
-#define	OID_802_11_PMKID			0x0D010123	/* QSoO */
-#define	OID_802_11_NETWORK_TYPES_SUPPORTED	0x0D010203	/* QsrR */
-#define	OID_802_11_NETWORK_TYPE_IN_USE		0x0D010204	/* QSoM */
-#define	OID_802_11_TX_POWER_LEVEL		0x0D010205	/* QSoO */
-#define	OID_802_11_RSSI				0x0D010206	/* QsoM */
-#define	OID_802_11_RSSI_TRIGGER			0x0D010207	/* QSoO */
-#define	OID_802_11_FRAGMENTATION_THRESHOLD	0x0D010209	/* QSoO */
-#define	OID_802_11_RTS_THRESHOLD		0x0D01020A	/* QSoO */
-#define	OID_802_11_NUMBER_OF_ANTENNAS		0x0D01020B	/* QsoO */
-#define	OID_802_11_RX_ANTENNA_SELECTED		0x0D01020C	/* QSoO */
-#define	OID_802_11_TX_ANTENNA_SELECTED		0x0D01020D	/* QSoO */
-#define	OID_802_11_SUPPORTED_RATES		0x0D01020E	/* QsoM */
-#define	OID_802_11_DESIRED_RATES		0x0D010210	/* QSoO */
-#define	OID_802_11_CONFIGURATION		0x0D010211	/* QSoM */
-#define	OID_802_11_STATISTICS			0x0D020212	/* QsrR */
-#define	OID_802_11_POWER_MODE			0x0D010216	/* QSrR */
-#define	OID_802_11_BSSID_LIST			0x0D010217	/* QsrM */
-#define	OID_802_11_ENCRYPTION_STATUS		OID_802_11_WEP_STATUS
 
 enum ndis_nettype {
 	NDIS_802_11_NETTYPE_11FH,
@@ -462,36 +459,36 @@ typedef uint32_t ndis_80211_power;	/* Power in milliwatts */
 typedef int32_t ndis_80211_rssi;	/* Signal strength in dBm */
 
 struct ndis_80211_config_fh {
-	uint32_t	ncf_length;
-	uint32_t	ncf_hoppatterh;
-	uint32_t	ncf_hopset;
-	uint32_t	ncf_dwelltime;
+	uint32_t	len;
+	uint32_t	hoppatterh;
+	uint32_t	hopset;
+	uint32_t	dwelltime;
 };
 typedef struct ndis_80211_config_fh ndis_80211_config_fh;
 
 struct ndis_80211_config {
-	uint32_t		nc_length;
-	uint32_t		nc_beaconperiod;
-	uint32_t		nc_atimwin;
-	uint32_t		nc_dsconfig;
-	ndis_80211_config_fh	nc_fhconfig;
+	uint32_t		len;
+	uint32_t		beaconperiod;
+	uint32_t		atimwin;
+	uint32_t		dsconfig;
+	ndis_80211_config_fh	fhconfig;
 };
 typedef struct ndis_80211_config ndis_80211_config;
 
 struct ndis_80211_stats {
-	uint32_t	ns_length;
-	int64_t		ns_txfragcnt;
-	int64_t		ns_txmcastcnt;
-	int64_t		ns_failedcnt;
-	int64_t		ns_retrycnt;
-	int64_t		ns_multiretrycnt;
-	int64_t		ns_rtssuccesscnt;
-	int64_t		ns_rtsfailcnt;
-	int64_t		ns_ackfailcnt;
-	int64_t		ns_dupeframecnt;
-	int64_t		ns_rxfragcnt;
-	int64_t		ns_rxmcastcnt;
-	int64_t		ns_fcserrcnt;
+	uint32_t	len;
+	int64_t		txfragcnt;
+	int64_t		txmcastcnt;
+	int64_t		failedcnt;
+	int64_t		retrycnt;
+	int64_t		multiretrycnt;
+	int64_t		rtssuccesscnt;
+	int64_t		rtsfailcnt;
+	int64_t		ackfailcnt;
+	int64_t		dupeframecnt;
+	int64_t		rxfragcnt;
+	int64_t		rxmcastcnt;
+	int64_t		fcserrcnt;
 };
 typedef struct ndis_80211_stats ndis_80211_stats;
 
@@ -527,63 +524,63 @@ typedef uint8_t ndis_80211_rates_ex[16];
 typedef uint8_t ndis_80211_macaddr[6];
 
 struct ndis_80211_ssid {
-	uint32_t	ns_ssidlen;
-	uint8_t		ns_ssid[32];
+	uint32_t	len;
+	uint8_t		ssid[32];
 };
 typedef struct ndis_80211_ssid ndis_80211_ssid;
 
 struct ndis_wlan_bssid {
-	uint32_t		nwb_length;
-	ndis_80211_macaddr	nwb_macaddr;
-	uint8_t			nwb_rsvd[2];
-	ndis_80211_ssid		nwb_ssid;
-	uint32_t		nwb_privacy;
-	ndis_80211_rssi		nwb_rssi;
-	uint32_t		nwb_nettype;
-	ndis_80211_config	nwb_config;
-	uint32_t		nwb_netinfra;
-	ndis_80211_rates	nwb_supportedrates;
+	uint32_t		len;
+	ndis_80211_macaddr	macaddr;
+	uint8_t			reserved[2];
+	ndis_80211_ssid		ssid;
+	uint32_t		privacy;
+	ndis_80211_rssi		rssi;
+	uint32_t		nettype;
+	ndis_80211_config	config;
+	uint32_t		netinfra;
+	ndis_80211_rates	supportedrates;
 };
 typedef struct ndis_wlan_bssid ndis_wlan_bssid;
 
 struct ndis_80211_bssid_list {
-	uint32_t		nbl_items;
-	ndis_wlan_bssid		nbl_bssid[1];
+	uint32_t		items;
+	ndis_wlan_bssid		bssid[1];
 };
 typedef struct ndis_80211_bssid_list ndis_80211_bssid_list;
 
 struct ndis_wlan_bssid_ex {
-	uint32_t		nwbx_len;
-	ndis_80211_macaddr	nwbx_macaddr;
-	uint8_t			nwbx_rsvd[2];
-	ndis_80211_ssid		nwbx_ssid;
-	uint32_t		nwbx_privacy;
-	ndis_80211_rssi		nwbx_rssi;
-	uint32_t		nwbx_nettype;
-	ndis_80211_config	nwbx_config;
-	uint32_t		nwbx_netinfra;
-	ndis_80211_rates_ex	nwbx_supportedrates;
-	uint32_t		nwbx_ielen;
-	uint8_t			nwbx_ies[1];
+	uint32_t		len;
+	ndis_80211_macaddr	macaddr;
+	uint8_t			reserved[2];
+	ndis_80211_ssid		ssid;
+	uint32_t		privacy;
+	ndis_80211_rssi		rssi;
+	uint32_t		nettype;
+	ndis_80211_config	config;
+	uint32_t		netinfra;
+	ndis_80211_rates_ex	supportedrates;
+	uint32_t		ielen;
+	uint8_t			ies[1];
 };
 typedef struct ndis_wlan_bssid_ex ndis_wlan_bssid_ex;
 
 struct ndis_80211_bssid_list_ex {
-	uint32_t		nblx_items;
-	ndis_wlan_bssid_ex	nblx_bssid[1];
+	uint32_t		items;
+	ndis_wlan_bssid_ex	bssid[1];
 };
 typedef struct ndis_80211_bssid_list_ex ndis_80211_bssid_list_ex;
 
 struct ndis_80211_fixed_ies {
-	uint8_t		nfi_tstamp[8];
-	uint16_t	nfi_beaconint;
-	uint16_t	nfi_caps;
+	uint8_t		tstamp[8];
+	uint16_t	beaconint;
+	uint16_t	caps;
 };
 
 struct ndis_80211_variable_ies {
-	uint8_t		nvi_elemid;
-	uint8_t		nvi_len;
-	uint8_t		nvi_data[1];
+	uint8_t		elemid;
+	uint8_t		len;
+	uint8_t		data[1];
 };
 
 typedef uint32_t ndis_80211_fragthresh;
@@ -719,38 +716,38 @@ struct ndis_80211_auth_encrypt {
 typedef struct ndis_80211_auth_encrypt ndis_80211_auth_encrypt;
 
 struct ndis_80211_caps {
-	uint32_t		nc_len;
-	uint32_t		nc_ver;
-	uint32_t		nc_numpmkids;
-	ndis_80211_auth_encrypt	nc_authencs[1];
+	uint32_t		len;
+	uint32_t		version;
+	uint32_t		numpmkids;
+	ndis_80211_auth_encrypt	authencs[1];
 };
 typedef struct ndis_80211_caps ndis_80211_caps;
 
 struct ndis_80211_bssidinfo {
-	ndis_80211_macaddr	nb_bssid;
-	uint8_t			nb_pmkid[16];
+	ndis_80211_macaddr	bssid;
+	uint8_t			pmkid[16];
 };
 typedef struct ndis_80211_bssidinfo ndis_80211_bssidinfo;
 
 struct ndis_80211_pmkid {
-	uint32_t		np_len;
-	uint32_t		np_bssidcnt;
-	ndis_80211_bssidinfo	np_bssidinfo[1];
+	uint32_t		len;
+	uint32_t		bssidcnt;
+	ndis_80211_bssidinfo	bssidinfo[1];
 };
 typedef struct ndis_80211_pmkid ndis_80211_pmkid;
 
 struct ndis_80211_pmkid_cand {
-	ndis_80211_macaddr	npc_bssid;
-	uint32_t		npc_flags;
+	ndis_80211_macaddr	bssid;
+	uint32_t		flags;
 };
 typedef struct ndis_80211_pmkid_cand ndis_80211_pmkid_cand;
 
 #define	NDIS_802_11_PMKID_CANDIDATE_PREAUTH_ENABLED (0x01)
 
 struct ndis_80211_pmkid_candidate_list {
-	uint32_t		npcl_version;
-	uint32_t		npcl_numcandidates;
-	ndis_80211_pmkid_cand	npcl_candidatelist[1];
+	uint32_t		version;
+	uint32_t		numcandidates;
+	ndis_80211_pmkid_cand	candidatelist[1];
 };
 typedef struct ndis_80211_pmkid_candidate_list ndis_80211_pmkid_candidate_list;
 
@@ -781,28 +778,28 @@ typedef struct ndis_80211_enc_indication ndis_80211_enc_indication;
 #define	NDIS_ENCAPFLAG_FIXEDHDRLEN		0x00000001
 
 struct ndis_encap_fmt {
-	uint32_t	nef_encap;
-	uint32_t	nef_flags;
-	uint32_t	nef_encaphdrlen;
+	uint32_t	encap;
+	uint32_t	flags;
+	uint32_t	encaphdrlen;
 };
 typedef struct ndis_encap_fmt ndis_encap_fmt;
 
 struct ndis_task_offload_hdr {
-	uint32_t	ntoh_vers;
-	uint32_t	ntoh_len;
-	uint32_t	ntoh_rsvd;
-	uint32_t	ntoh_offset_firsttask;
-	ndis_encap_fmt	ntoh_encapfmt;
+	uint32_t	vers;
+	uint32_t	len;
+	uint32_t	reserved;
+	uint32_t	offset_firsttask;
+	ndis_encap_fmt	encapfmt;
 };
 typedef struct ndis_task_offload_hdr ndis_task_offload_hdr;
 
 struct ndis_task_offload {
-	uint32_t	nto_vers;
-	uint32_t	nto_len;
-	uint32_t	nto_task;
-	uint32_t	nto_offset_nexttask;
-	uint32_t	nto_taskbuflen;
-	uint8_t		nto_taskbuf[1];
+	uint32_t	vers;
+	uint32_t	len;
+	uint32_t	task;
+	uint32_t	offset_nexttask;
+	uint32_t	taskbuflen;
+	uint8_t		taskbuf[1];
 };
 typedef struct ndis_task_offload ndis_task_offload;
 
@@ -813,19 +810,19 @@ typedef struct ndis_task_offload ndis_task_offload;
 #define	NDIS_TCPSUM_FLAGS_IP_CSUM	0x00000010
 
 struct ndis_task_tcpip_csum {
-	uint32_t	nttc_v4tx;
-	uint32_t	nttc_v4rx;
-	uint32_t	nttc_v6tx;
-	uint32_t	nttc_v6rx;
+	uint32_t	v4tx;
+	uint32_t	v4rx;
+	uint32_t	v6tx;
+	uint32_t	v6rx;
 };
 typedef struct ndis_task_tcpip_csum ndis_task_tcpip_csum;
 
 struct ndis_task_tcp_largesend {
-	uint32_t	nttl_vers;
-	uint32_t	nttl_maxofflen;
-	uint32_t	nttl_minsegcnt;
-	uint8_t		nttl_tcpopt;
-	uint8_t		nttl_ipopt;
+	uint32_t	version;
+	uint32_t	maxofflen;
+	uint32_t	minsegcnt;
+	uint8_t		tcpopt;
+	uint8_t		ipopt;
 };
 typedef struct ndis_task_tcp_largesend ndis_task_tcp_largesend;
 
@@ -846,12 +843,12 @@ typedef struct ndis_task_tcp_largesend ndis_task_tcp_largesend;
 #define	NDIS_IPSEC_ESP_RECEIVE		0x00000080
 
 struct ndis_task_ipsec {
-	uint32_t	nti_ah_esp_combined;
-	uint32_t	nti_ah_transport_tunnel_combined;
-	uint32_t	nti_v4_options;
-	uint32_t	nti_rsvd;
-	uint32_t	nti_v4ah;
-	uint32_t	nti_v4esp;
+	uint32_t	ah_esp_combined;
+	uint32_t	ah_transport_tunnel_combined;
+	uint32_t	v4_options;
+	uint32_t	reserved;
+	uint32_t	v4ah;
+	uint32_t	v4esp;
 };
 typedef struct ndis_task_ipsec ndis_task_ipsec;
 
@@ -870,7 +867,7 @@ typedef struct ndis_task_ipsec ndis_task_ipsec;
 #define	NDIS_ATTRIBUTE_USES_SAFE_BUFFER_APIS		0x00000200
 
 #define	NDIS_SERIALIZED(block)	\
-	(((block)->nmb_flags & NDIS_ATTRIBUTE_DESERIALIZE) == 0)
+	(((block)->flags & NDIS_ATTRIBUTE_DESERIALIZE) == 0)
 
 enum ndis_media_state {
 	NDIS_MEDIA_STATE_CONNECTED,
@@ -1020,71 +1017,67 @@ typedef struct ndis_spin_lock ndis_spin_lock;
 
 struct ndis_rw_lock {
 	union {
-		kspin_lock	nrl_spinlock;
-		void		*nrl_ctx;
+		kspin_lock	spinlock;
+		void		*ctx;
 	} u;
-	uint8_t		nrl_rsvd[16];
+	uint8_t		reserved[16];
 };
-
-#define	nrl_spinlock		u.nrl_spinlock
-#define	nrl_ctx			u.nrl_ctx;
-
 typedef struct ndis_rw_lock ndis_rw_lock;
 
 struct ndis_lock_state {
-	uint16_t	nls_lockstate;
-	ndis_kirql	nls_oldirql;
+	uint16_t	lockstate;
+	ndis_kirql	oldirql;
 };
 typedef struct ndis_lock_state ndis_lock_state;
 
 struct ndis_request {
-	uint8_t		nr_macreserved[4 * sizeof(void *)];
-	uint32_t	nr_requesttype;
+	uint8_t		macreserved[4 * sizeof(void *)];
+	uint32_t	requesttype;
 	union _ndis_data {
 		struct _ndis_query_information {
-			ndis_oid	nr_oid;
-			void		*nr_infobuf;
-			uint32_t	nr_infobuflen;
-			uint32_t	nr_byteswritten;
-			uint32_t	nr_bytesneeded;
+			ndis_oid	oid;
+			void		*infobuf;
+			uint32_t	infobuflen;
+			uint32_t	written;
+			uint32_t	needed;
 		} ndis_query_information;
 		struct _ndis_set_information {
-			ndis_oid	nr_oid;
-			void		*nr_infobuf;
-			uint32_t	nr_infobuflen;
-			uint32_t	nr_byteswritten;
-			uint32_t	nr_bytesneeded;
+			ndis_oid	oid;
+			void		*infobuf;
+			uint32_t	infobuflen;
+			uint32_t	written;
+			uint32_t	needed;
 		} ndis_set_information;
 	} ndis_data;
 	/* NDIS 5.0 extentions */
-	uint8_t		nr_ndis_rsvd[9 * sizeof(void *)];
+	uint8_t		ndis_rsvd[9 * sizeof(void *)];
 	union {
-		uint8_t		nr_callmgr_rsvd[2 * sizeof(void *)];
-		uint8_t		nr_protocol_rsvd[2 * sizeof(void *)];
+		uint8_t		callmgr_rsvd[2 * sizeof(void *)];
+		uint8_t		protocol_rsvd[2 * sizeof(void *)];
 	} u;
-	uint8_t		nr_miniport_rsvd[2 * sizeof(void *)];
+	uint8_t		miniport_rsvd[2 * sizeof(void *)];
 };
 typedef struct ndis_request ndis_request;
 
 struct ndis_miniport_interrupt {
-	kinterrupt		*ni_interrupt_object;
-	ndis_kspin_lock		ni_dpc_count_lock;
-	void			*ni_rsvd;
-	void			*ni_isr_func;
-	void			*ni_dpc_func;
-	kdpc			ni_interrupt_dpc;
-	ndis_miniport_block	*ni_block;
-	uint8_t			ni_dpc_count;
-	uint8_t			ni_filler1;
-	struct nt_kevent	ni_dpcs_completed_event;
-	uint8_t			ni_shared_interrupt;
-	uint8_t			ni_isr_requested;
+	kinterrupt		*interrupt_object;
+	ndis_kspin_lock		dpc_count_lock;
+	void			*rsvd;
+	void			*isr_func;
+	void			*dpc_func;
+	kdpc			interrupt_dpc;
+	ndis_miniport_block	*block;
+	uint8_t			dpc_count;
+	uint8_t			filler1;
+	struct nt_kevent	dpcs_completed_event;
+	uint8_t			shared_interrupt;
+	uint8_t			isr_requested;
 };
 typedef struct ndis_miniport_interrupt ndis_miniport_interrupt;
 
 enum ndis_interrupt_mode {
-	nim_level,
-	nim_latched
+	NIM_LEVEL,
+	NIM_LATCHED
 };
 typedef enum ndis_interrupt_mode ndis_interrupt_mode;
 
@@ -1108,9 +1101,9 @@ typedef struct ndis_work_item ndis_work_item;
 	} while (0)
 
 struct ndis_sc_element {
-	ndis_physaddr	nse_addr;
-	uint32_t	nse_len;
-	uint32_t	*nse_rsvd;
+	ndis_physaddr	addr;
+	uint32_t	len;
+	uint32_t	*reserved;
 };
 
 typedef struct ndis_sc_element ndis_sc_element;
@@ -1118,17 +1111,17 @@ typedef struct ndis_sc_element ndis_sc_element;
 #define	NDIS_MAXSEG 32
 
 struct ndis_sc_list {
-	uint32_t	nsl_frags;
-	uint32_t	*nsl_rsvd;
-	ndis_sc_element	nsl_elements[NDIS_MAXSEG];
+	uint32_t	frags;
+	uint32_t	*reserved;
+	ndis_sc_element	elements[NDIS_MAXSEG];
 };
 typedef struct ndis_sc_list ndis_sc_list;
 
 struct ndis_tcpip_csum {
 	union {
-		uint32_t	ntc_txflags;
-		uint32_t	ntc_rxflags;
-		uint32_t	ntc_val;
+		uint32_t	txflags;
+		uint32_t	rxflags;
+		uint32_t	value;
 	} u;
 };
 typedef struct ndis_tcpip_csum ndis_tcpip_csum;
@@ -1150,45 +1143,45 @@ typedef struct ndis_tcpip_csum ndis_tcpip_csum;
 struct ndis_vlan {
 	union {
 		struct {
-			uint32_t	nvt_userprio:3;
-			uint32_t	nvt_canformatid:1;
-			uint32_t	nvt_vlanid:12;
-			uint32_t	nvt_rsvd:16;
-		} nv_taghdr;
+			uint32_t	userprio:3;
+			uint32_t	canformatid:1;
+			uint32_t	vlanid:12;
+			uint32_t	rsvd:16;
+		} taghdr;
 	} u;
 };
 typedef struct ndis_vlan ndis_vlan;
 
 enum ndis_perpkt_info {
-	ndis_tcpipcsum_info,
-	ndis_ipsec_info,
-	ndis_largesend_info,
-	ndis_classhandle_info,
-	ndis_rsvd,
-	ndis_sclist_info,
-	ndis_ieee8021q_info,
-	ndis_originalpkt_info,
-	ndis_packetcancelid,
-	ndis_maxpkt_info
+	NDIS_TCPIPCSUM_INFO,
+	NDIS_IPSEC_INFO,
+	NDIS_LARGESEND_INFO,
+	NDIS_CLASSHANDLE_INFO,
+	NDIS_RSVD,
+	NDIS_SCLIST_INFO,
+	NDIS_IEEE8021Q_INFO,
+	NDIS_ORIGINALPKT_INFO,
+	NDIS_PACKETCANCELID,
+	NDIS_MAXPKT_INFO
 };
 typedef enum ndis_perpkt_info ndis_perpkt_info;
 
 struct ndis_packet_extension {
-	void	*npe_info[ndis_maxpkt_info];
+	void	*info[NDIS_MAXPKT_INFO];
 };
 typedef struct ndis_packet_extension ndis_packet_extension;
 
 struct ndis_packet_private {
-	uint32_t	npp_physcnt;
-	uint32_t	npp_totlen;
-	ndis_buffer	*npp_head;
-	ndis_buffer	*npp_tail;
-	void		*npp_pool;
-	uint32_t	npp_count;
-	uint32_t	npp_flags;
-	uint8_t		npp_validcounts;
-	uint8_t		npp_ndispktflags;
-	uint16_t	npp_packetooboffset;
+	uint32_t	physcnt;
+	uint32_t	totlen;
+	ndis_buffer	*head;
+	ndis_buffer	*tail;
+	void		*pool;
+	uint32_t	count;
+	uint32_t	flags;
+	uint8_t		validcounts;
+	uint8_t		ndispktflags;
+	uint16_t	packetooboffset;
 };
 typedef struct ndis_packet_private ndis_packet_private;
 
@@ -1224,10 +1217,10 @@ enum ndis_classid {
 typedef enum ndis_classid ndis_classid;
 
 struct ndis_mediaspecific_info {
-	uint32_t	nmi_nextentoffset;
-	ndis_classid	nmi_classid;
-	uint32_t	nmi_size;
-	uint8_t		nmi_classinfo[1];
+	uint32_t	nextentoffset;
+	ndis_classid	classid;
+	uint32_t	size;
+	uint8_t		classinfo[1];
 };
 typedef struct ndis_mediaspecific_info ndis_mediaspecific_info;
 
@@ -1316,16 +1309,16 @@ typedef struct ndis_packet_pool ndis_packet_pool;
 
 struct ndis_filter_dbs {
 	union {
-		void	*nf_ethdb;
-		void	*nf_nulldb;
+		void	*ethdb;
+		void	*nulldb;
 	} u;
-	void	*nf_trdb;
-	void	*nf_fddidb;
-	void	*nf_arcdb;
+	void	*trdb;
+	void	*fddidb;
+	void	*arcdb;
 };
 typedef struct ndis_filter_dbs ndis_filter_dbs;
 
-#define	nf_ethdb u.nf_ethdb
+#define	ethdb u.ethdb
 
 enum ndis_medium {
     NDIS_MEDIUM_802_3,
@@ -1347,15 +1340,15 @@ enum ndis_medium {
 typedef enum ndis_medium ndis_medium;
 
 struct ndis_paddr_unit {
-	ndis_physaddr	npu_physaddr;
-	uint32_t	npu_len;
+	ndis_physaddr	physaddr;
+	uint32_t	len;
 };
 typedef struct ndis_paddr_unit ndis_paddr_unit;
 
 struct ndis_map_arg {
-	ndis_paddr_unit	*nma_fraglist;
-	int		nma_cnt;
-	int		nma_max;
+	ndis_paddr_unit	*fraglist;
+	int		cnt;
+	int		max;
 };
 
 /*
@@ -1364,58 +1357,58 @@ struct ndis_map_arg {
  */
 struct ndis_miniport_driver_characteristics {
 	/* NDIS 3.0 */
-	uint8_t		nmc_version_major;
-	uint8_t		nmc_version_minor;
-	uint16_t	nmc_pad;
-	uint32_t	nmc_rsvd;
-	void *		nmc_check_hang_func;
-	void *		nmc_disable_interrupts_func;
-	void *		nmc_enable_interrupts_func;
-	void *		nmc_halt_func;
-	void *		nmc_interrupt_func;
-	void *		nmc_init_func;
-	void *		nmc_isr_func;
-	void *		nmc_query_info_func;
-	void *		nmc_reconfig_func;
-	void *		nmc_reset_func;
-	void *		nmc_send_single_func;
-	void *		nmc_set_info_func;
-	void *		nmc_transfer_data_func;
+	uint8_t		version_major;
+	uint8_t		version_minor;
+	uint16_t	pad;
+	uint32_t	rsvd;
+	void *		check_hang_func;
+	void *		disable_interrupts_func;
+	void *		enable_interrupts_func;
+	void *		halt_func;
+	void *		interrupt_func;
+	void *		init_func;
+	void *		isr_func;
+	void *		query_info_func;
+	void *		reconfig_func;
+	void *		reset_func;
+	void *		send_single_func;
+	void *		set_info_func;
+	void *		transfer_data_func;
 
 	/* NDIS 4.0 extentions */
-	void *		nmc_return_packet_func;
-	void *		nmc_send_multi_func;
-	void *		nmc_allocate_complete_func;
+	void *		return_packet_func;
+	void *		send_multi_func;
+	void *		allocate_complete_func;
 
 	/* NDIS 5.0 extensions */
-	void *		nmc_co_create_vc_func;
-	void *		nmc_co_delete_vc_func;
-	void *		nmc_co_activate_vc_func;
-	void *		nmc_co_deactivate_vc_func;
-	void *		nmc_co_multisend_func;
-	void *		nmc_co_request_func;
+	void *		co_create_vc_func;
+	void *		co_delete_vc_func;
+	void *		co_activate_vc_func;
+	void *		co_deactivate_vc_func;
+	void *		co_multisend_func;
+	void *		co_request_func;
 
 	/* NDIS 5.1 extentions */
-	void *		nmc_cancel_tx_func;
-	void *		nmc_pnp_event_notify_func;
-	void *		nmc_shutdown_func;
-	void *		nmc_reserved0;
-	void *		nmc_reserved1;
-	void *		nmc_reserved2;
-	void *		nmc_reserved3;
+	void *		cancel_tx_func;
+	void *		pnp_event_notify_func;
+	void *		shutdown_func;
+	void *		reserved0;
+	void *		reserved1;
+	void *		reserved2;
+	void *		reserved3;
 };
 typedef struct ndis_miniport_driver_characteristics ndis_miniport_driver_characteristics;
 
 struct ndis_reference {
-	ndis_kspin_lock	nr_spinlock;
-	uint16_t	nr_refcnt;
-	uint8_t		nr_closing;
+	ndis_kspin_lock	spinlock;
+	uint16_t	refcnt;
+	uint8_t		closing;
 };
 typedef struct ndis_reference ndis_reference;
 
 struct ndis_timer_entry {
-	struct callout		nte_ch;
-	ndis_miniport_timer	*nte_timer;
+	struct callout		ch;
+	ndis_miniport_timer	*timer;
 	TAILQ_ENTRY(ndis_timer_entry)	link;
 };
 
@@ -1425,11 +1418,11 @@ TAILQ_HEAD(nte_head, ndis_timer_entry);
 #define	NDIS_FH_TYPE_MODULE 1
 
 struct ndis_fh {
-	int		nf_type;
-	char		*nf_name;
-	void		*nf_vp;
-	void		*nf_map;
-	uint32_t	nf_maplen;
+	int		type;
+	char		*name;
+	void		*vp;
+	void		*map;
+	uint32_t	maplen;
 };
 typedef struct ndis_fh ndis_fh;
 
@@ -1459,105 +1452,105 @@ struct ndis_miniport_block {
 	 * Windows-specific portion -- DO NOT MODIFY OR NDIS
 	 * DRIVERS WILL NOT WORK.
 	 */
-	void			*nmb_signature;	/* magic number */
-	ndis_miniport_block	*nmb_next_miniport;
-	ndis_mdriver_block	*nmb_driver_handle;
-	ndis_handle		nmb_miniport_adapter_ctx;
-	unicode_string		nmb_name;
-	ndis_bind_paths		*nmb_bindpaths;
-	ndis_handle		nmb_openqueue;
-	ndis_reference		nmb_ref;
-	ndis_handle		nmb_device_ctx;
-	uint8_t			nmb_padding;
-	uint8_t			nmb_lock_acquired;
-	uint8_t			nmb_pmode_opens;
-	uint8_t			nmb_assigned_cpu;
-	ndis_kspin_lock		nmb_lock;
-	ndis_request		*nmb_media_request;
-	ndis_miniport_interrupt	*nmb_interrupt;
-	uint32_t		nmb_flags;
-	uint32_t		nmb_pnp_flags;
-	list_entry		nmb_packet_list;
-	ndis_packet		*nmb_first_pending_tx_packet;
-	ndis_packet		*nmb_return_packet_queue;
-	uint32_t		nmb_request_buffer;
-	void			*nmb_set_mcast_buffer;
-	ndis_miniport_block	*nmb_primary_miniport;
-	void			*nmb_wrapper_ctx;
-	void			*nmb_bus_data_ctx;
-	uint32_t		nmb_pnp_caps;
-	cm_resource_list	*nmb_resources;
-	ndis_timer		nmb_wakekup_dpc_timer;
-	unicode_string		nmb_base_name;
-	unicode_string		nmb_symlink_name;
-	uint32_t		nmb_check_for_hang_secs;
-	uint16_t		nmb_check_for_hang_ticks;
-	uint16_t		nmb_check_for_hang_current_tick;
-	ndis_status		nmb_reset_status;
-	ndis_handle		nmb_reset_open;
-	ndis_filter_dbs		nmb_filter_dbs;
-	void			*nmb_pkt_indicate_func;
-	void			*nmb_send_done_func;
-	void			*nmb_send_rsrc_func;
-	void			*nmb_reset_done_func;
-	ndis_medium		nmb_medium;
-	uint32_t		nmb_bus_num;
-	uint32_t		nmb_bus_type;
-	uint32_t		nmb_adapter_type;
-	device_object		*nmb_deviceobj; /* Functional device */
-	device_object		*nmb_physdeviceobj; /* Physical device */
-	device_object		*nmb_nextdeviceobj; /* Next dev in stack */
-	void			*nmb_mapreg;
-	void			*nmb_callmgraflist;
-	void			*nmb_miniport_thread;
-	void			*nmb_set_infobuf;
-	uint16_t		nmb_set_infobuflen;
-	uint16_t		nmb_max_send_pkts;
-	ndis_status		nmb_fake_status;
-	void			*nmb_lock_handler;
-	unicode_string		*nmb_adapter_instance_name;
-	void			*nmb_timer_queue;
-	uint32_t		nmb_mact_options;
-	ndis_request		*nmb_pending_request;
-	uint32_t		nmb_max_long_address;
-	uint32_t		nmb_max_short_address;
-	uint32_t		nmb_current_lookahead;
-	uint32_t		nmb_max_lookahead;
-	void			*nmb_interrupt_func;
-	void			*nmb_disable_interrupt_func;
-	void			*nmb_enable_interrupt_func;
-	void			*nmb_send_pkts_func;
-	void			*nmb_deferred_send_func;
-	void			*nmb_ethrx_indicate_func;
-	void			*nmb_txrx_indicate_func;
-	void			*nmb_fddirx_indicate_func;
-	void			*nmb_ethrx_done_func;
-	void			*nmb_txrx_done_func;
-	void			*nmb_fddirxcond_func;
-	void			*nmb_status_func;
-	void			*nmb_status_done_func;
-	void			*nmb_tdcond_func;
-	void			*nmb_query_done_func;
-	void			*nmb_set_done_func;
-	void			*nmb_wantx_done_func;
-	void			*nmb_wanrx_func;
-	void			*nmb_wanrx_done_func;
+	void			*signature;	/* magic number */
+	ndis_miniport_block	*next_miniport;
+	ndis_mdriver_block	*driver_handle;
+	ndis_handle		miniport_adapter_ctx;
+	unicode_string		name;
+	ndis_bind_paths		*bindpaths;
+	ndis_handle		openqueue;
+	ndis_reference		ref;
+	ndis_handle		device_ctx;
+	uint8_t			padding;
+	uint8_t			lock_acquired;
+	uint8_t			pmode_opens;
+	uint8_t			assigned_cpu;
+	ndis_kspin_lock		lock;
+	ndis_request		*media_request;
+	ndis_miniport_interrupt	*interrupt;
+	uint32_t		flags;
+	uint32_t		pnp_flags;
+	list_entry		packet_list;
+	ndis_packet		*first_pending_tx_packet;
+	ndis_packet		*return_packet_queue;
+	uint32_t		request_buffer;
+	void			*set_mcast_buffer;
+	ndis_miniport_block	*primary_miniport;
+	void			*wrapper_ctx;
+	void			*bus_data_ctx;
+	uint32_t		pnp_caps;
+	cm_resource_list	*resources;
+	ndis_timer		wakekup_dpc_timer;
+	unicode_string		base_name;
+	unicode_string		symlink_name;
+	uint32_t		check_for_hang_secs;
+	uint16_t		check_for_hang_ticks;
+	uint16_t		check_for_hang_current_tick;
+	ndis_status		reset_status;
+	ndis_handle		reset_open;
+	ndis_filter_dbs		filter_dbs;
+	void			*pkt_indicate_func;
+	void			*send_done_func;
+	void			*send_rsrc_func;
+	void			*reset_done_func;
+	ndis_medium		medium;
+	uint32_t		bus_num;
+	uint32_t		bus_type;
+	uint32_t		adapter_type;
+	device_object		*deviceobj; /* Functional device */
+	device_object		*physdeviceobj; /* Physical device */
+	device_object		*nextdeviceobj; /* Next dev in stack */
+	void			*mapreg;
+	void			*callmgraflist;
+	void			*miniport_thread;
+	void			*set_infobuf;
+	uint16_t		set_infobuflen;
+	uint16_t		max_send_pkts;
+	ndis_status		fake_status;
+	void			*lock_handler;
+	unicode_string		*adapter_instance_name;
+	void			*timer_queue;
+	uint32_t		mact_options;
+	ndis_request		*pending_request;
+	uint32_t		max_long_address;
+	uint32_t		max_short_address;
+	uint32_t		current_lookahead;
+	uint32_t		max_lookahead;
+	void			*interrupt_func;
+	void			*disable_interrupt_func;
+	void			*enable_interrupt_func;
+	void			*send_pkts_func;
+	void			*deferred_send_func;
+	void			*ethrx_indicate_func;
+	void			*txrx_indicate_func;
+	void			*fddirx_indicate_func;
+	void			*ethrx_done_func;
+	void			*txrx_done_func;
+	void			*fddirxcond_func;
+	void			*status_func;
+	void			*status_done_func;
+	void			*tdcond_func;
+	void			*query_done_func;
+	void			*set_done_func;
+	void			*wantx_done_func;
+	void			*wanrx_func;
+	void			*wanrx_done_func;
 
 	/*
 	 * End of windows-specific portion of miniport block.
 	 * Everything below is BSD-specific.
 	 */
-	list_entry		nmb_parmlist;
-	ndis_resource_list	*nmb_rlist;
-	ndis_status		nmb_getstat;
-	nt_kevent		nmb_getevent;
-	ndis_status		nmb_setstat;
-	nt_kevent		nmb_setevent;
-	nt_kevent		nmb_resetevent;
-	io_workitem		*nmb_returnitem;
-	ndis_handle		nmb_rxpool;
-	list_entry		nmb_returnlist;
-	kspin_lock		nmb_returnlock;
+	list_entry		parmlist;
+	ndis_resource_list	*rlist;
+	ndis_status		getstat;
+	nt_kevent		getevent;
+	ndis_status		setstat;
+	nt_kevent		setevent;
+	nt_kevent		resetevent;
+	io_workitem		*returnitem;
+	ndis_handle		rxpool;
+	list_entry		returnlist;
+	kspin_lock		returnlock;
 	TAILQ_ENTRY(ndis_miniport_block)	link;
 };
 
@@ -1601,16 +1594,16 @@ extern image_patch_table ndis_functbl[];
 		if ((firstbuf) != NULL) {				\
 			ndis_buffer		**_first;		\
 			_first = firstbuf;				\
-			*(_first) = (p)->np_private.npp_head;		\
+			*(_first) = (p)->np_private.head;		\
 		}							\
 		if ((plen) || (bufcnt) || (pbufcnt)) {			\
-			if ((p)->np_private.npp_validcounts == FALSE) {	\
+			if ((p)->np_private.validcounts == FALSE) {	\
 				ndis_buffer		*tmp;		\
 				unsigned int		tlen = 0, pcnt = 0; \
 				unsigned int		add = 0;	\
 				unsigned int		pktlen, off;	\
 									\
-				tmp = (p)->np_private.npp_head;		\
+				tmp = (p)->np_private.head;		\
 				while (tmp != NULL) {			\
 					off = MmGetMdlByteOffset(tmp);	\
 					pktlen = MmGetMdlByteCount(tmp);\
@@ -1620,25 +1613,25 @@ extern image_patch_table ndis_functbl[];
 					add++;				\
 					tmp = tmp->mdl_next;		\
 				}					\
-				(p)->np_private.npp_count = add;	\
-				(p)->np_private.npp_totlen = tlen;	\
-				(p)->np_private.npp_physcnt = pcnt;	\
-				(p)->np_private.npp_validcounts = TRUE;	\
+				(p)->np_private.count = add;	\
+				(p)->np_private.totlen = tlen;	\
+				(p)->np_private.physcnt = pcnt;	\
+				(p)->np_private.validcounts = TRUE;	\
 			}						\
 			if (pbufcnt) {					\
 				unsigned int		*_pbufcnt;	\
 				_pbufcnt = (pbufcnt);			\
-				*(_pbufcnt) = (p)->np_private.npp_physcnt; \
+				*(_pbufcnt) = (p)->np_private.physcnt; \
 			}						\
 			if (bufcnt) {					\
 				unsigned int		*_bufcnt;	\
 				_bufcnt = (bufcnt);			\
-				*(_bufcnt) = (p)->np_private.npp_count;	\
+				*(_bufcnt) = (p)->np_private.count;	\
 			}						\
 			if (plen) {					\
 				unsigned int		*_plen;		\
 				_plen = (plen);				\
-				*(_plen) = (p)->np_private.npp_totlen;	\
+				*(_plen) = (p)->np_private.totlen;	\
 			}						\
 		}							\
 	} while (0)

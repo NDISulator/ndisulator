@@ -371,7 +371,7 @@ NdisMRegisterMiniport(ndis_handle handle,
 	ndis_miniport_driver_characteristics *ch = NULL;
 	driver_object *drv;
 
-	if (characteristics->nmc_version_major < 4)
+	if (characteristics->version_major < 4)
 		return (NDIS_STATUS_BAD_VERSION);
 
 	/*
@@ -434,9 +434,9 @@ NdisMSetAttributesEx(ndis_handle adapter_handle, ndis_handle adapter_ctx,
 	 * the driver's internal functions.
 	 */
 	block = (ndis_miniport_block *)adapter_handle;
-	block->nmb_miniport_adapter_ctx = adapter_ctx;
-	block->nmb_check_for_hang_secs = hangsecs;
-	block->nmb_flags = flags;
+	block->miniport_adapter_ctx = adapter_ctx;
+	block->check_for_hang_secs = hangsecs;
+	block->flags = flags;
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -477,7 +477,7 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 	    sizeof(ndis_parmlist_entry), 0);
 	if (np == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-	InsertHeadList((&block->nmb_parmlist), (&np->np_list));
+	InsertHeadList((&block->parmlist), (&np->np_list));
 	*parm = p = &np->np_parm;
 	p->ncp_type = type;
 
@@ -521,7 +521,7 @@ NdisReadConfiguration(ndis_status *status, ndis_config_parm **parm,
 	ansi_string as;
 
 	block = (ndis_miniport_block *)cfg;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	if (key->us_len == 0 || key->us_buf == NULL) {
 		*status = NDIS_STATUS_FAILURE;
@@ -620,7 +620,7 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 	ndis_miniport_block *block;
 
 	block = (ndis_miniport_block *)cfg;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	if (RtlUnicodeStringToAnsiString(&as, key, TRUE)) {
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
@@ -659,8 +659,8 @@ NdisCloseConfiguration(ndis_handle cfg)
 	ndis_config_parm *p;
 
 	block = (ndis_miniport_block *)cfg;
-	while (!IsListEmpty(&block->nmb_parmlist)) {
-		e = RemoveHeadList(&block->nmb_parmlist);
+	while (!IsListEmpty(&block->parmlist)) {
+		e = RemoveHeadList(&block->parmlist);
 		pe = CONTAINING_RECORD(e, ndis_parmlist_entry, np_list);
 		p = &pe->np_parm;
 		if (p->ncp_type == ndis_parm_string)
@@ -735,8 +735,8 @@ NdisDprReleaseSpinLock(ndis_spin_lock *lock)
 static void
 NdisInitializeReadWriteLock(ndis_rw_lock *lock)
 {
-	KeInitializeSpinLock(&lock->nrl_spinlock);
-	memset(&lock->nrl_rsvd, 0, sizeof(lock->nrl_rsvd));
+	KeInitializeSpinLock(&lock->u.spinlock);
+	memset(&lock->reserved, 0, sizeof(lock->reserved));
 }
 
 static void
@@ -744,20 +744,20 @@ NdisAcquireReadWriteLock(ndis_rw_lock *lock, uint8_t writeacc,
     ndis_lock_state *state)
 {
 	if (writeacc == TRUE) {
-		KeAcquireSpinLock(&lock->nrl_spinlock, &state->nls_oldirql);
-		lock->nrl_rsvd[0]++;
+		KeAcquireSpinLock(&lock->u.spinlock, &state->oldirql);
+		lock->reserved[0]++;
 	} else
-		lock->nrl_rsvd[1]++;
+		lock->reserved[1]++;
 }
 
 static void
 NdisReleaseReadWriteLock(ndis_rw_lock *lock, ndis_lock_state *state)
 {
-	if (lock->nrl_rsvd[0]) {
-		lock->nrl_rsvd[0]--;
-		KeReleaseSpinLock(&lock->nrl_spinlock, state->nls_oldirql);
+	if (lock->reserved[0]) {
+		lock->reserved[0]--;
+		KeReleaseSpinLock(&lock->u.spinlock, state->oldirql);
 	} else
-		lock->nrl_rsvd[1]--;
+		lock->reserved[1]--;
 }
 
 static uint32_t
@@ -770,7 +770,7 @@ NdisReadPciSlotInformation(ndis_handle adapter, uint32_t slot,
 	device_t dev;
 
 	block = (ndis_miniport_block *)adapter;
-	dev = block->nmb_physdeviceobj->do_devext;
+	dev = block->physdeviceobj->do_devext;
 	for (i = 0; i < len; i++)
 		dest[i] = pci_read_config(dev, i + offset, 1);
 
@@ -787,7 +787,7 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
 	device_t dev;
 
 	block = (ndis_miniport_block *)adapter;
-	dev = block->nmb_physdeviceobj->do_devext;
+	dev = block->physdeviceobj->do_devext;
 	for (i = 0; i < len; i++)
 		pci_write_config(dev, i + offset, dest[i], 1);
 
@@ -816,8 +816,8 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	ansi_string as = { 0, 0, NULL };
 
 	block = (ndis_miniport_block *)adapter;
-	dev = block->nmb_physdeviceobj->do_devext;
-	drv = block->nmb_deviceobj->do_drvobj;
+	dev = block->physdeviceobj->do_devext;
+	drv = block->deviceobj->do_drvobj;
 	sc = device_get_softc(dev);
 	ifp = sc->ndis_ifp;
 
@@ -863,11 +863,11 @@ ndis_map_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
 	ctx = arg;
 
 	for (i = 0; i < nseg; i++) {
-		ctx->nma_fraglist[i].npu_physaddr.np_quad = segs[i].ds_addr;
-		ctx->nma_fraglist[i].npu_len = segs[i].ds_len;
+		ctx->fraglist[i].physaddr.np_quad = segs[i].ds_addr;
+		ctx->fraglist[i].len = segs[i].ds_len;
 	}
 
-	ctx->nma_cnt = nseg;
+	ctx->cnt = nseg;
 }
 
 static void
@@ -884,13 +884,13 @@ NdisMStartBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
 		return;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	if (mapreg > sc->ndis_mmapcnt)
 		return;
 
 	map = sc->ndis_mmaps[mapreg];
-	nma.nma_fraglist = addrarray;
+	nma.fraglist = addrarray;
 
 	if (bus_dmamap_load(sc->ndis_mtag, map,
 	    MmGetMdlVirtualAddress(buf), MmGetMdlByteCount(buf), ndis_map_cb,
@@ -900,7 +900,7 @@ NdisMStartBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
 	bus_dmamap_sync(sc->ndis_mtag, map,
 	    writedev ? BUS_DMASYNC_PREWRITE : BUS_DMASYNC_PREREAD);
 
-	*arraysize = nma.nma_cnt;
+	*arraysize = nma.cnt;
 }
 
 static void
@@ -915,7 +915,7 @@ NdisMCompleteBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
 		return;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	if (mapreg > sc->ndis_mmapcnt)
 		return;
@@ -952,11 +952,11 @@ ndis_timercall(kdpc *dpc, ndis_miniport_timer *timer, void *sysarg1,
 	 * rather than KeAcquireSpinLock().
 	 */
 	if (NDIS_SERIALIZED(timer->nmt_block))
-		KeAcquireSpinLockAtDpcLevel(&timer->nmt_block->nmb_lock);
+		KeAcquireSpinLockAtDpcLevel(&timer->nmt_block->lock);
 	MSCALL4(timer->nmt_timerfunc, dpc, timer->nmt_timerctx,
 	    sysarg1, sysarg2);
 	if (NDIS_SERIALIZED(timer->nmt_block))
-		KeReleaseSpinLockFromDpcLevel(&timer->nmt_block->nmb_lock);
+		KeReleaseSpinLockFromDpcLevel(&timer->nmt_block->lock);
 }
 
 /*
@@ -984,7 +984,7 @@ NdisMInitializeTimer(ndis_miniport_timer *timer, ndis_handle handle,
 	struct ndis_softc *sc;
 
 	block = (ndis_miniport_block *)handle;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	/* Save the driver's funcptr and context */
 	timer->nmt_timerfunc = func;
@@ -1046,7 +1046,7 @@ NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
 	uint32_t rsclen;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	rsclen = sizeof(ndis_resource_list) +
 	    (sizeof(cm_partial_resource_desc) * (sc->ndis_rescnt - 1));
@@ -1056,7 +1056,7 @@ NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
 		return;
 	}
 
-	memcpy(list, block->nmb_rlist, rsclen);
+	memcpy(list, block->rlist, rsclen);
 	*status = NDIS_STATUS_SUCCESS;
 }
 
@@ -1071,7 +1071,7 @@ NdisMRegisterIoPortRange(void **offset, ndis_handle adapter, uint32_t port,
 		return (NDIS_STATUS_FAILURE);
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	if (sc->ndis_res_io == NULL)
 		return (NDIS_STATUS_FAILURE);
@@ -1100,7 +1100,7 @@ NdisReadNetworkAddress(ndis_status *status, void **addr, uint32_t *addrlen,
 	uint8_t empty[] = { 0, 0, 0, 0, 0, 0 };
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	if (sc->ndis_ifp == NULL) {
 		*status = NDIS_STATUS_FAILURE;
 		return;
@@ -1143,7 +1143,7 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
 	int i, nseg = NDIS_MAXSEG;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * physmapneeded,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
@@ -1182,7 +1182,7 @@ NdisMFreeMapRegisters(ndis_handle adapter)
 	int i;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	for (i = 0; i < sc->ndis_mmapcnt; i++)
 		bus_dmamap_destroy(sc->ndis_mtag, sc->ndis_mmaps[i]);
@@ -1219,7 +1219,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 		return;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	sh = malloc(sizeof(struct ndis_shmem), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (sh == NULL)
@@ -1291,7 +1291,7 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 
 	w = arg;
 	block = (ndis_miniport_block *)dobj->do_devext;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	vaddr = NULL;
 	paddr.np_quad = 0;
@@ -1299,9 +1299,9 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	NdisMAllocateSharedMemory(block, w->na_len,
 	    w->na_cached, &vaddr, &paddr);
 	KASSERT(block != NULL, ("no block"));
-	KASSERT(sc->ndis_chars->nmc_allocate_complete_func != NULL,
+	KASSERT(sc->ndis_chars->allocate_complete_func != NULL,
 	    ("no allocate_complete"));
-	MSCALL5(sc->ndis_chars->nmc_allocate_complete_func,
+	MSCALL5(sc->ndis_chars->allocate_complete_func,
 	    block, vaddr, &paddr, w->na_len, w->na_ctx);
 
 	IoFreeWorkItem(w->na_iw);
@@ -1325,7 +1325,7 @@ NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
 	if (w == NULL)
 		return (NDIS_STATUS_FAILURE);
 
-	iw = IoAllocateWorkItem(block->nmb_deviceobj);
+	iw = IoAllocateWorkItem(block->deviceobj);
 	if (iw == NULL) {
 		free(w, M_NDIS_SUBR);
 		return (NDIS_STATUS_FAILURE);
@@ -1355,7 +1355,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 		return;
 
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	/* Sanity check: is list empty? */
 	if (IsListEmpty(&sc->ndis_shlist))
@@ -1447,7 +1447,7 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
 	if (adapter == NULL)
 		return (NDIS_STATUS_FAILURE);
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
 	/* Don't do this twice. */
 	if (sc->ndis_sc == 1)
@@ -1587,10 +1587,10 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 	memset(pkt, 0, sizeof(ndis_packet));
 
 	/* Save pointer to the pool. */
-	pkt->np_private.npp_pool = pool;
+	pkt->np_private.pool = pool;
 
 	/* Set the oob offset pointer. Lots of things expect this. */
-	pkt->np_private.npp_packetooboffset = offsetof(ndis_packet, np_oob);
+	pkt->np_private.packetooboffset = offsetof(ndis_packet, np_oob);
 
 	/*
 	 * We must initialize the packet flags correctly in order
@@ -1598,8 +1598,8 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 	 * NDIS_GET_PACKET_MEDIA_SPECIFIC_INFO() macros to work
 	 * correctly.
 	 */
-	pkt->np_private.npp_ndispktflags = NDIS_PACKET_ALLOCATED_BY_NDIS;
-	pkt->np_private.npp_validcounts = FALSE;
+	pkt->np_private.ndispktflags = NDIS_PACKET_ALLOCATED_BY_NDIS;
+	pkt->np_private.validcounts = FALSE;
 
 	*packet = pkt;
 
@@ -1613,7 +1613,7 @@ NdisFreePacket(ndis_packet *packet)
 #ifdef NDIS_DEBUG_PACKETS
 	uint8_t irql;
 #endif
-	p = (ndis_packet_pool *)packet->np_private.npp_pool;
+	p = (ndis_packet_pool *)packet->np_private.pool;
 
 #ifdef NDIS_DEBUG_PACKETS
 	KeAcquireSpinLock(&p->np_lock, &irql);
@@ -1637,13 +1637,13 @@ NdisUnchainBufferAtFront(ndis_packet *packet, ndis_buffer **buf)
 	if (packet == NULL || buf == NULL)
 		return;
 	priv = &packet->np_private;
-	priv->npp_validcounts = FALSE;
-	if (priv->npp_head == priv->npp_tail) {
-		*buf = priv->npp_head;
-		priv->npp_head = priv->npp_tail = NULL;
+	priv->validcounts = FALSE;
+	if (priv->head == priv->tail) {
+		*buf = priv->head;
+		priv->head = priv->tail = NULL;
 	} else {
-		*buf = priv->npp_head;
-		priv->npp_head = (*buf)->mdl_next;
+		*buf = priv->head;
+		priv->head = (*buf)->mdl_next;
 	}
 }
 
@@ -1656,16 +1656,16 @@ NdisUnchainBufferAtBack(ndis_packet *packet, ndis_buffer **buf)
 	if (packet == NULL || buf == NULL)
 		return;
 	priv = &packet->np_private;
-	priv->npp_validcounts = FALSE;
-	if (priv->npp_head == priv->npp_tail) {
-		*buf = priv->npp_head;
-		priv->npp_head = priv->npp_tail = NULL;
+	priv->validcounts = FALSE;
+	if (priv->head == priv->tail) {
+		*buf = priv->head;
+		priv->head = priv->tail = NULL;
 	} else {
-		*buf = priv->npp_tail;
-		tmp = priv->npp_head;
-		while (tmp->mdl_next != priv->npp_tail)
+		*buf = priv->tail;
+		tmp = priv->head;
+		while (tmp->mdl_next != priv->tail)
 			tmp = tmp->mdl_next;
-		priv->npp_tail = tmp;
+		priv->tail = tmp;
 		tmp->mdl_next = NULL;
 	}
 }
@@ -1865,7 +1865,7 @@ NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
 	if (adapter == NULL || list == NULL)
 		return (NDIS_STATUS_FAILURE);
 	block = (ndis_miniport_block *)adapter;
-	*list = block->nmb_rlist;
+	*list = block->rlist;
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -1878,20 +1878,20 @@ ndis_interrupt_nic(kinterrupt *iobj, void *arg)
 	int call_isr = 0;
 
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	if (sc->ndis_block->nmb_interrupt == NULL)
+	if (sc->ndis_block->interrupt == NULL)
 		return (FALSE);
-	if (sc->ndis_block->nmb_interrupt->ni_isr_requested == TRUE)
-		MSCALL3(sc->ndis_block->nmb_interrupt->ni_isr_func,
+	if (sc->ndis_block->interrupt->isr_requested == TRUE)
+		MSCALL3(sc->ndis_block->interrupt->isr_func,
 		    &is_our_intr, &call_isr,
-		    sc->ndis_block->nmb_miniport_adapter_ctx);
+		    sc->ndis_block->miniport_adapter_ctx);
 	else {
 		ndis_disable_interrupts_nic(sc);
 		call_isr = 1;
 	}
 	if (call_isr)
-		IoRequestDpc(sc->ndis_block->nmb_deviceobj, NULL, sc);
+		IoRequestDpc(sc->ndis_block->deviceobj, NULL, sc);
 	return (is_our_intr);
 }
 
@@ -1902,27 +1902,27 @@ ndis_intrhand(kdpc *dpc, ndis_miniport_interrupt *intr, void *sysarg1,
 	struct ndis_softc *sc;
 
 	KASSERT(intr != NULL, ("no intr"));
-	KASSERT(intr->ni_block != NULL, ("no block"));
-	KASSERT(intr->ni_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(intr->block != NULL, ("no block"));
+	KASSERT(intr->block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	sc = device_get_softc(intr->ni_block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(intr->block->physdeviceobj->do_devext);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeAcquireSpinLockAtDpcLevel(&intr->ni_block->nmb_lock);
-	MSCALL1(intr->ni_dpc_func, intr->ni_block->nmb_miniport_adapter_ctx);
+		KeAcquireSpinLockAtDpcLevel(&intr->block->lock);
+	MSCALL1(intr->dpc_func, intr->block->miniport_adapter_ctx);
 	ndis_enable_interrupts_nic(sc);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeReleaseSpinLockFromDpcLevel(&intr->ni_block->nmb_lock);
+		KeReleaseSpinLockFromDpcLevel(&intr->block->lock);
 
 	/*
 	 * Set the completion event if we've drained all
 	 * pending interrupts.
 	 */
-	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpc_count_lock);
-	intr->ni_dpc_count--;
-	if (intr->ni_dpc_count == 0)
-		KeSetEvent(&intr->ni_dpcs_completed_event,
+	KeAcquireSpinLockAtDpcLevel(&intr->dpc_count_lock);
+	intr->dpc_count--;
+	if (intr->dpc_count == 0)
+		KeSetEvent(&intr->dpcs_completed_event,
 		    IO_NO_INCREMENT, FALSE);
-	KeReleaseSpinLockFromDpcLevel(&intr->ni_dpc_count_lock);
+	KeReleaseSpinLockFromDpcLevel(&intr->dpc_count_lock);
 }
 
 static ndis_status
@@ -1934,31 +1934,31 @@ NdisMRegisterInterrupt(ndis_miniport_interrupt *intr, ndis_handle adapter,
 	ndis_miniport_driver_characteristics *ch;
 	struct ndis_softc *sc;
 
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	ch = IoGetDriverObjectExtension(block->nmb_deviceobj->do_drvobj,
+	sc = device_get_softc(block->physdeviceobj->do_devext);
+	ch = IoGetDriverObjectExtension(block->deviceobj->do_drvobj,
 	    (void *)1);
 	if (ch == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
-	intr->ni_block = adapter;
-	intr->ni_isr_requested = reqisr;
-	intr->ni_shared_interrupt = shared;
-	intr->ni_dpc_count = 0;
-	intr->ni_isr_func = ch->nmc_isr_func;
-	intr->ni_dpc_func = ch->nmc_interrupt_func;
+	intr->block = adapter;
+	intr->isr_requested = reqisr;
+	intr->shared_interrupt = shared;
+	intr->dpc_count = 0;
+	intr->isr_func = ch->isr_func;
+	intr->dpc_func = ch->interrupt_func;
 
-	KeInitializeEvent(&intr->ni_dpcs_completed_event,
+	KeInitializeEvent(&intr->dpcs_completed_event,
 	    EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeDpc(&intr->ni_interrupt_dpc,
+	KeInitializeDpc(&intr->interrupt_dpc,
 	    ndis_findwrap((funcptr)ndis_intrhand), intr);
-	KeSetImportanceDpc(&intr->ni_interrupt_dpc, KDPC_IMPORTANCE_LOW);
+	KeSetImportanceDpc(&intr->interrupt_dpc, KDPC_IMPORTANCE_LOW);
 
-	if (IoConnectInterrupt(&intr->ni_interrupt_object,
+	if (IoConnectInterrupt(&intr->interrupt_object,
 	    ndis_findwrap((funcptr)ndis_interrupt_nic), sc, NULL,
 	    ivec, ilevel, 0, imode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
 
-	block->nmb_interrupt = intr;
+	block->interrupt = intr;
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -1969,18 +1969,18 @@ NdisMDeregisterInterrupt(ndis_miniport_interrupt *intr)
 	uint8_t irql;
 
 	/* Should really be KeSynchronizeExecution() */
-	KeAcquireSpinLock(intr->ni_interrupt_object->ki_lock, &irql);
-	intr->ni_block->nmb_interrupt = NULL;
-	KeReleaseSpinLock(intr->ni_interrupt_object->ki_lock, irql);
+	KeAcquireSpinLock(intr->interrupt_object->ki_lock, &irql);
+	intr->block->interrupt = NULL;
+	KeReleaseSpinLock(intr->interrupt_object->ki_lock, irql);
 /*
 	KeFlushQueuedDpcs();
 */
 	/* Disconnect our ISR */
-	IoDisconnectInterrupt(intr->ni_interrupt_object);
+	IoDisconnectInterrupt(intr->interrupt_object);
 
-	KeWaitForSingleObject(&intr->ni_dpcs_completed_event,
+	KeWaitForSingleObject(&intr->dpcs_completed_event,
 	    0, 0, FALSE, NULL);
-	KeResetEvent(&intr->ni_dpcs_completed_event);
+	KeResetEvent(&intr->dpcs_completed_event);
 }
 
 static void
@@ -1993,9 +1993,9 @@ NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
 	if (adapter == NULL)
 		return;
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	sc->ndis_chars->nmc_shutdown_func = shutdownfunc;
-	sc->ndis_chars->nmc_reserved0 = shutdownctx;
+	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc->ndis_chars->shutdown_func = shutdownfunc;
+	sc->ndis_chars->reserved0 = shutdownctx;
 }
 
 static void
@@ -2007,9 +2007,9 @@ NdisMDeregisterAdapterShutdownHandler(ndis_handle adapter)
 	if (adapter == NULL)
 		return;
 	block = (ndis_miniport_block *)adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
-	sc->ndis_chars->nmc_shutdown_func = NULL;
-	sc->ndis_chars->nmc_reserved0 = NULL;
+	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc->ndis_chars->shutdown_func = NULL;
+	sc->ndis_chars->reserved0 = NULL;
 }
 
 static uint32_t
@@ -2060,7 +2060,7 @@ NdisReadPcmciaAttributeMemory(ndis_handle handle, uint32_t offset, void *buf,
 	if (handle == NULL)
 		return (0);
 	block = (ndis_miniport_block *)handle;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	dest = buf;
 
 	bh = rman_get_bushandle(sc->ndis_res_am);
@@ -2086,7 +2086,7 @@ NdisWritePcmciaAttributeMemory(ndis_handle handle, uint32_t offset,
 	if (handle == NULL)
 		return (0);
 	block = (ndis_miniport_block *)handle;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 	src = buf;
 
 	bh = rman_get_bushandle(sc->ndis_res_am);
@@ -2153,7 +2153,7 @@ NdisMSynchronizeWithInterrupt(ndis_miniport_interrupt *intr, void *syncfunc,
     void *syncctx)
 {
 	KASSERT(intr != NULL, ("no intr"));
-	return (KeSynchronizeExecution(intr->ni_interrupt_object,
+	return (KeSynchronizeExecution(intr->interrupt_object,
 	    syncfunc, syncctx));
 }
 
@@ -2218,11 +2218,11 @@ NdisMGetDeviceProperty(ndis_handle adapter, device_object **phydevobj,
 	block = (ndis_miniport_block *)adapter;
 
 	if (phydevobj != NULL)
-		*phydevobj = block->nmb_physdeviceobj;
+		*phydevobj = block->physdeviceobj;
 	if (funcdevobj != NULL)
-		*funcdevobj = block->nmb_deviceobj;
+		*funcdevobj = block->deviceobj;
 	if (nextdevobj != NULL)
-		*nextdevobj = block->nmb_nextdeviceobj;
+		*nextdevobj = block->nextdeviceobj;
 }
 
 static void
@@ -2231,7 +2231,7 @@ NdisGetFirstBufferFromPacket(ndis_packet *packet, ndis_buffer **buf,
 {
 	ndis_buffer *tmp;
 
-	tmp = packet->np_private.npp_head;
+	tmp = packet->np_private.head;
 	*buf = tmp;
 	if (tmp == NULL) {
 		*firstva = NULL;
@@ -2305,10 +2305,10 @@ NdisCheckModule(linker_file_t lf, void *context)
 		return (0);
 	if (ndis_find_sym(lf, nc->afilename, "_end", &kldend))
 		return (0);
-	nc->fh->nf_vp = lf;
-	nc->fh->nf_map = NULL;
-	nc->fh->nf_type = NDIS_FH_TYPE_MODULE;
-	nc->fh->nf_maplen = (kldend - kldstart) & 0xFFFFFFFF;
+	nc->fh->vp = lf;
+	nc->fh->map = NULL;
+	nc->fh->type = NDIS_FH_TYPE_MODULE;
+	nc->fh->maplen = (kldend - kldstart) & 0xFFFFFFFF;
 	return (1);
 }
 
@@ -2340,7 +2340,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 		return;
 	}
 
-	fh->nf_name = afilename;
+	fh->name = afilename;
 
 	/*
 	 * During system bootstrap, it's impossible to load files
@@ -2363,7 +2363,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	nc.afilename = afilename;
 	nc.fh = fh;
 	if (linker_file_foreach(NdisCheckModule, &nc)) {
-		*filelength = fh->nf_maplen;
+		*filelength = fh->maplen;
 		*filehandle = fh;
 		*status = NDIS_STATUS_SUCCESS;
 		return;
@@ -2417,11 +2417,11 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle,
 	VOP_UNLOCK(nd.ni_vp, 0);
 	VFS_UNLOCK_GIANT(vfslocked);
 
-	fh->nf_vp = nd.ni_vp;
-	fh->nf_map = NULL;
-	fh->nf_type = NDIS_FH_TYPE_VFS;
+	fh->vp = nd.ni_vp;
+	fh->map = NULL;
+	fh->type = NDIS_FH_TYPE_VFS;
 	*filehandle = fh;
-	*filelength = fh->nf_maplen = vap->va_size & 0xFFFFFFFF;
+	*filelength = fh->maplen = vap->va_size & 0xFFFFFFFF;
 	*status = NDIS_STATUS_SUCCESS;
 }
 
@@ -2440,42 +2440,42 @@ NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
 		return;
 	}
 	fh = (ndis_fh *)filehandle;
-	if (fh->nf_vp == NULL) {
+	if (fh->vp == NULL) {
 		*status = NDIS_STATUS_FAILURE;
 		return;
 	}
-	if (fh->nf_map != NULL) {
+	if (fh->map != NULL) {
 		*status = NDIS_STATUS_ALREADY_MAPPED;
 		return;
 	}
-	if (fh->nf_type == NDIS_FH_TYPE_MODULE) {
-		lf = fh->nf_vp;
-		if (ndis_find_sym(lf, fh->nf_name, "_start", &kldstart)) {
+	if (fh->type == NDIS_FH_TYPE_MODULE) {
+		lf = fh->vp;
+		if (ndis_find_sym(lf, fh->name, "_start", &kldstart)) {
 			*status = NDIS_STATUS_FAILURE;
 			return;
 		}
-		fh->nf_map = kldstart;
+		fh->map = kldstart;
 		*status = NDIS_STATUS_SUCCESS;
-		*mappedbuffer = fh->nf_map;
+		*mappedbuffer = fh->map;
 		return;
 	}
 
-	fh->nf_map = ExAllocatePoolWithTag(NonPagedPool, fh->nf_maplen, 0);
-	if (fh->nf_map == NULL) {
+	fh->map = ExAllocatePoolWithTag(NonPagedPool, fh->maplen, 0);
+	if (fh->map == NULL) {
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
-	vp = fh->nf_vp;
+	vp = fh->vp;
 	vfslocked = VFS_LOCK_GIANT(vp->v_mount);
-	error = vn_rdwr(UIO_READ, vp, fh->nf_map, fh->nf_maplen, 0,
+	error = vn_rdwr(UIO_READ, vp, fh->map, fh->maplen, 0,
 	    UIO_SYSSPACE, 0, td->td_ucred, NOCRED, &resid, td);
 	VFS_UNLOCK_GIANT(vfslocked);
 	if (error)
 		*status = NDIS_STATUS_FAILURE;
 	else {
 		*status = NDIS_STATUS_SUCCESS;
-		*mappedbuffer = fh->nf_map;
+		*mappedbuffer = fh->map;
 	}
 }
 
@@ -2485,12 +2485,12 @@ NdisUnmapFile(ndis_handle filehandle)
 	ndis_fh *fh;
 
 	fh = (ndis_fh *)filehandle;
-	if (fh->nf_map == NULL)
+	if (fh->map == NULL)
 		return;
 
-	if (fh->nf_type == NDIS_FH_TYPE_VFS)
-		ExFreePool(fh->nf_map);
-	fh->nf_map = NULL;
+	if (fh->type == NDIS_FH_TYPE_VFS)
+		ExFreePool(fh->map);
+	fh->map = NULL;
 }
 
 static void
@@ -2504,21 +2504,21 @@ NdisCloseFile(ndis_handle filehandle)
 	if (filehandle == NULL)
 		return;
 	fh = (ndis_fh *)filehandle;
-	if (fh->nf_map != NULL) {
-		if (fh->nf_type == NDIS_FH_TYPE_VFS)
-			ExFreePool(fh->nf_map);
-		fh->nf_map = NULL;
+	if (fh->map != NULL) {
+		if (fh->type == NDIS_FH_TYPE_VFS)
+			ExFreePool(fh->map);
+		fh->map = NULL;
 	}
-	if (fh->nf_vp == NULL)
+	if (fh->vp == NULL)
 		return;
-	if (fh->nf_type == NDIS_FH_TYPE_VFS) {
-		vp = fh->nf_vp;
+	if (fh->type == NDIS_FH_TYPE_VFS) {
+		vp = fh->vp;
 		vfslocked = VFS_LOCK_GIANT(vp->v_mount);
 		vn_close(vp, FREAD, td->td_ucred, td);
 		VFS_UNLOCK_GIANT(vfslocked);
 	}
-	fh->nf_vp = NULL;
-	free(fh->nf_name, M_NDIS_SUBR);
+	fh->vp = NULL;
+	free(fh->name, M_NDIS_SUBR);
 	ExFreePool(fh);
 }
 
@@ -2539,8 +2539,8 @@ NdisMIndicateStatusComplete(ndis_handle adapter)
 
 	block = (ndis_miniport_block *)adapter;
 	KASSERT(adapter != NULL, ("no adapter"));
-	KASSERT(block->nmb_status_done_func != NULL, ("no status_done"));
-	MSCALL1(block->nmb_status_done_func, adapter);
+	KASSERT(block->status_done_func != NULL, ("no status_done"));
+	MSCALL1(block->status_done_func, adapter);
 }
 
 static void
@@ -2551,8 +2551,8 @@ NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
 
 	block = (ndis_miniport_block *)adapter;
 	KASSERT(adapter != NULL, ("no adapter"));
-	KASSERT(block->nmb_status_func != NULL, ("no status"));
-	MSCALL4(block->nmb_status_func, adapter, status, sbuf, slen);
+	KASSERT(block->status_func != NULL, ("no status"));
+	MSCALL4(block->status_func, adapter, status, sbuf, slen);
 }
 
 /*
@@ -2597,8 +2597,8 @@ NdisCopyFromPacketToPacket(ndis_packet *dpkt, uint32_t doff, uint32_t reqlen,
 
 	*cpylen = 0;
 
-	src = spkt->np_private.npp_head;
-	dst = dpkt->np_private.npp_head;
+	src = spkt->np_private.head;
+	dst = dpkt->np_private.head;
 
 	sptr = MmGetMdlVirtualAddress(src);
 	dptr = MmGetMdlVirtualAddress(dst);
@@ -2719,7 +2719,7 @@ NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle handle)
 	ansi_string as;
 
 	block = (ndis_miniport_block *)handle;
-	dev = block->nmb_physdeviceobj->do_devext;
+	dev = block->physdeviceobj->do_devext;
 
 	RtlInitAnsiString(&as, __DECONST(char *, device_get_nameunit(dev)));
 	if (RtlAnsiStringToUnicodeString(name, &as, TRUE))

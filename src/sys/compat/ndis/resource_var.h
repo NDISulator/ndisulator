@@ -123,62 +123,62 @@ typedef enum cm_share_disposition cm_share_disposition;
 #define	CM_RESOURCE_DMA_TYPE_F			0x0040
 
 struct cm_partial_resource_desc {
-	uint8_t		cprd_type;
-	uint8_t		cprd_sharedisp;
-	uint16_t	cprd_flags;
+	uint8_t		type;
+	uint8_t		sharedisp;
+	uint16_t	flags;
 	union {
 		struct {
-			physaddr	cprd_start;
-			uint32_t	cprd_len;
-		} cprd_generic;
+			physaddr	start;
+			uint32_t	len;
+		} generic;
 		struct {
-			physaddr	cprd_start;
-			uint32_t	cprd_len;
-		} cprd_port;
+			physaddr	start;
+			uint32_t	len;
+		} port;
 		struct {
-			uint32_t	cprd_level;
-			uint32_t	cprd_vector;
-			uint32_t	cprd_affinity;
-		} cprd_intr;
+			uint32_t	level;
+			uint32_t	vector;
+			uint32_t	affinity;
+		} intr;
 		struct {
-			physaddr	cprd_start;
-			uint32_t	cprd_len;
-		} cprd_mem;
+			physaddr	start;
+			uint32_t	len;
+		} mem;
 		struct {
-			uint32_t	cprd_chan;
-			uint32_t	cprd_port;
-			uint32_t	cprd_rsvd;
-		} cprd_dmachan;
+			uint32_t	chan;
+			uint32_t	port;
+			uint32_t	rsvd;
+		} dmachan;
 		struct {
-			uint32_t	cprd_data[3];
-		} cprd_devpriv;
+			uint32_t	data[3];
+		} devpriv;
 		struct {
-			uint32_t	cprd_datasize;
-			uint32_t	cprd_rsvd1;
-			uint32_t	cprd_rsvd2;
-		} cprd_devspec;
+			uint32_t	datasize;
+			uint32_t	rsvd1;
+			uint32_t	rsvd2;
+		} devspec;
 	} u __attribute__((packed));
 };
 typedef struct cm_partial_resource_desc cm_partial_resource_desc;
 
 struct cm_partial_resource_list {
-	uint16_t			cprl_version;
-	uint16_t			cprl_revision;
-	uint32_t			cprl_count;
-	cm_partial_resource_desc	cprl_partial_descs[1];
+	uint16_t			version;
+	uint16_t			revision;
+	uint32_t			count;
+	cm_partial_resource_desc	partial_descs[1];
 };
 typedef struct cm_partial_resource_list cm_partial_resource_list;
 
 struct cm_full_resource_list {
-	ndis_interface_type		cfrl_type;
-	uint32_t			cfrl_busnum;
-	cm_partial_resource_desc	cfrl_partiallist;
+	ndis_interface_type		type;
+	uint32_t			busnum;
+	cm_partial_resource_desc	partiallist;
 };
 typedef struct cm_full_resource_list cm_full_resource_list;
 
 struct cm_resource_list {
-	uint32_t		crl_count;
-	cm_full_resource_list	crl_rlist;
+	uint32_t		count;
+	cm_full_resource_list	rlist;
 };
 typedef struct cm_resource_list cm_resource_list;
 

@@ -81,7 +81,7 @@ struct ndis_cfglist {
 
 TAILQ_HEAD(nch, ndis_cfglist);
 
-#define	NDIS_INITIALIZED(sc)	(sc->ndis_block->nmb_device_ctx != NULL)
+#define	NDIS_INITIALIZED(sc)	(sc->ndis_block->device_ctx != NULL)
 
 #define	NDIS_TXPKTS	64
 #define	NDIS_INC(x)		\

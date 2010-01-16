@@ -203,9 +203,9 @@ ndis_set_done_func(ndis_handle adapter, ndis_status status)
 	ndis_miniport_block *block;
 
 	block = adapter;
-	block->nmb_setstat = status;
+	block->setstat = status;
 
-	KeSetEvent(&block->nmb_setevent, IO_NO_INCREMENT, FALSE);
+	KeSetEvent(&block->setevent, IO_NO_INCREMENT, FALSE);
 }
 
 static void
@@ -214,9 +214,9 @@ ndis_get_done_func(ndis_handle adapter, ndis_status status)
 	ndis_miniport_block *block;
 
 	block = adapter;
-	block->nmb_getstat = status;
+	block->getstat = status;
 
-	KeSetEvent(&block->nmb_getevent, IO_NO_INCREMENT, FALSE);
+	KeSetEvent(&block->getevent, IO_NO_INCREMENT, FALSE);
 }
 
 static void
@@ -227,9 +227,9 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 	struct ndis_softc *sc;
 
 	block = adapter;
-	sc = device_get_softc(block->nmb_physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->do_devext);
 
-	KeSetEvent(&block->nmb_resetevent, IO_NO_INCREMENT, FALSE);
+	KeSetEvent(&block->resetevent, IO_NO_INCREMENT, FALSE);
 }
 
 void
@@ -356,20 +356,20 @@ ndis_return_packet_nic(device_object *dobj, void *arg)
 	list_entry *l;
 
 	KASSERT(block != NULL, ("no block"));
-	KASSERT(block->nmb_miniport_adapter_ctx != NULL, ("no adapter"));
+	KASSERT(block->miniport_adapter_ctx != NULL, ("no adapter"));
 	ch = IoGetDriverObjectExtension(dobj->do_drvobj, (void *)1);
-	KASSERT(ch->nmc_return_packet_func != NULL, ("no return_packet"));
-	KeAcquireSpinLock(&block->nmb_returnlock, &irql);
-	while (!IsListEmpty(&block->nmb_returnlist)) {
-		l = RemoveHeadList((&block->nmb_returnlist));
+	KASSERT(ch->return_packet_func != NULL, ("no return_packet"));
+	KeAcquireSpinLock(&block->returnlock, &irql);
+	while (!IsListEmpty(&block->returnlist)) {
+		l = RemoveHeadList((&block->returnlist));
 		p = CONTAINING_RECORD(l, ndis_packet, np_list);
 		InitializeListHead((&p->np_list));
-		KeReleaseSpinLock(&block->nmb_returnlock, irql);
-		MSCALL2(ch->nmc_return_packet_func,
-		block->nmb_miniport_adapter_ctx, p);
-		KeAcquireSpinLock(&block->nmb_returnlock, &irql);
+		KeReleaseSpinLock(&block->returnlock, irql);
+		MSCALL2(ch->return_packet_func,
+		block->miniport_adapter_ctx, p);
+		KeAcquireSpinLock(&block->returnlock, &irql);
 	}
-	KeReleaseSpinLock(&block->nmb_returnlock, irql);
+	KeReleaseSpinLock(&block->returnlock, irql);
 }
 
 void
@@ -383,12 +383,12 @@ ndis_return_packet(void *buf, void *arg)
 		return;
 
 	block = ((struct ndis_softc *)p->np_softc)->ndis_block;
-	KeAcquireSpinLockAtDpcLevel(&block->nmb_returnlock);
+	KeAcquireSpinLockAtDpcLevel(&block->returnlock);
 	InitializeListHead((&p->np_list));
-	InsertHeadList((&block->nmb_returnlist), (&p->np_list));
-	KeReleaseSpinLockFromDpcLevel(&block->nmb_returnlock);
+	InsertHeadList((&block->returnlist), (&p->np_list));
+	KeReleaseSpinLockFromDpcLevel(&block->returnlock);
 
-	IoQueueWorkItem(block->nmb_returnitem,
+	IoQueueWorkItem(block->returnitem,
 	    (io_workitem_func)kernndis_functbl[7].ipt_wrap,
 	    WORKQUEUE_CRITICAL, block);
 }
@@ -412,7 +412,7 @@ void
 ndis_free_packet(ndis_packet *p)
 {
 	KASSERT(p != NULL, ("no packet"));
-	ndis_free_bufs(p->np_private.npp_head);
+	ndis_free_bufs(p->np_private.head);
 	NdisFreePacket(p);
 }
 
@@ -436,46 +436,46 @@ ndis_convert_res(void *arg)
 	if (rl == NULL)
 		return (ENOMEM);
 
-	rl->cprl_version = 5;
-	rl->cprl_version = 1;
-	rl->cprl_count = sc->ndis_rescnt;
-	prd = rl->cprl_partial_descs;
+	rl->version = 5;
+	rl->version = 1;
+	rl->count = sc->ndis_rescnt;
+	prd = rl->partial_descs;
 
 	brl = BUS_GET_RESOURCE_LIST(dev, dev);
 	if (brl != NULL) {
 		STAILQ_FOREACH(brle, brl, link) {
 			switch (brle->type) {
 			case SYS_RES_IOPORT:
-				prd->cprd_type = CmResourceTypePort;
-				prd->cprd_flags = CM_RESOURCE_PORT_IO;
-				prd->cprd_sharedisp =
+				prd->type = CmResourceTypePort;
+				prd->flags = CM_RESOURCE_PORT_IO;
+				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.cprd_port.cprd_start.np_quad =
+				prd->u.port.start.np_quad =
 				    brle->start;
-				prd->u.cprd_port.cprd_len = brle->count;
+				prd->u.port.len = brle->count;
 				break;
 			case SYS_RES_MEMORY:
-				prd->cprd_type = CmResourceTypeMemory;
-				prd->cprd_flags =
+				prd->type = CmResourceTypeMemory;
+				prd->flags =
 				    CM_RESOURCE_MEMORY_READ_WRITE;
-				prd->cprd_sharedisp =
+				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.cprd_mem.cprd_start.np_quad =
+				prd->u.mem.start.np_quad =
 				    brle->start;
-				prd->u.cprd_mem.cprd_len = brle->count;
+				prd->u.mem.len = brle->count;
 				break;
 			case SYS_RES_IRQ:
-				prd->cprd_type = CmResourceTypeInterrupt;
-				prd->cprd_flags = 0;
+				prd->type = CmResourceTypeInterrupt;
+				prd->flags = 0;
 				/*
 				 * Always mark interrupt resources as
 				 * shared, since in our implementation,
 				 * they will be.
 				 */
-				prd->cprd_sharedisp = CM_RESOURCE_SHARE_SHARED;
-				prd->u.cprd_intr.cprd_level = brle->start;
-				prd->u.cprd_intr.cprd_vector = brle->start;
-				prd->u.cprd_intr.cprd_affinity = 0;
+				prd->sharedisp = CM_RESOURCE_SHARE_SHARED;
+				prd->u.intr.level = brle->start;
+				prd->u.intr.vector = brle->start;
+				prd->u.intr.affinity = 0;
 				break;
 			default:
 				break;
@@ -484,7 +484,7 @@ ndis_convert_res(void *arg)
 		}
 	}
 
-	block->nmb_rlist = rl;
+	block->rlist = rl;
 
 	return (0);
 }
@@ -516,11 +516,11 @@ ndis_ptom(struct mbuf **m0, ndis_packet *p)
 		return (EINVAL);
 
 	priv = &p->np_private;
-	buf = priv->npp_head;
+	buf = priv->head;
 	p->np_refcnt = 0;
 
-	for (buf = priv->npp_head; buf != NULL; buf = buf->mdl_next) {
-		if (buf == priv->npp_head)
+	for (buf = priv->head; buf != NULL; buf = buf->mdl_next) {
+		if (buf == priv->head)
 #ifdef MT_HEADER
 			MGETHDR(m, M_DONTWAIT, MT_HEADER);
 #else
@@ -594,7 +594,7 @@ ndis_mtop(struct mbuf *m0, ndis_packet **p)
 		return (EINVAL);
 
 	priv = &(*p)->np_private;
-	priv->npp_totlen = m0->m_pkthdr.len;
+	priv->totlen = m0->m_pkthdr.len;
 
 	for (m = m0; m != NULL; m = m->m_next) {
 		if (m->m_len == 0)
@@ -607,14 +607,14 @@ ndis_mtop(struct mbuf *m0, ndis_packet **p)
 		}
 		MmBuildMdlForNonPagedPool(buf);
 
-		if (priv->npp_head == NULL)
-			priv->npp_head = buf;
+		if (priv->head == NULL)
+			priv->head = buf;
 		else
 			prev->mdl_next = buf;
 		prev = buf;
 	}
 
-	priv->npp_tail = buf;
+	priv->tail = buf;
 
 	return (0);
 }
@@ -635,10 +635,10 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 		needed = &n;
 	KASSERT(sc->ndis_chars != NULL, ("no ndis_chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars->nmc_query_info_func != NULL, ("no query_info"));
-	KASSERT(sc->ndis_chars->nmc_set_info_func != NULL, ("no set_info"));
+	KASSERT(sc->ndis_chars->query_info_func != NULL, ("no query_info"));
+	KASSERT(sc->ndis_chars->set_info_func != NULL, ("no set_info"));
 	/*
 	 * According to the NDIS spec, MiniportQueryInformation()
 	 * and MiniportSetInformation() requests are handled serially:
@@ -646,30 +646,30 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 	 * finish before allowing another request to proceed.
 	 */
 	if (request == NDIS_REQUEST_QUERY_INFORMATION) {
-		KeResetEvent(&sc->ndis_block->nmb_getevent);
-		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-		rval = MSCALL6(sc->ndis_chars->nmc_query_info_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx,
+		KeResetEvent(&sc->ndis_block->getevent);
+		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+		rval = MSCALL6(sc->ndis_chars->query_info_func,
+		    sc->ndis_block->miniport_adapter_ctx,
 		    oid, buf, buflen, written, needed);
-		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
+		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 		if (rval == NDIS_STATUS_PENDING) {
 			duetime = (5 * 1000000) * -10;
-			KeWaitForSingleObject(&sc->ndis_block->nmb_getevent,
+			KeWaitForSingleObject(&sc->ndis_block->getevent,
 			    0, 0, FALSE, &duetime);
-			rval = sc->ndis_block->nmb_getstat;
+			rval = sc->ndis_block->getstat;
 		}
 	} else if (request == NDIS_REQUEST_SET_INFORMATION) {
-		KeResetEvent(&sc->ndis_block->nmb_setevent);
-		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-		rval = MSCALL6(sc->ndis_chars->nmc_set_info_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx,
+		KeResetEvent(&sc->ndis_block->setevent);
+		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+		rval = MSCALL6(sc->ndis_chars->set_info_func,
+		    sc->ndis_block->miniport_adapter_ctx,
 		    oid, buf, buflen, written, needed);
-		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
+		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 		if (rval == NDIS_STATUS_PENDING) {
 			duetime = (5 * 1000000) * -10;
-			KeWaitForSingleObject(&sc->ndis_block->nmb_setevent,
+			KeWaitForSingleObject(&sc->ndis_block->setevent,
 			    0, 0, FALSE, &duetime);
-			rval = sc->ndis_block->nmb_setstat;
+			rval = sc->ndis_block->setstat;
 		}
 	} else
 		return (NDIS_STATUS_NOT_SUPPORTED);
@@ -732,14 +732,14 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_block->nmb_send_done_func != NULL, ("no send_done"));
-	KASSERT(sc->ndis_chars->nmc_send_multi_func != NULL, ("no send_multi"));
+	KASSERT(sc->ndis_block->send_done_func != NULL, ("no send_done"));
+	KASSERT(sc->ndis_chars->send_multi_func != NULL, ("no send_multi"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-	MSCALL3(sc->ndis_chars->nmc_send_multi_func,
-	    sc->ndis_block->nmb_miniport_adapter_ctx, packets, cnt);
+		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+	MSCALL3(sc->ndis_chars->send_multi_func,
+	    sc->ndis_block->miniport_adapter_ctx, packets, cnt);
 	for (i = 0; i < cnt; i++) {
 		p = packets[i];
 		/*
@@ -750,11 +750,11 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 		 */
 		if (p == NULL || p->np_oob.npo_status == NDIS_STATUS_PENDING)
 			continue;
-		MSCALL3(sc->ndis_block->nmb_send_done_func,
+		MSCALL3(sc->ndis_block->send_done_func,
 		    sc->ndis_block, p, p->np_oob.npo_status);
 	}
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
+		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 	return (0);
 }
 
@@ -767,25 +767,25 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_block->nmb_send_done_func != NULL, ("no send_done"));
-	KASSERT(sc->ndis_chars->nmc_send_single_func != NULL,
+	KASSERT(sc->ndis_block->send_done_func != NULL, ("no send_done"));
+	KASSERT(sc->ndis_chars->send_single_func != NULL,
 	    ("no send_single"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-	status = MSCALL3(sc->ndis_chars->nmc_send_single_func,
-	    sc->ndis_block->nmb_miniport_adapter_ctx, packet,
-	    packet->np_private.npp_flags);
+		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+	status = MSCALL3(sc->ndis_chars->send_single_func,
+	    sc->ndis_block->miniport_adapter_ctx, packet,
+	    packet->np_private.flags);
 	if (status == NDIS_STATUS_PENDING) {
 		if (NDIS_SERIALIZED(sc->ndis_block))
-			KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
+			KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 		return (0);
 	}
-	MSCALL3(sc->ndis_block->nmb_send_done_func,
+	MSCALL3(sc->ndis_block->send_done_func,
 	    sc->ndis_block, packet, status);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
+		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 	return (status);
 }
 
@@ -841,20 +841,20 @@ ndis_reset_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars->nmc_reset_func != NULL, ("no reset"));
-	KeResetEvent(&sc->ndis_block->nmb_resetevent);
+	KASSERT(sc->ndis_chars->reset_func != NULL, ("no reset"));
+	KeResetEvent(&sc->ndis_block->resetevent);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeAcquireSpinLock(&sc->ndis_block->nmb_lock, &irql);
-	rval = MSCALL2(sc->ndis_chars->nmc_reset_func,
-	    &addressing_reset, sc->ndis_block->nmb_miniport_adapter_ctx);
+		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+	rval = MSCALL2(sc->ndis_chars->reset_func,
+	    &addressing_reset, sc->ndis_block->miniport_adapter_ctx);
 	if (NDIS_SERIALIZED(sc->ndis_block))
-		KeReleaseSpinLock(&sc->ndis_block->nmb_lock, irql);
+		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 	if (rval == NDIS_STATUS_PENDING) {
-		KeWaitForSingleObject(&sc->ndis_block->nmb_resetevent,
+		KeWaitForSingleObject(&sc->ndis_block->resetevent,
 		    0, 0, FALSE, NULL);
-		rval = sc->ndis_block->nmb_reset_status;
+		rval = sc->ndis_block->reset_status;
 	}
 	return (rval);
 }
@@ -866,12 +866,12 @@ ndis_check_for_hang_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	if (sc->ndis_chars->nmc_check_hang_func == NULL)
+	if (sc->ndis_chars->check_hang_func == NULL)
 		return (FALSE);
-	return (MSCALL1(sc->ndis_chars->nmc_check_hang_func,
-	    sc->ndis_block->nmb_miniport_adapter_ctx));
+	return (MSCALL1(sc->ndis_chars->check_hang_func,
+	    sc->ndis_block->miniport_adapter_ctx));
 }
 
 void
@@ -881,11 +881,11 @@ ndis_disable_interrupts_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	if (sc->ndis_chars->nmc_disable_interrupts_func != NULL)
-		MSCALL1(sc->ndis_chars->nmc_disable_interrupts_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx);
+	if (sc->ndis_chars->disable_interrupts_func != NULL)
+		MSCALL1(sc->ndis_chars->disable_interrupts_func,
+		    sc->ndis_block->miniport_adapter_ctx);
 }
 
 void
@@ -895,11 +895,11 @@ ndis_enable_interrupts_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	if (sc->ndis_chars->nmc_enable_interrupts_func != NULL)
-		MSCALL1(sc->ndis_chars->nmc_enable_interrupts_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx);
+	if (sc->ndis_chars->enable_interrupts_func != NULL)
+		MSCALL1(sc->ndis_chars->enable_interrupts_func,
+		    sc->ndis_block->miniport_adapter_ctx);
 }
 
 void
@@ -911,14 +911,14 @@ ndis_halt_nic(void *arg)
 		KeFlushQueuedDpcs();
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars->nmc_halt_func != NULL, ("no halt"));
+	KASSERT(sc->ndis_chars->halt_func != NULL, ("no halt"));
 	NDIS_LOCK(sc);
-	sc->ndis_block->nmb_device_ctx = NULL;
+	sc->ndis_block->device_ctx = NULL;
 	NDIS_UNLOCK(sc);
-	MSCALL1(sc->ndis_chars->nmc_halt_func,
-	    sc->ndis_block->nmb_miniport_adapter_ctx);
+	MSCALL1(sc->ndis_chars->halt_func,
+	    sc->ndis_block->miniport_adapter_ctx);
 }
 
 void
@@ -928,15 +928,15 @@ ndis_shutdown_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars->nmc_shutdown_func != NULL, ("no shutdown"));
-	if (sc->ndis_chars->nmc_reserved0 == NULL)
-		MSCALL1(sc->ndis_chars->nmc_shutdown_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx);
+	KASSERT(sc->ndis_chars->shutdown_func != NULL, ("no shutdown"));
+	if (sc->ndis_chars->reserved0 == NULL)
+		MSCALL1(sc->ndis_chars->shutdown_func,
+		    sc->ndis_block->miniport_adapter_ctx);
 	else
-		MSCALL1(sc->ndis_chars->nmc_shutdown_func,
-		    sc->ndis_chars->nmc_reserved0);
+		MSCALL1(sc->ndis_chars->shutdown_func,
+		    sc->ndis_chars->reserved0);
 }
 
 void
@@ -946,21 +946,21 @@ ndis_pnp_event_nic(void *arg, uint32_t event, uint32_t profile)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	if (sc->ndis_chars->nmc_pnp_event_notify_func == NULL)
+	if (sc->ndis_chars->pnp_event_notify_func == NULL)
 		return;
 	switch (event) {
 	case NDIS_DEVICE_PNP_EVENT_SURPRISE_REMOVED:
-		if (sc->ndis_block->nmb_flags &
+		if (sc->ndis_block->flags &
 		   NDIS_ATTRIBUTE_SURPRISE_REMOVE_OK)
-			MSCALL4(sc->ndis_chars->nmc_pnp_event_notify_func,
-			sc->ndis_block->nmb_miniport_adapter_ctx,
+			MSCALL4(sc->ndis_chars->pnp_event_notify_func,
+			sc->ndis_block->miniport_adapter_ctx,
 			event, NULL, 0);
 		break;
 	case NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED:
-		MSCALL4(sc->ndis_chars->nmc_pnp_event_notify_func,
-		    sc->ndis_block->nmb_miniport_adapter_ctx,
+		MSCALL4(sc->ndis_chars->pnp_event_notify_func,
+		    sc->ndis_block->miniport_adapter_ctx,
 		    event, &profile, sizeof(profile));
 		break;
 	default:
@@ -978,10 +978,10 @@ ndis_init_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_chars->nmc_init_func != NULL, ("no init"));
-	rval = MSCALL6(sc->ndis_chars->nmc_init_func, &status, &chosen_medium,
+	KASSERT(sc->ndis_chars->init_func != NULL, ("no init"));
+	rval = MSCALL6(sc->ndis_chars->init_func, &status, &chosen_medium,
 	    medium_array, sizeof(medium_array) / sizeof(medium_array[0]),
 	    sc->ndis_block, sc->ndis_block);
 	NDIS_LOCK(sc);
@@ -991,9 +991,9 @@ ndis_init_nic(void *arg)
 		 * we obtained from the driver so we can't call them later.
 		 * If the init failed, none of these will work.
 		 */
-		sc->ndis_block->nmb_miniport_adapter_ctx = NULL;
+		sc->ndis_block->miniport_adapter_ctx = NULL;
 	else
-		sc->ndis_block->nmb_device_ctx = sc;
+		sc->ndis_block->device_ctx = sc;
 	NDIS_UNLOCK(sc);
 	return (rval);
 }
@@ -1006,15 +1006,15 @@ ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->nmb_miniport_adapter_ctx != NULL,
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
-	KASSERT(sc->ndis_block->nmb_interrupt != NULL, ("no interrupt"));
-	intr = sc->ndis_block->nmb_interrupt;
-	KeAcquireSpinLockAtDpcLevel(&intr->ni_dpc_count_lock);
-	KeResetEvent(&intr->ni_dpcs_completed_event);
-	if (KeInsertQueueDpc(&intr->ni_interrupt_dpc, NULL, NULL) == TRUE)
-		intr->ni_dpc_count++;
-	KeReleaseSpinLockFromDpcLevel(&intr->ni_dpc_count_lock);
+	KASSERT(sc->ndis_block->interrupt != NULL, ("no interrupt"));
+	intr = sc->ndis_block->interrupt;
+	KeAcquireSpinLockAtDpcLevel(&intr->dpc_count_lock);
+	KeResetEvent(&intr->dpcs_completed_event);
+	if (KeInsertQueueDpc(&intr->interrupt_dpc, NULL, NULL) == TRUE)
+		intr->dpc_count++;
+	KeReleaseSpinLockFromDpcLevel(&intr->dpc_count_lock);
 }
 
 int32_t
@@ -1043,18 +1043,18 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 		return (status);
 
 	block = fdo->do_devext;
-	block->nmb_filter_dbs.nf_ethdb = block;
-	block->nmb_deviceobj = fdo;
-	block->nmb_physdeviceobj = pdo;
-	block->nmb_nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
-	KeInitializeSpinLock(&block->nmb_lock);
-	KeInitializeSpinLock(&block->nmb_returnlock);
-	KeInitializeEvent(&block->nmb_getevent, EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeEvent(&block->nmb_setevent, EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeEvent(&block->nmb_resetevent, EVENT_TYPE_NOTIFY, TRUE);
-	InitializeListHead(&block->nmb_parmlist);
-	InitializeListHead(&block->nmb_returnlist);
-	block->nmb_returnitem = IoAllocateWorkItem(fdo);
+	block->filter_dbs.ethdb = block;
+	block->deviceobj = fdo;
+	block->physdeviceobj = pdo;
+	block->nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
+	KeInitializeSpinLock(&block->lock);
+	KeInitializeSpinLock(&block->returnlock);
+	KeInitializeEvent(&block->getevent, EVENT_TYPE_NOTIFY, TRUE);
+	KeInitializeEvent(&block->setevent, EVENT_TYPE_NOTIFY, TRUE);
+	KeInitializeEvent(&block->resetevent, EVENT_TYPE_NOTIFY, TRUE);
+	InitializeListHead(&block->parmlist);
+	InitializeListHead(&block->returnlist);
+	block->returnitem = IoAllocateWorkItem(fdo);
 
 	/*
 	 * Stash pointers to the miniport block and miniport
@@ -1068,15 +1068,15 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	 * If the driver has a MiniportTransferData() function,
 	 * we should allocate a private RX packet pool.
 	 */
-	if (sc->ndis_chars->nmc_transfer_data_func != NULL) {
-		NdisAllocatePacketPool(&status, &block->nmb_rxpool,
+	if (sc->ndis_chars->transfer_data_func != NULL) {
+		NdisAllocatePacketPool(&status, &block->rxpool,
 		    32, PROTOCOL_RESERVED_SIZE_IN_PACKET);
 		if (status != NDIS_STATUS_SUCCESS) {
-			IoDetachDevice(block->nmb_nextdeviceobj);
+			IoDetachDevice(block->nextdeviceobj);
 			IoDeleteDevice(fdo);
 			return (status);
 		}
-		InitializeListHead((&block->nmb_packet_list));
+		InitializeListHead((&block->packet_list));
 	}
 
 	/* Give interrupt handling priority over timers. */
@@ -1084,12 +1084,12 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	KeSetImportanceDpc(&fdo->do_dpc, KDPC_IMPORTANCE_HIGH);
 
 	/* Finish up BSD-specific setup. */
-	block->nmb_status_func = kernndis_functbl[0].ipt_wrap;
-	block->nmb_status_done_func = kernndis_functbl[1].ipt_wrap;
-	block->nmb_set_done_func = kernndis_functbl[2].ipt_wrap;
-	block->nmb_query_done_func = kernndis_functbl[3].ipt_wrap;
-	block->nmb_reset_done_func = kernndis_functbl[4].ipt_wrap;
-	block->nmb_send_rsrc_func = kernndis_functbl[5].ipt_wrap;
+	block->status_func = kernndis_functbl[0].ipt_wrap;
+	block->status_done_func = kernndis_functbl[1].ipt_wrap;
+	block->set_done_func = kernndis_functbl[2].ipt_wrap;
+	block->query_done_func = kernndis_functbl[3].ipt_wrap;
+	block->reset_done_func = kernndis_functbl[4].ipt_wrap;
+	block->send_rsrc_func = kernndis_functbl[5].ipt_wrap;
 
 	TAILQ_INSERT_TAIL(&ndis_devhead, block, link);
 
@@ -1106,14 +1106,14 @@ ndis_unload_driver(void *arg)
 		bus_teardown_intr(sc->ndis_dev,
 		    sc->ndis_irq, sc->ndis_intrhand);
 
-	if (sc->ndis_block->nmb_rlist != NULL)
-		free(sc->ndis_block->nmb_rlist, M_NDIS_KERN);
+	if (sc->ndis_block->rlist != NULL)
+		free(sc->ndis_block->rlist, M_NDIS_KERN);
 
 	TAILQ_REMOVE(&ndis_devhead, sc->ndis_block, link);
-	if (sc->ndis_chars->nmc_transfer_data_func != NULL)
-		NdisFreePacketPool(sc->ndis_block->nmb_rxpool);
-	fdo = sc->ndis_block->nmb_deviceobj;
-	IoFreeWorkItem(sc->ndis_block->nmb_returnitem);
-	IoDetachDevice(sc->ndis_block->nmb_nextdeviceobj);
+	if (sc->ndis_chars->transfer_data_func != NULL)
+		NdisFreePacketPool(sc->ndis_block->rxpool);
+	fdo = sc->ndis_block->deviceobj;
+	IoFreeWorkItem(sc->ndis_block->returnitem);
+	IoDetachDevice(sc->ndis_block->nextdeviceobj);
 	IoDeleteDevice(fdo);
 }
