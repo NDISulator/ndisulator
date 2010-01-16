@@ -420,7 +420,7 @@ int
 ndis_convert_res(void *arg)
 {
 	struct ndis_softc *sc = arg;
-	ndis_resource_list *rl = NULL;
+	cm_partial_resource_list *rl = NULL;
 	cm_partial_resource_desc *prd = NULL;
 	ndis_miniport_block *block;
 	device_t dev;
@@ -430,7 +430,7 @@ ndis_convert_res(void *arg)
 	block = sc->ndis_block;
 	dev = sc->ndis_dev;
 
-	rl = malloc(sizeof(ndis_resource_list) +
+	rl = malloc(sizeof(cm_partial_resource_list) +
 	    (sizeof(cm_partial_resource_desc) * (sc->ndis_rescnt - 1)),
 	    M_NDIS_KERN, M_NOWAIT|M_ZERO);
 	if (rl == NULL)

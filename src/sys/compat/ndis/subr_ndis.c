@@ -167,7 +167,7 @@ static void NdisMSleep(uint32_t);
 static void NdisMCancelTimer(ndis_timer *, uint8_t *);
 static void ndis_timercall(kdpc *, ndis_miniport_timer *, void *, void *);
 static void NdisMQueryAdapterResources(ndis_status *, ndis_handle,
-    ndis_resource_list *, uint32_t *);
+    cm_partial_resource_list *, uint32_t *);
 static ndis_status NdisMRegisterIoPortRange(void **, ndis_handle, uint32_t,
     uint32_t);
 static void NdisMDeregisterIoPortRange(ndis_handle, uint32_t, uint32_t, void *);
@@ -216,7 +216,7 @@ static ndis_status NdisUnicodeStringToAnsiString(ansi_string *,
 static ndis_status NdisAnsiStringToUnicodeString(unicode_string *,
     ansi_string *);
 static ndis_status NdisMPciAssignResources(ndis_handle, uint32_t,
-    ndis_resource_list **);
+    cm_partial_resource_list **);
 static ndis_status NdisMRegisterInterrupt(ndis_miniport_interrupt *,
     ndis_handle, uint32_t, uint32_t, uint8_t, uint8_t, ndis_interrupt_mode);
 static void NdisMDeregisterInterrupt(ndis_miniport_interrupt *);
@@ -1039,7 +1039,7 @@ NdisMCancelTimer(ndis_timer *timer, uint8_t *cancelled)
 
 static void
 NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
-    ndis_resource_list *list, uint32_t *buflen)
+    cm_partial_resource_list *list, uint32_t *buflen)
 {
 	ndis_miniport_block *block;
 	struct ndis_softc *sc;
@@ -1048,7 +1048,7 @@ NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
 	block = (ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->physdeviceobj->do_devext);
 
-	rsclen = sizeof(ndis_resource_list) +
+	rsclen = sizeof(cm_partial_resource_list) +
 	    (sizeof(cm_partial_resource_desc) * (sc->ndis_rescnt - 1));
 	if (*buflen < rsclen) {
 		*buflen = rsclen;
@@ -1858,7 +1858,7 @@ NdisAnsiStringToUnicodeString(unicode_string *dstr, ansi_string *sstr)
 
 static ndis_status
 NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
-    ndis_resource_list **list)
+    cm_partial_resource_list **list)
 {
 	ndis_miniport_block *block;
 

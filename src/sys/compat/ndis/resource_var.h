@@ -182,6 +182,4 @@ struct cm_resource_list {
 };
 typedef struct cm_resource_list cm_resource_list;
 
-typedef cm_partial_resource_list ndis_resource_list;
-
 #endif /* _RESOURCE_VAR_H_ */

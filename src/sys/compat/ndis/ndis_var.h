@@ -1541,7 +1541,7 @@ struct ndis_miniport_block {
 	 * Everything below is BSD-specific.
 	 */
 	list_entry		parmlist;
-	ndis_resource_list	*rlist;
+	cm_partial_resource_list	*rlist;
 	ndis_status		getstat;
 	nt_kevent		getevent;
 	ndis_status		setstat;
