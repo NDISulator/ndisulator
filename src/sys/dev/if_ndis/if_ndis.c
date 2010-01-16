@@ -1117,8 +1117,9 @@ ndis_detach(device_t dev)
 			else
 				ether_ifdetach(sc->ndis_ifp);
 		}
-		ndis_halt_nic(sc);
 	}
+	if (NDIS_INITIALIZED(sc))
+		ndis_halt_nic(sc);
 
 	if (sc->ndis_tickitem != NULL)
 		IoFreeWorkItem(sc->ndis_tickitem);
