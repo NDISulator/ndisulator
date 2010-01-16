@@ -847,7 +847,7 @@ ndis_reset_nic(void *arg)
 	if (rval == NDIS_STATUS_PENDING) {
 		KeWaitForSingleObject(&sc->ndis_block->resetevent,
 		    0, 0, FALSE, NULL);
-		rval = sc->ndis_block->reset_status;
+		rval = sc->ndis_block->resetstat;
 	}
 	return (rval);
 }
