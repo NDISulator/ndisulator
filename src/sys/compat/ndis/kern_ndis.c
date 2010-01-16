@@ -436,8 +436,8 @@ ndis_convert_res(void *arg)
 	if (rl == NULL)
 		return (ENOMEM);
 
-	rl->version = 5;
 	rl->version = 1;
+	rl->revision = 1;
 	rl->count = sc->ndis_rescnt;
 	prd = rl->partial_descs;
 
