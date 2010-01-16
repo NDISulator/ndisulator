@@ -225,7 +225,7 @@ static int32_t
 usbd_iodispatch(device_object *dobj, irp *ip)
 {
 	struct io_stack_location *irp_sl;
-	device_t dev = dobj->do_devext;
+	device_t dev = dobj->devext;
 	int32_t status;
 
 	irp_sl = IoGetCurrentIrpStackLocation(ip);
@@ -253,7 +253,7 @@ static int32_t
 usbd_ioinvalid(device_object *dobj, irp *ip)
 {
 	struct io_stack_location *irp_sl;
-	device_t dev = dobj->do_devext;
+	device_t dev = dobj->devext;
 
 	irp_sl = IoGetCurrentIrpStackLocation(ip);
 	device_printf(dev, "invalid I/O dispatch %d:%d\n", irp_sl->isl_major,
@@ -271,7 +271,7 @@ static int32_t
 usbd_pnp(device_object *dobj, irp *ip)
 {
 	struct io_stack_location *irp_sl;
-	device_t dev = dobj->do_devext;
+	device_t dev = dobj->devext;
 
 	irp_sl = IoGetCurrentIrpStackLocation(ip);
 	device_printf(dev, "%s: unsupported I/O dispatch %d:%d\n",
@@ -289,7 +289,7 @@ static int32_t
 usbd_power(device_object *dobj, irp *ip)
 {
 	struct io_stack_location *irp_sl;
-	device_t dev = dobj->do_devext;
+	device_t dev = dobj->devext;
 
 	irp_sl = IoGetCurrentIrpStackLocation(ip);
 	device_printf(dev, "%s: unsupported I/O dispatch %d:%d\n",

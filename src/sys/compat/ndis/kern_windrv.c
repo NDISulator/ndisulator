@@ -237,13 +237,13 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 			continue;
 		pdo = db->windrv_object->dro_device_object;
 		while (pdo != NULL) {
-			d = pdo->do_attacheddev;
-			if (d->do_drvobj != drv) {
-				pdo = pdo->do_nextdev;
+			d = pdo->attacheddev;
+			if (d->drvobj != drv) {
+				pdo = pdo->nextdev;
 				continue;
 			}
-			dev = pdo->do_devext;
-			pdo = pdo->do_nextdev;
+			dev = pdo->devext;
+			pdo = pdo->nextdev;
 			mtx_unlock(&drvdb_mtx);
 			device_detach(dev);
 			mtx_lock(&drvdb_mtx);
@@ -408,7 +408,7 @@ windrv_create_pdo(driver_object *drv, device_t bsddev)
 	mtx_unlock(&drvdb_mtx);
 
 	/* Stash pointer to our BSD device handle. */
-	dev->do_devext = bsddev;
+	dev->devext = bsddev;
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -421,7 +421,7 @@ windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 	pdo = windrv_find_pdo(drv, bsddev);
 	if (pdo == NULL)
 		return;
-	pdo->do_devext = NULL;
+	pdo->devext = NULL;
 
 	mtx_lock(&drvdb_mtx);
 	IoDeleteDevice(pdo);
@@ -439,11 +439,11 @@ windrv_find_pdo(driver_object *drv, device_t bsddev)
 	mtx_lock(&drvdb_mtx);
 	pdo = drv->dro_device_object;
 	while (pdo != NULL) {
-		if (pdo->do_devext == bsddev) {
+		if (pdo->devext == bsddev) {
 			mtx_unlock(&drvdb_mtx);
 			return (pdo);
 		}
-		pdo = pdo->do_nextdev;
+		pdo = pdo->nextdev;
 	}
 	mtx_unlock(&drvdb_mtx);
 

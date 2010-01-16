@@ -657,50 +657,50 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	if (dev == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
-	dev->do_type = devtype;
-	dev->do_drvobj = drv;
-	dev->do_currirp = NULL;
-	dev->do_flags = 0;
+	dev->type = devtype;
+	dev->drvobj = drv;
+	dev->currirp = NULL;
+	dev->flags = 0;
 
 	if (devextlen) {
-		dev->do_devext = ExAllocatePoolWithTag(NonPagedPool,
+		dev->devext = ExAllocatePoolWithTag(NonPagedPool,
 		    devextlen, 0);
-		if (dev->do_devext == NULL) {
+		if (dev->devext == NULL) {
 			ExFreePool(dev);
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		}
-		bzero(dev->do_devext, devextlen);
+		bzero(dev->devext, devextlen);
 	} else
-		dev->do_devext = NULL;
+		dev->devext = NULL;
 
-	dev->do_size = sizeof(device_object) + devextlen;
-	dev->do_refcnt = 1;
-	dev->do_attacheddev = NULL;
-	dev->do_nextdev = NULL;
-	dev->do_stacksize = 1;
-	dev->do_alignreq = 1;
-	dev->do_characteristics = devchars;
-	dev->do_iotimer = NULL;
-	KeInitializeEvent(&dev->do_devlock, EVENT_TYPE_SYNC, TRUE);
+	dev->size = sizeof(device_object) + devextlen;
+	dev->refcnt = 1;
+	dev->attacheddev = NULL;
+	dev->nextdev = NULL;
+	dev->stacksize = 1;
+	dev->alignreq = 1;
+	dev->characteristics = devchars;
+	dev->iotimer = NULL;
+	KeInitializeEvent(&dev->devlock, EVENT_TYPE_SYNC, TRUE);
 
 	/*
 	 * Vpd is used for disk/tape devices,
 	 * but we don't support those. (Yet.)
 	 */
-	dev->do_vpb = NULL;
+	dev->vpb = NULL;
 
-	dev->do_devobj_ext = ExAllocatePoolWithTag(NonPagedPool,
+	dev->devobj_ext = ExAllocatePoolWithTag(NonPagedPool,
 	    sizeof(devobj_extension), 0);
-	if (dev->do_devobj_ext == NULL) {
-		if (dev->do_devext != NULL)
-			ExFreePool(dev->do_devext);
+	if (dev->devobj_ext == NULL) {
+		if (dev->devext != NULL)
+			ExFreePool(dev->devext);
 		ExFreePool(dev);
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	}
 
-	dev->do_devobj_ext->dve_type = 0;
-	dev->do_devobj_ext->dve_size = sizeof(devobj_extension);
-	dev->do_devobj_ext->dve_devobj = dev;
+	dev->devobj_ext->dve_type = 0;
+	dev->devobj_ext->dve_size = sizeof(devobj_extension);
+	dev->devobj_ext->dve_devobj = dev;
 
 	/*
 	 * Attach this device to the driver object's list
@@ -711,9 +711,9 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	 */
 	if (drv->dro_device_object == NULL) {
 		drv->dro_device_object = dev;
-		dev->do_nextdev = NULL;
+		dev->nextdev = NULL;
 	} else {
-		dev->do_nextdev = drv->dro_device_object;
+		dev->nextdev = drv->dro_device_object;
 		drv->dro_device_object = dev;
 	}
 	*newdev = dev;
@@ -728,19 +728,19 @@ IoDeleteDevice(device_object *dev)
 
 	if (dev == NULL)
 		return;
-	if (dev->do_devobj_ext != NULL)
-		ExFreePool(dev->do_devobj_ext);
-	if (dev->do_devext != NULL)
-		ExFreePool(dev->do_devext);
+	if (dev->devobj_ext != NULL)
+		ExFreePool(dev->devobj_ext);
+	if (dev->devext != NULL)
+		ExFreePool(dev->devext);
 
 	/* Unlink the device from the driver's device list. */
-	prev = dev->do_drvobj->dro_device_object;
+	prev = dev->drvobj->dro_device_object;
 	if (prev == dev)
-		dev->do_drvobj->dro_device_object = dev->do_nextdev;
+		dev->drvobj->dro_device_object = dev->nextdev;
 	else {
-		while (prev->do_nextdev != dev)
-			prev = prev->do_nextdev;
-		prev->do_nextdev = dev->do_nextdev;
+		while (prev->nextdev != dev)
+			prev = prev->nextdev;
+		prev->nextdev = dev->nextdev;
 	}
 
 	ExFreePool(dev);
@@ -753,8 +753,8 @@ IoGetAttachedDevice(device_object *dev)
 
 	if (d == NULL)
 		return (NULL);
-	while (d->do_attacheddev != NULL)
-		d = d->do_attacheddev;
+	while (d->attacheddev != NULL)
+		d = d->attacheddev;
 
 	return (d);
 }
@@ -780,7 +780,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 	irp *ip;
 	io_stack_location *sl;
 
-	ip = IoAllocateIrp(dobj->do_stacksize, TRUE);
+	ip = IoAllocateIrp(dobj->stacksize, TRUE);
 	if (ip == NULL)
 		return (NULL);
 
@@ -798,7 +798,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 
 	ip->irp_userbuf = buf;
 
-	if (dobj->do_flags & DO_BUFFERED_IO) {
+	if (dobj->flags & DO_BUFFERED_IO) {
 		ip->irp_assoc.irp_sysbuf =
 		    ExAllocatePoolWithTag(NonPagedPool, len, 0);
 		if (ip->irp_assoc.irp_sysbuf == NULL) {
@@ -808,7 +808,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 		bcopy(buf, ip->irp_assoc.irp_sysbuf, len);
 	}
 
-	if (dobj->do_flags & DO_DIRECT_IO) {
+	if (dobj->flags & DO_DIRECT_IO) {
 		ip->irp_mdl = IoAllocateMdl(buf, len, FALSE, FALSE, ip);
 		if (ip->irp_mdl == NULL) {
 			if (ip->irp_assoc.irp_sysbuf != NULL)
@@ -848,7 +848,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 	io_stack_location *sl;
 	uint32_t buflen;
 
-	ip = IoAllocateIrp(dobj->do_stacksize, TRUE);
+	ip = IoAllocateIrp(dobj->stacksize, TRUE);
 	if (ip == NULL)
 		return (NULL);
 	ip->irp_usrevent = event;
@@ -1025,7 +1025,7 @@ IofCallDriver(device_object *dobj, irp *ip)
 	int32_t status;
 	driver_dispatch disp;
 
-	drvobj = dobj->do_drvobj;
+	drvobj = dobj->drvobj;
 
 	if (ip->irp_currentstackloc <= 0)
 		panic("IoCallDriver(): out of stack locations");
@@ -1231,9 +1231,9 @@ IoAttachDeviceToDeviceStack(device_object *src, device_object *dst)
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 	attached = IoGetAttachedDevice(dst);
-	attached->do_attacheddev = src;
-	src->do_attacheddev = NULL;
-	src->do_stacksize = attached->do_stacksize + 1;
+	attached->attacheddev = src;
+	src->attacheddev = NULL;
+	src->stacksize = attached->stacksize + 1;
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
 	return (attached);
@@ -1247,19 +1247,19 @@ IoDetachDevice(device_object *topdev)
 	mtx_lock(&ntoskrnl_dispatchlock);
 
 	/* First, break the chain. */
-	tail = topdev->do_attacheddev;
+	tail = topdev->attacheddev;
 	if (tail == NULL) {
 		mtx_unlock(&ntoskrnl_dispatchlock);
 		return;
 	}
-	topdev->do_attacheddev = tail->do_attacheddev;
-	topdev->do_refcnt--;
+	topdev->attacheddev = tail->attacheddev;
+	topdev->refcnt--;
 
 	/* Now reduce the stacksize count for the takm_il objects. */
-	tail = topdev->do_attacheddev;
+	tail = topdev->attacheddev;
 	while (tail != NULL) {
-		tail->do_stacksize--;
-		tail = tail->do_attacheddev;
+		tail->stacksize--;
+		tail = tail->attacheddev;
 	}
 
 	mtx_unlock(&ntoskrnl_dispatchlock);
@@ -2886,7 +2886,7 @@ IoGetDeviceProperty(device_object *devobj, uint32_t regprop, uint32_t buflen,
 	driver_object *drv;
 	uint16_t **name;
 
-	drv = devobj->do_drvobj;
+	drv = devobj->drvobj;
 
 	switch (regprop) {
 	case DEVPROP_DRIVER_KEYNAME:

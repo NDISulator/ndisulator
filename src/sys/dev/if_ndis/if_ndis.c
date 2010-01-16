@@ -1269,7 +1269,7 @@ ndis_rxeof_done(ndis_handle adapter)
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 
@@ -1292,7 +1292,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
@@ -1356,7 +1356,7 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
@@ -1408,7 +1408,7 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 	struct mbuf *m0, *m;
 	int i;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
@@ -1547,7 +1547,7 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 	int idx;
 	struct mbuf *m;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	ifp = sc->ndis_ifp;
@@ -1585,7 +1585,7 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 	struct ieee80211com *ic;
 	struct ieee80211vap *vap;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 	if ((sc->ndis_ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
@@ -1644,7 +1644,7 @@ ndis_linksts_done(ndis_handle adapter)
 	ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 	if (!NDIS_INITIALIZED(sc))
 		return;
 

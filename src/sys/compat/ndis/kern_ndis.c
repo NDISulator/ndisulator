@@ -227,7 +227,7 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 	struct ndis_softc *sc;
 
 	block = adapter;
-	sc = device_get_softc(block->physdeviceobj->do_devext);
+	sc = device_get_softc(block->physdeviceobj->devext);
 
 	KeSetEvent(&block->resetevent, IO_NO_INCREMENT, FALSE);
 }
@@ -357,7 +357,7 @@ ndis_return_packet_nic(device_object *dobj, void *arg)
 
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->miniport_adapter_ctx != NULL, ("no adapter"));
-	ch = IoGetDriverObjectExtension(dobj->do_drvobj, (void *)1);
+	ch = IoGetDriverObjectExtension(dobj->drvobj, (void *)1);
 	KASSERT(ch->return_packet_func != NULL, ("no return_packet"));
 	KeAcquireSpinLock(&block->returnlock, &irql);
 	while (!IsListEmpty(&block->returnlist)) {
@@ -1025,7 +1025,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	struct ndis_softc *sc;
 	int32_t status;
 
-	sc = device_get_softc(pdo->do_devext);
+	sc = device_get_softc(pdo->devext);
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus) {
 		status = bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
 		    INTR_TYPE_NET|INTR_MPSAFE, NULL, ntoskrnl_intr, NULL,
@@ -1042,7 +1042,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	if (status != NDIS_STATUS_SUCCESS)
 		return (status);
 
-	block = fdo->do_devext;
+	block = fdo->devext;
 	block->filter_dbs.ethdb = block;
 	block->deviceobj = fdo;
 	block->physdeviceobj = pdo;
@@ -1081,7 +1081,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 
 	/* Give interrupt handling priority over timers. */
 	IoInitializeDpcRequest(fdo, kernndis_functbl[6].ipt_wrap);
-	KeSetImportanceDpc(&fdo->do_dpc, KDPC_IMPORTANCE_HIGH);
+	KeSetImportanceDpc(&fdo->dpc, KDPC_IMPORTANCE_HIGH);
 
 	/* Finish up BSD-specific setup. */
 	block->status_func = kernndis_functbl[0].ipt_wrap;

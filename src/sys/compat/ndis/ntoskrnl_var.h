@@ -566,33 +566,33 @@ typedef struct kinterrupt kinterrupt;
  * device-specific softc structure.
  */
 struct device_object {
-	int16_t			do_type;
-	uint16_t		do_size;
-	int32_t			do_refcnt;
-	struct driver_object	*do_drvobj;
-	struct device_object	*do_nextdev;
-	struct device_object	*do_attacheddev;
-	struct irp	 	*do_currirp;
-	void			*do_iotimer;
-	uint32_t		do_flags;
-	uint32_t		do_characteristics;
-	void			*do_vpb;
-	void			*do_devext;
-	uint8_t			do_stacksize;
+	int16_t			type;
+	uint16_t		size;
+	int32_t			refcnt;
+	struct driver_object	*drvobj;
+	struct device_object	*nextdev;
+	struct device_object	*attacheddev;
+	struct irp	 	*currirp;
+	void			*iotimer;
+	uint32_t		flags;
+	uint32_t		characteristics;
+	void			*vpb;
+	void			*devext;
+	uint8_t			stacksize;
 	union {
-		list_entry	do_listent;
-		wait_ctx_block	do_wcb;
+		list_entry	listent;
+		wait_ctx_block	wcb;
 	} queue;
-	uint32_t		do_alignreq;
-	kdevice_queue		do_devqueue;
-	struct			kdpc do_dpc;
-	uint32_t		do_activethreads;
-	void			*do_securitydesc;
-	struct			nt_kevent do_devlock;
-	uint16_t		do_sectorsz;
-	uint16_t		do_spare1;
-	struct devobj_extension	*do_devobj_ext;
-	void			*do_rsvd;
+	uint32_t		alignreq;
+	kdevice_queue		devqueue;
+	struct			kdpc dpc;
+	uint32_t		activethreads;
+	void			*securitydesc;
+	struct			nt_kevent devlock;
+	uint16_t		sectorsz;
+	uint16_t		spare1;
+	struct devobj_extension	*devobj_ext;
+	void			*rsvd;
 };
 typedef struct device_object device_object;
 
@@ -1001,10 +1001,10 @@ typedef struct irp irp;
 	} while (0)
 
 #define	IoInitializeDpcRequest(dobj, dpcfunc)				\
-	KeInitializeDpc(&(dobj)->do_dpc, dpcfunc, dobj)
+	KeInitializeDpc(&(dobj)->dpc, dpcfunc, dobj)
 
 #define	IoRequestDpc(dobj, irp, ctx)					\
-	KeInsertQueueDpc(&(dobj)->do_dpc, irp, ctx)
+	KeInsertQueueDpc(&(dobj)->dpc, irp, ctx)
 
 typedef uint32_t (*driver_dispatch)(device_object *, irp *);
 
