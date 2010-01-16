@@ -1656,7 +1656,7 @@ extern int	ndis_send_packet(void *, ndis_packet *);
 extern int	ndis_convert_res(void *);
 extern void	ndis_free_packet(ndis_packet *);
 extern void	ndis_free_bufs(ndis_buffer *);
-extern int	ndis_reset_nic(void *);
+extern int32_t	ndis_reset_nic(void *);
 extern void	ndis_disable_interrupts_nic(void *);
 extern void	ndis_enable_interrupts_nic(void *);
 extern void	ndis_halt_nic(void *);

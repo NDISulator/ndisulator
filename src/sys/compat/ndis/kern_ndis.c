@@ -824,12 +824,12 @@ ndis_destroy_dma(void *arg)
 	bus_dma_tag_destroy(sc->ndis_ttag);
 }
 
-int
+int32_t
 ndis_reset_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
+	ndis_status rval;
 	uint8_t addressing_reset;
-	int rval;
 	uint8_t irql = 0;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
