@@ -2053,6 +2053,12 @@ InterlockedPopEntrySList(slist_header *head)
 	return (first);
 }
 
+static void
+InitializeSListHead(slist_header *head)
+{
+	memset(head, 0, sizeof(*head));
+}
+
 static slist_entry *
 ExInterlockedPushEntrySList(slist_header *head, slist_entry *entry,
     kspin_lock *lock)
@@ -3902,6 +3908,7 @@ image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(ExInitializeNPagedLookasideList, 7),
 	IMPORT_SFUNC(ExDeleteNPagedLookasideList, 1),
 	IMPORT_FFUNC(InterlockedPopEntrySList, 1),
+	IMPORT_FFUNC(InitializeSListHead, 1),
 	IMPORT_FFUNC(InterlockedPushEntrySList, 2),
 	IMPORT_SFUNC(ExQueryDepthSList, 1),
 	IMPORT_FFUNC_MAP(ExpInterlockedPopEntrySList,
