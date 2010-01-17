@@ -180,7 +180,7 @@ struct slist_entry {
 };
 typedef struct slist_entry slist_entry;
 
-union slist_header {
+union slist_header {  /* FIXME: amd64 */
 	uint64_t	slh_align;
 	struct {
 		struct slist_entry	*slh_next;
