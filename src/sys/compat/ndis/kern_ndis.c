@@ -1093,6 +1093,7 @@ ndis_unload_driver(void *arg)
 	struct ndis_softc *sc = arg;
 	device_object *fdo;
 
+	KASSERT(sc->ndis_block->device_ctx == NULL, ("device present"));
 	if (sc->ndis_intrhand) /* FIXME: doesn't belong here */
 		bus_teardown_intr(sc->ndis_dev,
 		    sc->ndis_irq, sc->ndis_intrhand);
