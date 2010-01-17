@@ -910,6 +910,7 @@ ndis_halt_nic(void *arg)
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
 	KASSERT(sc->ndis_chars->halt_func != NULL, ("no halt"));
+	KASSERT(sc->ndis_block->device_ctx != NULL, ("already halted"));
 	NDIS_LOCK(sc);
 	sc->ndis_block->device_ctx = NULL;
 	NDIS_UNLOCK(sc);
@@ -975,6 +976,7 @@ ndis_init_nic(void *arg)
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_chars->init_func != NULL, ("no init"));
+	KASSERT(sc->ndis_block->device_ctx == NULL, ("already initialized"));
 	rval = MSCALL6(sc->ndis_chars->init_func, &status, &chosen_medium,
 	    medium_array, sizeof(medium_array) / sizeof(medium_array[0]),
 	    sc->ndis_block, sc->ndis_block);
