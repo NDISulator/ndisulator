@@ -354,10 +354,7 @@ KfRaiseIrql(uint8_t newirql)
 	sched_pin();
 	oldirql = KeGetCurrentIrql();
 
-	/* I am so going to hell for this. */
-	if (oldirql > newirql)
-		panic("IRQL_NOT_LESS_THAN");
-
+	KASSERT(oldirql <= newirql, ("newirql not less"));
 	if (oldirql != DISPATCH_LEVEL)
 		mtx_lock(&disp_lock[curthread->td_oncpu]);
 	return (oldirql);
@@ -369,9 +366,7 @@ KfLowerIrql(uint8_t oldirql)
 	if (oldirql == DISPATCH_LEVEL)
 		return;
 
-	if (KeGetCurrentIrql() != DISPATCH_LEVEL)
-		panic("IRQL_NOT_GREATER_THAN");
-
+	KASSERT(KeGetCurrentIrql() == DISPATCH_LEVEL, ("irql not greater"));
 	mtx_unlock(&disp_lock[curthread->td_oncpu]);
 	sched_unpin();
 }
