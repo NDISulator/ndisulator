@@ -347,21 +347,19 @@ KeQueryPerformanceCounter(uint64_t *freq)
 }
 
 uint8_t
-KfRaiseIrql(uint8_t irql)
+KfRaiseIrql(uint8_t newirql)
 {
 	uint8_t oldirql;
 
+	sched_pin();
 	oldirql = KeGetCurrentIrql();
 
 	/* I am so going to hell for this. */
-	if (oldirql > irql)
+	if (oldirql > newirql)
 		panic("IRQL_NOT_LESS_THAN");
 
-	if (oldirql != DISPATCH_LEVEL) {
-		sched_pin();
+	if (oldirql != DISPATCH_LEVEL)
 		mtx_lock(&disp_lock[curthread->td_oncpu]);
-	}
-/*printf("RAISE IRQL: %d %d\n", irql, oldirql);*/
 	return (oldirql);
 }
 
