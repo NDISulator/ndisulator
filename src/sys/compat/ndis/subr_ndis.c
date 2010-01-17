@@ -765,10 +765,11 @@ NdisReadPciSlotInformation(ndis_handle adapter, uint32_t slot,
     uint32_t offset, void *buf, uint32_t len)
 {
 	ndis_miniport_block *block;
+	device_t dev;
 	int i;
 	char *dest = buf;
-	device_t dev;
 
+	KASSERT(adapter != NULL, ("no adapter"));
 	block = (ndis_miniport_block *)adapter;
 	dev = block->physdeviceobj->devext;
 	for (i = 0; i < len; i++)
@@ -782,10 +783,11 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
     uint32_t offset, void *buf, uint32_t len)
 {
 	ndis_miniport_block *block;
+	device_t dev;
 	int i;
 	char *dest = buf;
-	device_t dev;
 
+	KASSERT(adapter != NULL, ("no adapter"));
 	block = (ndis_miniport_block *)adapter;
 	dev = block->physdeviceobj->devext;
 	for (i = 0; i < len; i++)
