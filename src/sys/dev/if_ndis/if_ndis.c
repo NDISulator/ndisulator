@@ -716,7 +716,7 @@ ndis_attach(device_t dev)
 	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
 	if (rval) {
 		device_printf(dev, "failed to get supported oids; "
-		    "status: 0x%0X\n", rval);
+		    "status: 0x%08X\n", rval);
 		goto fail;
 	}
 	if (bootverbose) {
@@ -727,7 +727,7 @@ ndis_attach(device_t dev)
 		for (i = 0; i < sc->ndis_oidcnt; i++)
 			device_printf(dev, "\t\t0x%08X\n", sc->ndis_oids[i]);
 		if (!ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i))
-			device_printf(dev, "driver version: 0x%0X\n", i);
+			device_printf(dev, "driver version: 0x%08X\n", i);
 		if (!ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i))
 			device_printf(dev, "hardware status: %d\n", i);
 	}
@@ -735,7 +735,7 @@ ndis_attach(device_t dev)
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
 	if (rval) {
 		device_printf(dev, "get current address failed; "
-		     "status: 0x%0X\n", rval);
+		     "status: 0x%08X\n", rval);
 		goto fail;
 	}
 
@@ -743,7 +743,7 @@ ndis_attach(device_t dev)
 	    OID_GEN_MAXIMUM_SEND_PACKETS, &sc->ndis_maxpkts);
 	if (rval) {
 		device_printf(dev, "get max TX packets failed; "
-		    "status: 0x%0X\n", rval);
+		    "status: 0x%08X\n", rval);
 		goto fail;
 	}
 
@@ -783,7 +783,7 @@ ndis_attach(device_t dev)
 	rval = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
 	if (rval) {
 		device_printf(dev, "failed to get physical medium; "
-		    "status: 0x%0X", rval);
+		    "status: 0x%08X", rval);
 		goto fail;
 	}
 
@@ -847,7 +847,7 @@ ndis_attach(device_t dev)
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, len);
 		if (rval) {
 			DPRINTF("failed to get network types; "
-			    "status: 0x%0X\n", rval);
+			    "status: 0x%08X\n", rval);
 			free(ntl, M_NDIS_DEV);
 			rval = 0;
 			goto nonettypes;
@@ -871,7 +871,7 @@ nonettypes:
 		    rates, sizeof(rates), &len, NULL);
 		if (rval)
 			DPRINTF("failed to get rates; "
-			    "status: 0x%0X\n", rval);
+			    "status: 0x%08X\n", rval);
 		/*
 		 * Since the supported rates only up to 8 can be supported,
 		 * if this is not 802.11b we're just going to be faking it
