@@ -997,10 +997,7 @@ ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
 {
 	ndis_miniport_interrupt *intr;
 
-	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
 	KASSERT(sc->ndis_block->interrupt != NULL, ("no interrupt"));
 	intr = sc->ndis_block->interrupt;
 	KeAcquireSpinLockAtDpcLevel(&intr->dpc_count_lock);
