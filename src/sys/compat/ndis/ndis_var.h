@@ -608,25 +608,25 @@ typedef enum ndis_encryption_status ndis_encryption_status;
 
 #define	NDIS_802_11_RELOADDEFAULT_WEP		0x00000000
 
-enum ndis_status_type {
-	NDIS_802_11_STATUSTYPE_AUTHENTICATION,
-	NDIS_802_11_STATUSTYPE_MEDIA_STREAM_MODE,
-	NDIS_802_11_STATUSTYPE_PMKID_CANDIDATE_LIST,
-	NDIS_802_11_STATUSTYPE_RADIO_STATE
+enum ndis_80211_status_type {
+	NDIS_802_11_STATUS_TYPE_AUTHENTICATION,
+	NDIS_802_11_STATUS_TYPE_MEDIA_STREAM_MODE,
+	NDIS_802_11_STATUS_TYPE_PMKID_CANDIDATE_LIST,
+	NDIS_802_11_STATUS_TYPE_RADIO_STATE
 };
-typedef enum ndis_status_type ndis_status_type;
+typedef enum ndis_80211_status_type ndis_80211_status_type;
 
 struct ndis_80211_status_indication {
-	uint32_t	nsi_type;
+	uint32_t	type;
 };
 typedef struct ndis_80211_status_indication ndis_80211_status_indication;
 
-enum ndis_radio_status {
-	NDIS_802_11_RADIOSTATUS_ON,
-	NDIS_802_11_RADIOSTATUS_HARDWARE_OFF,
-	NDIS_802_11_RADIOSTATUS_SOFTWARE_OFF
+enum ndis_80211_radio_status {
+	NDIS_802_11_RADIO_STATUS_ON,
+	NDIS_802_11_RADIO_STATUS_HARDWARE_OFF,
+	NDIS_802_11_RADIO_STATUS_SOFTWARE_OFF
 };
-typedef enum ndis_radio_status ndis_radio_status;
+typedef enum ndis_80211_radio_status ndis_80211_radio_status;
 
 #define	NDIS_802_11_AUTH_REQUEST_REAUTH			0x01
 #define	NDIS_802_11_AUTH_REQUEST_KEYUPDATE		0x02

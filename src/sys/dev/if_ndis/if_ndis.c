@@ -1604,14 +1604,14 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 			ndis_80211_status_indication *nsi;
 
 			nsi = buf;
-			switch (nsi->nsi_type) {
-			case NDIS_802_11_STATUSTYPE_AUTHENTICATION:
+			switch (nsi->type) {
+			case NDIS_802_11_STATUS_TYPE_AUTHENTICATION:
 				break;
-			case NDIS_802_11_STATUSTYPE_MEDIA_STREAM_MODE:
+			case NDIS_802_11_STATUS_TYPE_MEDIA_STREAM_MODE:
 				break;
-			case NDIS_802_11_STATUSTYPE_PMKID_CANDIDATE_LIST:
+			case NDIS_802_11_STATUS_TYPE_PMKID_CANDIDATE_LIST:
 				break;
-			case NDIS_802_11_STATUSTYPE_RADIO_STATE:
+			case NDIS_802_11_STATUS_TYPE_RADIO_STATE:
 				break;
 			default:
 				break;
