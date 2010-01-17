@@ -50,10 +50,10 @@ TAILQ_HEAD(reg_head, reg);
 #define	FLG_ADDREG_TYPE_DWORD		0x00010001
 #define	FLG_ADDREG_TYPE_NONE		0x00020001
 
-extern int inf_parse(FILE *, FILE *);
-extern void assign_add(const char *);
-extern void clear_words(void);
-extern void define_add(const char *);
-extern void push_word(const char *);
-extern void regkey_add(const char *);
-extern void section_add(const char *);
+extern int	inf_parse(FILE *, FILE *);
+extern void	assign_add(const char *);
+extern void	clear_words(void);
+extern void	define_add(const char *);
+extern void	push_word(const char *);
+extern void	regkey_add(const char *);
+extern void	section_add(const char *);
