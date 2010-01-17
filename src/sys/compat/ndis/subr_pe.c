@@ -43,9 +43,8 @@ __FBSDID("$FreeBSD$");
  * so this module implements only enough routines to be able to parse the
  * headers and sections of a .SYS object file and perform the necessary
  * relocations and jump table patching to allow us to call into it
- * (and to have it call back to us). Note that while this module
- * can handle fixups for imported symbols, it knows nothing about
- * exporting them.
+ * (and to have it call back to us). Note that while this module can handle
+ * fixups for imported symbols, it knows nothing about exporting them.
  */
 
 #include <sys/param.h>
