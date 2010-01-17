@@ -981,6 +981,10 @@ ndis_init_nic(void *arg)
 	NDIS_LOCK(sc);
 	if (rval == NDIS_STATUS_SUCCESS)
 		sc->ndis_block->device_ctx = sc;
+	else {
+		device_printf(sc->ndis_dev, "failed to initialize device; "
+		    "status: 0x%0X\n", rval);
+	}
 	NDIS_UNLOCK(sc);
 	return (rval);
 }

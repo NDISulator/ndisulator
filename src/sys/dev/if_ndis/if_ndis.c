@@ -710,12 +710,8 @@ ndis_attach(device_t dev)
 	    IoAllocateWorkItem(sc->ndis_block->deviceobj);
 	KeInitializeDpc(&sc->ndis_rxdpc, ndis_rxeof_xfr_wrap, sc->ndis_block);
 
-	rval = ndis_init_nic(sc);
-	if (rval) {
-		device_printf(dev, "failed to initialize device; "
-		    "status: 0x%0X\n", rval);
+	if (ndis_init_nic(sc) != NDIS_STATUS_SUCCESS)
 		goto fail;
-	}
 
 	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
 	if (rval) {
