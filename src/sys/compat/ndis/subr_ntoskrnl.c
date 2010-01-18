@@ -3128,7 +3128,7 @@ WmiTraceMessage(uint64_t loghandle, uint32_t messageflags,
 static ndis_status
 IoWMIRegistrationControl(device_object *dobj, uint32_t action)
 {
-	return (NDIS_STATUS_SUCCESS);
+	return (NDIS_STATUS_NOT_IMPLEMENTED);
 }
 
 /*
