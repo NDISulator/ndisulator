@@ -513,7 +513,7 @@ pe_functbl_match(image_patch_table *functbl, char *name)
 			return ((vm_offset_t)p->ipt_wrap);
 		p++;
 	}
-	printf("no match for %s\n", name);
+	printf("NDIS: no match for %s\n", name);
 
 	/*
 	 * Return the wrapper pointer for this routine.
