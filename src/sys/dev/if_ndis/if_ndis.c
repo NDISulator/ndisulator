@@ -144,7 +144,7 @@ static int	ndis_auth_mode(uint32_t);
 static void	ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
-static int	ndis_get_bssid_list(struct ndis_softc *,
+static int32_t	ndis_get_bssid_list(struct ndis_softc *,
 			ndis_80211_bssid_list_ex **);
 static int	ndis_get_oids(struct ndis_softc *, ndis_oid **, uint32_t *);
 static void	ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
@@ -2195,26 +2195,29 @@ ndis_disassociate(struct ndis_softc *sc, struct ieee80211vap *vap)
 		vap->iv_bss->ni_associd = 0;
 }
 
-static int
+static int32_t
 ndis_get_bssid_list(struct ndis_softc *sc, ndis_80211_bssid_list_ex **bl)
 {
-	uint32_t len = 0;
-	int error;
+	uint32_t len;
+	ndis_status rval;
 
-	*bl = malloc(65535, M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	len = sizeof(uint32_t) + (sizeof(ndis_wlan_bssid_ex) * 16);
+	*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (*bl == NULL)
-		return (ENOMEM);
-	error = ndis_get_info(sc, OID_802_11_BSSID_LIST,
-	    *bl, 65535, NULL, &len);
-	if (error == NDIS_STATUS_INVALID_LENGTH ||
-	    error == NDIS_STATUS_BUFFER_TOO_SHORT) {
+		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+	rval = ndis_get_info(sc, OID_802_11_BSSID_LIST,
+	    *bl, len, NULL, &len);
+	if (rval == NDIS_STATUS_INVALID_LENGTH ||
+	    rval == NDIS_STATUS_BUFFER_TOO_SHORT) {
 		free(*bl, M_NDIS_DEV);
 		*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (*bl == NULL)
-			return (ENOMEM);
-		error = ndis_get(sc, OID_802_11_BSSID_LIST, *bl, len);
+			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		rval = ndis_get(sc, OID_802_11_BSSID_LIST, *bl, len);
 	}
-	return (error);
+	if (rval)
+		free(*bl, M_NDIS_DEV);
+	return (rval);
 }
 
 static void
@@ -2771,11 +2774,8 @@ ndis_scan_end(struct ieee80211com *ic)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	saved_chan = ic->ic_curchan;
 
-	ndis_get_bssid_list(sc, &bl);
-	if (bl == NULL) {
-		device_printf(sc->ndis_dev, "failed to get bssid list\n");
+	if (ndis_get_bssid_list(sc, &bl) || bl == NULL)
 		return;
-	}
 
 	DPRINTF("%d scan results\n", bl->items);
 	wb = &bl->bssid[0];
