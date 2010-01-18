@@ -1025,10 +1025,13 @@ IofCallDriver(device_object *dobj, irp *ip)
 	int32_t status;
 	driver_dispatch disp;
 
+	KASSERT(ip != NULL, ("no irp"));
+	KASSERT(dobj != NULL, ("no device object"));
 	drvobj = dobj->drvobj;
+	KASSERT(drvbj != NULL, ("no driver object"));
 
 	if (ip->irp_currentstackloc <= 0)
-		panic("IoCallDriver(): out of stack locations");
+		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	IoSetNextIrpStackLocation(ip);
 	sl = IoGetCurrentIrpStackLocation(ip);
