@@ -1037,6 +1037,11 @@ got_crypto:
 		ifmedia_set(&sc->ifmedia, IFM_ETHER|IFM_AUTO);
 		ether_ifattach(ifp, eaddr);
 	}
+
+	/* Get MTU, must be after *_ifattach */
+	if (!ndis_get_int(sc, OID_GEN_MAXIMUM_FRAME_SIZE, &i))
+		ifp->if_mtu = i;
+
 	ndis_stop(sc);
 	return (0);
 fail:
@@ -1896,9 +1901,6 @@ ndis_init(void *xsc)
 		sc->ndis_filter |= NDIS_PACKET_TYPE_PROMISCUOUS;
 	if (ndis_set_filter(sc, sc->ndis_filter) != 0)
 		DPRINTF("set filter failed\n");
-
-	/* Set lookahead */
-	ndis_set_int(sc, OID_GEN_CURRENT_LOOKAHEAD, ifp->if_mtu);
 
 	/* Program the multicast filter, if necessary */
 	ndis_set_multi(sc);
