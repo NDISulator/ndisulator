@@ -1371,13 +1371,13 @@ struct ndis_miniport_driver_characteristics {
 	void *		query_info_func;
 	void *		reconfig_func;
 	void *		reset_func;
-	void *		send_single_func;
+	void *		send_func;
 	void *		set_info_func;
 	void *		transfer_data_func;
 
 	/* NDIS 4.0 extentions */
 	void *		return_packet_func;
-	void *		send_multi_func;
+	void *		send_packets_func;
 	void *		allocate_complete_func;
 
 	/* NDIS 5.0 extensions */
@@ -1385,11 +1385,11 @@ struct ndis_miniport_driver_characteristics {
 	void *		co_delete_vc_func;
 	void *		co_activate_vc_func;
 	void *		co_deactivate_vc_func;
-	void *		co_multisend_func;
+	void *		co_send_packets_func;
 	void *		co_request_func;
 
 	/* NDIS 5.1 extentions */
-	void *		cancel_tx_func;
+	void *		cancel_send_packets_func;
 	void *		pnp_event_notify_func;
 	void *		shutdown_func;
 	void *		reserved0;
@@ -1569,14 +1569,14 @@ typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, ndis_handle);
 typedef ndis_status (*ndis_query_info_func)(ndis_handle, ndis_oid, void *,
     uint32_t, uint32_t *, uint32_t *);
 typedef int (*ndis_reset_func)(uint8_t *, ndis_handle);
-typedef ndis_status (*ndis_send_single_func)(ndis_handle, ndis_packet *,
+typedef ndis_status (*ndis_send_func)(ndis_handle, ndis_packet *,
     uint32_t);
 typedef ndis_status (*ndis_set_info_func)(ndis_handle, ndis_oid, void *,
     uint32_t, uint32_t *, uint32_t *);
 typedef ndis_status (*ndis_transfer_data_func)(ndis_handle, ndis_packet *,
     uint32_t *, uint32_t);
 typedef void (*ndis_return_func)(ndis_handle, ndis_packet *);
-typedef ndis_status (*ndis_send_multi_func)(ndis_handle, ndis_packet **,
+typedef void (*ndis_send_packets_func)(ndis_handle, ndis_packet **,
     uint32_t);
 typedef void (*ndis_allocate_complete_func)(ndis_handle, void *,
     ndis_physaddr *, uint32_t, void *);
@@ -1651,8 +1651,8 @@ extern int	ndis_set(void *, ndis_oid, void *, uint32_t);
 extern int	ndis_set_int(void *, ndis_oid, uint32_t);
 extern int	ndis_set_info(void *, ndis_oid, void *, uint32_t,
 		    uint32_t *, uint32_t *);
-extern int	ndis_send_packets(void *, ndis_packet **, int);
-extern int	ndis_send_packet(void *, ndis_packet *);
+extern void	ndis_send_packets(void *, ndis_packet **, int);
+extern int32_t	ndis_send_packet(void *, ndis_packet *);
 extern int	ndis_convert_res(void *);
 extern void	ndis_free_packet(ndis_packet *);
 extern void	ndis_free_bufs(ndis_buffer *);

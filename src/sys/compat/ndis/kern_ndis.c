@@ -715,7 +715,7 @@ ndis_set_info(void *arg, ndis_oid oid, void *buf, uint32_t buflen,
 
 typedef void (*ndis_send_done_func) (ndis_handle, ndis_packet *, ndis_status);
 
-int
+void
 ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 {
 	struct ndis_softc *sc = arg;
@@ -728,10 +728,10 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
 	KASSERT(sc->ndis_block->send_done_func != NULL, ("no send_done"));
-	KASSERT(sc->ndis_chars->send_multi_func != NULL, ("no send_multi"));
+	KASSERT(sc->ndis_chars->send_packets_func != NULL, ("no send_packets"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
-	MSCALL3(sc->ndis_chars->send_multi_func,
+	MSCALL3(sc->ndis_chars->send_packets_func,
 	    sc->ndis_block->miniport_adapter_ctx, packets, cnt);
 	for (i = 0; i < cnt; i++) {
 		p = packets[i];
@@ -748,10 +748,9 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 	}
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
-	return (0);
 }
 
-int
+int32_t
 ndis_send_packet(void *arg, ndis_packet *packet)
 {
 	struct ndis_softc *sc = arg;
@@ -763,11 +762,10 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
 	    ("no adapter"));
 	KASSERT(sc->ndis_block->send_done_func != NULL, ("no send_done"));
-	KASSERT(sc->ndis_chars->send_single_func != NULL,
-	    ("no send_single"));
+	KASSERT(sc->ndis_chars->send_func != NULL, ("no send"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
-	status = MSCALL3(sc->ndis_chars->send_single_func,
+	status = MSCALL3(sc->ndis_chars->send_func,
 	    sc->ndis_block->miniport_adapter_ctx, packet,
 	    packet->np_private.flags);
 	if (status == NDIS_STATUS_PENDING) {

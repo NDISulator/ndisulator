@@ -1880,7 +1880,7 @@ ndis_start(struct ifnet *ifp)
 	 * a MiniportSendPackets() routine, we prefer that over
 	 * a MiniportSend() routine (which sends just a single packet).
 	 */
-	if (sc->ndis_chars->send_multi_func != NULL)
+	if (sc->ndis_chars->send_packets_func != NULL)
 		ndis_send_packets(sc, p0, pcnt);
 	else
 		ndis_send_packet(sc, p);
