@@ -355,8 +355,8 @@ ndis_return_packet_nic(device_object *dobj, void *arg)
 	KeAcquireSpinLock(&block->returnlock, &irql);
 	while (!IsListEmpty(&block->returnlist)) {
 		l = RemoveHeadList((&block->returnlist));
-		p = CONTAINING_RECORD(l, ndis_packet, np_list);
-		InitializeListHead((&p->np_list));
+		p = CONTAINING_RECORD(l, ndis_packet, list);
+		InitializeListHead((&p->list));
 		KeReleaseSpinLock(&block->returnlock, irql);
 		MSCALL2(ch->return_packet_func,
 		block->miniport_adapter_ctx, p);
@@ -371,14 +371,14 @@ ndis_return_packet(void *buf, void *arg)
 	ndis_packet *p = arg;
 	ndis_miniport_block *block;
 
-	p->np_refcnt--;
-	if (p->np_refcnt)
+	p->refcnt--;
+	if (p->refcnt)
 		return;
 
-	block = ((struct ndis_softc *)p->np_softc)->ndis_block;
+	block = ((struct ndis_softc *)p->softc)->ndis_block;
 	KeAcquireSpinLockAtDpcLevel(&block->returnlock);
-	InitializeListHead((&p->np_list));
-	InsertHeadList((&block->returnlist), (&p->np_list));
+	InitializeListHead((&p->list));
+	InsertHeadList((&block->returnlist), (&p->list));
 	KeReleaseSpinLockFromDpcLevel(&block->returnlock);
 
 	IoQueueWorkItem(block->returnitem,
@@ -405,7 +405,7 @@ void
 ndis_free_packet(ndis_packet *p)
 {
 	KASSERT(p != NULL, ("no packet"));
-	ndis_free_bufs(p->np_private.head);
+	ndis_free_bufs(p->private.head);
 	NdisFreePacket(p);
 }
 
@@ -443,7 +443,7 @@ ndis_convert_res(void *arg)
 				prd->flags = CM_RESOURCE_PORT_IO;
 				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.port.start.np_quad =
+				prd->u.port.start.quad =
 				    brle->start;
 				prd->u.port.len = brle->count;
 				break;
@@ -453,7 +453,7 @@ ndis_convert_res(void *arg)
 				    CM_RESOURCE_MEMORY_READ_WRITE;
 				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.mem.start.np_quad =
+				prd->u.mem.start.quad =
 				    brle->start;
 				prd->u.mem.len = brle->count;
 				break;
@@ -508,9 +508,9 @@ ndis_ptom(struct mbuf **m0, ndis_packet *p)
 	if (p == NULL || m0 == NULL)
 		return (EINVAL);
 
-	priv = &p->np_private;
+	priv = &p->private;
 	buf = priv->head;
-	p->np_refcnt = 0;
+	p->refcnt = 0;
 
 	for (buf = priv->head; buf != NULL; buf = buf->mdl_next) {
 		if (buf == priv->head)
@@ -530,7 +530,7 @@ ndis_ptom(struct mbuf **m0, ndis_packet *p)
 		m->m_data = MmGetMdlVirtualAddress(buf);
 		MEXTADD(m, m->m_data, m->m_len, ndis_return_packet,
 		    m->m_data, p, 0, EXT_NDIS);
-		p->np_refcnt++;
+		p->refcnt++;
 
 		totlen += m->m_len;
 		if (m->m_flags & M_PKTHDR)
@@ -551,7 +551,7 @@ ndis_ptom(struct mbuf **m0, ndis_packet *p)
 	 * the 'oversize' frames.
 	 */
 	eh = mtod((*m0), struct ether_header *);
-	ifp = ((struct ndis_softc *)p->np_softc)->ndis_ifp;
+	ifp = ((struct ndis_softc *)p->softc)->ndis_ifp;
 	if (totlen > ETHER_MAX_FRAME(ifp, eh->ether_type, FALSE)) {
 		diff = totlen - ETHER_MAX_FRAME(ifp, eh->ether_type, FALSE);
 		totlen -= diff;
@@ -586,7 +586,7 @@ ndis_mtop(struct mbuf *m0, ndis_packet **p)
 	if (p == NULL || *p == NULL || m0 == NULL)
 		return (EINVAL);
 
-	priv = &(*p)->np_private;
+	priv = &(*p)->private;
 	priv->totlen = m0->m_pkthdr.len;
 
 	for (m = m0; m != NULL; m = m->m_next) {
@@ -741,10 +741,10 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 		 * it and release it asynchronously later. Skip to the
 		 * next one.
 		 */
-		if (p == NULL || p->np_oob.npo_status == NDIS_STATUS_PENDING)
+		if (p == NULL || p->oob.npo_status == NDIS_STATUS_PENDING)
 			continue;
 		MSCALL3(sc->ndis_block->send_done_func,
-		    sc->ndis_block, p, p->np_oob.npo_status);
+		    sc->ndis_block, p, p->oob.npo_status);
 	}
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
@@ -767,7 +767,7 @@ ndis_send_packet(void *arg, ndis_packet *packet)
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
 	status = MSCALL3(sc->ndis_chars->send_func,
 	    sc->ndis_block->miniport_adapter_ctx, packet,
-	    packet->np_private.flags);
+	    packet->private.flags);
 	if (status == NDIS_STATUS_PENDING) {
 		if (NDIS_SERIALIZED(sc->ndis_block))
 			KeReleaseSpinLock(&sc->ndis_block->lock, irql);
@@ -811,7 +811,7 @@ ndis_destroy_dma(void *arg)
 	for (i = 0; i < sc->ndis_maxpkts; i++) {
 		if (sc->ndis_txarray[i] != NULL) {
 			p = sc->ndis_txarray[i];
-			m = (struct mbuf *)p->np_rsvd[1];
+			m = (struct mbuf *)p->rsvd[1];
 			if (m != NULL)
 				m_freem(m);
 			ndis_free_packet(sc->ndis_txarray[i]);

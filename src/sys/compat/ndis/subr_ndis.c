@@ -477,13 +477,13 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 	    sizeof(ndis_parmlist_entry), 0);
 	if (np == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-	InsertHeadList((&block->parmlist), (&np->np_list));
-	*parm = p = &np->np_parm;
-	p->ncp_type = type;
+	InsertHeadList((&block->parmlist), (&np->list));
+	*parm = p = &np->parm;
+	p->type = type;
 
 	switch (type) {
 	case ndis_parm_string:
-		us = &p->ncp_parmdata.ncp_stringdata;
+		us = &p->parmdata.stringdata;
 		RtlInitAnsiString(&as, (char *)oid->oid_arg1);
 		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
 			ExFreePool(np);
@@ -491,15 +491,15 @@ ndis_encode_parm(ndis_miniport_block *block, struct sysctl_oid *oid,
 		}
 		break;
 	case ndis_parm_int:
-		p->ncp_parmdata.ncp_intdata =
+		p->parmdata.intdata =
 		    strtol((char *)oid->oid_arg1, NULL, 0);
 		break;
 	case ndis_parm_hexint:
-		p->ncp_parmdata.ncp_intdata =
+		p->parmdata.intdata =
 		    strtoul((char *)oid->oid_arg1, NULL, 16);
 		break;
 	case ndis_parm_binary:
-		p->ncp_parmdata.ncp_intdata =
+		p->parmdata.intdata =
 		    strtoul((char *)oid->oid_arg1, NULL, 2);
 		break;
 	default:
@@ -582,9 +582,9 @@ ndis_decode_parm(ndis_miniport_block *block, ndis_config_parm *parm, char *val)
 	unicode_string *ustr;
 	ansi_string as;
 
-	switch (parm->ncp_type) {
+	switch (parm->type) {
 	case ndis_parm_string:
-		ustr = &parm->ncp_parmdata.ncp_stringdata;
+		ustr = &parm->parmdata.stringdata;
 		if (RtlUnicodeStringToAnsiString(&as, ustr, TRUE))
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		memcpy(val, as.as_buf, as.as_len);
@@ -592,15 +592,15 @@ ndis_decode_parm(ndis_miniport_block *block, ndis_config_parm *parm, char *val)
 		break;
 	case ndis_parm_int:
 		snprintf(val, sizeof(uint32_t), "%d",
-		    parm->ncp_parmdata.ncp_intdata);
+		    parm->parmdata.intdata);
 		break;
 	case ndis_parm_hexint:
 		snprintf(val, sizeof(uint32_t), "%x",
-		    parm->ncp_parmdata.ncp_intdata);
+		    parm->parmdata.intdata);
 		break;
 	case ndis_parm_binary:
 		snprintf(val, sizeof(uint32_t), "%u",
-		    parm->ncp_parmdata.ncp_intdata);
+		    parm->parmdata.intdata);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
@@ -661,10 +661,10 @@ NdisCloseConfiguration(ndis_handle cfg)
 	block = (ndis_miniport_block *)cfg;
 	while (!IsListEmpty(&block->parmlist)) {
 		e = RemoveHeadList(&block->parmlist);
-		pe = CONTAINING_RECORD(e, ndis_parmlist_entry, np_list);
-		p = &pe->np_parm;
-		if (p->ncp_type == ndis_parm_string)
-			RtlFreeUnicodeString(&p->ncp_parmdata.ncp_stringdata);
+		pe = CONTAINING_RECORD(e, ndis_parmlist_entry, list);
+		p = &pe->parm;
+		if (p->type == ndis_parm_string)
+			RtlFreeUnicodeString(&p->parmdata.stringdata);
 		ExFreePool(e);
 	}
 }
@@ -865,7 +865,7 @@ ndis_map_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
 	ctx = arg;
 
 	for (i = 0; i < nseg; i++) {
-		ctx->fraglist[i].physaddr.np_quad = segs[i].ds_addr;
+		ctx->fraglist[i].physaddr.quad = segs[i].ds_addr;
 		ctx->fraglist[i].len = segs[i].ds_len;
 	}
 
@@ -1203,7 +1203,7 @@ ndis_mapshared_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
 		return;
 
 	p = arg;
-	p->np_quad = segs[0].ds_addr;
+	p->quad = segs[0].ds_addr;
 }
 
 /*
@@ -1269,7 +1269,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	 * searching based on the virtual address fails.
 	 */
 	NDIS_LOCK(sc);
-	sh->ndis_paddr.np_quad = paddr->np_quad;
+	sh->ndis_paddr.quad = paddr->quad;
 	sh->ndis_saddr = *vaddr;
 	InsertHeadList((&sc->ndis_shlist), (&sh->ndis_list));
 	NDIS_UNLOCK(sc);
@@ -1296,7 +1296,7 @@ ndis_asyncmem_complete(device_object *dobj, void *arg)
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	vaddr = NULL;
-	paddr.np_quad = 0;
+	paddr.quad = 0;
 
 	NdisMAllocateSharedMemory(block, w->na_len,
 	    w->na_cached, &vaddr, &paddr);
@@ -1373,7 +1373,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 		 * Check the physaddr too, just in case the driver lied
 		 * about the virtual address.
 		 */
-		if (sh->ndis_paddr.np_quad == paddr.np_quad)
+		if (sh->ndis_paddr.quad == paddr.quad)
 			break;
 		l = l->nle_flink;
 	}
@@ -1382,7 +1382,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 		NDIS_UNLOCK(sc);
 		printf("NDIS: buggy driver tried to free "
 		    "invalid shared memory: vaddr: %p paddr: 0x%jx\n",
-		    vaddr, (uintmax_t)paddr.np_quad);
+		    vaddr, (uintmax_t)paddr.quad);
 		return;
 	}
 
@@ -1404,7 +1404,7 @@ NdisMMapIoSpace(void **vaddr, ndis_handle adapter, ndis_physaddr paddr,
 	if (adapter == NULL)
 		return (NDIS_STATUS_FAILURE);
 
-	*vaddr = MmMapIoSpace(paddr.np_quad, len, 0);
+	*vaddr = MmMapIoSpace(paddr.quad, len, 0);
 	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
 
@@ -1488,27 +1488,27 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 		return;
 	}
 
-	p->np_cnt = descnum + NDIS_POOL_EXTRA;
-	p->np_len = sizeof(ndis_packet) + protrsvdlen;
+	p->cnt = descnum + NDIS_POOL_EXTRA;
+	p->len = sizeof(ndis_packet) + protrsvdlen;
 
-	packets = ExAllocatePoolWithTag(NonPagedPool, p->np_cnt *
-	    p->np_len, 0);
+	packets = ExAllocatePoolWithTag(NonPagedPool, p->cnt *
+	    p->len, 0);
 	if (packets == NULL) {
 		ExFreePool(p);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 
-	p->np_pktmem = packets;
+	p->pktmem = packets;
 
-	for (i = 0; i < p->np_cnt; i++)
-		InterlockedPushEntrySList(&p->np_head,
+	for (i = 0; i < p->cnt; i++)
+		InterlockedPushEntrySList(&p->head,
 		    (struct slist_entry *)&packets[i]);
 
 #ifdef NDIS_DEBUG_PACKETS
-	p->np_dead = 0;
-	KeInitializeSpinLock(&p->np_lock);
-	KeInitializeEvent(&p->np_event, EVENT_TYPE_NOTIFY, TRUE);
+	p->dead = 0;
+	KeInitializeSpinLock(&p->lock);
+	KeInitializeEvent(&p->event, EVENT_TYPE_NOTIFY, TRUE);
 #endif
 
 	*pool = p;
@@ -1530,7 +1530,7 @@ NdisPacketPoolUsage(ndis_handle pool)
 
 	p = (ndis_packet_pool *)pool;
 
-	return (p->np_cnt - ExQueryDepthSList(&p->np_head));
+	return (p->cnt - ExQueryDepthSList(&p->head));
 }
 
 void
@@ -1543,19 +1543,19 @@ NdisFreePacketPool(ndis_handle pool)
 #endif
 	p = (ndis_packet_pool *)pool;
 #ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&p->np_lock, &irql);
+	KeAcquireSpinLock(&p->lock, &irql);
 #endif
 	usage = NdisPacketPoolUsage(pool);
 #ifdef NDIS_DEBUG_PACKETS
 	if (usage) {
-		p->np_dead = 1;
-		KeResetEvent(&p->np_event);
-		KeReleaseSpinLock(&p->np_lock, irql);
-		KeWaitForSingleObject(&p->np_event, 0, 0, FALSE, NULL);
+		p->dead = 1;
+		KeResetEvent(&p->event);
+		KeReleaseSpinLock(&p->lock, irql);
+		KeWaitForSingleObject(&p->event, 0, 0, FALSE, NULL);
 	} else
-		KeReleaseSpinLock(&p->np_lock, irql);
+		KeReleaseSpinLock(&p->lock, irql);
 #endif
-	ExFreePool(p->np_pktmem);
+	ExFreePool(p->pktmem);
 	ExFreePool(p);
 }
 
@@ -1569,18 +1569,18 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 #endif
 	p = (ndis_packet_pool *)pool;
 #ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&p->np_lock, &irql);
-	if (p->np_dead) {
-		KeReleaseSpinLock(&p->np_lock, irql);
+	KeAcquireSpinLock(&p->lock, &irql);
+	if (p->dead) {
+		KeReleaseSpinLock(&p->lock, irql);
 		printf("NDIS: tried to allocate packet from dead pool %p\n",
 		    pool);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 #endif
-	pkt = (ndis_packet *)InterlockedPopEntrySList(&p->np_head);
+	pkt = (ndis_packet *)InterlockedPopEntrySList(&p->head);
 #ifdef NDIS_DEBUG_PACKETS
-	KeReleaseSpinLock(&p->np_lock, irql);
+	KeReleaseSpinLock(&p->lock, irql);
 #endif
 	if (pkt == NULL) {
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
@@ -1589,10 +1589,10 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 	memset(pkt, 0, sizeof(ndis_packet));
 
 	/* Save pointer to the pool. */
-	pkt->np_private.pool = pool;
+	pkt->private.pool = pool;
 
 	/* Set the oob offset pointer. Lots of things expect this. */
-	pkt->np_private.packetooboffset = offsetof(ndis_packet, np_oob);
+	pkt->private.packetooboffset = offsetof(ndis_packet, oob);
 
 	/*
 	 * We must initialize the packet flags correctly in order
@@ -1600,8 +1600,8 @@ NdisAllocatePacket(ndis_status *status, ndis_packet **packet, ndis_handle pool)
 	 * NDIS_GET_PACKET_MEDIA_SPECIFIC_INFO() macros to work
 	 * correctly.
 	 */
-	pkt->np_private.ndispktflags = NDIS_PACKET_ALLOCATED_BY_NDIS;
-	pkt->np_private.validcounts = FALSE;
+	pkt->private.ndispktflags = NDIS_PACKET_ALLOCATED_BY_NDIS;
+	pkt->private.validcounts = FALSE;
 
 	*packet = pkt;
 
@@ -1615,19 +1615,19 @@ NdisFreePacket(ndis_packet *packet)
 #ifdef NDIS_DEBUG_PACKETS
 	uint8_t irql;
 #endif
-	p = (ndis_packet_pool *)packet->np_private.pool;
+	p = (ndis_packet_pool *)packet->private.pool;
 
 #ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&p->np_lock, &irql);
+	KeAcquireSpinLock(&p->lock, &irql);
 #endif
-	InterlockedPushEntrySList(&p->np_head, (slist_entry *)packet);
+	InterlockedPushEntrySList(&p->head, (slist_entry *)packet);
 
 #ifdef NDIS_DEBUG_PACKETS
-	if (p->np_dead) {
-		if (ExQueryDepthSList(&p->np_head) == p->np_cnt)
-			KeSetEvent(&p->np_event, IO_NO_INCREMENT, FALSE);
+	if (p->dead) {
+		if (ExQueryDepthSList(&p->head) == p->cnt)
+			KeSetEvent(&p->event, IO_NO_INCREMENT, FALSE);
 	}
-	KeReleaseSpinLock(&p->np_lock, irql);
+	KeReleaseSpinLock(&p->lock, irql);
 #endif
 }
 
@@ -1638,7 +1638,7 @@ NdisUnchainBufferAtFront(ndis_packet *packet, ndis_buffer **buf)
 
 	if (packet == NULL || buf == NULL)
 		return;
-	priv = &packet->np_private;
+	priv = &packet->private;
 	priv->validcounts = FALSE;
 	if (priv->head == priv->tail) {
 		*buf = priv->head;
@@ -1657,7 +1657,7 @@ NdisUnchainBufferAtBack(ndis_packet *packet, ndis_buffer **buf)
 
 	if (packet == NULL || buf == NULL)
 		return;
-	priv = &packet->np_private;
+	priv = &packet->private;
 	priv->validcounts = FALSE;
 	if (priv->head == priv->tail) {
 		*buf = priv->head;
@@ -2233,7 +2233,7 @@ NdisGetFirstBufferFromPacket(ndis_packet *packet, ndis_buffer **buf,
 {
 	ndis_buffer *tmp;
 
-	tmp = packet->np_private.head;
+	tmp = packet->private.head;
 	*buf = tmp;
 	if (tmp == NULL) {
 		*firstva = NULL;
@@ -2599,8 +2599,8 @@ NdisCopyFromPacketToPacket(ndis_packet *dpkt, uint32_t doff, uint32_t reqlen,
 
 	*cpylen = 0;
 
-	src = spkt->np_private.head;
-	dst = dpkt->np_private.head;
+	src = spkt->private.head;
+	dst = dpkt->private.head;
 
 	sptr = MmGetMdlVirtualAddress(src);
 	dptr = MmGetMdlVirtualAddress(dst);
@@ -2684,7 +2684,7 @@ NdisCopyFromPacketToPacketSafe(ndis_packet *dpkt, uint32_t doff,
 static void
 NdisIMCopySendPerPacketInfo(ndis_packet *dpkt, ndis_packet *spkt)
 {
-	memcpy(&dpkt->np_ext, &spkt->np_ext, sizeof(ndis_packet_extension));
+	memcpy(&dpkt->ext, &spkt->ext, sizeof(ndis_packet_extension));
 }
 
 static ndis_status

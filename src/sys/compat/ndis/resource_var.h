@@ -38,10 +38,10 @@
 typedef int cm_resource_type;
 
 struct physaddr {
-	uint64_t	np_quad;
+	uint64_t	quad;
 #ifdef notdef
-	uint32_t	np_low;
-	uint32_t	np_high;
+	uint32_t	low;
+	uint32_t	high;
 #endif
 };
 typedef struct physaddr physaddr;

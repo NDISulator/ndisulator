@@ -1237,7 +1237,7 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 		return;
 	}
 
-	p->np_m0 = m;
+	p->m0 = m;
 	b = IoAllocateMdl(m->m_data, m->m_pkthdr.len, FALSE, FALSE, NULL);
 	if (b == NULL) {
 		NdisFreePacket(p);
@@ -1245,17 +1245,17 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 		return;
 	}
 
-	p->np_private.head = p->np_private.tail = b;
-	p->np_private.totlen = m->m_pkthdr.len;
+	p->private.head = p->private.tail = b;
+	p->private.totlen = m->m_pkthdr.len;
 
 	/* Save the packet RX context somewhere. */
-	priv = (ndis_ethpriv *)&p->np_protocolreserved;
+	priv = (ndis_ethpriv *)&p->protocolreserved;
 	priv->nep_ctx = ctx;
 
 	if (!NDIS_SERIALIZED(block))
 		KeAcquireSpinLock(&block->lock, &irql);
 
-	InsertTailList((&block->packet_list), (&p->np_list));
+	InsertTailList((&block->packet_list), (&p->list));
 
 	if (!NDIS_SERIALIZED(block))
 		KeReleaseSpinLock(&block->lock, irql);
@@ -1304,17 +1304,17 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	l = block->packet_list.nle_flink;
 	while (!IsListEmpty(&block->packet_list)) {
 		l = RemoveHeadList((&block->packet_list));
-		p = CONTAINING_RECORD(l, ndis_packet, np_list);
-		InitializeListHead((&p->np_list));
+		p = CONTAINING_RECORD(l, ndis_packet, list);
+		InitializeListHead((&p->list));
 
-		priv = (ndis_ethpriv *)&p->np_protocolreserved;
-		m = p->np_m0;
-		p->np_softc = sc;
-		p->np_m0 = NULL;
+		priv = (ndis_ethpriv *)&p->protocolreserved;
+		m = p->m0;
+		p->softc = sc;
+		p->m0 = NULL;
 
 		KeReleaseSpinLockFromDpcLevel(&block->lock);
 		status = MSCALL6(sc->ndis_chars->transfer_data_func,
-		    p, &p->np_private.totlen, block, priv->nep_ctx,
+		    p, &p->private.totlen, block, priv->nep_ctx,
 		    m->m_len, m->m_pkthdr.len - m->m_len);
 		KeAcquireSpinLockAtDpcLevel(&block->lock);
 
@@ -1326,7 +1326,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 		m->m_pkthdr.rcvif = ifp;
 
 		if (status == NDIS_STATUS_SUCCESS) {
-			IoFreeMdl(p->np_private.head);
+			IoFreeMdl(p->private.head);
 			NdisFreePacket(p);
 			KeAcquireSpinLockAtDpcLevel(&sc->ndis_rxlock);
 			_IF_ENQUEUE(&sc->ndis_rxqueue, m);
@@ -1363,8 +1363,8 @@ ndis_rxeof_xfr_done(ndis_handle adapter, ndis_packet *packet,
 		return;
 	ifp = sc->ndis_ifp;
 
-	m = packet->np_m0;
-	IoFreeMdl(packet->np_private.head);
+	m = packet->m0;
+	IoFreeMdl(packet->private.head);
 	NdisFreePacket(packet);
 
 	if (status != NDIS_STATUS_SUCCESS) {
@@ -1423,8 +1423,8 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 	if (!(ifp->if_drv_flags & IFF_DRV_RUNNING)) {
 		for (i = 0; i < pktcnt; i++) {
 			p = packets[i];
-			if (p->np_oob.npo_status == NDIS_STATUS_SUCCESS) {
-				p->np_refcnt++;
+			if (p->oob.npo_status == NDIS_STATUS_SUCCESS) {
+				p->refcnt++;
 				ndis_return_packet(block, p);
 			}
 		}
@@ -1434,39 +1434,39 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 	for (i = 0; i < pktcnt; i++) {
 		p = packets[i];
 		/* Stash the softc here so ptom can use it. */
-		p->np_softc = sc;
+		p->softc = sc;
 		if (ndis_ptom(&m0, p)) {
 			device_printf(sc->ndis_dev, "ptom failed\n");
-			if (p->np_oob.npo_status == NDIS_STATUS_SUCCESS)
+			if (p->oob.npo_status == NDIS_STATUS_SUCCESS)
 				ndis_return_packet(block, p);
 		} else {
 #ifdef notdef
-			if (p->np_oob.npo_status ==
+			if (p->oob.npo_status ==
 			    NDIS_STATUS_INSUFFICIENT_RESOURCES) {
 				m = m_dup(m0, M_DONTWAIT);
 				/*
 				 * NOTE: we want to destroy the mbuf here, but
 				 * we don't actually want to return it to the
 				 * driver via the return packet handler. By
-				 * bumping np_refcnt, we can prevent the
+				 * bumping refcnt, we can prevent the
 				 * ndis_return_packet() routine from actually
 				 * doing anything.
 				 */
-				p->np_refcnt++;
+				p->refcnt++;
 				m_freem(m0);
 				if (m == NULL)
 					ifp->if_ierrors++;
 				else
 					m0 = m;
 			} else
-				p->np_oob.npo_status = NDIS_STATUS_PENDING;
+				p->oob.npo_status = NDIS_STATUS_PENDING;
 #endif
 			m = m_dup(m0, M_DONTWAIT);
-			if (p->np_oob.npo_status ==
+			if (p->oob.npo_status ==
 			    NDIS_STATUS_INSUFFICIENT_RESOURCES)
-				p->np_refcnt++;
+				p->refcnt++;
 			else
-				p->np_oob.npo_status = NDIS_STATUS_PENDING;
+				p->oob.npo_status = NDIS_STATUS_PENDING;
 			m_freem(m0);
 			if (m == NULL) {
 				ifp->if_ierrors++;
@@ -1477,9 +1477,9 @@ ndis_rxeof(ndis_handle adapter, ndis_packet **packets, uint32_t pktcnt)
 
 			/* Deal with checksum offload. */
 			if (ifp->if_capenable & IFCAP_RXCSUM &&
-			    p->np_ext.info[NDIS_TCPIPCSUM_INFO] != NULL) {
+			    p->ext.info[NDIS_TCPIPCSUM_INFO] != NULL) {
 				s = (uintptr_t)
-				    p->np_ext.info[NDIS_TCPIPCSUM_INFO];
+				    p->ext.info[NDIS_TCPIPCSUM_INFO];
 				csum = (ndis_tcpip_csum *)&s;
 				if (csum->u.rxflags & NDIS_RXCSUM_IP_PASSED)
 					m0->m_pkthdr.csum_flags |=
@@ -1554,8 +1554,8 @@ ndis_txeof(ndis_handle adapter, ndis_packet *packet, ndis_status status)
 		return;
 	ifp = sc->ndis_ifp;
 
-	m = packet->np_m0;
-	idx = packet->np_txidx;
+	m = packet->m0;
+	idx = packet->txidx;
 	if (sc->ndis_sc)
 		bus_dmamap_unload(sc->ndis_ttag, sc->ndis_tmaps[idx]);
 
@@ -1713,7 +1713,7 @@ ndis_map_sclist(void *arg, bus_dma_segment_t *segs, int nseg,
 	sclist->frags = nseg;
 
 	for (i = 0; i < nseg; i++) {
-		sclist->elements[i].addr.np_quad = segs[i].ds_addr;
+		sclist->elements[i].addr.quad = segs[i].ds_addr;
 		sclist->elements[i].len = segs[i].ds_len;
 	}
 }
@@ -1805,9 +1805,9 @@ ndis_start(struct ifnet *ifp)
 		 * Save pointer to original mbuf so we can free it later.
 		 */
 		p = sc->ndis_txarray[sc->ndis_txidx];
-		p->np_txidx = sc->ndis_txidx;
-		p->np_m0 = m;
-		p->np_oob.npo_status = NDIS_STATUS_PENDING;
+		p->txidx = sc->ndis_txidx;
+		p->m0 = m;
+		p->oob.npo_status = NDIS_STATUS_PENDING;
 
 		/*
 		 * Do scatter/gather processing, if driver requested it.
@@ -1815,18 +1815,18 @@ ndis_start(struct ifnet *ifp)
 		if (sc->ndis_sc) {
 			bus_dmamap_load_mbuf(sc->ndis_ttag,
 			    sc->ndis_tmaps[sc->ndis_txidx], m,
-			    ndis_map_sclist, &p->np_sclist, BUS_DMA_NOWAIT);
+			    ndis_map_sclist, &p->sclist, BUS_DMA_NOWAIT);
 			bus_dmamap_sync(sc->ndis_ttag,
 			    sc->ndis_tmaps[sc->ndis_txidx],
 			    BUS_DMASYNC_PREREAD);
-			p->np_ext.info[NDIS_SCLIST_INFO] = &p->np_sclist;
+			p->ext.info[NDIS_SCLIST_INFO] = &p->sclist;
 		}
 
 		/* Handle checksum offload. */
 		if (ifp->if_capenable & IFCAP_TXCSUM &&
 		    m->m_pkthdr.csum_flags) {
 			csum = (ndis_tcpip_csum *)
-				&p->np_ext.info[NDIS_TCPIPCSUM_INFO];
+				&p->ext.info[NDIS_TCPIPCSUM_INFO];
 			csum->u.txflags = NDIS_TXCSUM_DO_IPV4;
 			if (m->m_pkthdr.csum_flags & CSUM_IP)
 				csum->u.txflags |= NDIS_TXCSUM_DO_IP;
@@ -1834,7 +1834,7 @@ ndis_start(struct ifnet *ifp)
 				csum->u.txflags |= NDIS_TXCSUM_DO_TCP;
 			if (m->m_pkthdr.csum_flags & CSUM_UDP)
 				csum->u.txflags |= NDIS_TXCSUM_DO_UDP;
-			p->np_private.flags = NDIS_PROTOCOL_ID_TCP_IP;
+			p->private.flags = NDIS_PROTOCOL_ID_TCP_IP;
 		}
 
 		NDIS_INC(sc);
