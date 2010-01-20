@@ -963,6 +963,17 @@ struct ndis_encap_fmt {
 };
 typedef struct ndis_encap_fmt ndis_encap_fmt;
 
+struct ndis_pm_wake_up_capabilities {
+	enum ndis_device_power_state		min_magic_packet_wake_up;
+	enum ndis_device_power_state		min_pattern_wake_up;
+	enum ndis_device_power_state		min_link_change_wake_up;
+};
+
+struct ndis_pnp_capabilities {
+	uint32_t				flags;
+	struct	ndis_pm_wake_up_capabilities	wake_up_capabilities;
+};
+
 struct ndis_task_offload_hdr {
 	uint32_t	vers;
 	uint32_t	len;
