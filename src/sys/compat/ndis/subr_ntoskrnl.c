@@ -2121,12 +2121,9 @@ KeAcquireSpinLockRaiseToDpc(kspin_lock *lock)
 {
 	uint8_t oldirql;
 
-	if (KeGetCurrentIrql() > DISPATCH_LEVEL)
-		panic("IRQL_NOT_LESS_THAN_OR_EQUAL");
-
+	KASSERT(KeGetCurrentIrql() <= DISPATCH_LEVEL, ("irql not <="));
 	KeRaiseIrql(DISPATCH_LEVEL, &oldirql);
 	KeAcquireSpinLockAtDpcLevel(lock);
-
 	return (oldirql);
 }
 #else
