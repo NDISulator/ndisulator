@@ -238,6 +238,8 @@ static ndis_status WmiQueryTraceInformation(uint32_t, void *, uint32_t,
     uint32_t, void *);
 static ndis_status WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static ndis_status IoWMIRegistrationControl(device_object *, uint32_t);
+static ndis_status IoWMIQueryAllData(void *, uint32_t *, void *);
+static ndis_status IoWMIOpenBlock(void *, uint32_t, void **);
 static void *ntoskrnl_memset(void *, int, size_t);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
@@ -3128,6 +3130,18 @@ IoWMIRegistrationControl(device_object *dobj, uint32_t action)
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
 }
 
+static ndis_status
+IoWMIQueryAllData(void *data_block_object, uint32_t *buf_size, void *buf)
+{
+	return (NDIS_STATUS_NOT_IMPLEMENTED);
+}
+
+static ndis_status
+IoWMIOpenBlock(void *data_block_guid, uint32_t access, void **data_block_object)
+{
+	return (NDIS_STATUS_NOT_IMPLEMENTED);
+}
+
 /*
  * This is here just in case the thread returns without calling
  * PsTerminateSystemThread().
@@ -3992,6 +4006,8 @@ image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(PsCreateSystemThread, 7),
 	IMPORT_SFUNC(PsTerminateSystemThread, 1),
 	IMPORT_SFUNC(IoWMIRegistrationControl, 2),
+	IMPORT_SFUNC(IoWMIQueryAllData, 3),
+	IMPORT_SFUNC(IoWMIOpenBlock, 3),
 	IMPORT_SFUNC(WmiQueryTraceInformation, 5),
 	IMPORT_CFUNC(WmiTraceMessage, 0),
 	IMPORT_SFUNC(KeQuerySystemTime, 1),
