@@ -580,10 +580,10 @@ static int
 ndis_nettype_chan(uint32_t type)
 {
 	switch (type) {
-	case NDIS_802_11_NETTYPE_11FH:		return (IEEE80211_CHAN_FHSS);
-	case NDIS_802_11_NETTYPE_11DS:		return (IEEE80211_CHAN_B);
-	case NDIS_802_11_NETTYPE_11OFDM5:	return (IEEE80211_CHAN_A);
-	case NDIS_802_11_NETTYPE_11OFDM24:	return (IEEE80211_CHAN_G);
+	case NDIS_802_11_11FH:		return (IEEE80211_CHAN_FHSS);
+	case NDIS_802_11_11DS:		return (IEEE80211_CHAN_B);
+	case NDIS_802_11_11OFDM5:	return (IEEE80211_CHAN_A);
+	case NDIS_802_11_11OFDM24:	return (IEEE80211_CHAN_G);
 	}
 	return (IEEE80211_CHAN_ANY);
 }
@@ -592,10 +592,10 @@ static int
 ndis_nettype_mode(uint32_t type)
 {
 	switch (type) {
-	case NDIS_802_11_NETTYPE_11FH:		return (IEEE80211_MODE_FH);
-	case NDIS_802_11_NETTYPE_11DS:		return (IEEE80211_MODE_11B);
-	case NDIS_802_11_NETTYPE_11OFDM5:	return (IEEE80211_MODE_11A);
-	case NDIS_802_11_NETTYPE_11OFDM24:	return (IEEE80211_MODE_11G);
+	case NDIS_802_11_11FH:		return (IEEE80211_MODE_FH);
+	case NDIS_802_11_11DS:		return (IEEE80211_MODE_11B);
+	case NDIS_802_11_11OFDM5:	return (IEEE80211_MODE_11A);
+	case NDIS_802_11_11OFDM24:	return (IEEE80211_MODE_11G);
 	}
 	return (IEEE80211_MODE_AUTO);
 }
@@ -819,7 +819,7 @@ ndis_attach(device_t dev)
 	if (sc->ndis_80211) {
 		struct ieee80211com *ic = ifp->if_l2com;
 		ndis_80211_rates_ex rates;
-		struct ndis_80211_nettype_list *ntl;
+		struct ndis_80211_network_type_list *ntl;
 		uint32_t arg;
 
 		callout_init(&sc->ndis_scan_callout, CALLOUT_MPSAFE);
@@ -853,8 +853,8 @@ ndis_attach(device_t dev)
 			rval = 0;
 			goto nonettypes;
 		}
-		for (i = 0; i < ntl->ntl_items; i++) {
-			mode = ndis_nettype_mode(ntl->ntl_type[i]);
+		for (i = 0; i < ntl->items; i++) {
+			mode = ndis_nettype_mode(ntl->type[i]);
 			if (mode) {
 				setbit(ic->ic_modecaps, mode);
 				setbit(&bands, mode);

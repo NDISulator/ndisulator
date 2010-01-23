@@ -617,19 +617,17 @@ enum ndis_physical_medium {
 };
 typedef enum ndis_physical_medium ndis_physical_medium;
 
-
-enum ndis_nettype {
-	NDIS_802_11_NETTYPE_11FH,
-	NDIS_802_11_NETTYPE_11DS,
-	NDIS_802_11_NETTYPE_11OFDM5,
-	NDIS_802_11_NETTYPE_11OFDM24,
-	NDIS_802_11_NETTYPE_AUTO
+enum ndis_80211_network_type {
+	NDIS_802_11_11FH,
+	NDIS_802_11_11DS,
+	NDIS_802_11_11OFDM5,
+	NDIS_802_11_11OFDM24,
+	NDIS_802_11_AUTO
 };
-typedef enum ndis_nettype ndis_nettype;
 
-struct ndis_80211_nettype_list {
-	uint32_t	ntl_items;
-	ndis_nettype	ntl_type[1];
+struct ndis_80211_network_type_list {
+	uint32_t			items;
+	enum ndis_80211_network_type	type[1];
 };
 
 struct ndis_transport_header_offset {
