@@ -632,6 +632,23 @@ struct ndis_80211_nettype_list {
 	ndis_nettype	ntl_type[1];
 };
 
+struct ndis_transport_header_offset {
+	uint16_t	protocol_type;
+	uint16_t	header_offset;
+};
+
+struct ndis_network_address {
+	uint16_t	len;
+	uint16_t	type;
+	uint8_t		address[1];
+};
+
+struct ndis_network_address_list {
+	int32_t				count;
+	uint16_t			type;
+	struct ndis_network_address	address[1];
+};
+
 enum ndis_powermode {
 	NDIS_802_11_POWERMODE_CAM,
 	NDIS_802_11_POWERMODE_MAX_PSP,
