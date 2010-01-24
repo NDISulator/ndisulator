@@ -351,12 +351,13 @@ KfRaiseIrql(uint8_t newirql)
 {
 	uint8_t oldirql;
 
-	sched_pin();
 	oldirql = KeGetCurrentIrql();
 
 	KASSERT(oldirql <= newirql, ("newirql not less"));
-	if (oldirql != DISPATCH_LEVEL)
+	if (oldirql != DISPATCH_LEVEL) {
+		sched_pin();
 		mtx_lock(&disp_lock[curthread->td_oncpu]);
+	}
 	return (oldirql);
 }
 
