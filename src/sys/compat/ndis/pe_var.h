@@ -174,7 +174,7 @@ struct image_optional_header {
 	uintptr_t	stackcommitsize;
 	uintptr_t	heapreservesize;
 	uintptr_t	heapcommitsize;
-	uint16_t	loaderflags;
+	uint32_t	loaderflags;
 	uint32_t	rva_size_cnt;
 	struct image_data_directory	datadir[IMAGE_DIRECTORY_ENTRIES_MAX];
 };
