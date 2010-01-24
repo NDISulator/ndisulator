@@ -149,7 +149,8 @@ pe_validate_header(vm_offset_t imgbase)
 	image_file_header file_hdr;
 	image_optional_header opt_hdr;
 
-	pe_get_file_header(imgbase, &file_hdr);
+	if (pe_get_file_header(imgbase, &file_hdr))
+		return (EINVAL);
 	if (!(file_hdr.ifh_characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
 		return (ENOEXEC);
 	if (file_hdr.ifh_characteristics & IMAGE_FILE_RELOCS_STRIPPED)
@@ -164,7 +165,8 @@ pe_validate_header(vm_offset_t imgbase)
 #endif
 	if (file_hdr.ifh_numsections == 0)
 		return (ENOEXEC);
-	pe_get_optional_header(imgbase, &opt_hdr);
+	if (pe_get_optional_header(imgbase, &opt_hdr))
+		return (EINVAL);
 #ifdef __amd64__
 	if (opt_hdr.ioh_magic != IMAGE_OPTIONAL_MAGIC_64)
 		return (ENOEXEC);
