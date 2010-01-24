@@ -83,11 +83,6 @@ SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug, 0,
 #define	DPRINTF(x)
 #endif
 
-SYSCTL_DECL(_hw_ndisusb);
-static int ndisusb_halt = 1;
-SYSCTL_INT(_hw_ndisusb, OID_AUTO, halt, CTLFLAG_RW, &ndisusb_halt, 0,
-    "Halt NDIS USB driver when it's attached");
-
 /* 0 - 30 dBm to mW conversion table */
 static const uint16_t dBm2mW[] = {
 	1, 1, 1, 1, 2, 2, 2, 2, 3, 3,
