@@ -189,10 +189,6 @@ struct image_nt_header {
 	struct image_optional_header	optionalhdr;
 };
 
-#define	IMAGE_SIZEOF_NT_HEADER(nthdr)					\
-	(offsetof(image_nt_header, optionalhdr) +			\
-	  ((image_nt_header *)(nthdr))->filehdr.optionalhdrlen)
-
 /* Directory Entries */
 #define	IMAGE_DIRECTORY_ENTRY_EXPORT		0
 #define	IMAGE_DIRECTORY_ENTRY_IMPORT		1
@@ -232,9 +228,7 @@ struct image_nt_header {
 #define	RT_ANIICON	22
 #define	RT_HTML		23
 
-/*
- * Section header format.
- */
+/* Section header format */
 #define	IMAGE_SHORT_NAME_LEN	8
 
 struct image_section_header {
