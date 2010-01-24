@@ -285,7 +285,7 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
  */
 int
 windrv_load(module_t mod, vm_offset_t img, size_t len,
-    ndis_interface_type bustype, void *devlist, ndis_cfg *regvals)
+    enum ndis_interface_type bustype, void *devlist, struct ndis_cfg *regvals)
 {
 	image_import_descriptor imp_desc;
 	image_optional_header opt_hdr;

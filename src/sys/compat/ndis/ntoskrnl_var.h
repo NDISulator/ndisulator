@@ -1200,24 +1200,24 @@ typedef struct work_queue_item work_queue_item;
 #define	WINDRV_WRAP_AMD64	5
 
 struct drvdb_ent {
-	driver_object		*windrv_object;
-	void			*windrv_devlist;
-	ndis_cfg		*windrv_regvals;
-	ndis_interface_type	windrv_bustype;
+	driver_object			*windrv_object;
+	void				*windrv_devlist;
+	struct ndis_cfg			*windrv_regvals;
+	enum ndis_interface_type	windrv_bustype;
 	STAILQ_ENTRY(drvdb_ent)	link;
 };
 
 extern image_patch_table ntoskrnl_functbl[];
 typedef void (*funcptr)(void);
-typedef int (*matchfuncptr)(ndis_interface_type, void *, void *);
+typedef int (*matchfuncptr)(enum ndis_interface_type, void *, void *);
 
 __BEGIN_DECLS
 extern void windrv_libinit(void);
 extern void windrv_libfini(void);
 extern driver_object *windrv_lookup(vm_offset_t, char *);
 extern struct drvdb_ent *windrv_match(matchfuncptr, void *);
-extern int windrv_load(module_t, vm_offset_t, size_t, ndis_interface_type,
-		    void *, ndis_cfg *);
+extern int windrv_load(module_t, vm_offset_t, size_t, enum ndis_interface_type,
+		    void *, struct ndis_cfg *);
 extern int windrv_unload(module_t, vm_offset_t, int);
 extern int windrv_create_pdo(driver_object *, device_t);
 extern void windrv_destroy_pdo(driver_object *, device_t);

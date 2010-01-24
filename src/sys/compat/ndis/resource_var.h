@@ -44,7 +44,6 @@ struct physaddr {
 	uint32_t	high;
 #endif
 };
-typedef struct physaddr physaddr;
 
 enum ndis_interface_type {
 	InterfaceTypeUndefined = -1,
@@ -66,7 +65,6 @@ enum ndis_interface_type {
 	PNPBus,
 	MaximumInterfaceType
 };
-typedef enum ndis_interface_type ndis_interface_type;
 
 #define	CmResourceTypeNull		0	/* ResType_All or ResType_None (0x0000) */
 #define	CmResourceTypePort		1	/* ResType_IO (0x0002) */
@@ -87,7 +85,6 @@ enum cm_share_disposition {
     CM_RESOURCE_SHARE_DRIVER_EXCLUSIVE,
     CM_RESOURCE_SHARE_SHARED
 };
-typedef enum cm_share_disposition cm_share_disposition;
 
 /* Define the bit masks for Flags when type is CmResourceTypeInterrupt */
 #define	CM_RESOURCE_INTERRUPT_LEVEL_SENSITIVE	0
@@ -128,11 +125,11 @@ struct cm_partial_resource_desc {
 	uint16_t	flags;
 	union {
 		struct {
-			physaddr	start;
+			struct physaddr	start;
 			uint32_t	len;
 		} generic;
 		struct {
-			physaddr	start;
+			struct physaddr	start;
 			uint32_t	len;
 		} port;
 		struct {
@@ -141,7 +138,7 @@ struct cm_partial_resource_desc {
 			uint32_t	affinity;
 		} intr;
 		struct {
-			physaddr	start;
+			struct physaddr	start;
 			uint32_t	len;
 		} mem;
 		struct {
@@ -159,27 +156,23 @@ struct cm_partial_resource_desc {
 		} devspec;
 	} u __attribute__((packed));
 };
-typedef struct cm_partial_resource_desc cm_partial_resource_desc;
 
 struct cm_partial_resource_list {
-	uint16_t			version;
-	uint16_t			revision;
-	uint32_t			count;
-	cm_partial_resource_desc	partial_descs[1];
+	uint16_t				version;
+	uint16_t				revision;
+	uint32_t				count;
+	struct cm_partial_resource_desc		partial_descs[1];
 };
-typedef struct cm_partial_resource_list cm_partial_resource_list;
 
 struct cm_full_resource_list {
-	ndis_interface_type		type;
-	uint32_t			busnum;
-	cm_partial_resource_desc	partiallist;
+	enum ndis_interface_type		type;
+	uint32_t				busnum;
+	struct cm_partial_resource_desc		partiallist;
 };
-typedef struct cm_full_resource_list cm_full_resource_list;
 
 struct cm_resource_list {
-	uint32_t		count;
-	cm_full_resource_list	rlist;
+	uint32_t			count;
+	struct cm_full_resource_list	rlist;
 };
-typedef struct cm_resource_list cm_resource_list;
 
 #endif /* _RESOURCE_VAR_H_ */

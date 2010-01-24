@@ -80,17 +80,13 @@ extern int ndisdrv_modevent(module_t, int, void *);
 extern unsigned char drv_data[];
 
 static device_method_t ndis_methods[] = {
-	/* Device interface */
 	DEVMETHOD(device_probe,			ndisusb_match),
 	DEVMETHOD(device_attach,		ndisusb_attach),
 	DEVMETHOD(device_detach,		ndisusb_detach),
 	DEVMETHOD(device_shutdown,		ndis_shutdown),
-
-	/* Bus interface */
 	DEVMETHOD(bus_print_child,		bus_generic_print_child),
 	DEVMETHOD(bus_driver_added,		bus_generic_driver_added),
 	DEVMETHOD(bus_get_resource_list,	ndis_get_resource_list),
-
 	{ 0, 0 }
 };
 
@@ -105,7 +101,7 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, uhub, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndisusb_devcompare(ndis_interface_type bustype, struct ndis_usb_type *t,
+ndisusb_devcompare(enum ndis_interface_type bustype, struct ndis_usb_type *t,
     device_t dev)
 {
 	struct usb_attach_arg *uaa;

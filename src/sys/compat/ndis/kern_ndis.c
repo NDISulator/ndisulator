@@ -200,7 +200,7 @@ ndis_status_done_func(ndis_handle adapter)
 static void
 ndis_set_done_func(ndis_handle adapter, ndis_status status)
 {
-	ndis_miniport_block *block = adapter;
+	struct ndis_miniport_block *block = adapter;
 
 	block->setstat = status;
 	KeSetEvent(&block->setevent, IO_NO_INCREMENT, FALSE);
@@ -209,7 +209,7 @@ ndis_set_done_func(ndis_handle adapter, ndis_status status)
 static void
 ndis_get_done_func(ndis_handle adapter, ndis_status status)
 {
-	ndis_miniport_block *block = adapter;
+	struct ndis_miniport_block *block = adapter;
 
 	block->getstat = status;
 	KeSetEvent(&block->getevent, IO_NO_INCREMENT, FALSE);
@@ -219,7 +219,7 @@ static void
 ndis_reset_done_func(ndis_handle adapter, ndis_status status,
     uint8_t addressingreset)
 {
-	ndis_miniport_block *block = adapter;
+	struct ndis_miniport_block *block = adapter;
 
 	block->resetstat = status;
 	KeSetEvent(&block->resetevent, IO_NO_INCREMENT, FALSE);
@@ -229,7 +229,7 @@ void
 ndis_create_sysctls(void *arg)
 {
 	struct ndis_softc *sc = arg;
-	ndis_cfg *vals;
+	struct ndis_cfg *vals;
 	char buf[256];
 	struct sysctl_oid *oidp;
 	struct sysctl_ctx_entry *e;
@@ -240,9 +240,9 @@ ndis_create_sysctls(void *arg)
 
 	/* Add the driver-specific registry keys. */
 	for (;;) {
-		if (vals->nc_cfgkey == NULL)
+		if (vals->cfgkey == NULL)
 			break;
-		if (vals->nc_idx != sc->ndis_devidx) {
+		if (vals->idx != sc->ndis_devidx) {
 			vals++;
 			continue;
 		}
@@ -251,7 +251,7 @@ ndis_create_sysctls(void *arg)
 		oidp = NULL;
 		TAILQ_FOREACH(e, device_get_sysctl_ctx(sc->ndis_dev), link) {
 			oidp = e->entry;
-			if (strcasecmp(oidp->oid_name, vals->nc_cfgkey) == 0)
+			if (strcasecmp(oidp->oid_name, vals->cfgkey) == 0)
 				break;
 			oidp = NULL;
 		}
@@ -260,8 +260,8 @@ ndis_create_sysctls(void *arg)
 			continue;
 		}
 
-		ndis_add_sysctl(sc, vals->nc_cfgkey, vals->nc_cfgdesc,
-		    vals->nc_val, CTLFLAG_RW);
+		ndis_add_sysctl(sc, vals->cfgkey, vals->cfgdesc,
+		    vals->val, CTLFLAG_RW);
 		vals++;
 	}
 
@@ -300,21 +300,21 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
 	cfg = malloc(sizeof(struct ndis_cfglist), M_NDIS_KERN, M_NOWAIT|M_ZERO);
 	if (cfg == NULL)
 		return (ENOMEM);
-	cfg->ndis_cfg.nc_cfgkey = strdup(key, M_NDIS_KERN);
+	cfg->ndis_cfg.cfgkey = strdup(key, M_NDIS_KERN);
 	if (desc == NULL) {
 		snprintf(descstr, sizeof(descstr), "%s (dynamic)", key);
-		cfg->ndis_cfg.nc_cfgdesc = strdup(descstr, M_NDIS_KERN);
+		cfg->ndis_cfg.cfgdesc = strdup(descstr, M_NDIS_KERN);
 	} else
-		cfg->ndis_cfg.nc_cfgdesc = strdup(desc, M_NDIS_KERN);
-	strcpy(cfg->ndis_cfg.nc_val, val);
+		cfg->ndis_cfg.cfgdesc = strdup(desc, M_NDIS_KERN);
+	strcpy(cfg->ndis_cfg.val, val);
 
 	TAILQ_INSERT_TAIL(&sc->ndis_cfglist_head, cfg, link);
 
 	cfg->ndis_oid = SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
 	    SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
-	    OID_AUTO, cfg->ndis_cfg.nc_cfgkey, flag,
-	    cfg->ndis_cfg.nc_val, sizeof(cfg->ndis_cfg.nc_val),
-	    cfg->ndis_cfg.nc_cfgdesc);
+	    OID_AUTO, cfg->ndis_cfg.cfgkey, flag,
+	    cfg->ndis_cfg.val, sizeof(cfg->ndis_cfg.val),
+	    cfg->ndis_cfg.cfgdesc);
 
 	return (0);
 }
@@ -333,8 +333,8 @@ ndis_flush_sysctls(void *arg)
 		TAILQ_REMOVE(&sc->ndis_cfglist_head, cfg, link);
 		sysctl_ctx_entry_del(clist, cfg->ndis_oid);
 		sysctl_remove_oid(cfg->ndis_oid, 1, 0);
-		free(cfg->ndis_cfg.nc_cfgkey, M_NDIS_KERN);
-		free(cfg->ndis_cfg.nc_cfgdesc, M_NDIS_KERN);
+		free(cfg->ndis_cfg.cfgkey, M_NDIS_KERN);
+		free(cfg->ndis_cfg.cfgdesc, M_NDIS_KERN);
 		free(cfg, M_NDIS_KERN);
 	}
 }
@@ -342,9 +342,9 @@ ndis_flush_sysctls(void *arg)
 static void
 ndis_return_packet_nic(device_object *dobj, void *arg)
 {
-	ndis_miniport_block *block = arg;
-	ndis_miniport_driver_characteristics *ch;
-	ndis_packet *p;
+	struct ndis_miniport_block *block = arg;
+	struct ndis_miniport_driver_characteristics *ch;
+	struct ndis_packet *p;
 	uint8_t irql;
 	list_entry *l;
 
@@ -355,7 +355,7 @@ ndis_return_packet_nic(device_object *dobj, void *arg)
 	KeAcquireSpinLock(&block->returnlock, &irql);
 	while (!IsListEmpty(&block->returnlist)) {
 		l = RemoveHeadList((&block->returnlist));
-		p = CONTAINING_RECORD(l, ndis_packet, list);
+		p = CONTAINING_RECORD(l, struct ndis_packet, list);
 		InitializeListHead((&p->list));
 		KeReleaseSpinLock(&block->returnlock, irql);
 		MSCALL2(ch->return_packet_func,
@@ -368,8 +368,8 @@ ndis_return_packet_nic(device_object *dobj, void *arg)
 void
 ndis_return_packet(void *buf, void *arg)
 {
-	ndis_packet *p = arg;
-	ndis_miniport_block *block;
+	struct ndis_packet *p = arg;
+	struct ndis_miniport_block *block;
 
 	p->refcnt--;
 	if (p->refcnt)
@@ -402,7 +402,7 @@ ndis_free_bufs(ndis_buffer *b0)
 }
 
 void
-ndis_free_packet(ndis_packet *p)
+ndis_free_packet(struct ndis_packet *p)
 {
 	KASSERT(p != NULL, ("no packet"));
 	ndis_free_bufs(p->private.head);
@@ -413,9 +413,9 @@ int
 ndis_convert_res(void *arg)
 {
 	struct ndis_softc *sc = arg;
-	cm_partial_resource_list *rl = NULL;
-	cm_partial_resource_desc *prd = NULL;
-	ndis_miniport_block *block;
+	struct cm_partial_resource_list *rl = NULL;
+	struct cm_partial_resource_desc *prd = NULL;
+	struct ndis_miniport_block *block;
 	device_t dev;
 	struct resource_list *brl;
 	struct resource_list_entry *brle;
@@ -423,8 +423,8 @@ ndis_convert_res(void *arg)
 	block = sc->ndis_block;
 	dev = sc->ndis_dev;
 
-	rl = malloc(sizeof(cm_partial_resource_list) +
-	    (sizeof(cm_partial_resource_desc) * (sc->ndis_rescnt - 1)),
+	rl = malloc(sizeof(struct cm_partial_resource_list) +
+	    (sizeof(struct cm_partial_resource_desc) * (sc->ndis_rescnt - 1)),
 	    M_NDIS_KERN, M_NOWAIT|M_ZERO);
 	if (rl == NULL)
 		return (ENOMEM);
@@ -495,11 +495,11 @@ ndis_convert_res(void *arg)
  * a dummy no-op free handler for it.
  */
 int
-ndis_ptom(struct mbuf **m0, ndis_packet *p)
+ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 {
 	struct mbuf *m = NULL, *prev = NULL;
 	ndis_buffer *buf;
-	ndis_packet_private *priv;
+	struct ndis_packet_private *priv;
 	uint32_t totlen = 0;
 	struct ifnet *ifp;
 	struct ether_header *eh;
@@ -577,11 +577,11 @@ ndis_ptom(struct mbuf **m0, ndis_packet *p)
  * plus one ndis_packet as the header.
  */
 int
-ndis_mtop(struct mbuf *m0, ndis_packet **p)
+ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 {
 	struct mbuf *m;
 	ndis_buffer *buf = NULL, *prev = NULL;
-	ndis_packet_private *priv;
+	struct ndis_packet_private *priv;
 
 	if (p == NULL || *p == NULL || m0 == NULL)
 		return (EINVAL);
@@ -713,14 +713,14 @@ ndis_set_info(void *arg, ndis_oid oid, void *buf, uint32_t buflen,
 	    arg, oid, buf, buflen, written, needed));
 }
 
-typedef void (*ndis_send_done_func) (ndis_handle, ndis_packet *, ndis_status);
+typedef void (*ndis_send_done_func) (ndis_handle, struct ndis_packet *, ndis_status);
 
 void
-ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
+ndis_send_packets(void *arg, struct ndis_packet **packets, int cnt)
 {
 	struct ndis_softc *sc = arg;
 	int i;
-	ndis_packet *p;
+	struct ndis_packet *p;
 	uint8_t irql = 0;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
@@ -751,7 +751,7 @@ ndis_send_packets(void *arg, ndis_packet **packets, int cnt)
 }
 
 int32_t
-ndis_send_packet(void *arg, ndis_packet *packet)
+ndis_send_packet(void *arg, struct ndis_packet *packet)
 {
 	struct ndis_softc *sc = arg;
 	ndis_status status;
@@ -805,7 +805,7 @@ ndis_destroy_dma(void *arg)
 {
 	struct ndis_softc *sc = arg;
 	struct mbuf *m;
-	ndis_packet *p = NULL;
+	struct ndis_packet *p = NULL;
 	int i;
 
 	for (i = 0; i < sc->ndis_maxpkts; i++) {
@@ -968,7 +968,7 @@ ndis_init_nic(void *arg)
 {
 	struct ndis_softc *sc = arg;
 	ndis_status rval, status = 0;
-	ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
+	enum ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
 	uint32_t chosen_medium = 0;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
@@ -993,7 +993,7 @@ static void
 ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
     struct ndis_softc *sc)
 {
-	ndis_miniport_interrupt *intr;
+	struct ndis_miniport_interrupt *intr;
 
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->interrupt != NULL, ("no interrupt"));
@@ -1009,7 +1009,7 @@ int32_t
 NdisAddDevice(driver_object *drv, device_object *pdo)
 {
 	device_object *fdo;
-	ndis_miniport_block *block;
+	struct ndis_miniport_block *block;
 	struct ndis_softc *sc;
 	int32_t status;
 
@@ -1025,7 +1025,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 		}
 	}
 
-	status = IoCreateDevice(drv, sizeof(ndis_miniport_block), NULL,
+	status = IoCreateDevice(drv, sizeof(struct ndis_miniport_block), NULL,
 	    FILE_DEVICE_UNKNOWN, 0, FALSE, &fdo);
 	if (status != NDIS_STATUS_SUCCESS)
 		return (status);

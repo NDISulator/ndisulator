@@ -68,23 +68,17 @@ extern int	ndis_shutdown(device_t);
 extern int	ndis_suspend(device_t);
 extern int	ndisdrv_modevent(module_t, int, void *);
 static int	ndis_attach_pci(device_t);
-static int	ndis_devcompare(ndis_interface_type, struct ndis_pci_type *,
-		    device_t);
 static int	ndis_probe_pci(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
 static device_method_t ndis_methods[] = {
-	/* Device interface */
 	DEVMETHOD(device_probe,		ndis_probe_pci),
 	DEVMETHOD(device_attach,	ndis_attach_pci),
 	DEVMETHOD(device_detach,	ndis_detach),
 	DEVMETHOD(device_shutdown,	ndis_shutdown),
 	DEVMETHOD(device_suspend,	ndis_suspend),
 	DEVMETHOD(device_resume,	ndis_resume),
-
-	/* Bus interface */
 	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
-
 	{ 0, 0 }
 };
 
@@ -99,7 +93,7 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, pci, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare(ndis_interface_type bustype, struct ndis_pci_type *t,
+ndis_devcompare(enum ndis_interface_type bustype, struct ndis_pci_type *t,
     device_t dev)
 {
 

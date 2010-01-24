@@ -70,11 +70,11 @@ struct ndis_shmem {
 	bus_dma_tag_t	ndis_stag;
 	bus_dmamap_t	ndis_smap;
 	void		*ndis_saddr;
-	ndis_physaddr	ndis_paddr;
+	struct physaddr	ndis_paddr;
 };
 
 struct ndis_cfglist {
-	ndis_cfg		ndis_cfg;
+	struct ndis_cfg		ndis_cfg;
 	struct sysctl_oid	*ndis_oid;
         TAILQ_ENTRY(ndis_cfglist)	link;
 };
@@ -141,88 +141,88 @@ struct ndisusb_task {
 };
 
 struct ndis_softc {
-	struct ifnet		*ndis_ifp;
-	struct ifmedia		ifmedia;	/* media info */
-	u_long			ndis_hwassist;
-	uint32_t		ndis_v4tx;
-	uint32_t		ndis_v4rx;
-	bus_space_handle_t	ndis_bhandle;
-	bus_space_tag_t		ndis_btag;
-	void			*ndis_intrhand;
-	struct resource		*ndis_irq;
-	struct resource		*ndis_res;
-	struct resource		*ndis_res_io;
-	int			ndis_io_rid;
-	struct resource		*ndis_res_mem;
-	int			ndis_mem_rid;
-	struct resource		*ndis_res_altmem;
-	int			ndis_altmem_rid;
-	struct resource		*ndis_res_am;	/* attribute mem (pccard) */
-	int			ndis_am_rid;
-	struct resource		*ndis_res_cm;	/* common mem (pccard) */
-	struct resource_list	ndis_rl;
-	uint32_t		ndis_rescnt;
-	struct mtx		ndis_mtx;
-	device_t		ndis_dev;
-	ndis_miniport_block	*ndis_block;
-	ndis_miniport_driver_characteristics *ndis_chars;
-	struct callout		ndis_scan_callout;
-	struct callout		ndis_stat_callout;
-	uint32_t		ndis_maxpkts;
-	ndis_oid		*ndis_oids;
-	uint32_t		ndis_oidcnt;
-	uint32_t		ndis_txidx;
-	uint32_t		ndis_txpending;
-	ndis_packet		**ndis_txarray;
-	ndis_handle		ndis_txpool;
-	uint8_t			ndis_sc;
-	ndis_cfg		*ndis_regvals;
-	struct nch		ndis_cfglist_head;
-	uint8_t			ndis_80211;
-	uint32_t		ndis_physical_medium;
-	uint32_t		ndis_filter;
-	int			ndis_if_flags;
-	uint32_t		ndis_devidx;
-	ndis_interface_type	ndis_iftype;
-	driver_object		*ndis_dobj;
-	io_workitem		*ndis_tickitem;
-	io_workitem		*ndis_startitem;
-	io_workitem		*ndis_resetitem;
-	io_workitem		*ndis_inputitem;
-	kdpc			ndis_rxdpc;
-	bus_dma_tag_t		ndis_parent_tag;
-	list_entry		ndis_shlist;
-	bus_dma_tag_t		ndis_mtag;
-	bus_dma_tag_t		ndis_ttag;
-	bus_dmamap_t		*ndis_mmaps;
-	bus_dmamap_t		*ndis_tmaps;
-	uint32_t		ndis_mmapcnt;
-	struct ndis_evt		ndis_evt[NDIS_EVENTS];
-	uint32_t		ndis_evtpidx;
-	uint32_t		ndis_evtcidx;
-	struct ifqueue		ndis_rxqueue;
-	kspin_lock		ndis_rxlock;
+	struct ifnet			*ndis_ifp;
+	struct ifmedia			ifmedia;	/* media info */
+	u_long				ndis_hwassist;
+	uint32_t			ndis_v4tx;
+	uint32_t			ndis_v4rx;
+	bus_space_handle_t		ndis_bhandle;
+	bus_space_tag_t			ndis_btag;
+	void				*ndis_intrhand;
+	struct resource			*ndis_irq;
+	struct resource			*ndis_res;
+	struct resource			*ndis_res_io;
+	int				ndis_io_rid;
+	struct resource			*ndis_res_mem;
+	int				ndis_mem_rid;
+	struct resource			*ndis_res_altmem;
+	int				ndis_altmem_rid;
+	struct resource			*ndis_res_am;
+	int				ndis_am_rid;
+	struct resource			*ndis_res_cm;
+	struct resource_list		ndis_rl;
+	uint32_t			ndis_rescnt;
+	struct mtx			ndis_mtx;
+	device_t			ndis_dev;
+	struct ndis_miniport_block	*ndis_block;
+	struct ndis_miniport_driver_characteristics *ndis_chars;
+	struct callout			ndis_scan_callout;
+	struct callout			ndis_stat_callout;
+	uint32_t			ndis_maxpkts;
+	ndis_oid			*ndis_oids;
+	uint32_t			ndis_oidcnt;
+	uint32_t			ndis_txidx;
+	uint32_t			ndis_txpending;
+	struct ndis_packet		**ndis_txarray;
+	ndis_handle			ndis_txpool;
+	uint8_t				ndis_sc;
+	struct ndis_cfg			*ndis_regvals;
+	struct nch			ndis_cfglist_head;
+	uint8_t				ndis_80211;
+	uint32_t			ndis_physical_medium;
+	uint32_t			ndis_filter;
+	int				ndis_if_flags;
+	uint32_t			ndis_devidx;
+	enum ndis_interface_type	ndis_iftype;
+	driver_object			*ndis_dobj;
+	io_workitem			*ndis_tickitem;
+	io_workitem			*ndis_startitem;
+	io_workitem			*ndis_resetitem;
+	io_workitem			*ndis_inputitem;
+	kdpc				ndis_rxdpc;
+	bus_dma_tag_t			ndis_parent_tag;
+	list_entry			ndis_shlist;
+	bus_dma_tag_t			ndis_mtag;
+	bus_dma_tag_t			ndis_ttag;
+	bus_dmamap_t			*ndis_mmaps;
+	bus_dmamap_t			*ndis_tmaps;
+	uint32_t			ndis_mmapcnt;
+	struct ndis_evt			ndis_evt[NDIS_EVENTS];
+	uint32_t			ndis_evtpidx;
+	uint32_t			ndis_evtcidx;
+	struct ifqueue			ndis_rxqueue;
+	kspin_lock			ndis_rxlock;
 
 	int			(*ndis_newstate)(struct ieee80211com *,
 				    enum ieee80211_state, int);
-	uint8_t			ndis_tx_timer;
-	uint32_t		ndis_hang_timer;
+	uint8_t				ndis_tx_timer;
+	uint32_t			ndis_hang_timer;
 
-	struct usb_device	*ndisusb_dev;
-	struct mtx		ndisusb_mtx;
-	struct ndisusb_ep	ndisusb_dread_ep;
-	struct ndisusb_ep	ndisusb_dwrite_ep;
+	struct usb_device		*ndisusb_dev;
+	struct mtx			ndisusb_mtx;
+	struct ndisusb_ep		ndisusb_dread_ep;
+	struct ndisusb_ep		ndisusb_dwrite_ep;
 #define	NDISUSB_GET_ENDPT(addr) \
 	((UE_GET_DIR(addr) >> 7) | (UE_GET_ADDR(addr) << 1))
 #define	NDISUSB_ENDPT_MAX	((UE_ADDR + 1) * 2)
-	struct ndisusb_ep	ndisusb_ep[NDISUSB_ENDPT_MAX];
-	io_workitem		*ndisusb_xferdoneitem;
-	list_entry		ndisusb_xferdonelist;
-	kspin_lock		ndisusb_xferdonelock;
-	io_workitem		*ndisusb_taskitem;
-	list_entry		ndisusb_tasklist;
-	kspin_lock		ndisusb_tasklock;
-	int			ndisusb_status;
+	struct ndisusb_ep		ndisusb_ep[NDISUSB_ENDPT_MAX];
+	io_workitem			*ndisusb_xferdoneitem;
+	list_entry			ndisusb_xferdonelist;
+	kspin_lock			ndisusb_xferdonelock;
+	io_workitem			*ndisusb_taskitem;
+	list_entry			ndisusb_tasklist;
+	kspin_lock			ndisusb_tasklock;
+	int				ndisusb_status;
 #define	NDISUSB_STATUS_DETACH	0x1
 #define	NDISUSB_STATUS_SETUP_EP	0x2
 };
