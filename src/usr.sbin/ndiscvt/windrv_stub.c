@@ -46,13 +46,11 @@ __FBSDID("$FreeBSD$");
 #define	NDIS_REGVALS
 
 struct ndis_cfg {
-	char	*nc_cfgkey;
-	char	*nc_cfgdesc;
-	char	nc_val[256];
-	int	nc_idx;
+	char	*cfgkey;
+	char	*cfgdesc;
+	char	val[256];
+	int	idx;
 };
-
-typedef struct ndis_cfg ndis_cfg;
 
 #include "windrv.h"
 
@@ -117,8 +115,6 @@ enum interface_type {
 	MaximumInterfaceType
 };
 
-typedef enum interface_type interface_type;
-
 /*
  * XXX
  * Ordinarily, device_probe_desc is defined in device_if.h, which
@@ -135,8 +131,8 @@ typedef enum interface_type interface_type;
 extern struct kobjop_desc device_probe_desc;
 typedef int device_probe_t(device_t dev);
 
-extern int windrv_load(module_t, vm_offset_t, size_t, interface_type, void *,
-    void *);
+extern int windrv_load(module_t, vm_offset_t, size_t, enum interface_type,
+    void *, void *);
 extern int windrv_unload(module_t, vm_offset_t, size_t);
 
 #ifndef DRV_DATA_START
@@ -167,12 +163,11 @@ extern uint8_t DRV_DATA_END;
 
 MODULE_DECL(DRV_NAME);
 
-static int windrv_modevent(module_t, int, void *);
-static int windrv_probe(device_t);
-static int windrv_loaded = 0;
+static int	windrv_modevent(module_t, int, void *);
+static int	windrv_probe(device_t);
+static int	windrv_loaded = 0;
 
 static device_method_t windrv_methods[] = {
-	/* Device interface */
 	DEVMETHOD(device_probe, windrv_probe),
 	{ 0, 0 }
 };
@@ -252,6 +247,5 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 	default:
 		return (ENOTSUP);
 	}
-
 	return (0);
 }

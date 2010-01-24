@@ -76,7 +76,7 @@ static struct mtx disp_lock[NDIS_MAXCPUS];
 void
 hal_libinit(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 	int i;
 
 	for (i = 0; i < NDIS_MAXCPUS; i++)
@@ -84,10 +84,10 @@ hal_libinit(void)
 		    "HAL lock", MTX_RECURSE|MTX_DEF);
 
 	patch = hal_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_wrap((funcptr)patch->ipt_func,
-		    (funcptr *)&patch->ipt_wrap,
-		    patch->ipt_argcnt, patch->ipt_ftype);
+	while (patch->func != NULL) {
+		windrv_wrap((funcptr)patch->func,
+		    (funcptr *)&patch->wrap,
+		    patch->argcnt, patch->ftype);
 		patch++;
 	}
 }
@@ -95,15 +95,15 @@ hal_libinit(void)
 void
 hal_libfini(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 	int i;
 
 	for (i = 0; i < NDIS_MAXCPUS; i++)
 		mtx_destroy(&disp_lock[i]);
 
 	patch = hal_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_unwrap(patch->ipt_wrap);
+	while (patch->func != NULL) {
+		windrv_unwrap(patch->wrap);
 		patch++;
 	}
 }
@@ -393,7 +393,7 @@ dummy(void)
 	printf("hal dummy called...\n");
 }
 
-image_patch_table hal_functbl[] = {
+struct image_patch_table hal_functbl[] = {
 	IMPORT_SFUNC(KeStallExecutionProcessor, 1),
 	IMPORT_SFUNC(WRITE_PORT_ULONG, 2),
 	IMPORT_SFUNC(WRITE_PORT_USHORT, 2),

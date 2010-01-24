@@ -43,7 +43,7 @@
 #define	NDIS_BUS_SPACE_MEM	I386_BUS_SPACE_MEM
 #endif
 
-extern image_patch_table hal_functbl[];
+extern struct image_patch_table hal_functbl[];
 
 __BEGIN_DECLS
 extern void	hal_libfini(void);

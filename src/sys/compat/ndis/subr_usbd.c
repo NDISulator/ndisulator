@@ -155,14 +155,14 @@ static funcptr usbd_xfertask_wrap;
 void
 usbd_libinit(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 	int i;
 
 	patch = usbd_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_wrap((funcptr)patch->ipt_func,
-		    (funcptr *)&patch->ipt_wrap,
-		    patch->ipt_argcnt, patch->ipt_ftype);
+	while (patch->func != NULL) {
+		windrv_wrap((funcptr)patch->func,
+		    (funcptr *)&patch->wrap,
+		    patch->argcnt, patch->ftype);
 		patch++;
 	}
 
@@ -202,11 +202,11 @@ usbd_libinit(void)
 void
 usbd_libfini(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 
 	patch = usbd_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_unwrap(patch->ipt_wrap);
+	while (patch->func != NULL) {
+		windrv_unwrap(patch->wrap);
 		patch++;
 	}
 
@@ -1445,7 +1445,7 @@ dummy(void)
 	printf("usbd dummy called...\n");
 }
 
-image_patch_table usbd_functbl[] = {
+struct image_patch_table usbd_functbl[] = {
 	IMPORT_SFUNC(USBD_CreateConfigurationRequest, 2),
 	IMPORT_SFUNC(USBD_CreateConfigurationRequestEx, 2),
 	IMPORT_SFUNC_MAP(_USBD_CreateConfigurationRequestEx@8,

@@ -287,8 +287,8 @@ int
 windrv_load(module_t mod, vm_offset_t img, size_t len,
     enum ndis_interface_type bustype, void *devlist, struct ndis_cfg *regvals)
 {
-	image_import_descriptor imp_desc;
-	image_optional_header opt_hdr;
+	struct image_import_descriptor imp_desc;
+	struct image_optional_header opt_hdr;
 	driver_entry entry;
 	struct drvdb_ent *new;
 	struct driver_object *drv;
@@ -333,7 +333,7 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 skipreloc:
 	/* Next step: find the driver entry point. */
 	pe_get_optional_header(img, &opt_hdr);
-	entry = (driver_entry)pe_translate_addr(img, opt_hdr.ioh_entryaddr);
+	entry = (driver_entry)pe_translate_addr(img, opt_hdr.entryaddr);
 
 	/* Next step: allocate and store a driver object. */
 	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);

@@ -86,17 +86,17 @@ extern const char *__progname;
 #define	ROUND_UP(n, align)	ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
 				(align))
 #define	SET_HDRS(x)	\
-	dos_hdr = (image_dos_header *)x;				\
-	nt_hdr = (image_nt_header *)(x + dos_hdr->idh_lfanew);		\
+	dos_hdr = (struct image_dos_header *)x;				\
+	nt_hdr = (struct image_nt_header *)(x + dos_hdr->lfanew);	\
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
-static
-int insert_padding(void **imgbase, int *imglen)
+static int
+insert_padding(void **imgbase, int *imglen)
 {
-	image_section_header *sect_hdr;
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
-	image_optional_header opt_hdr;
+	struct image_section_header *sect_hdr;
+	struct image_dos_header *dos_hdr;
+	struct image_nt_header *nt_hdr;
+	struct image_optional_header opt_hdr;
 	int i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
 	uint8_t *newimg, *tmp;
 
@@ -115,16 +115,16 @@ int insert_padding(void **imgbase, int *imglen)
 	SET_HDRS(newimg);
 
 	for (i = 0; i < sections; i++) {
-		oldraddr = sect_hdr->ish_rawdataaddr;
-		oldrlen = sect_hdr->ish_rawdatasize;
-		sect_hdr->ish_rawdataaddr = sect_hdr->ish_vaddr;
-		offaccum += ROUND_UP(sect_hdr->ish_vaddr - oldraddr,
-		    opt_hdr.ioh_filealign);
+		oldraddr = sect_hdr->rawdataaddr;
+		oldrlen = sect_hdr->rawdatasize;
+		sect_hdr->rawdataaddr = sect_hdr->vaddr;
+		offaccum += ROUND_UP(sect_hdr->vaddr - oldraddr,
+		    opt_hdr.filealign);
 		offaccum +=
-		    ROUND_UP(sect_hdr->ish_misc.ish_vsize,
-			opt_hdr.ioh_filealign) -
-		    ROUND_UP(sect_hdr->ish_rawdatasize,
-			opt_hdr.ioh_filealign);
+		    ROUND_UP(sect_hdr->misc.vsize,
+			opt_hdr.filealign) -
+		    ROUND_UP(sect_hdr->rawdatasize,
+			opt_hdr.filealign);
 		tmp = realloc(newimg, *imglen + offaccum);
 		if (tmp == NULL) {
 			free(newimg);
@@ -133,11 +133,11 @@ int insert_padding(void **imgbase, int *imglen)
 		newimg = tmp;
 		SET_HDRS(newimg);
 		sect_hdr += i;
-		bzero(newimg + sect_hdr->ish_rawdataaddr,
-		    ROUND_UP(sect_hdr->ish_misc.ish_vsize,
-		    opt_hdr.ioh_filealign));
+		bzero(newimg + sect_hdr->rawdataaddr,
+		    ROUND_UP(sect_hdr->misc.vsize,
+		    opt_hdr.filealign));
 		bcopy((uint8_t *)(*imgbase) + oldraddr,
-		    newimg + sect_hdr->ish_rawdataaddr, oldrlen);
+		    newimg + sect_hdr->rawdataaddr, oldrlen);
 		sect_hdr++;
 	}
 
@@ -345,7 +345,7 @@ main(int argc, char *argv[])
 
 	if (inffile == NULL) {
 		fprintf(outfp, "#ifdef NDIS_REGVALS\n");
-		fprintf(outfp, "ndis_cfg ndis_regvals[] = {\n");
+		fprintf(outfp, "struct ndis_cfg ndis_regvals[] = {\n");
 		fprintf(outfp, "\t{ NULL, NULL, { 0 }, 0 }\n");
 		fprintf(outfp, "#endif /* NDIS_REGVALS */\n");
 		fprintf(outfp, "};\n\n");

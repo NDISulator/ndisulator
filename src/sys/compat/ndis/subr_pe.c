@@ -62,7 +62,7 @@ __FBSDID("$FreeBSD$");
 
 #include <compat/ndis/pe_var.h>
 
-static vm_offset_t pe_functbl_match(image_patch_table *, char *);
+static vm_offset_t pe_functbl_match(struct image_patch_table *, char *);
 
 /*
  * Verify that this image has a Windows NT PE signature.
@@ -71,15 +71,15 @@ static int
 pe_is_nt_image(vm_offset_t imgbase)
 {
 	uint32_t signature;
-	image_dos_header *dos_hdr;
+	struct image_dos_header *dos_hdr;
 
 	if (imgbase == 0)
 		return (EINVAL);
 
 	signature = *(uint16_t *)imgbase;
 	if (signature == IMAGE_DOS_SIGNATURE) {
-		dos_hdr = (image_dos_header *)imgbase;
-		signature = *(uint32_t *)(imgbase + dos_hdr->idh_lfanew);
+		dos_hdr = (struct image_dos_header *)imgbase;
+		signature = *(uint32_t *)(imgbase + dos_hdr->lfanew);
 		if (signature == IMAGE_NT_SIGNATURE)
 			return (0);
 	}
@@ -93,10 +93,10 @@ pe_is_nt_image(vm_offset_t imgbase)
  * need to find the relocations and imports later.
  */
 int
-pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
+pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header *hdr)
 {
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
+	struct image_dos_header *dos_hdr;
+	struct image_nt_header *nt_hdr;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -104,11 +104,11 @@ pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
 	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
 
-	dos_hdr = (image_dos_header *)(imgbase);
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
+	dos_hdr = (struct image_dos_header *)(imgbase);
+	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->lfanew);
 
-	bcopy((char *)&nt_hdr->inh_optionalhdr, (char *)hdr,
-	    nt_hdr->inh_filehdr.ifh_optionalhdrlen);
+	bcopy((char *)&nt_hdr->optionalhdr, (char *)hdr,
+	    nt_hdr->filehdr.optionalhdrlen);
 	return (0);
 }
 
@@ -117,10 +117,10 @@ pe_get_optional_header(vm_offset_t imgbase, image_optional_header *hdr)
  * sections in this image.
  */
 static int
-pe_get_file_header(vm_offset_t imgbase, image_file_header *hdr)
+pe_get_file_header(vm_offset_t imgbase, struct image_file_header *hdr)
 {
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
+	struct image_dos_header *dos_hdr;
+	struct image_nt_header *nt_hdr;
 
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
@@ -128,51 +128,51 @@ pe_get_file_header(vm_offset_t imgbase, image_file_header *hdr)
 	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
 
-	dos_hdr = (image_dos_header *)imgbase;
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
+	dos_hdr = (struct image_dos_header *)imgbase;
+	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->lfanew);
 
 	/*
 	 * Note: the size of the nt_header is variable since it
-	 * can contain optional fields, as indicated by ifh_optionalhdrlen.
+	 * can contain optional fields, as indicated by optionalhdrlen.
 	 * However it happens we're only interested in fields in the
 	 * non-variant portion of the nt_header structure, so we don't
 	 * bother copying the optional parts here.
 	 */
-	bcopy((char *)&nt_hdr->inh_filehdr, (char *)hdr,
-	    sizeof(image_file_header));
+	bcopy((char *)&nt_hdr->filehdr, (char *)hdr,
+	    sizeof(struct image_file_header));
 	return (0);
 }
 
 int
 pe_validate_header(vm_offset_t imgbase)
 {
-	image_file_header file_hdr;
-	image_optional_header opt_hdr;
+	struct image_file_header file_hdr;
+	struct image_optional_header opt_hdr;
 
 	if (pe_get_file_header(imgbase, &file_hdr))
 		return (EINVAL);
-	if (!(file_hdr.ifh_characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
+	if (!(file_hdr.characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
 		return (ENOEXEC);
-	if (file_hdr.ifh_characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+	if (file_hdr.characteristics & IMAGE_FILE_RELOCS_STRIPPED)
 		return (ENOEXEC);
 #ifdef __amd64__
-	if (file_hdr.ifh_machine != IMAGE_FILE_MACHINE_AMD64)
+	if (file_hdr.machine != IMAGE_FILE_MACHINE_AMD64)
 		return (ENOEXEC);
 #endif
 #ifdef __i386__
-	if (file_hdr.ifh_machine != IMAGE_FILE_MACHINE_I386)
+	if (file_hdr.machine != IMAGE_FILE_MACHINE_I386)
 		return (ENOEXEC);
 #endif
-	if (file_hdr.ifh_numsections == 0)
+	if (file_hdr.numsections == 0)
 		return (ENOEXEC);
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (EINVAL);
 #ifdef __amd64__
-	if (opt_hdr.ioh_magic != IMAGE_OPTIONAL_MAGIC_64)
+	if (opt_hdr.magic != IMAGE_OPTIONAL_MAGIC_64)
 		return (ENOEXEC);
 #endif
 #ifdef __i386__
-	if (opt_hdr.ioh_magic != IMAGE_OPTIONAL_MAGIC_32)
+	if (opt_hdr.magic != IMAGE_OPTIONAL_MAGIC_32)
 		return (ENOEXEC);
 #endif
 	return (0);
@@ -184,12 +184,12 @@ pe_validate_header(vm_offset_t imgbase)
 int
 pe_numsections(vm_offset_t imgbase)
 {
-	image_file_header file_hdr;
+	struct image_file_header file_hdr;
 
 	if (pe_get_file_header(imgbase, &file_hdr))
 		return (0);
 
-	return (file_hdr.ifh_numsections);
+	return (file_hdr.numsections);
 }
 
 /*
@@ -199,12 +199,12 @@ pe_numsections(vm_offset_t imgbase)
 static vm_offset_t
 pe_imagebase(vm_offset_t imgbase)
 {
-	image_optional_header optional_hdr;
+	struct image_optional_header optional_hdr;
 
 	if (pe_get_optional_header(imgbase, &optional_hdr))
 		return (0);
 
-	return (optional_hdr.ioh_imagebase);
+	return (optional_hdr.imagebase);
 }
 
 /*
@@ -214,16 +214,16 @@ pe_imagebase(vm_offset_t imgbase)
 static vm_offset_t
 pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 {
-	image_optional_header opt_hdr;
+	struct image_optional_header opt_hdr;
 	vm_offset_t dir;
 
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (0);
 
-	if (diridx >= opt_hdr.ioh_rva_size_cnt)
+	if (diridx >= opt_hdr.rva_size_cnt)
 		return (0);
 
-	dir = opt_hdr.ioh_datadir[diridx].idd_vaddr;
+	dir = opt_hdr.datadir[diridx].vaddr;
 
 	return (pe_translate_addr(imgbase, dir));
 }
@@ -231,10 +231,10 @@ pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 vm_offset_t
 pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 {
-	image_optional_header opt_hdr;
-	image_section_header *sect_hdr;
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
+	struct image_optional_header opt_hdr;
+	struct image_section_header *sect_hdr;
+	struct image_dos_header *dos_hdr;
+	struct image_nt_header *nt_hdr;
 	int i = 0, sections, fixedlen;
 
 	if (pe_get_optional_header(imgbase, &opt_hdr))
@@ -242,8 +242,8 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 
 	sections = pe_numsections(imgbase);
 
-	dos_hdr = (image_dos_header *)imgbase;
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
+	dos_hdr = (struct image_dos_header *)imgbase;
+	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->lfanew);
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
 	/*
@@ -256,12 +256,12 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 	 * up to a page boundary.
 	 */
 	while (i++ < sections) {
-		fixedlen = sect_hdr->ish_misc.ish_vsize;
-		fixedlen += ((opt_hdr.ioh_sectalign - 1) -
-		    sect_hdr->ish_misc.ish_vsize) &
-		    (opt_hdr.ioh_sectalign - 1);
-		if (sect_hdr->ish_vaddr <= (uint32_t)rva &&
-		    (sect_hdr->ish_vaddr + fixedlen) >
+		fixedlen = sect_hdr->misc.vsize;
+		fixedlen += ((opt_hdr.sectalign - 1) -
+		    sect_hdr->misc.vsize) &
+		    (opt_hdr.sectalign - 1);
+		if (sect_hdr->vaddr <= (uint32_t)rva &&
+		    (sect_hdr->vaddr + fixedlen) >
 		    (uint32_t)rva)
 			break;
 		sect_hdr++;
@@ -270,8 +270,8 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 	if (i > sections)
 		return (0);
 
-	return ((vm_offset_t)(imgbase + rva - sect_hdr->ish_vaddr +
-	    sect_hdr->ish_rawdataaddr));
+	return ((vm_offset_t)(imgbase + rva - sect_hdr->vaddr +
+	    sect_hdr->rawdataaddr));
 }
 
 /*
@@ -280,12 +280,12 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
  * ones (.text, .data, .rdata, .reloc).
  */
 static int
-pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
+pe_get_section(vm_offset_t imgbase, struct image_section_header *hdr,
     const char *name)
 {
-	image_dos_header *dos_hdr;
-	image_nt_header *nt_hdr;
-	image_section_header *sect_hdr;
+	struct image_dos_header *dos_hdr;
+	struct image_nt_header *nt_hdr;
+	struct image_section_header *sect_hdr;
 	int i, sections;
 
 	if (imgbase == 0 || hdr == NULL)
@@ -296,14 +296,14 @@ pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
 
 	sections = pe_numsections(imgbase);
 
-	dos_hdr = (image_dos_header *)imgbase;
-	nt_hdr = (image_nt_header *)(imgbase + dos_hdr->idh_lfanew);
+	dos_hdr = (struct image_dos_header *)imgbase;
+	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->lfanew);
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
 	for (i = 0; i < sections; i++) {
-		if (!strcmp((char *)&sect_hdr->ish_name, name)) {
+		if (!strcmp((char *)&sect_hdr->name, name)) {
 			bcopy((char *)sect_hdr, (char *)hdr,
-			    sizeof(image_section_header));
+			    sizeof(struct image_section_header));
 			return (0);
 		} else
 			sect_hdr++;
@@ -319,8 +319,8 @@ pe_get_section(vm_offset_t imgbase, image_section_header *hdr,
 int
 pe_relocate(vm_offset_t imgbase)
 {
-	image_section_header sect;
-	image_base_reloc *relhdr;
+	struct image_section_header sect;
+	struct image_base_reloc *relhdr;
 	vm_offset_t base, txt;
 	vm_size_t delta;
 	uint64_t *qloc;
@@ -330,40 +330,40 @@ pe_relocate(vm_offset_t imgbase)
 
 	base = pe_imagebase(imgbase);
 	pe_get_section(imgbase, &sect, ".text");
-	txt = pe_translate_addr(imgbase, sect.ish_vaddr);
-	delta = (uint32_t)(txt) - base - sect.ish_vaddr;
+	txt = pe_translate_addr(imgbase, sect.vaddr);
+	delta = (uint32_t)(txt) - base - sect.vaddr;
 
 	pe_get_section(imgbase, &sect, ".reloc");
 
-	relhdr = (image_base_reloc *)(imgbase + sect.ish_rawdataaddr);
+	relhdr = (struct image_base_reloc *)(imgbase + sect.rawdataaddr);
 
 	do {
-		count = (relhdr->ibr_blocksize -
+		count = (relhdr->blocksize -
 		    (sizeof(uint32_t) * 2)) / sizeof(uint16_t);
 		for (i = 0; i < count; i++) {
-			rel = relhdr->ibr_rel[i];
+			rel = relhdr->rel[i];
 			switch (IMR_RELTYPE(rel)) {
 			case IMAGE_REL_BASED_ABSOLUTE:
 				break;
 			case IMAGE_REL_BASED_HIGHLOW:
 				lloc = (uint32_t *)pe_translate_addr(imgbase,
-				    relhdr->ibr_vaddr + IMR_RELOFFSET(rel));
+				    relhdr->vaddr + IMR_RELOFFSET(rel));
 				*lloc = pe_translate_addr(imgbase,
 				    (*lloc - base));
 				break;
 			case IMAGE_REL_BASED_HIGH:
 				sloc = (uint16_t *)pe_translate_addr(imgbase,
-				    relhdr->ibr_vaddr + IMR_RELOFFSET(rel));
+				    relhdr->vaddr + IMR_RELOFFSET(rel));
 				*sloc += (delta & 0xFFFF0000) >> 16;
 				break;
 			case IMAGE_REL_BASED_LOW:
 				sloc = (uint16_t *)pe_translate_addr(imgbase,
-				    relhdr->ibr_vaddr + IMR_RELOFFSET(rel));
+				    relhdr->vaddr + IMR_RELOFFSET(rel));
 				*sloc += (delta & 0xFFFF);
 				break;
 			case IMAGE_REL_BASED_DIR64:
 				qloc = (uint64_t *)pe_translate_addr(imgbase,
-				    relhdr->ibr_vaddr + IMR_RELOFFSET(rel));
+				    relhdr->vaddr + IMR_RELOFFSET(rel));
 				*qloc = pe_translate_addr(imgbase,
 				    (*qloc - base));
 				break;
@@ -373,9 +373,9 @@ pe_relocate(vm_offset_t imgbase)
 				break;
 			}
 		}
-		relhdr = (image_base_reloc *)((vm_offset_t)relhdr +
-		    relhdr->ibr_blocksize);
-	} while (relhdr->ibr_blocksize);
+		relhdr = (struct image_base_reloc *)((vm_offset_t)relhdr +
+		    relhdr->blocksize);
+	} while (relhdr->blocksize);
 
 	return (0);
 }
@@ -389,11 +389,11 @@ pe_relocate(vm_offset_t imgbase)
  * Note: module names are case insensitive!
  */
 int
-pe_get_import_descriptor(vm_offset_t imgbase, image_import_descriptor *desc,
-    char *module)
+pe_get_import_descriptor(vm_offset_t imgbase,
+    struct image_import_descriptor *desc, char *module)
 {
+	struct image_import_descriptor *imp_desc;
 	vm_offset_t offset;
-	image_import_descriptor *imp_desc;
 	char *modname;
 
 	if (imgbase == 0 || module == NULL || desc == NULL)
@@ -405,12 +405,12 @@ pe_get_import_descriptor(vm_offset_t imgbase, image_import_descriptor *desc,
 
 	imp_desc = (void *)offset;
 
-	while (imp_desc->iid_nameaddr) {
+	while (imp_desc->nameaddr) {
 		modname = (char *)pe_translate_addr(imgbase,
-		    imp_desc->iid_nameaddr);
+		    imp_desc->nameaddr);
 		if (!strncasecmp(module, modname, strlen(module))) {
 			bcopy((char *)imp_desc, (char *)desc,
-			    sizeof(image_import_descriptor));
+			    sizeof(struct image_import_descriptor));
 			return (0);
 		}
 		imp_desc++;
@@ -419,11 +419,11 @@ pe_get_import_descriptor(vm_offset_t imgbase, image_import_descriptor *desc,
 }
 
 static int
-pe_get_messagetable(vm_offset_t imgbase, message_resource_data **md)
+pe_get_messagetable(vm_offset_t imgbase, struct message_resource_data **md)
 {
-	image_resource_directory *rdir, *rtype;
-	image_resource_directory_entry *dent, *dent2;
-	image_resource_data_entry *rent;
+	struct image_resource_directory *rdir, *rtype;
+	struct image_resource_directory_entry *dent, *dent2;
+	struct image_resource_data_entry *rent;
 	vm_offset_t offset;
 	int i;
 
@@ -434,28 +434,28 @@ pe_get_messagetable(vm_offset_t imgbase, message_resource_data **md)
 	if (offset == 0)
 		return (ENOENT);
 
-	rdir = (image_resource_directory *)offset;
+	rdir = (struct image_resource_directory *)offset;
 
-	dent = (image_resource_directory_entry *)(offset +
-	    sizeof(image_resource_directory));
+	dent = (struct image_resource_directory_entry *)(offset +
+	    sizeof(struct image_resource_directory));
 
-	for (i = 0; i < rdir->ird_id_entries; i++) {
-		if (dent->irde_name != RT_MESSAGETABLE) {
+	for (i = 0; i < rdir->id_entries; i++) {
+		if (dent->name != RT_MESSAGETABLE) {
 			dent++;
 			continue;
 		}
 		dent2 = dent;
-		while (dent2->irde_dataoff & RESOURCE_DIR_FLAG) {
-			rtype = (image_resource_directory *)(offset +
-			    (dent2->irde_dataoff & ~RESOURCE_DIR_FLAG));
-			dent2 = (image_resource_directory_entry *)
+		while (dent2->dataoff & RESOURCE_DIR_FLAG) {
+			rtype = (struct image_resource_directory *)(offset +
+			    (dent2->dataoff & ~RESOURCE_DIR_FLAG));
+			dent2 = (struct image_resource_directory_entry *)
 			    ((uintptr_t)rtype +
-			     sizeof(image_resource_directory));
+			     sizeof(struct image_resource_directory));
 		}
-		rent = (image_resource_data_entry *)(offset +
-		    dent2->irde_dataoff);
-		*md = (message_resource_data *)pe_translate_addr(imgbase,
-		    rent->irde_offset);
+		rent = (struct image_resource_data_entry *)(offset +
+		    dent2->dataoff);
+		*md = (struct message_resource_data *)pe_translate_addr(imgbase,
+		    rent->offset);
 		return (0);
 	}
 
@@ -466,28 +466,28 @@ int
 pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
     uint16_t *flags)
 {
-	message_resource_data *md = NULL;
-	message_resource_block *mb;
-	message_resource_entry *me;
+	struct message_resource_data *md = NULL;
+	struct message_resource_block *mb;
+	struct message_resource_entry *me;
 	uint32_t i;
 
 	pe_get_messagetable(imgbase, &md);
 	if (md == NULL)
 		return (ENOENT);
 
-	mb = (message_resource_block *)((uintptr_t)md +
-	    sizeof(message_resource_data));
+	mb = (struct message_resource_block *)((uintptr_t)md +
+	    sizeof(struct message_resource_data));
 
-	for (i = 0; i < md->mrd_numblocks; i++) {
-		if (id >= mb->mrb_lowid && id <= mb->mrb_highid) {
-			me = (message_resource_entry *)((uintptr_t)md +
-			    mb->mrb_entryoff);
-			for (i = id - mb->mrb_lowid; i > 0; i--)
-				me = (message_resource_entry *)((uintptr_t)me +
-				    me->mre_len);
-			*str = me->mre_text;
-			*len = me->mre_len;
-			*flags = me->mre_flags;
+	for (i = 0; i < md->numblocks; i++) {
+		if (id >= mb->lowid && id <= mb->highid) {
+			me = (struct message_resource_entry *)((uintptr_t)md +
+			    mb->entryoff);
+			for (i = id - mb->lowid; i > 0; i--)
+				me = (struct message_resource_entry *)
+				    ((uintptr_t)me + me->len);
+			*str = me->text;
+			*len = me->len;
+			*flags = me->flags;
 			return (0);
 		}
 		mb++;
@@ -502,17 +502,17 @@ pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
  * a module for the first time.
  */
 static vm_offset_t
-pe_functbl_match(image_patch_table *functbl, char *name)
+pe_functbl_match(struct image_patch_table *functbl, char *name)
 {
-	image_patch_table *p;
+	struct image_patch_table *p;
 
 	if (functbl == NULL || name == NULL)
 		return (0);
 	p = functbl;
 
-	while (p->ipt_name != NULL) {
-		if (!strcmp(p->ipt_name, name))
-			return ((vm_offset_t)p->ipt_wrap);
+	while (p->name != NULL) {
+		if (!strcmp(p->name, name))
+			return ((vm_offset_t)p->wrap);
 		p++;
 	}
 	printf("NDIS: no match for %s\n", name);
@@ -524,7 +524,7 @@ pe_functbl_match(image_patch_table *functbl, char *name)
 	 * that does calling convention translation and
 	 * then invokes the underlying routine.
 	 */
-	return ((vm_offset_t)p->ipt_wrap);
+	return ((vm_offset_t)p->wrap);
 }
 
 /*
@@ -536,9 +536,10 @@ pe_functbl_match(image_patch_table *functbl, char *name)
  * merged into the INIT segment.
  */
 int
-pe_patch_imports(vm_offset_t imgbase, char *module, image_patch_table *functbl)
+pe_patch_imports(vm_offset_t imgbase, char *module,
+     struct image_patch_table *functbl)
 {
-	image_import_descriptor imp_desc;
+	struct image_import_descriptor imp_desc;
 	char *fname;
 	vm_offset_t *nptr, *fptr, func;
 
@@ -549,9 +550,9 @@ pe_patch_imports(vm_offset_t imgbase, char *module, image_patch_table *functbl)
 		return (ENOEXEC);
 
 	nptr = (vm_offset_t *)pe_translate_addr(imgbase,
-	    imp_desc.iid_import_name_table_addr);
+	    imp_desc.import_name_table_addr);
 	fptr = (vm_offset_t *)pe_translate_addr(imgbase,
-	    imp_desc.iid_import_address_table_addr);
+	    imp_desc.import_address_table_addr);
 
 	while (nptr != NULL && pe_translate_addr(imgbase, *nptr)) {
 		fname = (char *)pe_translate_addr(imgbase, (*nptr) + 2);

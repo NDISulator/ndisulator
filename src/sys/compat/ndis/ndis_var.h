@@ -1705,7 +1705,7 @@ typedef void (*ndis_allocate_complete_func)(ndis_handle, void *,
     struct physaddr *, uint32_t, void *);
 typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
 typedef void (*ndis_shutdown_func)(void *);
-extern image_patch_table ndis_functbl[];
+extern struct image_patch_table ndis_functbl[];
 
 #define	NDIS_TASKQUEUE 1
 #define	NDIS_SWI 2

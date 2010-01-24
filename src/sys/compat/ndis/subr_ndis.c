@@ -297,13 +297,13 @@ MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
 void
 ndis_libinit(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 
 	patch = ndis_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_wrap((funcptr)patch->ipt_func,
-		    (funcptr *)&patch->ipt_wrap,
-		    patch->ipt_argcnt, patch->ipt_ftype);
+	while (patch->func != NULL) {
+		windrv_wrap((funcptr)patch->func,
+		    (funcptr *)&patch->wrap,
+		    patch->argcnt, patch->ftype);
 		patch++;
 	}
 }
@@ -311,11 +311,11 @@ ndis_libinit(void)
 void
 ndis_libfini(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 
 	patch = ndis_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_unwrap(patch->ipt_wrap);
+	while (patch->func != NULL) {
+		windrv_unwrap(patch->wrap);
 		patch++;
 	}
 }
@@ -323,12 +323,12 @@ ndis_libfini(void)
 static funcptr
 ndis_findwrap(funcptr func)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 
 	patch = ndis_functbl;
-	while (patch->ipt_func != NULL) {
-		if ((funcptr)patch->ipt_func == func)
-			return ((funcptr)patch->ipt_wrap);
+	while (patch->func != NULL) {
+		if ((funcptr)patch->func == func)
+			return ((funcptr)patch->wrap);
 		patch++;
 	}
 
@@ -2760,7 +2760,7 @@ dummy(void)
  * so we lie and say there's one additional argument so
  * that the wrapping routines will do the right thing.
  */
-image_patch_table ndis_functbl[] = {
+struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisCopyFromPacketToPacket, 6),
 	IMPORT_SFUNC(NdisCopyFromPacketToPacketSafe, 7),
 	IMPORT_SFUNC(NdisIMCopySendPerPacketInfo, 2),

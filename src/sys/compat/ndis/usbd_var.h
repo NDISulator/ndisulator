@@ -211,7 +211,7 @@ struct usbd_version_info {
 };
 typedef struct usbd_version_info usbd_version_info;
 
-extern image_patch_table usbd_functbl[];
+extern struct image_patch_table usbd_functbl[];
 
 __BEGIN_DECLS
 extern void usbd_libinit(void);

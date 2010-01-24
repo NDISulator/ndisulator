@@ -270,7 +270,7 @@ MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 void
 ntoskrnl_libinit(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 	struct proc *p;
 	kdpc_queue *kq;
 	callout_entry *e;
@@ -337,10 +337,10 @@ ntoskrnl_libinit(void)
 	}
 
 	patch = ntoskrnl_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_wrap((funcptr)patch->ipt_func,
-		    (funcptr *)&patch->ipt_wrap,
-		    patch->ipt_argcnt, patch->ipt_ftype);
+	while (patch->func != NULL) {
+		windrv_wrap((funcptr)patch->func,
+		    (funcptr *)&patch->wrap,
+		    patch->argcnt, patch->ftype);
 		patch++;
 	}
 
@@ -376,13 +376,13 @@ ntoskrnl_libinit(void)
 void
 ntoskrnl_libfini(void)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 	callout_entry *e;
 	list_entry *l;
 
 	patch = ntoskrnl_functbl;
-	while (patch->ipt_func != NULL) {
-		windrv_unwrap(patch->ipt_wrap);
+	while (patch->func != NULL) {
+		windrv_unwrap(patch->wrap);
 		patch++;
 	}
 
@@ -1933,17 +1933,17 @@ ntoskrnl_popsl(slist_header *head)
  * original. Letting the Windows driver invoke the original
  * function directly will result in a convention calling
  * mismatch and a pretty crash. On x86, this effectively
- * becomes a no-op since ipt_func and ipt_wrap are the same.
+ * becomes a no-op since func and wrap are the same.
  */
 static funcptr
 ntoskrnl_findwrap(funcptr func)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 
 	patch = ntoskrnl_functbl;
-	while (patch->ipt_func != NULL) {
-		if ((funcptr)patch->ipt_func == func)
-			return ((funcptr)patch->ipt_wrap);
+	while (patch->func != NULL) {
+		if ((funcptr)patch->func == func)
+			return ((funcptr)patch->wrap);
 		patch++;
 	}
 
@@ -3829,7 +3829,7 @@ dummy(void)
 	printf("ntoskrnl dummy called...\n");
 }
 
-image_patch_table ntoskrnl_functbl[] = {
+struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlZeroMemory, 2),
 	IMPORT_SFUNC(RtlSecureZeroMemory, 2),
 	IMPORT_SFUNC(RtlFillMemory, 3),

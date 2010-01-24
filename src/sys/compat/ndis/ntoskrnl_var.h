@@ -1207,7 +1207,7 @@ struct drvdb_ent {
 	STAILQ_ENTRY(drvdb_ent)	link;
 };
 
-extern image_patch_table ntoskrnl_functbl[];
+extern struct image_patch_table ntoskrnl_functbl[];
 typedef void (*funcptr)(void);
 typedef int (*matchfuncptr)(enum ndis_interface_type, void *, void *);
 

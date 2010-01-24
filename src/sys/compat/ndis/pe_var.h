@@ -35,9 +35,7 @@
 #ifndef _PE_VAR_H_
 #define	_PE_VAR_H_
 
-/*
- *  Image Format
- */
+/* Image Format */
 #define	IMAGE_DOS_SIGNATURE	0x5A4D		/* MZ */
 #define	IMAGE_OS2_SIGNATURE	0x454E		/* NE */
 #define	IMAGE_OS2_SIGNATURE_LE	0x454C		/* LE */
@@ -50,44 +48,40 @@
  * only be run in Windows.
  */
 struct image_dos_header {
-	uint16_t	idh_magic;	/* Magic number */
-	uint16_t	idh_cblp;	/* Bytes on last page of file */
-	uint16_t	idh_cp;		/* Pages in file */
-	uint16_t	idh_crlc;	/* Relocations */
-	uint16_t	idh_cparhdr;	/* Size of header in paragraphs */
-	uint16_t	idh_minalloc;	/* Minimum extra paragraphs needed */
-	uint16_t	idh_maxalloc;	/* Maximum extra paragraphs needed */
-	uint16_t	idh_ss;		/* Initial (relative) SS value */
-	uint16_t	idh_sp;		/* Initial SP value */
-	uint16_t	idh_csum;	/* Checksum */
-	uint16_t	idh_ip;		/* Initial IP value */
-	uint16_t	idh_cs;		/* Initial (relative) CS value */
-	uint16_t	idh_lfarlc;	/* File address of relocation table */
-	uint16_t	idh_ovno;	/* Overlay number */
-	uint16_t	idh_rsvd1[4];	/* Reserved words */
-	uint16_t	idh_oemid;	/* OEM identifier (for idh_oeminfo) */
-	uint16_t	idh_oeminfo;	/* OEM information; oemid specific */
-	uint16_t	idh_rsvd2[10];	/* Reserved words */
-	uint32_t	idh_lfanew;	/* File address of new exe header */
+	uint16_t	magic;		/* Magic number */
+	uint16_t	cblp;		/* Bytes on last page of file */
+	uint16_t	cp;		/* Pages in file */
+	uint16_t	crlc;		/* Relocations */
+	uint16_t	cparhdr;	/* Size of header in paragraphs */
+	uint16_t	minalloc;	/* Minimum extra paragraphs needed */
+	uint16_t	maxalloc;	/* Maximum extra paragraphs needed */
+	uint16_t	ss;		/* Initial (relative) SS value */
+	uint16_t	sp;		/* Initial SP value */
+	uint16_t	csum;		/* Checksum */
+	uint16_t	ip;		/* Initial IP value */
+	uint16_t	cs;		/* Initial (relative) CS value */
+	uint16_t	lfarlc;		/* File address of relocation table */
+	uint16_t	ovno;		/* Overlay number */
+	uint16_t	rsvd1[4];	/* Reserved words */
+	uint16_t	oemid;		/* OEM identifier (for oeminfo) */
+	uint16_t	oeminfo;	/* OEM information; oemid specific */
+	uint16_t	rsvd2[10];	/* Reserved words */
+	uint32_t	lfanew;		/* File address of new exe header */
 };
-typedef struct image_dos_header image_dos_header;
 
-/*
- * File header format.
- */
+/* File header format */
 struct image_file_header {
-	uint16_t	ifh_machine;		/* Machine type */
-	uint16_t	ifh_numsections;	/* # of sections */
-	uint32_t	ifh_timestamp;		/* Date/time stamp */
-	uint32_t	ifh_symtblptr;		/* Offset to symbol table */
-	uint32_t	ifh_numsyms;		/* # of symbols */
-	uint16_t	ifh_optionalhdrlen;	/* Size of optional header */
-	uint16_t	ifh_characteristics;	/* Characteristics */
+	uint16_t	machine;		/* Machine type */
+	uint16_t	numsections;		/* # of sections */
+	uint32_t	timestamp;		/* Date/time stamp */
+	uint32_t	symtblptr;		/* Offset to symbol table */
+	uint32_t	numsyms;		/* # of symbols */
+	uint16_t	optionalhdrlen;		/* Size of optional header */
+	uint16_t	characteristics;	/* Characteristics */
 };
-typedef struct image_file_header image_file_header;
 
 /* Machine types */
-#define	IMAGE_FILE_MACHINE_UNKNOWN	0
+#define	IMAGE_FILE_MACHINE_UNKNOWN	0x0000
 #define	IMAGE_FILE_MACHINE_I860		0x014d
 #define	IMAGE_FILE_MACHINE_I386		0x014c
 #define	IMAGE_FILE_MACHINE_R3000	0x0162
@@ -138,75 +132,66 @@ typedef struct image_file_header image_file_header;
 
 #define	IMAGE_SIZEOF_FILE_HEADER		20
 
-/*
- * Directory format.
- */
+/* Directory format */
 struct image_data_directory {
-	uint32_t	idd_vaddr;	/* virtual address */
-	uint32_t	idd_size;	/* size */
+	uint32_t	vaddr;	/* virtual address */
+	uint32_t	size;	/* size */
 };
-typedef struct image_data_directory image_data_directory;
 
 #define	IMAGE_DIRECTORY_ENTRIES_MAX	16
 
-/*
- * Optional header format.
- */
+/* Optional header format */
 struct image_optional_header {
-
 	/* Standard fields */
-	uint16_t	ioh_magic;
-	uint8_t		ioh_linkerver_major;
-	uint8_t		ioh_linkerver_minor;
-	uint32_t	ioh_codesize;
-	uint32_t	ioh_datasize;
-	uint32_t	ioh_bsssize;
-	uint32_t	ioh_entryaddr;
-	uint32_t	ioh_codebaseaddr;
+	uint16_t	magic;
+	uint8_t		linkerver_major;
+	uint8_t		linkerver_minor;
+	uint32_t	codesize;
+	uint32_t	datasize;
+	uint32_t	bsssize;
+	uint32_t	entryaddr;
+	uint32_t	codebaseaddr;
 #ifndef __amd64__
-	uint32_t	ioh_databaseaddr;
+	uint32_t	databaseaddr;
 #endif
-
 	/* NT-specific fields */
-	uintptr_t	ioh_imagebase;
-	uint32_t	ioh_sectalign;
-	uint32_t	ioh_filealign;
-	uint16_t	ioh_osver_major;
-	uint16_t	ioh_osver_minor;
-	uint16_t	ioh_imagever_major;
-	uint16_t	ioh_imagever_minor;
-	uint16_t	ioh_subsys_major;
-	uint16_t	ioh_subsys_minor;
-	uint32_t	ioh_win32ver;
-	uint32_t	ioh_imagesize;
-	uint32_t	ioh_headersize;
-	uint32_t	ioh_csum;
-	uint16_t	ioh_subsys;
-	uint16_t	ioh_dll_characteristics;
-	uintptr_t	ioh_stackreservesize;
-	uintptr_t	ioh_stackcommitsize;
-	uintptr_t	ioh_heapreservesize;
-	uintptr_t	ioh_heapcommitsize;
-	uint16_t	ioh_loaderflags;
-	uint32_t	ioh_rva_size_cnt;
-	image_data_directory	ioh_datadir[IMAGE_DIRECTORY_ENTRIES_MAX];
+	uintptr_t	imagebase;
+	uint32_t	sectalign;
+	uint32_t	filealign;
+	uint16_t	osver_major;
+	uint16_t	osver_minor;
+	uint16_t	imagever_major;
+	uint16_t	imagever_minor;
+	uint16_t	subsys_major;
+	uint16_t	subsys_minor;
+	uint32_t	win32ver;
+	uint32_t	imagesize;
+	uint32_t	headersize;
+	uint32_t	csum;
+	uint16_t	subsys;
+	uint16_t	dll_characteristics;
+	uintptr_t	stackreservesize;
+	uintptr_t	stackcommitsize;
+	uintptr_t	heapreservesize;
+	uintptr_t	heapcommitsize;
+	uint16_t	loaderflags;
+	uint32_t	rva_size_cnt;
+	struct image_data_directory	datadir[IMAGE_DIRECTORY_ENTRIES_MAX];
 };
-typedef struct image_optional_header image_optional_header;
 
 /* Magic */
 #define	IMAGE_OPTIONAL_MAGIC_32			0x010B
 #define	IMAGE_OPTIONAL_MAGIC_64			0x020B
 
 struct image_nt_header {
-	uint32_t		inh_signature;
-	image_file_header	inh_filehdr;
-	image_optional_header	inh_optionalhdr;
+	uint32_t			signature;
+	struct image_file_header	filehdr;
+	struct image_optional_header	optionalhdr;
 };
-typedef struct image_nt_header image_nt_header;
 
 #define	IMAGE_SIZEOF_NT_HEADER(nthdr)					\
-	(offsetof(image_nt_header, inh_optionalhdr) +			\
-	  ((image_nt_header *)(nthdr))->inh_filehdr.ifh_optionalhdrlen)
+	(offsetof(image_nt_header, optionalhdr) +			\
+	  ((image_nt_header *)(nthdr))->filehdr.optionalhdrlen)
 
 /* Directory Entries */
 #define	IMAGE_DIRECTORY_ENTRY_EXPORT		0
@@ -253,32 +238,29 @@ typedef struct image_nt_header image_nt_header;
 #define	IMAGE_SHORT_NAME_LEN	8
 
 struct image_section_header {
-	uint8_t		ish_name[IMAGE_SHORT_NAME_LEN];
+	uint8_t		name[IMAGE_SHORT_NAME_LEN];
 	union {
-		uint32_t	ish_paddr;
-		uint32_t	ish_vsize;
-	} ish_misc;
-	uint32_t	ish_vaddr;
-	uint32_t	ish_rawdatasize;
-	uint32_t	ish_rawdataaddr;
-	uint32_t	ish_relocaddr;
-	uint32_t	ish_linenumaddr;
-	uint16_t	ish_numrelocs;
-	uint16_t	ish_numlinenums;
-	uint32_t	ish_characteristics;
+		uint32_t	paddr;
+		uint32_t	vsize;
+	} misc;
+	uint32_t	vaddr;
+	uint32_t	rawdatasize;
+	uint32_t	rawdataaddr;
+	uint32_t	relocaddr;
+	uint32_t	linenumaddr;
+	uint16_t	numrelocs;
+	uint16_t	numlinenums;
+	uint32_t	characteristics;
 };
-typedef struct image_section_header image_section_header;
 
 #define	IMAGE_SIZEOF_SECTION_HEADER          40
 
 #define	IMAGE_FIRST_SECTION(nthdr)					\
-	((image_section_header *)((vm_offset_t)(nthdr) +		\
-	  offsetof(image_nt_header, inh_optionalhdr) +			\
-	  ((image_nt_header *)(nthdr))->inh_filehdr.ifh_optionalhdrlen))
+	((struct image_section_header *)((vm_offset_t)(nthdr) +		\
+	  offsetof(struct image_nt_header, optionalhdr) +		\
+	  ((struct image_nt_header *)(nthdr))->filehdr.optionalhdrlen))
 
-/*
- * Import format
- */
+/* Import format */
 struct image_import_by_name {
 	uint16_t	iibn_hint;
 	uint8_t		iibn_name[1];
@@ -288,25 +270,23 @@ struct image_import_by_name {
 #define	IMAGE_ORDINAL(Ordinal)	(Ordinal & 0xffff)
 
 struct image_import_descriptor {
-	uint32_t	iid_import_name_table_addr;
-	uint32_t	iid_timestamp;
-	uint32_t	iid_forwardchain;
-	uint32_t	iid_nameaddr;
-	uint32_t	iid_import_address_table_addr;
+	uint32_t	import_name_table_addr;
+	uint32_t	timestamp;
+	uint32_t	forwardchain;
+	uint32_t	nameaddr;
+	uint32_t	import_address_table_addr;
 };
-typedef struct image_import_descriptor image_import_descriptor;
 
 struct image_base_reloc {
-	uint32_t	ibr_vaddr;
-	uint32_t	ibr_blocksize;
-	uint16_t	ibr_rel[1];
+	uint32_t	vaddr;
+	uint32_t	blocksize;
+	uint16_t	rel[1];
 };
-typedef struct image_base_reloc image_base_reloc;
 
 #define	IMR_RELTYPE(x)		((x >> 12) & 0xF)
 #define	IMR_RELOFFSET(x)	(x & 0xFFF)
 
-/* generic relocation types */
+/* Generic relocation types */
 #define	IMAGE_REL_BASED_ABSOLUTE		0
 #define	IMAGE_REL_BASED_HIGH			1
 #define	IMAGE_REL_BASED_LOW			2
@@ -321,80 +301,70 @@ typedef struct image_base_reloc image_base_reloc;
 #define	IMAGE_REL_BASED_HIGH3ADJ		11
 
 struct image_resource_directory_entry {
-	uint32_t	irde_name;
-	uint32_t	irde_dataoff;
+	uint32_t	name;
+	uint32_t	dataoff;
 };
-typedef struct image_resource_directory_entry image_resource_directory_entry;
 
 #define	RESOURCE_NAME_STR	0x80000000
 #define	RESOURCE_DIR_FLAG	0x80000000
 
 struct image_resource_directory {
-	uint32_t	ird_characteristics;
-	uint32_t	ird_timestamp;
-	uint16_t	ird_majorver;
-	uint16_t	ird_minorver;
-	uint16_t	ird_named_entries;
-	uint16_t	ird_id_entries;
+	uint32_t	characteristics;
+	uint32_t	timestamp;
+	uint16_t	majorver;
+	uint16_t	minorver;
+	uint16_t	named_entries;
+	uint16_t	id_entries;
 #ifdef notdef
-	image_resource_directory_entry	ird_entries[1];
+	struct image_resource_directory_entry	entries[1];
 #endif
 };
-typedef struct image_resource_directory image_resource_directory;
 
 struct image_resource_directory_string {
-	uint16_t	irds_len;
-	char		irds_name[1];
+	uint16_t	len;
+	char		name[1];
 };
-typedef struct image_resource_directory_string image_resource_directory_string;
 
 struct image_resource_directory_string_u {
-	uint16_t	irds_len;
-	char		irds_name[1];
+	uint16_t	len;
+	char		name[1];
 };
-typedef struct image_resource_directory_string_u
-	image_resource_directory_string_u;
 
 struct image_resource_data_entry {
-	uint32_t	irde_offset;
-	uint32_t	irde_size;
-	uint32_t	irde_codepage;
-	uint32_t	irde_rsvd;
+	uint32_t	offset;
+	uint32_t	size;
+	uint32_t	codepage;
+	uint32_t	rsvd;
 };
-typedef struct image_resource_data_entry image_resource_data_entry;
 
 struct message_resource_data {
-	uint32_t	mrd_numblocks;
+	uint32_t			numblocks;
 #ifdef notdef
-	message_resource_block	mrd_blocks[1];
+	struct message_resource_block	blocks[1];
 #endif
 };
-typedef struct message_resource_data message_resource_data;
 
 struct message_resource_block {
-	uint32_t	mrb_lowid;
-	uint32_t	mrb_highid;
-	uint32_t	mrb_entryoff;
+	uint32_t	lowid;
+	uint32_t	highid;
+	uint32_t	entryoff;
 };
-typedef struct message_resource_block message_resource_block;
 
 struct message_resource_entry {
-	uint16_t	mre_len;
-	uint16_t	mre_flags;
-	char		mre_text[];
+	uint16_t	len;
+	uint16_t	flags;
+	char		text[];
 };
-typedef struct message_resource_entry message_resource_entry;
 
 #define	MESSAGE_RESOURCE_UNICODE	0x0001
 
 struct image_patch_table {
-	char	*ipt_name;
-	void	(*ipt_func)(void);
-	void	(*ipt_wrap)(void);
-	uint8_t	ipt_argcnt;
-	int	ipt_ftype;
+	char	*name;
+	void	(*func)(void);
+	void	(*wrap)(void);
+	uint8_t	argcnt;
+	int	ftype;
 };
-typedef struct image_patch_table image_patch_table;
 
 /*
  * AMD64 support. Microsoft uses a different calling convention
@@ -501,14 +471,18 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 #endif /* __amd64__ */
 
 __BEGIN_DECLS
-extern int pe_validate_header(vm_offset_t);
-extern int pe_get_optional_header(vm_offset_t, image_optional_header *);
-extern int pe_numsections(vm_offset_t);
+extern int	pe_validate_header(vm_offset_t);
+extern int	pe_get_optional_header(vm_offset_t,
+		    struct image_optional_header *);
+extern int	pe_numsections(vm_offset_t);
 extern vm_offset_t pe_translate_addr (vm_offset_t, vm_offset_t);
-extern int pe_relocate(vm_offset_t);
-extern int pe_get_import_descriptor(vm_offset_t, image_import_descriptor *, char *);
-extern int pe_patch_imports(vm_offset_t, char *, image_patch_table *);
-extern int pe_get_message(vm_offset_t, uint32_t, char **, int *, uint16_t *);
+extern int	pe_relocate(vm_offset_t);
+extern int	pe_get_import_descriptor(vm_offset_t,
+		    struct image_import_descriptor *, char *);
+extern int	pe_patch_imports(vm_offset_t, char *,
+		    struct image_patch_table *);
+extern int	pe_get_message(vm_offset_t, uint32_t, char **, int *,
+		    uint16_t *);
 __END_DECLS
 
 #endif /* _PE_VAR_H_ */

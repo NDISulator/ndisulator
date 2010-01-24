@@ -684,7 +684,7 @@ dump_regvals(void)
 		is_winnt++;
 
 	/* Emit start of block */
-	fprintf(ofp, "ndis_cfg ndis_regvals[] = {");
+	fprintf(ofp, "struct ndis_cfg ndis_regvals[] = {");
 
 	/* Find manufacturer name */
 	manf = find_assign("Manufacturer", NULL);

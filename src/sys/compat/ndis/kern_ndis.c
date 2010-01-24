@@ -84,7 +84,7 @@ static void	ndis_interrupt_setup(kdpc *, device_object *, irp *,
 		    struct ndis_softc *);
 static void	ndis_return_packet_nic(device_object *, void *);
 
-static image_patch_table kernndis_functbl[] = {
+static struct image_patch_table kernndis_functbl[] = {
 	IMPORT_SFUNC(ndis_status_func, 4),
 	IMPORT_SFUNC(ndis_status_done_func, 1),
 	IMPORT_SFUNC(ndis_set_done_func, 2),
@@ -121,7 +121,7 @@ MALLOC_DEFINE(M_NDIS_KERN, "ndis_kern", "ndis_kern buffers");
 static int
 ndis_modevent(module_t mod, int cmd, void *arg)
 {
-	image_patch_table *patch;
+	struct image_patch_table *patch;
 
 	switch (cmd) {
 	case MOD_LOAD:
@@ -133,10 +133,10 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		usbd_libinit();
 
 		patch = kernndis_functbl;
-		while (patch->ipt_func != NULL) {
-			windrv_wrap((funcptr)patch->ipt_func,
-			    (funcptr *)&patch->ipt_wrap,
-			    patch->ipt_argcnt, patch->ipt_ftype);
+		while (patch->func != NULL) {
+			windrv_wrap((funcptr)patch->func,
+			    (funcptr *)&patch->wrap,
+			    patch->argcnt, patch->ftype);
 			patch++;
 		}
 
@@ -152,8 +152,8 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 			hal_libfini();
 
 			patch = kernndis_functbl;
-			while (patch->ipt_func != NULL) {
-				windrv_unwrap(patch->ipt_wrap);
+			while (patch->func != NULL) {
+				windrv_unwrap(patch->wrap);
 				patch++;
 			}
 		}
@@ -167,8 +167,8 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		hal_libfini();
 
 		patch = kernndis_functbl;
-		while (patch->ipt_func != NULL) {
-			windrv_unwrap(patch->ipt_wrap);
+		while (patch->func != NULL) {
+			windrv_unwrap(patch->wrap);
 			patch++;
 		}
 		break;
@@ -382,7 +382,7 @@ ndis_return_packet(void *buf, void *arg)
 	KeReleaseSpinLockFromDpcLevel(&block->returnlock);
 
 	IoQueueWorkItem(block->returnitem,
-	    (io_workitem_func)kernndis_functbl[7].ipt_wrap,
+	    (io_workitem_func)kernndis_functbl[7].wrap,
 	    WORKQUEUE_CRITICAL, block);
 }
 
@@ -1068,16 +1068,16 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 	}
 
 	/* Give interrupt handling priority over timers. */
-	IoInitializeDpcRequest(fdo, kernndis_functbl[6].ipt_wrap);
+	IoInitializeDpcRequest(fdo, kernndis_functbl[6].wrap);
 	KeSetImportanceDpc(&fdo->dpc, KDPC_IMPORTANCE_HIGH);
 
 	/* Finish up BSD-specific setup. */
-	block->status_func = kernndis_functbl[0].ipt_wrap;
-	block->status_done_func = kernndis_functbl[1].ipt_wrap;
-	block->set_done_func = kernndis_functbl[2].ipt_wrap;
-	block->query_done_func = kernndis_functbl[3].ipt_wrap;
-	block->reset_done_func = kernndis_functbl[4].ipt_wrap;
-	block->send_rsrc_func = kernndis_functbl[5].ipt_wrap;
+	block->status_func = kernndis_functbl[0].wrap;
+	block->status_done_func = kernndis_functbl[1].wrap;
+	block->set_done_func = kernndis_functbl[2].wrap;
+	block->query_done_func = kernndis_functbl[3].wrap;
+	block->reset_done_func = kernndis_functbl[4].wrap;
+	block->send_rsrc_func = kernndis_functbl[5].wrap;
 
 	TAILQ_INSERT_TAIL(&ndis_devhead, block, link);
 
