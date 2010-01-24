@@ -93,8 +93,8 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, pci, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare(enum ndis_interface_type bustype, struct ndis_pci_type *t,
-    device_t dev)
+ndis_devcompare_pci(enum ndis_interface_type bustype,
+    struct ndis_pci_type *t, device_t dev)
 {
 
 	if (bustype != PCIBus)
@@ -114,10 +114,6 @@ ndis_devcompare(enum ndis_interface_type bustype, struct ndis_pci_type *t,
 	return (FALSE);
 }
 
-/*
- * Probe for an NDIS device. Check the PCI vendor and device
- * IDs against our list and return a device name if we find a match.
- */
 static int
 ndis_probe_pci(device_t dev)
 {
@@ -128,9 +124,8 @@ ndis_probe_pci(device_t dev)
 	if (drv == NULL)
 		return (ENXIO);
 
-	db = windrv_match((matchfuncptr)ndis_devcompare, dev);
+	db = windrv_match((matchfuncptr)ndis_devcompare_pci, dev);
 	if (db != NULL) {
-		/* Create PDO for this device instance */
 		windrv_create_pdo(drv, dev);
 		return (0);
 	}
@@ -152,7 +147,7 @@ ndis_attach_pci(device_t dev)
 	sc = device_get_softc(dev);
 	sc->ndis_dev = dev;
 
-	db = windrv_match((matchfuncptr)ndis_devcompare, dev);
+	db = windrv_match((matchfuncptr)ndis_devcompare_pci, dev);
 	if (db == NULL)
 		return (ENXIO);
 	sc->ndis_dobj = db->windrv_object;

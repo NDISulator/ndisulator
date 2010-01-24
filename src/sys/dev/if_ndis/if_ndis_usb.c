@@ -65,24 +65,21 @@ SYSCTL_NODE(_hw, OID_AUTO, ndisusb, CTLFLAG_RD, 0, "NDIS USB driver parameters")
 
 MODULE_DEPEND(ndis, usb, 1, 1, 1);
 
-static device_probe_t ndisusb_match;
-static device_attach_t ndisusb_attach;
-static device_detach_t ndisusb_detach;
+extern int	ndis_attach(device_t);
+extern int	ndis_detach(device_t);
+extern int	ndis_resume(device_t);
+extern int	ndis_shutdown(device_t);
+extern int	ndis_suspend(device_t);
+extern int	ndisdrv_modevent(module_t, int, void *);
+static int	ndis_attach_usb(device_t);
+static int	ndis_detach_usb(device_t);
+static int	ndis_probe_usb(device_t);
 static bus_get_resource_list_t ndis_get_resource_list;
 
-extern int ndis_attach(device_t);
-extern int ndis_detach(device_t);
-extern int ndis_resume(device_t);
-extern int ndis_shutdown(device_t);
-extern int ndis_suspend(device_t);
-extern int ndisdrv_modevent(module_t, int, void *);
-
-extern unsigned char drv_data[];
-
 static device_method_t ndis_methods[] = {
-	DEVMETHOD(device_probe,			ndisusb_match),
-	DEVMETHOD(device_attach,		ndisusb_attach),
-	DEVMETHOD(device_detach,		ndisusb_detach),
+	DEVMETHOD(device_probe,			ndis_probe_usb),
+	DEVMETHOD(device_attach,		ndis_attach_usb),
+	DEVMETHOD(device_detach,		ndis_detach_usb),
 	DEVMETHOD(device_shutdown,		ndis_shutdown),
 	DEVMETHOD(bus_print_child,		bus_generic_print_child),
 	DEVMETHOD(bus_driver_added,		bus_generic_driver_added),
@@ -101,8 +98,8 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, uhub, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndisusb_devcompare(enum ndis_interface_type bustype, struct ndis_usb_type *t,
-    device_t dev)
+ndis_devcompare_usb(enum ndis_interface_type bustype,
+    struct ndis_usb_type *t, device_t dev)
 {
 	struct usb_attach_arg *uaa;
 
@@ -123,7 +120,7 @@ ndisusb_devcompare(enum ndis_interface_type bustype, struct ndis_usb_type *t,
 }
 
 static int
-ndisusb_match(device_t dev)
+ndis_probe_usb(device_t dev)
 {
 	struct usb_attach_arg *uaa;
 	struct drvdb_ent *db;
@@ -138,7 +135,7 @@ ndisusb_match(device_t dev)
 	if (windrv_lookup(0, "USB Bus") == NULL)
 		return (ENXIO);
 
-	db = windrv_match((matchfuncptr)ndisusb_devcompare, dev);
+	db = windrv_match((matchfuncptr)ndis_devcompare_usb, dev);
 	if (db == NULL)
 		return (ENXIO);
 	uaa->driver_ivar = db;
@@ -147,7 +144,7 @@ ndisusb_match(device_t dev)
 }
 
 static int
-ndisusb_attach(device_t dev)
+ndis_attach_usb(device_t dev)
 {
 	const struct drvdb_ent *db;
 	struct ndisusb_softc *dummy;
@@ -169,7 +166,6 @@ ndisusb_attach(device_t dev)
 	sc->ndis_iftype = PNPBus;
 	sc->ndisusb_dev = uaa->device;
 
-	/* Create PDO for this device instance */
 	drv = windrv_lookup(0, "USB Bus");
 	windrv_create_pdo(drv, dev);
 
@@ -192,7 +188,7 @@ ndisusb_attach(device_t dev)
 }
 
 static int
-ndisusb_detach(device_t dev)
+ndis_detach_usb(device_t dev)
 {
 	struct ndis_softc *sc;
 	struct ndisusb_ep *ne;
