@@ -279,6 +279,24 @@ windrv_unload(module_t mod, vm_offset_t img, int len)
 
 #define	WINDRV_LOADED		htonl(0x42534F44)
 
+#ifdef __amd64__
+static void
+patch_user_shared_data_address(vm_offset_t img, size_t len)
+{
+	unsigned long i, n, max_addr, *addr;
+
+	n = len - sizeof(unsigned long);
+	max_addr = KI_USER_SHARED_DATA + sizeof(kuser_shared_data);
+	for (i = 0; i < n; i++) {
+		addr = (unsigned long *)(img + i);
+		if (*addr >= KI_USER_SHARED_DATA && *addr < max_addr) {
+			*addr -= KI_USER_SHARED_DATA;
+			*addr += (unsigned long)&kuser_shared_data;
+		}
+	}
+}
+#endif
+
 /*
  * Loader routine for actual Windows driver modules, ultimately
  * calls the driver's DriverEntry() routine.
@@ -328,7 +346,9 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 	if (pe_get_import_descriptor(img, &imp_desc, "USBD") == 0)
 		if (pe_patch_imports(img, "USBD", usbd_functbl))
 			return (ENOEXEC);
-
+#ifdef __amd64__
+	patch_user_shared_data_address(img, len);
+#endif
 	*ptr = WINDRV_LOADED;
 skipreloc:
 	/* Next step: find the driver entry point. */
