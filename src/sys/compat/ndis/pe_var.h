@@ -42,11 +42,6 @@
 #define	IMAGE_VXD_SIGNATURE	0x454C		/* LE */
 #define	IMAGE_NT_SIGNATURE	0x00004550	/* PE00 */
 
-/*
- * All PE files have one of these, just so if you attempt to
- * run them, they'll print out a message telling you they can
- * only be run in Windows.
- */
 struct image_dos_header {
 	uint16_t	magic;		/* Magic number */
 	uint16_t	cblp;		/* Bytes on last page of file */
@@ -69,7 +64,6 @@ struct image_dos_header {
 	uint32_t	lfanew;		/* File address of new exe header */
 };
 
-/* File header format */
 struct image_file_header {
 	uint16_t	machine;		/* Machine type */
 	uint16_t	numsections;		/* # of sections */
@@ -132,7 +126,6 @@ struct image_file_header {
 
 #define	IMAGE_SIZEOF_FILE_HEADER		20
 
-/* Directory format */
 struct image_data_directory {
 	uint32_t	vaddr;	/* virtual address */
 	uint32_t	size;	/* size */
@@ -140,7 +133,6 @@ struct image_data_directory {
 
 #define	IMAGE_DIRECTORY_ENTRIES_MAX	16
 
-/* Optional header format */
 struct image_optional_header {
 	/* Standard fields */
 	uint16_t	magic;
@@ -374,7 +366,7 @@ struct image_patch_table {
  * - The caller must reserve space on the stack for the 4
  *   register arguments in case the callee has to spill them.
  *
- * - The stack myst be 16-byte aligned by the time the callee
+ * - The stack must be 16-byte aligned by the time the caller
  *   executes. A call instruction implicitly pushes an 8 byte
  *   return address onto the stack. We have to make sure that
  *   the amount of space we consume, plus the return address,
@@ -469,7 +461,7 @@ extern int	pe_validate_header(vm_offset_t);
 extern int	pe_get_optional_header(vm_offset_t,
 		    struct image_optional_header *);
 extern int	pe_numsections(vm_offset_t);
-extern vm_offset_t pe_translate_addr (vm_offset_t, vm_offset_t);
+extern vm_offset_t pe_translate_addr(vm_offset_t, vm_offset_t);
 extern int	pe_relocate(vm_offset_t);
 extern int	pe_get_import_descriptor(vm_offset_t,
 		    struct image_import_descriptor *, char *);
