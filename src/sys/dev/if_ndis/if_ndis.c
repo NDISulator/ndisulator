@@ -2698,11 +2698,14 @@ ndis_scan_start(struct ieee80211com *ic)
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
+	ndis_status rval;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
-	if (ndis_set(sc, OID_802_11_BSSID_LIST_SCAN, NULL, 0)) {
-		DPRINTF("bssid list scan failed\n");
+	rval = ndis_set(sc, OID_802_11_BSSID_LIST_SCAN, NULL, 0);
+	if (rval) {
+		device_printf(sc->ndis_dev, "scan failed; "
+		    "status 0x%08X\n", rval);
 		ieee80211_cancel_scan(vap);
 		return;
 	}
