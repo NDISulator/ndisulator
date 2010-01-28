@@ -1906,7 +1906,6 @@ ntoskrnl_pushsl(slist_header *head, slist_entry *entry)
 	entry->sl_next = head->slh_list.slh_next;
 	head->slh_list.slh_next = entry;
 	head->slh_list.slh_depth++;
-	head->slh_list.slh_seq++;
 
 	return (oldhead);
 }
@@ -1920,7 +1919,6 @@ ntoskrnl_popsl(slist_header *head)
 	if (first != NULL) {
 		head->slh_list.slh_next = first->sl_next;
 		head->slh_list.slh_depth--;
-		head->slh_list.slh_seq++;
 	}
 
 	return (first);
