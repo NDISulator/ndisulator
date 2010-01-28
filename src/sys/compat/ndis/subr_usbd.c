@@ -1352,7 +1352,7 @@ USBD_CreateConfigurationRequestEx(usb_config_descriptor_t *conf,
 	size += sizeof(struct usbd_urb_select_configuration) -
 	    sizeof(struct usbd_interface_information);
 
-	selconf = ExAllocatePoolWithTag(NonPagedPool, size, 0);
+	selconf = ExAllocatePoolWithTag(NON_PAGED_POOL, size, 0);
 	if (selconf == NULL)
 		return (NULL);
 	selconf->usc_hdr.uuh_func = URB_FUNCTION_SELECT_CONFIGURATION;

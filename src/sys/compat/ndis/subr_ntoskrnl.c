@@ -289,7 +289,7 @@ ntoskrnl_libinit(void)
 	InitializeListHead(&ntoskrnl_intlist);
 	mtx_init(&ntoskrnl_calllock, MTX_NTOSKRNL_SPIN_LOCK, NULL, MTX_SPIN);
 
-	kq_queues = ExAllocatePoolWithTag(NonPagedPool,
+	kq_queues = ExAllocatePoolWithTag(NON_PAGED_POOL,
 #ifdef NTOSKRNL_MULTIPLE_DPCS
 	    sizeof(kdpc_queue) * mp_ncpus, 0);
 #else
@@ -298,7 +298,7 @@ ntoskrnl_libinit(void)
 	if (kq_queues == NULL)
 		panic("failed to allocate kq_queues");
 
-	wq_queues = ExAllocatePoolWithTag(NonPagedPool,
+	wq_queues = ExAllocatePoolWithTag(NON_PAGED_POOL,
 	    sizeof(kdpc_queue) * WORKITEM_THREADS, 0);
 	if (wq_queues == NULL)
 		panic("failed to allocate wq_queues");
@@ -346,7 +346,7 @@ ntoskrnl_libinit(void)
 	}
 
 	for (i = 0; i < NTOSKRNL_TIMEOUTS; i++) {
-		e = ExAllocatePoolWithTag(NonPagedPool,
+		e = ExAllocatePoolWithTag(NON_PAGED_POOL,
 		    sizeof(callout_entry), 0);
 		if (e == NULL)
 			panic("failed to allocate timeouts");
@@ -542,7 +542,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
 		dst->as_len = dst->as_maxlen;
 
 	if (allocate == TRUE) {
-		dst->as_buf = ExAllocatePoolWithTag(NonPagedPool,
+		dst->as_buf = ExAllocatePoolWithTag(NON_PAGED_POOL,
 		    (src->us_len / 2) + 1, 0);
 		if (dst->as_buf == NULL)
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
@@ -566,7 +566,7 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	if (allocate == TRUE) {
-		dst->us_buf = ExAllocatePoolWithTag(NonPagedPool,
+		dst->us_buf = ExAllocatePoolWithTag(NON_PAGED_POOL,
 		    src->as_len * 2, 0);
 		if (dst->us_buf == NULL)
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
@@ -610,7 +610,7 @@ IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
 {
 	custom_extension *ce;
 
-	ce = ExAllocatePoolWithTag(NonPagedPool, sizeof(custom_extension)
+	ce = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(custom_extension)
 	    + extlen, 0);
 	if (ce == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
@@ -656,7 +656,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 {
 	device_object *dev;
 
-	dev = ExAllocatePoolWithTag(NonPagedPool, sizeof(device_object), 0);
+	dev = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(device_object), 0);
 	if (dev == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -666,7 +666,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	dev->flags = 0;
 
 	if (devextlen) {
-		dev->devext = ExAllocatePoolWithTag(NonPagedPool,
+		dev->devext = ExAllocatePoolWithTag(NON_PAGED_POOL,
 		    devextlen, 0);
 		if (dev->devext == NULL) {
 			ExFreePool(dev);
@@ -692,7 +692,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	 */
 	dev->vpb = NULL;
 
-	dev->devobj_ext = ExAllocatePoolWithTag(NonPagedPool,
+	dev->devobj_ext = ExAllocatePoolWithTag(NON_PAGED_POOL,
 	    sizeof(devobj_extension), 0);
 	if (dev->devobj_ext == NULL) {
 		if (dev->devext != NULL)
@@ -803,7 +803,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 
 	if (dobj->flags & DO_BUFFERED_IO) {
 		ip->irp_assoc.irp_sysbuf =
-		    ExAllocatePoolWithTag(NonPagedPool, len, 0);
+		    ExAllocatePoolWithTag(NON_PAGED_POOL, len, 0);
 		if (ip->irp_assoc.irp_sysbuf == NULL) {
 			IoFreeIrp(ip);
 			return (NULL);
@@ -879,7 +879,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 			buflen = olen;
 		if (buflen) {
 			ip->irp_assoc.irp_sysbuf =
-			    ExAllocatePoolWithTag(NonPagedPool, buflen, 0);
+			    ExAllocatePoolWithTag(NON_PAGED_POOL, buflen, 0);
 			if (ip->irp_assoc.irp_sysbuf == NULL) {
 				IoFreeIrp(ip);
 				return (NULL);
@@ -897,7 +897,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 	case METHOD_OUT_DIRECT:
 		if (ilen && ibuf != NULL) {
 			ip->irp_assoc.irp_sysbuf =
-			    ExAllocatePoolWithTag(NonPagedPool, ilen, 0);
+			    ExAllocatePoolWithTag(NON_PAGED_POOL, ilen, 0);
 			if (ip->irp_assoc.irp_sysbuf == NULL) {
 				IoFreeIrp(ip);
 				return (NULL);
@@ -933,7 +933,7 @@ IoAllocateIrp(uint8_t stsize, uint8_t chargequota)
 {
 	irp *i;
 
-	i = ExAllocatePoolWithTag(NonPagedPool, IoSizeOfIrp(stsize), 0);
+	i = ExAllocatePoolWithTag(NON_PAGED_POOL, IoSizeOfIrp(stsize), 0);
 	if (i == NULL)
 		return (NULL);
 	IoInitializeIrp(i, IoSizeOfIrp(stsize), stsize);
@@ -1195,7 +1195,7 @@ IoConnectInterrupt(kinterrupt **iobj, void *svcfunc, void *svcctx,
 {
 	uint8_t curirql;
 
-	*iobj = ExAllocatePoolWithTag(NonPagedPool, sizeof(kinterrupt), 0);
+	*iobj = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(kinterrupt), 0);
 	if (*iobj == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -1957,27 +1957,27 @@ ExInitializePagedLookasideList(paged_lookaside_list *lookaside,
 	bzero((char *)lookaside, sizeof(paged_lookaside_list));
 
 	if (size < sizeof(slist_entry))
-		lookaside->nll_l.gl_size = sizeof(slist_entry);
+		lookaside->nll_l.size = sizeof(slist_entry);
 	else
-		lookaside->nll_l.gl_size = size;
-	lookaside->nll_l.gl_tag = tag;
+		lookaside->nll_l.size = size;
+	lookaside->nll_l.tag = tag;
 	if (allocfunc == NULL)
-		lookaside->nll_l.gl_allocfunc =
+		lookaside->nll_l.allocfunc =
 		    ntoskrnl_findwrap((funcptr)ExAllocatePoolWithTag);
 	else
-		lookaside->nll_l.gl_allocfunc = allocfunc;
+		lookaside->nll_l.allocfunc = allocfunc;
 
 	if (freefunc == NULL)
-		lookaside->nll_l.gl_freefunc =
+		lookaside->nll_l.freefunc =
 		    ntoskrnl_findwrap((funcptr)ExFreePool);
 	else
-		lookaside->nll_l.gl_freefunc = freefunc;
+		lookaside->nll_l.freefunc = freefunc;
 #ifdef __i386__
 	KeInitializeSpinLock(&lookaside->nll_obsoletelock);
 #endif
-	lookaside->nll_l.gl_type = NonPagedPool;
-	lookaside->nll_l.gl_depth = depth;
-	lookaside->nll_l.gl_maxdepth = LOOKASIDE_DEPTH;
+	lookaside->nll_l.type = NON_PAGED_POOL;
+	lookaside->nll_l.depth = depth;
+	lookaside->nll_l.maximum_depth = LOOKASIDE_DEPTH;
 }
 
 static void
@@ -1986,8 +1986,8 @@ ExDeletePagedLookasideList(paged_lookaside_list *lookaside)
 	void *buf;
 	void (*freefunc)(void *);
 
-	freefunc = lookaside->nll_l.gl_freefunc;
-	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.gl_listhead)) != NULL)
+	freefunc = lookaside->nll_l.freefunc;
+	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.list_head)) != NULL)
 		MSCALL1(freefunc, buf);
 }
 
@@ -1999,27 +1999,27 @@ ExInitializeNPagedLookasideList(npaged_lookaside_list *lookaside,
 	bzero((char *)lookaside, sizeof(npaged_lookaside_list));
 
 	if (size < sizeof(slist_entry))
-		lookaside->nll_l.gl_size = sizeof(slist_entry);
+		lookaside->nll_l.size = sizeof(slist_entry);
 	else
-		lookaside->nll_l.gl_size = size;
-	lookaside->nll_l.gl_tag = tag;
+		lookaside->nll_l.size = size;
+	lookaside->nll_l.tag = tag;
 	if (allocfunc == NULL)
-		lookaside->nll_l.gl_allocfunc =
+		lookaside->nll_l.allocfunc =
 		    ntoskrnl_findwrap((funcptr)ExAllocatePoolWithTag);
 	else
-		lookaside->nll_l.gl_allocfunc = allocfunc;
+		lookaside->nll_l.allocfunc = allocfunc;
 
 	if (freefunc == NULL)
-		lookaside->nll_l.gl_freefunc =
+		lookaside->nll_l.freefunc =
 		    ntoskrnl_findwrap((funcptr)ExFreePool);
 	else
-		lookaside->nll_l.gl_freefunc = freefunc;
+		lookaside->nll_l.freefunc = freefunc;
 #ifdef __i386__
 	KeInitializeSpinLock(&lookaside->nll_obsoletelock);
 #endif
-	lookaside->nll_l.gl_type = NonPagedPool;
-	lookaside->nll_l.gl_depth = depth;
-	lookaside->nll_l.gl_maxdepth = LOOKASIDE_DEPTH;
+	lookaside->nll_l.type = NON_PAGED_POOL;
+	lookaside->nll_l.depth = depth;
+	lookaside->nll_l.maximum_depth = LOOKASIDE_DEPTH;
 }
 
 static void
@@ -2028,8 +2028,8 @@ ExDeleteNPagedLookasideList(npaged_lookaside_list *lookaside)
 	void *buf;
 	void (*freefunc)(void *);
 
-	freefunc = lookaside->nll_l.gl_freefunc;
-	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.gl_listhead)) != NULL)
+	freefunc = lookaside->nll_l.freefunc;
+	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.list_head)) != NULL)
 		MSCALL1(freefunc, buf);
 }
 
@@ -2187,7 +2187,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 	int zone = 0;
 
 	if (MmSizeOfMdl(vaddr, len) > MDL_ZONE_SIZE)
-		m = ExAllocatePoolWithTag(NonPagedPool,
+		m = ExAllocatePoolWithTag(NON_PAGED_POOL,
 		    MmSizeOfMdl(vaddr, len), 0);
 	else {
 		m = uma_zalloc(mdl_zone, M_NOWAIT|M_ZERO);
@@ -2238,14 +2238,14 @@ IoFreeMdl(mdl *m)
 static void *
 MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 {
-	return (ExAllocatePoolWithTag(NonPagedPool, roundup(size, PAGE_SIZE), 0));
+	return (ExAllocatePoolWithTag(NON_PAGED_POOL, roundup(size, PAGE_SIZE), 0));
 }
 
 static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
     uint64_t highest, uint64_t boundary, uint32_t cachetype)
 {
-	return (ExAllocatePoolWithTag(NonPagedPool, roundup(size, PAGE_SIZE), 0));
+	return (ExAllocatePoolWithTag(NON_PAGED_POOL, roundup(size, PAGE_SIZE), 0));
 }
 
 static void
