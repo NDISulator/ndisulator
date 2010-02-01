@@ -83,7 +83,7 @@ TAILQ_HEAD(nch, ndis_cfglist);
 
 #define	NDIS_INITIALIZED(sc)	(sc->ndis_block->device_ctx != NULL)
 
-#define	NDIS_TXPKTS	64
+#define	NDIS_TXPKTS	16
 #define	NDIS_INC(x)		\
 	(x)->ndis_txidx = ((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
 
