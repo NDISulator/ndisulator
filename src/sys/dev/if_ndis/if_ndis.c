@@ -2698,18 +2698,9 @@ ndis_scan_start(struct ieee80211com *ic)
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 	struct ieee80211vap *vap;
-	ndis_status rval;
 
 	vap = TAILQ_FIRST(&ic->ic_vaps);
-
-	rval = ndis_set(sc, OID_802_11_BSSID_LIST_SCAN, NULL, 0);
-	if (rval) {
-		device_printf(sc->ndis_dev, "scan failed; "
-		    "status 0x%08X\n", rval);
-		ieee80211_cancel_scan(vap);
-		return;
-	}
-	/* Set a timer to collect the results */
+	ndis_set(sc, OID_802_11_BSSID_LIST_SCAN, NULL, 0);
 	callout_reset(&sc->ndis_scan_callout, hz + 200, ndis_scan, vap);
 }
 
