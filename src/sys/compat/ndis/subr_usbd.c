@@ -186,8 +186,7 @@ usbd_libinit(void)
 
 	/* Set up our dipatch routine. */
 	for (i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++)
-		usbd_driver.dispatch[i] =
-			(driver_dispatch)usbd_ioinvalid_wrap;
+		usbd_driver.dispatch[i] = (driver_dispatch)usbd_ioinvalid_wrap;
 
 	usbd_driver.dispatch[IRP_MJ_INTERNAL_DEVICE_CONTROL] =
 	    (driver_dispatch)usbd_iodispatch_wrap;
