@@ -774,7 +774,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
     uint32_t len, uint64_t *off, struct io_status_block *status)
 {
 	irp *ip;
-	io_stack_location *sl;
+	struct io_stack_location *sl;
 
 	ip = IoAllocateIrp(dobj->stacksize, TRUE);
 	if (ip == NULL)
@@ -784,13 +784,13 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 	ip->tail.overlay.thread = NULL;
 
 	sl = IoGetNextIrpStackLocation(ip);
-	sl->isl_major = func;
-	sl->isl_minor = 0;
-	sl->isl_flags = 0;
-	sl->isl_ctl = 0;
-	sl->isl_devobj = dobj;
-	sl->isl_fileobj = NULL;
-	sl->isl_completionfunc = NULL;
+	sl->major = func;
+	sl->minor = 0;
+	sl->flags = 0;
+	sl->ctl = 0;
+	sl->devobj = dobj;
+	sl->fileobj = NULL;
+	sl->completionfunc = NULL;
 
 	ip->userbuf = buf;
 
@@ -817,19 +817,19 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 	}
 
 	if (func == IRP_MJ_READ) {
-		sl->isl_parameters.isl_read.isl_len = len;
+		sl->parameters.read.len = len;
 		if (off != NULL)
-			sl->isl_parameters.isl_read.isl_byteoff = *off;
+			sl->parameters.read.byteoff = *off;
 		else
-			sl->isl_parameters.isl_read.isl_byteoff = 0;
+			sl->parameters.read.byteoff = 0;
 	}
 
 	if (func == IRP_MJ_WRITE) {
-		sl->isl_parameters.isl_write.isl_len = len;
+		sl->parameters.write.len = len;
 		if (off != NULL)
-			sl->isl_parameters.isl_write.isl_byteoff = *off;
+			sl->parameters.write.byteoff = *off;
 		else
-			sl->isl_parameters.isl_write.isl_byteoff = 0;
+			sl->parameters.write.byteoff = 0;
 	}
 
 	return (ip);
@@ -841,7 +841,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
     nt_kevent *event, struct io_status_block *status)
 {
 	irp *ip;
-	io_stack_location *sl;
+	struct io_stack_location *sl;
 	uint32_t buflen;
 
 	ip = IoAllocateIrp(dobj->stacksize, TRUE);
@@ -852,17 +852,17 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 	ip->tail.overlay.thread = NULL;
 
 	sl = IoGetNextIrpStackLocation(ip);
-	sl->isl_major = isinternal == TRUE ?
+	sl->major = isinternal == TRUE ?
 	    IRP_MJ_INTERNAL_DEVICE_CONTROL : IRP_MJ_DEVICE_CONTROL;
-	sl->isl_minor = 0;
-	sl->isl_flags = 0;
-	sl->isl_ctl = 0;
-	sl->isl_devobj = dobj;
-	sl->isl_fileobj = NULL;
-	sl->isl_completionfunc = NULL;
-	sl->isl_parameters.isl_ioctl.isl_iocode = iocode;
-	sl->isl_parameters.isl_ioctl.isl_ibuflen = ilen;
-	sl->isl_parameters.isl_ioctl.isl_obuflen = olen;
+	sl->minor = 0;
+	sl->flags = 0;
+	sl->ctl = 0;
+	sl->devobj = dobj;
+	sl->fileobj = NULL;
+	sl->completionfunc = NULL;
+	sl->parameters.ioctl.iocode = iocode;
+	sl->parameters.ioctl.ibuflen = ilen;
+	sl->parameters.ioctl.obuflen = olen;
 
 	switch (IO_METHOD(iocode)) {
 	case METHOD_BUFFERED:
@@ -904,7 +904,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 		break;
 	case METHOD_NEITHER:
 		ip->userbuf = obuf;
-		sl->isl_parameters.isl_ioctl.isl_type3ibuf = ibuf;
+		sl->parameters.ioctl.type3ibuf = ibuf;
 		break;
 	default:
 		break;
@@ -961,7 +961,8 @@ IoInitializeIrp(irp *io, uint16_t psize, uint8_t ssize)
 	io->stackcnt = ssize;
 	io->currentstackloc = ssize;
 	InitializeListHead(&io->thlist);
-	io->tail.overlay.s2.u2.csl = (io_stack_location *)(io + 1) + ssize;
+	io->tail.overlay.s2.u2.csl =
+	    (struct io_stack_location *)(io + 1) + ssize;
 }
 
 static void
@@ -1001,7 +1002,7 @@ IoCancelIrp(irp *ip)
 		return (FALSE);
 	}
 	ip->cancelirql = cancelirql;
-	MSCALL2(cfunc, IoGetCurrentIrpStackLocation(ip)->isl_devobj, ip);
+	MSCALL2(cfunc, IoGetCurrentIrpStackLocation(ip)->devobj, ip);
 
 	return (uint8_t)IoSetCancelValue(ip, TRUE);
 }
@@ -1010,7 +1011,7 @@ int32_t
 IofCallDriver(device_object *dobj, irp *ip)
 {
 	driver_object *drvobj;
-	io_stack_location *sl;
+	struct io_stack_location *sl;
 	int32_t status;
 	driver_dispatch disp;
 
@@ -1025,9 +1026,9 @@ IofCallDriver(device_object *dobj, irp *ip)
 	IoSetNextIrpStackLocation(ip);
 	sl = IoGetCurrentIrpStackLocation(ip);
 
-	sl->isl_devobj = dobj;
+	sl->devobj = dobj;
 
-	disp = drvobj->dispatch[sl->isl_major];
+	disp = drvobj->dispatch[sl->major];
 	status = MSCALL2(disp, dobj, ip);
 
 	return (status);
@@ -1037,7 +1038,7 @@ void
 IofCompleteRequest(irp *ip, uint8_t prioboost)
 {
 	device_object *dobj;
-	io_stack_location *sl;
+	struct io_stack_location *sl;
 	completion_func cf;
 
 	KASSERT(ip->iostat.u.status != NDIS_STATUS_PENDING,
@@ -1047,23 +1048,23 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	IoSkipCurrentIrpStackLocation(ip);
 
 	do {
-		if (sl->isl_ctl & SL_PENDING_RETURNED)
+		if (sl->ctl & SL_PENDING_RETURNED)
 			ip->pendingreturned = TRUE;
 
 		if (ip->currentstackloc != (ip->stackcnt + 1))
-			dobj = IoGetCurrentIrpStackLocation(ip)->isl_devobj;
+			dobj = IoGetCurrentIrpStackLocation(ip)->devobj;
 		else
 			dobj = NULL;
 
-		if (sl->isl_completionfunc != NULL &&
+		if (sl->completionfunc != NULL &&
 		    ((ip->iostat.u.status == NDIS_STATUS_SUCCESS &&
-		    sl->isl_ctl & SL_INVOKE_ON_SUCCESS) ||
+		    sl->ctl & SL_INVOKE_ON_SUCCESS) ||
 		    (ip->iostat.u.status != NDIS_STATUS_SUCCESS &&
-		    sl->isl_ctl & SL_INVOKE_ON_ERROR) ||
+		    sl->ctl & SL_INVOKE_ON_ERROR) ||
 		    (ip->cancel == TRUE &&
-		    sl->isl_ctl & SL_INVOKE_ON_CANCEL))) {
-			cf = sl->isl_completionfunc;
-			if (MSCALL3(cf, dobj, ip, sl->isl_completionctx) ==
+		    sl->ctl & SL_INVOKE_ON_CANCEL))) {
+			cf = sl->completionfunc;
+			if (MSCALL3(cf, dobj, ip, sl->completionctx) ==
 			    NDIS_STATUS_MORE_PROCESSING_REQUIRED)
 				return;
 		} else {

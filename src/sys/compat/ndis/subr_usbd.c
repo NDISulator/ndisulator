@@ -229,14 +229,14 @@ usbd_iodispatch(device_object *dobj, irp *ip)
 	int32_t status;
 
 	sl = IoGetCurrentIrpStackLocation(ip);
-	switch (sl->isl_parameters.isl_ioctl.isl_iocode) {
+	switch (sl->parameters.ioctl.iocode) {
 	case IOCTL_INTERNAL_USB_SUBMIT_URB:
 		IRP_NDIS_DEV(ip) = dev;
 		status = usbd_submit_urb(ip);
 		break;
 	default:
 		device_printf(dev, "ioctl 0x%x isn't supported\n",
-		    sl->isl_parameters.isl_ioctl.isl_iocode);
+		    sl->parameters.ioctl.iocode);
 		status = USBD_STATUS_NOT_SUPPORTED;
 		break;
 	}
@@ -256,8 +256,8 @@ usbd_ioinvalid(device_object *dobj, irp *ip)
 	device_t dev = dobj->devext;
 
 	sl = IoGetCurrentIrpStackLocation(ip);
-	device_printf(dev, "invalid I/O dispatch %d:%d\n", sl->isl_major,
-	    sl->isl_minor);
+	device_printf(dev, "invalid I/O dispatch %d:%d\n", sl->major,
+	    sl->minor);
 
 	ip->iostat.u.status = NDIS_STATUS_FAILURE;
 	ip->iostat.info = 0;
@@ -275,7 +275,7 @@ usbd_pnp(device_object *dobj, irp *ip)
 
 	sl = IoGetCurrentIrpStackLocation(ip);
 	device_printf(dev, "%s: unsupported I/O dispatch %d:%d\n",
-	    __func__, sl->isl_major, sl->isl_minor);
+	    __func__, sl->major, sl->minor);
 
 	ip->iostat.u.status = NDIS_STATUS_FAILURE;
 	ip->iostat.info = 0;
@@ -293,7 +293,7 @@ usbd_power(device_object *dobj, irp *ip)
 
 	sl = IoGetCurrentIrpStackLocation(ip);
 	device_printf(dev, "%s: unsupported I/O dispatch %d:%d\n",
-	    __func__, sl->isl_major, sl->isl_minor);
+	    __func__, sl->major, sl->minor);
 
 	ip->iostat.u.status = NDIS_STATUS_FAILURE;
 	ip->iostat.info = 0;
@@ -366,7 +366,7 @@ usbd_geturb(irp *ip)
 
 	sl = IoGetCurrentIrpStackLocation(ip);
 
-	return (sl->isl_parameters.isl_others.isl_arg1);
+	return (sl->parameters.others.arg1);
 }
 
 static int32_t

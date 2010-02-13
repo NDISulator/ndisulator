@@ -885,10 +885,10 @@ typedef uint32_t (*completion_func)(device_object *, struct irp *, void *);
 typedef uint32_t (*cancel_func)(device_object *, struct irp *);
 
 struct io_stack_location {
-	uint8_t		isl_major;
-	uint8_t		isl_minor;
-	uint8_t		isl_flags;
-	uint8_t		isl_ctl;
+	uint8_t		major;
+	uint8_t		minor;
+	uint8_t		flags;
+	uint8_t		ctl;
 
 	/*
 	 * There's a big-ass union here in the actual Windows
@@ -901,35 +901,34 @@ struct io_stack_location {
 	 */
 	union {
 		struct {
-			uint32_t	isl_len;
-			uint32_t	*isl_key;
-			uint64_t	isl_byteoff;
-		} isl_read;
+			uint32_t	len;
+			uint32_t	*key;
+			uint64_t	byteoff;
+		} read;
 		struct {
-			uint32_t	isl_len;
-			uint32_t	*isl_key;
-			uint64_t	isl_byteoff;
-		} isl_write;
+			uint32_t	len;
+			uint32_t	*key;
+			uint64_t	byteoff;
+		} write;
 		struct {
-			uint32_t	isl_obuflen;
-			uint32_t	isl_ibuflen;
-			uint32_t	isl_iocode;
-			void		*isl_type3ibuf;
-		} isl_ioctl;
+			uint32_t	obuflen;
+			uint32_t	ibuflen;
+			uint32_t	iocode;
+			void		*type3ibuf;
+		} ioctl;
 		struct {
-			void	*isl_arg1;
-			void	*isl_arg2;
-			void	*isl_arg3;
-			void	*isl_arg4;
-		} isl_others;
-	} isl_parameters __attribute__((packed));
+			void	*arg1;
+			void	*arg2;
+			void	*arg3;
+			void	*arg4;
+		} others;
+	} parameters __attribute__((packed));
 
-	void		*isl_devobj;
-	void		*isl_fileobj;
-	completion_func	isl_completionfunc;
-	void		*isl_completionctx;
+	void		*devobj;
+	void		*fileobj;
+	completion_func	completionfunc;
+	void		*completionctx;
 };
-typedef struct io_stack_location io_stack_location;
 
 /* Stack location control flags */
 #define	SL_PENDING_RETURNED	0x01
@@ -983,8 +982,8 @@ struct irp {
 			struct {
 				list_entry list;
 				union {
-					io_stack_location	*csl;
-					uint32_t		pkttype;
+					struct io_stack_location	*csl;
+					uint32_t			pkttype;
 				} u2;
 			} s2;
 			void	*fileobj;
@@ -1008,7 +1007,8 @@ typedef struct irp irp;
 	(void *)InterlockedExchange((uint32_t *)(dst), (uintptr_t)(val))
 
 #define	IoSizeOfIrp(ssize)						\
-	((uint16_t) (sizeof(irp) + ((ssize) * (sizeof(io_stack_location)))))
+	((uint16_t) (sizeof(irp) +					\
+	((ssize) * (sizeof(struct io_stack_location)))))
 
 #define	IoSetCancelRoutine(irp, func)					\
 	(cancel_func)InterlockedExchangePointer(			\
@@ -1032,28 +1032,28 @@ typedef struct irp irp;
 
 #define	IoSetCompletionRoutine(irp, func, ctx, ok, err, cancel)		\
 	do {								\
-		io_stack_location *s;					\
+		struct io_stack_location *s;				\
 		s = IoGetNextIrpStackLocation((irp));			\
-		s->isl_completionfunc = (func);				\
-		s->isl_completionctx = (ctx);				\
-		s->isl_ctl = 0;						\
-		if (ok) s->isl_ctl = SL_INVOKE_ON_SUCCESS;		\
-		if (err) s->isl_ctl |= SL_INVOKE_ON_ERROR;		\
-		if (cancel) s->isl_ctl |= SL_INVOKE_ON_CANCEL;		\
+		s->completionfunc = (func);				\
+		s->completionctx = (ctx);				\
+		s->ctl = 0;						\
+		if (ok) s->ctl = SL_INVOKE_ON_SUCCESS;		\
+		if (err) s->ctl |= SL_INVOKE_ON_ERROR;		\
+		if (cancel) s->ctl |= SL_INVOKE_ON_CANCEL;		\
 	} while (0)
 
 #define	IoMarkIrpPending(irp)						\
-	IoGetCurrentIrpStackLocation(irp)->isl_ctl |= SL_PENDING_RETURNED
+	IoGetCurrentIrpStackLocation(irp)->ctl |= SL_PENDING_RETURNED
 #define	IoUnmarkIrpPending(irp)						\
-	IoGetCurrentIrpStackLocation(irp)->isl_ctl &= ~SL_PENDING_RETURNED
+	IoGetCurrentIrpStackLocation(irp)->ctl &= ~SL_PENDING_RETURNED
 
 #define	IoCopyCurrentIrpStackLocationToNext(irp)			\
 	do {								\
-		io_stack_location *src, *dst;				\
+		struct io_stack_location *src, *dst;			\
 		src = IoGetCurrentIrpStackLocation(irp);		\
 		dst = IoGetNextIrpStackLocation(irp);			\
 		memcpy(dst, src						\
-		    offsetof(io_stack_location, isl_completionfunc));	\
+		    offsetof(io_stack_location, completionfunc));	\
 	} while (0)
 
 #define	IoSkipCurrentIrpStackLocation(irp)				\
