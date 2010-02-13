@@ -857,14 +857,11 @@ typedef struct devobj_extension devobj_extension;
 
 struct io_status_block {
 	union {
-		uint32_t	isb_status;
-		void		*isb_ptr;
+		uint32_t	status;
+		void		*ptr;
 	} u;
-	register_t	isb_info;
+	register_t	info;
 };
-#define	isb_status u.isb_status
-#define	isb_ptr u.isb_ptr
-typedef struct io_status_block io_status_block;
 
 struct kapc {
 	uint16_t	apc_type;
@@ -941,27 +938,27 @@ typedef struct io_stack_location io_stack_location;
 #define	SL_INVOKE_ON_ERROR	0x80
 
 struct irp {
-	uint16_t	type;
-	uint16_t	size;
-	mdl		*mdl;
-	uint32_t	flags;
+	uint16_t		type;
+	uint16_t		size;
+	mdl			*mdl;
+	uint32_t		flags;
 	union {
 		struct irp	*master;
 		uint32_t	irpcnt;
 		void		*sysbuf;
 	} assoc;
-	list_entry	thlist;
-	io_status_block	iostat;
-	uint8_t		reqmode;
-	uint8_t		pendingreturned;
-	uint8_t		stackcnt;
-	uint8_t		currentstackloc;
-	uint8_t		cancel;
-	uint8_t		cancelirql;
-	uint8_t		apcenv;
-	uint8_t		allocflags;
-	io_status_block	*usriostat;
-	nt_kevent	*usrevent;
+	list_entry		thlist;
+	struct io_status_block	iostat;
+	uint8_t			reqmode;
+	uint8_t			pendingreturned;
+	uint8_t			stackcnt;
+	uint8_t			currentstackloc;
+	uint8_t			cancel;
+	uint8_t			cancelirql;
+	uint8_t			apcenv;
+	uint8_t			allocflags;
+	struct io_status_block	*usriostat;
+	nt_kevent		*usrevent;
 	union {
 		struct {
 			void	*apcfunc;

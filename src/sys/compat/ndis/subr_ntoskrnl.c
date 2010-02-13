@@ -128,11 +128,11 @@ static uint8_t RtlEqualUnicodeString(unicode_string *,
     unicode_string *, uint8_t);
 static void RtlCopyUnicodeString(unicode_string *, unicode_string *);
 static irp *IoBuildSynchronousFsdRequest(uint32_t, device_object *, void *,
-    uint32_t, uint64_t *, nt_kevent *, io_status_block *);
+    uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
 static irp *IoBuildAsynchronousFsdRequest(uint32_t, device_object *, void *,
-    uint32_t, uint64_t *, io_status_block *);
+    uint32_t, uint64_t *, struct io_status_block *);
 static irp *IoBuildDeviceIoControlRequest(uint32_t, device_object *, void *,
-    uint32_t, void *, uint32_t, uint8_t, nt_kevent *, io_status_block *);
+    uint32_t, void *, uint32_t, uint8_t, nt_kevent *, struct io_status_block *);
 static irp *IoAllocateIrp(uint8_t, uint8_t);
 static void IoReuseIrp(irp *, uint32_t);
 static uint8_t IoCancelIrp(irp *);
@@ -756,7 +756,8 @@ IoGetAttachedDevice(device_object *dev)
 
 static irp *
 IoBuildSynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
-    uint32_t len, uint64_t *off, nt_kevent *event, io_status_block *status)
+    uint32_t len, uint64_t *off, nt_kevent *event,
+    struct io_status_block *status)
 {
 	irp *ip;
 
@@ -770,7 +771,7 @@ IoBuildSynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 
 static irp *
 IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
-    uint32_t len, uint64_t *off, io_status_block *status)
+    uint32_t len, uint64_t *off, struct io_status_block *status)
 {
 	irp *ip;
 	io_stack_location *sl;
@@ -837,7 +838,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 static irp *
 IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
     uint32_t ilen, void *obuf, uint32_t olen, uint8_t isinternal,
-    nt_kevent *event, io_status_block *status)
+    nt_kevent *event, struct io_status_block *status)
 {
 	irp *ip;
 	io_stack_location *sl;
@@ -970,7 +971,7 @@ IoReuseIrp(irp *ip, uint32_t status)
 
 	allocflags = ip->allocflags;
 	IoInitializeIrp(ip, ip->size, ip->stackcnt);
-	ip->iostat.isb_status = status;
+	ip->iostat.u.status = status;
 	ip->allocflags = allocflags;
 }
 
@@ -1039,7 +1040,7 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	io_stack_location *sl;
 	completion_func cf;
 
-	KASSERT(ip->iostat.isb_status != NDIS_STATUS_PENDING,
+	KASSERT(ip->iostat.u.status != NDIS_STATUS_PENDING,
 	    ("incorrect IRP(%p) status (NDIS_STATUS_PENDING)", ip));
 
 	sl = IoGetCurrentIrpStackLocation(ip);
@@ -1055,9 +1056,9 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 			dobj = NULL;
 
 		if (sl->isl_completionfunc != NULL &&
-		    ((ip->iostat.isb_status == NDIS_STATUS_SUCCESS &&
+		    ((ip->iostat.u.status == NDIS_STATUS_SUCCESS &&
 		    sl->isl_ctl & SL_INVOKE_ON_SUCCESS) ||
-		    (ip->iostat.isb_status != NDIS_STATUS_SUCCESS &&
+		    (ip->iostat.u.status != NDIS_STATUS_SUCCESS &&
 		    sl->isl_ctl & SL_INVOKE_ON_ERROR) ||
 		    (ip->cancel == TRUE &&
 		    sl->isl_ctl & SL_INVOKE_ON_CANCEL))) {

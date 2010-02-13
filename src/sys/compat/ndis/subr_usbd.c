@@ -243,10 +243,10 @@ usbd_iodispatch(device_object *dobj, irp *ip)
 	if (status == USBD_STATUS_PENDING)
 		return (NDIS_STATUS_PENDING);
 
-	ip->iostat.isb_status = usbd_urb2nt(status);
+	ip->iostat.u.status = usbd_urb2nt(status);
 	if (status != USBD_STATUS_SUCCESS)
-		ip->iostat.isb_info = 0;
-	return (ip->iostat.isb_status);
+		ip->iostat.info = 0;
+	return (ip->iostat.u.status);
 }
 
 static int32_t
@@ -259,8 +259,8 @@ usbd_ioinvalid(device_object *dobj, irp *ip)
 	device_printf(dev, "invalid I/O dispatch %d:%d\n", sl->isl_major,
 	    sl->isl_minor);
 
-	ip->iostat.isb_status = NDIS_STATUS_FAILURE;
-	ip->iostat.isb_info = 0;
+	ip->iostat.u.status = NDIS_STATUS_FAILURE;
+	ip->iostat.info = 0;
 
 	IoCompleteRequest(ip, IO_NO_INCREMENT);
 
@@ -277,8 +277,8 @@ usbd_pnp(device_object *dobj, irp *ip)
 	device_printf(dev, "%s: unsupported I/O dispatch %d:%d\n",
 	    __func__, sl->isl_major, sl->isl_minor);
 
-	ip->iostat.isb_status = NDIS_STATUS_FAILURE;
-	ip->iostat.isb_info = 0;
+	ip->iostat.u.status = NDIS_STATUS_FAILURE;
+	ip->iostat.info = 0;
 
 	IoCompleteRequest(ip, IO_NO_INCREMENT);
 
@@ -295,8 +295,8 @@ usbd_power(device_object *dobj, irp *ip)
 	device_printf(dev, "%s: unsupported I/O dispatch %d:%d\n",
 	    __func__, sl->isl_major, sl->isl_minor);
 
-	ip->iostat.isb_status = NDIS_STATUS_FAILURE;
-	ip->iostat.isb_info = 0;
+	ip->iostat.u.status = NDIS_STATUS_FAILURE;
+	ip->iostat.info = 0;
 
 	IoCompleteRequest(ip, IO_NO_INCREMENT);
 
@@ -478,7 +478,7 @@ exit:
 		return (usbd_usb2urb(status));
 	}
 	ctldesc->ucd_trans_buflen = actlen;
-	ip->iostat.isb_info = actlen;
+	ip->iostat.info = actlen;
 
 	return (USBD_STATUS_SUCCESS);
 #undef NDISUSB_GETDESC_MAXRETRIES
@@ -747,8 +747,8 @@ usbd_func_vendorclass(irp *ip)
 	KeReleaseSpinLockFromDpcLevel(&ne->ne_lock);
 
 	/* We've done to setup xfer.  Let's transfer it.  */
-	ip->iostat.isb_status = NDIS_STATUS_PENDING;
-	ip->iostat.isb_info = 0;
+	ip->iostat.u.status = NDIS_STATUS_PENDING;
+	ip->iostat.info = 0;
 	USBD_URB_STATUS(urb) = USBD_STATUS_PENDING;
 	IoMarkIrpPending(ip);
 
@@ -1147,19 +1147,19 @@ usbd_xfertask(device_object *dobj, void *arg)
 				vcreq = &urb->uu_vcreq;
 				vcreq->uvc_trans_buflen = nq->nx_urbactlen;
 			}
-			ip->iostat.isb_info = nq->nx_urbactlen;
-			ip->iostat.isb_status = NDIS_STATUS_SUCCESS;
+			ip->iostat.info = nq->nx_urbactlen;
+			ip->iostat.u.status = NDIS_STATUS_SUCCESS;
 			USBD_URB_STATUS(urb) = USBD_STATUS_SUCCESS;
 			break;
 		case USB_ERR_CANCELLED:
-			ip->iostat.isb_info = 0;
-			ip->iostat.isb_status = NDIS_STATUS_CANCELLED;
+			ip->iostat.info = 0;
+			ip->iostat.u.status = NDIS_STATUS_CANCELLED;
 			USBD_URB_STATUS(urb) = USBD_STATUS_CANCELED;
 			break;
 		default:
-			ip->iostat.isb_info = 0;
+			ip->iostat.info = 0;
 			USBD_URB_STATUS(urb) = usbd_usb2urb(status);
-			ip->iostat.isb_status =
+			ip->iostat.u.status =
 			    usbd_urb2nt(USBD_URB_STATUS(urb));
 			break;
 		}
@@ -1303,8 +1303,8 @@ usbd_func_bulkintr(irp *ip)
 	KeReleaseSpinLockFromDpcLevel(&ne->ne_lock);
 
 	/* We've done to setup xfer.  Let's transfer it.  */
-	ip->iostat.isb_status = NDIS_STATUS_PENDING;
-	ip->iostat.isb_info = 0;
+	ip->iostat.u.status = NDIS_STATUS_PENDING;
+	ip->iostat.info = 0;
 	USBD_URB_STATUS(urb) = USBD_STATUS_PENDING;
 	IoMarkIrpPending(ip);
 
