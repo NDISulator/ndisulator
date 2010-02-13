@@ -941,74 +941,71 @@ typedef struct io_stack_location io_stack_location;
 #define	SL_INVOKE_ON_ERROR	0x80
 
 struct irp {
-	uint16_t	irp_type;
-	uint16_t	irp_size;
-	mdl		*irp_mdl;
-	uint32_t	irp_flags;
+	uint16_t	type;
+	uint16_t	size;
+	mdl		*mdl;
+	uint32_t	flags;
 	union {
-		struct irp	*irp_master;
-		uint32_t	irp_irpcnt;
-		void		*irp_sysbuf;
-	} irp_assoc;
-	list_entry	irp_thlist;
-	io_status_block	irp_iostat;
-	uint8_t		irp_reqmode;
-	uint8_t		irp_pendingreturned;
-	uint8_t		irp_stackcnt;
-	uint8_t		irp_currentstackloc;
-	uint8_t		irp_cancel;
-	uint8_t		irp_cancelirql;
-	uint8_t		irp_apcenv;
-	uint8_t		irp_allocflags;
-	io_status_block	*irp_usriostat;
-	nt_kevent	*irp_usrevent;
+		struct irp	*master;
+		uint32_t	irpcnt;
+		void		*sysbuf;
+	} assoc;
+	list_entry	thlist;
+	io_status_block	iostat;
+	uint8_t		reqmode;
+	uint8_t		pendingreturned;
+	uint8_t		stackcnt;
+	uint8_t		currentstackloc;
+	uint8_t		cancel;
+	uint8_t		cancelirql;
+	uint8_t		apcenv;
+	uint8_t		allocflags;
+	io_status_block	*usriostat;
+	nt_kevent	*usrevent;
 	union {
 		struct {
-			void	*irp_apcfunc;
-			void	*irp_apcctx;
-		} irp_asyncparms;
-		uint64_t	irp_allocsz;
-	} irp_overlay;
-	cancel_func	irp_cancelfunc;
-	void		*irp_userbuf;
+			void	*apcfunc;
+			void	*apcctx;
+		} asyncparms;
+		uint64_t	allocsz;
+	} overlay;
+	cancel_func	cancelfunc;
+	void		*userbuf;
 
 	/* Windows kernel info */
 	union {
 		struct {
 			union {
-				kdevice_qentry	irp_dqe;
+				kdevice_qentry	dqe;
 				struct {
-					void	*irp_drvctx[4];
+					void	*drvctx[4];
 				} s1;
 			} u1;
-			void	*irp_thread;
-			char	*irp_auxbuf;
+			void	*thread;
+			char	*auxbuf;
 			struct {
-				list_entry irp_list;
+				list_entry list;
 				union {
-					io_stack_location	*irp_csl;
-					uint32_t		irp_pkttype;
+					io_stack_location	*csl;
+					uint32_t		pkttype;
 				} u2;
 			} s2;
-			void	*irp_fileobj;
-		} irp_overlay;
+			void	*fileobj;
+		} overlay;
 		union {
-			kapc	irp_apc;
+			kapc	apc;
 			struct {
-				void	*irp_ep;
-				void	*irp_dev;
-			} irp_usb;
-		} irp_misc;
-		void	*irp_compkey;
-	} irp_tail;
+				void	*ep;
+				void	*dev;
+			} usb;
+		} misc;
+		void	*compkey;
+	} tail;
 };
 typedef struct irp irp;
 
-#define	irp_csl		s2.u2.irp_csl
-#define	irp_pkttype	s2.u2.irp_pkttype
-
-#define	IRP_NDIS_DEV(irp) (irp)->irp_tail.irp_misc.irp_usb.irp_dev
-#define	IRP_NDISUSB_EP(irp) (irp)->irp_tail.irp_misc.irp_usb.irp_ep
+#define	IRP_NDIS_DEV(irp) (irp)->tail.misc.usb.dev
+#define	IRP_NDISUSB_EP(irp) (irp)->tail.misc.usb.ep
 
 #define	InterlockedExchangePointer(dst, val)				\
 	(void *)InterlockedExchange((uint32_t *)(dst), (uintptr_t)(val))
@@ -1018,22 +1015,22 @@ typedef struct irp irp;
 
 #define	IoSetCancelRoutine(irp, func)					\
 	(cancel_func)InterlockedExchangePointer(			\
-	(void *)&(ip)->irp_cancelfunc, (void *)(func))
+	(void *)&(ip)->cancelfunc, (void *)(func))
 
 #define	IoSetCancelValue(irp, val)					\
 	(unsigned long)InterlockedExchangePointer(			\
-	(void *)&(ip)->irp_cancel, (void *)(val))
+	(void *)&(ip)->cancel, (void *)(val))
 
 #define	IoGetCurrentIrpStackLocation(irp)				\
-	(irp)->irp_tail.irp_overlay.irp_csl
+	(irp)->tail.overlay.s2.u2.csl
 
 #define	IoGetNextIrpStackLocation(irp)					\
-	((irp)->irp_tail.irp_overlay.irp_csl - 1)
+	((irp)->tail.overlay.s2.u2.csl - 1)
 
 #define	IoSetNextIrpStackLocation(irp)					\
 	do {								\
-		irp->irp_currentstackloc--;				\
-		irp->irp_tail.irp_overlay.irp_csl--;			\
+		irp->currentstackloc--;				\
+		irp->tail.overlay.s2.u2.csl--;			\
 	} while (0)
 
 #define	IoSetCompletionRoutine(irp, func, ctx, ok, err, cancel)		\
@@ -1064,8 +1061,8 @@ typedef struct irp irp;
 
 #define	IoSkipCurrentIrpStackLocation(irp)				\
 	do {								\
-		(irp)->irp_currentstackloc++;				\
-		(irp)->irp_tail.irp_overlay.irp_csl++;			\
+		(irp)->currentstackloc++;				\
+		(irp)->tail.overlay.s2.u2.csl++;			\
 	} while (0)
 
 #define	IoInitializeDpcRequest(dobj, dpcfunc)				\

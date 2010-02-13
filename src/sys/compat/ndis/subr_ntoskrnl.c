@@ -763,7 +763,7 @@ IoBuildSynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 	ip = IoBuildAsynchronousFsdRequest(func, dobj, buf, len, off, status);
 	if (ip == NULL)
 		return (NULL);
-	ip->irp_usrevent = event;
+	ip->usrevent = event;
 
 	return (ip);
 }
@@ -779,8 +779,8 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 	if (ip == NULL)
 		return (NULL);
 
-	ip->irp_usriostat = status;
-	ip->irp_tail.irp_overlay.irp_thread = NULL;
+	ip->usriostat = status;
+	ip->tail.overlay.thread = NULL;
 
 	sl = IoGetNextIrpStackLocation(ip);
 	sl->isl_major = func;
@@ -791,28 +791,28 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 	sl->isl_fileobj = NULL;
 	sl->isl_completionfunc = NULL;
 
-	ip->irp_userbuf = buf;
+	ip->userbuf = buf;
 
 	if (dobj->flags & DO_BUFFERED_IO) {
-		ip->irp_assoc.irp_sysbuf =
+		ip->assoc.sysbuf =
 		    ExAllocatePoolWithTag(NON_PAGED_POOL, len, 0);
-		if (ip->irp_assoc.irp_sysbuf == NULL) {
+		if (ip->assoc.sysbuf == NULL) {
 			IoFreeIrp(ip);
 			return (NULL);
 		}
-		bcopy(buf, ip->irp_assoc.irp_sysbuf, len);
+		bcopy(buf, ip->assoc.sysbuf, len);
 	}
 
 	if (dobj->flags & DO_DIRECT_IO) {
-		ip->irp_mdl = IoAllocateMdl(buf, len, FALSE, FALSE, ip);
-		if (ip->irp_mdl == NULL) {
-			if (ip->irp_assoc.irp_sysbuf != NULL)
-				ExFreePool(ip->irp_assoc.irp_sysbuf);
+		ip->mdl = IoAllocateMdl(buf, len, FALSE, FALSE, ip);
+		if (ip->mdl == NULL) {
+			if (ip->assoc.sysbuf != NULL)
+				ExFreePool(ip->assoc.sysbuf);
 			IoFreeIrp(ip);
 			return (NULL);
 		}
-		ip->irp_userbuf = NULL;
-		ip->irp_assoc.irp_sysbuf = NULL;
+		ip->userbuf = NULL;
+		ip->assoc.sysbuf = NULL;
 	}
 
 	if (func == IRP_MJ_READ) {
@@ -846,9 +846,9 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 	ip = IoAllocateIrp(dobj->stacksize, TRUE);
 	if (ip == NULL)
 		return (NULL);
-	ip->irp_usrevent = event;
-	ip->irp_usriostat = status;
-	ip->irp_tail.irp_overlay.irp_thread = NULL;
+	ip->usrevent = event;
+	ip->usriostat = status;
+	ip->tail.overlay.thread = NULL;
 
 	sl = IoGetNextIrpStackLocation(ip);
 	sl->isl_major = isinternal == TRUE ?
@@ -870,31 +870,30 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 		else
 			buflen = olen;
 		if (buflen) {
-			ip->irp_assoc.irp_sysbuf =
+			ip->assoc.sysbuf =
 			    ExAllocatePoolWithTag(NON_PAGED_POOL, buflen, 0);
-			if (ip->irp_assoc.irp_sysbuf == NULL) {
+			if (ip->assoc.sysbuf == NULL) {
 				IoFreeIrp(ip);
 				return (NULL);
 			}
 		}
 		if (ilen && ibuf != NULL)
-			bcopy(ibuf, ip->irp_assoc.irp_sysbuf, ilen);
-		ip->irp_userbuf = obuf;
+			bcopy(ibuf, ip->assoc.sysbuf, ilen);
+		ip->userbuf = obuf;
 		break;
 	case METHOD_IN_DIRECT:
 	case METHOD_OUT_DIRECT:
 		if (ilen && ibuf != NULL) {
-			ip->irp_assoc.irp_sysbuf =
+			ip->assoc.sysbuf =
 			    ExAllocatePoolWithTag(NON_PAGED_POOL, ilen, 0);
-			if (ip->irp_assoc.irp_sysbuf == NULL) {
+			if (ip->assoc.sysbuf == NULL) {
 				IoFreeIrp(ip);
 				return (NULL);
 			}
-			bcopy(ibuf, ip->irp_assoc.irp_sysbuf, ilen);
+			bcopy(ibuf, ip->assoc.sysbuf, ilen);
 		}
 		if (olen && obuf != NULL) {
-			ip->irp_mdl = IoAllocateMdl(obuf, olen,
-			    FALSE, FALSE, ip);
+			ip->mdl = IoAllocateMdl(obuf, olen, FALSE, FALSE, ip);
 			/*
 			 * Normally we would MmProbeAndLockPages()
 			 * here, but we don't have to in our
@@ -903,7 +902,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 		}
 		break;
 	case METHOD_NEITHER:
-		ip->irp_userbuf = obuf;
+		ip->userbuf = obuf;
 		sl->isl_parameters.isl_ioctl.isl_type3ibuf = ibuf;
 		break;
 	default:
@@ -939,10 +938,9 @@ IoMakeAssociatedIrp(irp *ip, uint8_t stsize)
 		return (NULL);
 
 	mtx_lock(&ntoskrnl_dispatchlock);
-	associrp->irp_flags |= IRP_ASSOCIATED_IRP;
-	associrp->irp_tail.irp_overlay.irp_thread =
-	    ip->irp_tail.irp_overlay.irp_thread;
-	associrp->irp_assoc.irp_master = ip;
+	associrp->flags |= IRP_ASSOCIATED_IRP;
+	associrp->tail.overlay.thread = ip->tail.overlay.thread;
+	associrp->assoc.master = ip;
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
 	return (associrp);
@@ -958,12 +956,11 @@ static void
 IoInitializeIrp(irp *io, uint16_t psize, uint8_t ssize)
 {
 	bzero((char *)io, IoSizeOfIrp(ssize));
-	io->irp_size = psize;
-	io->irp_stackcnt = ssize;
-	io->irp_currentstackloc = ssize;
-	InitializeListHead(&io->irp_thlist);
-	io->irp_tail.irp_overlay.irp_csl =
-	    (io_stack_location *)(io + 1) + ssize;
+	io->size = psize;
+	io->stackcnt = ssize;
+	io->currentstackloc = ssize;
+	InitializeListHead(&io->thlist);
+	io->tail.overlay.s2.u2.csl = (io_stack_location *)(io + 1) + ssize;
 }
 
 static void
@@ -971,10 +968,10 @@ IoReuseIrp(irp *ip, uint32_t status)
 {
 	uint8_t allocflags;
 
-	allocflags = ip->irp_allocflags;
-	IoInitializeIrp(ip, ip->irp_size, ip->irp_stackcnt);
-	ip->irp_iostat.isb_status = status;
-	ip->irp_allocflags = allocflags;
+	allocflags = ip->allocflags;
+	IoInitializeIrp(ip, ip->size, ip->stackcnt);
+	ip->iostat.isb_status = status;
+	ip->allocflags = allocflags;
 }
 
 void
@@ -997,12 +994,12 @@ IoCancelIrp(irp *ip)
 
 	IoAcquireCancelSpinLock(&cancelirql);
 	cfunc = IoSetCancelRoutine(ip, NULL);
-	ip->irp_cancel = TRUE;
+	ip->cancel = TRUE;
 	if (cfunc == NULL) {
 		IoReleaseCancelSpinLock(cancelirql);
 		return (FALSE);
 	}
-	ip->irp_cancelirql = cancelirql;
+	ip->cancelirql = cancelirql;
 	MSCALL2(cfunc, IoGetCurrentIrpStackLocation(ip)->isl_devobj, ip);
 
 	return (uint8_t)IoSetCancelValue(ip, TRUE);
@@ -1021,7 +1018,7 @@ IofCallDriver(device_object *dobj, irp *ip)
 	drvobj = dobj->drvobj;
 	KASSERT(drvbj != NULL, ("no driver object"));
 
-	if (ip->irp_currentstackloc <= 0)
+	if (ip->currentstackloc <= 0)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	IoSetNextIrpStackLocation(ip);
@@ -1042,7 +1039,7 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	io_stack_location *sl;
 	completion_func cf;
 
-	KASSERT(ip->irp_iostat.isb_status != NDIS_STATUS_PENDING,
+	KASSERT(ip->iostat.isb_status != NDIS_STATUS_PENDING,
 	    ("incorrect IRP(%p) status (NDIS_STATUS_PENDING)", ip));
 
 	sl = IoGetCurrentIrpStackLocation(ip);
@@ -1050,51 +1047,51 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 
 	do {
 		if (sl->isl_ctl & SL_PENDING_RETURNED)
-			ip->irp_pendingreturned = TRUE;
+			ip->pendingreturned = TRUE;
 
-		if (ip->irp_currentstackloc != (ip->irp_stackcnt + 1))
+		if (ip->currentstackloc != (ip->stackcnt + 1))
 			dobj = IoGetCurrentIrpStackLocation(ip)->isl_devobj;
 		else
 			dobj = NULL;
 
 		if (sl->isl_completionfunc != NULL &&
-		    ((ip->irp_iostat.isb_status == NDIS_STATUS_SUCCESS &&
+		    ((ip->iostat.isb_status == NDIS_STATUS_SUCCESS &&
 		    sl->isl_ctl & SL_INVOKE_ON_SUCCESS) ||
-		    (ip->irp_iostat.isb_status != NDIS_STATUS_SUCCESS &&
+		    (ip->iostat.isb_status != NDIS_STATUS_SUCCESS &&
 		    sl->isl_ctl & SL_INVOKE_ON_ERROR) ||
-		    (ip->irp_cancel == TRUE &&
+		    (ip->cancel == TRUE &&
 		    sl->isl_ctl & SL_INVOKE_ON_CANCEL))) {
 			cf = sl->isl_completionfunc;
 			if (MSCALL3(cf, dobj, ip, sl->isl_completionctx) ==
 			    NDIS_STATUS_MORE_PROCESSING_REQUIRED)
 				return;
 		} else {
-			if ((ip->irp_currentstackloc <= ip->irp_stackcnt) &&
-			    (ip->irp_pendingreturned == TRUE))
+			if ((ip->currentstackloc <= ip->stackcnt) &&
+			    (ip->pendingreturned == TRUE))
 				IoMarkIrpPending(ip);
 		}
 		/* move to the next.  */
 		IoSkipCurrentIrpStackLocation(ip);
 		sl++;
-	} while (ip->irp_currentstackloc <= (ip->irp_stackcnt + 1));
+	} while (ip->currentstackloc <= (ip->stackcnt + 1));
 
-	if (ip->irp_usriostat != NULL)
-		*ip->irp_usriostat = ip->irp_iostat;
-	if (ip->irp_usrevent != NULL)
-		KeSetEvent(ip->irp_usrevent, prioboost, FALSE);
+	if (ip->usriostat != NULL)
+		*ip->usriostat = ip->iostat;
+	if (ip->usrevent != NULL)
+		KeSetEvent(ip->usrevent, prioboost, FALSE);
 
 	/* Handle any associated IRPs. */
-	if (ip->irp_flags & IRP_ASSOCIATED_IRP) {
+	if (ip->flags & IRP_ASSOCIATED_IRP) {
 		uint32_t masterirpcnt;
 		irp *masterirp;
 		mdl *m;
 
-		masterirp = ip->irp_assoc.irp_master;
+		masterirp = ip->assoc.master;
 		masterirpcnt =
-		    InterlockedDecrement(&masterirp->irp_assoc.irp_irpcnt);
+		    InterlockedDecrement(&masterirp->assoc.irpcnt);
 
-		while ((m = ip->irp_mdl) != NULL) {
-			ip->irp_mdl = m->mdl_next;
+		while ((m = ip->mdl) != NULL) {
+			ip->mdl = m->mdl_next;
 			IoFreeMdl(m);
 		}
 		IoFreeIrp(ip);
@@ -1103,9 +1100,9 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 		return;
 	}
 	/* With any luck, these conditions will never arise. */
-	if (ip->irp_flags & IRP_PAGING_IO) {
-		if (ip->irp_mdl != NULL)
-			IoFreeMdl(ip->irp_mdl);
+	if (ip->flags & IRP_PAGING_IO) {
+		if (ip->mdl != NULL)
+			IoFreeMdl(ip->mdl);
 		IoFreeIrp(ip);
 	}
 }
@@ -2197,14 +2194,14 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 	if (iopkt != NULL) {
 		if (secondarybuf == TRUE) {
 			mdl *last;
-			last = iopkt->irp_mdl;
+			last = iopkt->mdl;
 			while (last->mdl_next != NULL)
 				last = last->mdl_next;
 			last->mdl_next = m;
 		} else {
-			if (iopkt->irp_mdl != NULL)
+			if (iopkt->mdl != NULL)
 				panic("leaking an MDL in IoAllocateMdl()");
-			iopkt->irp_mdl = m;
+			iopkt->mdl = m;
 		}
 	}
 
