@@ -665,7 +665,6 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 			ExFreePool(dev);
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		}
-		bzero(dev->devext, devextlen);
 	} else
 		dev->devext = NULL;
 
@@ -878,12 +877,8 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
 				return (NULL);
 			}
 		}
-		if (ilen && ibuf != NULL) {
+		if (ilen && ibuf != NULL)
 			bcopy(ibuf, ip->irp_assoc.irp_sysbuf, ilen);
-			bzero((char *)ip->irp_assoc.irp_sysbuf + ilen,
-			    buflen - ilen);
-		} else
-			bzero(ip->irp_assoc.irp_sysbuf, ilen);
 		ip->irp_userbuf = obuf;
 		break;
 	case METHOD_IN_DIRECT:
