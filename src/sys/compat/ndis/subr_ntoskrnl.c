@@ -1010,15 +1010,13 @@ IoCancelIrp(irp *ip)
 int32_t
 IofCallDriver(device_object *dobj, irp *ip)
 {
-	driver_object *drvobj;
 	struct io_stack_location *sl;
 	int32_t status;
 	driver_dispatch disp;
 
 	KASSERT(ip != NULL, ("no irp"));
 	KASSERT(dobj != NULL, ("no device object"));
-	drvobj = dobj->drvobj;
-	KASSERT(drvbj != NULL, ("no driver object"));
+	KASSERT(dobj->drvobj != NULL, ("no driver object"));
 
 	if (ip->currentstackloc <= 0)
 		return (NDIS_STATUS_INVALID_PARAMETER);
@@ -1028,7 +1026,7 @@ IofCallDriver(device_object *dobj, irp *ip)
 
 	sl->devobj = dobj;
 
-	disp = drvobj->dispatch[sl->major];
+	disp = dobj->drvobj->dispatch[sl->major];
 	status = MSCALL2(disp, dobj, ip);
 
 	return (status);
