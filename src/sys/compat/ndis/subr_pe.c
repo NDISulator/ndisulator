@@ -101,9 +101,6 @@ pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header *hdr)
 	if (imgbase == 0 || hdr == NULL)
 		return (EINVAL);
 
-	if (pe_is_nt_image(imgbase))
-		return (EINVAL);
-
 	dos_hdr = (struct image_dos_header *)(imgbase);
 	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->lfanew);
 
@@ -123,9 +120,6 @@ pe_get_file_header(vm_offset_t imgbase, struct image_file_header *hdr)
 	struct image_nt_header *nt_hdr;
 
 	if (imgbase == 0 || hdr == NULL)
-		return (EINVAL);
-
-	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
 
 	dos_hdr = (struct image_dos_header *)imgbase;
@@ -149,6 +143,8 @@ pe_validate_header(vm_offset_t imgbase)
 	struct image_file_header file_hdr;
 	struct image_optional_header opt_hdr;
 
+	if (pe_is_nt_image(imgbase))
+		return (EINVAL);
 	if (pe_get_file_header(imgbase, &file_hdr))
 		return (EINVAL);
 	if (!(file_hdr.characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
@@ -289,9 +285,6 @@ pe_get_section(vm_offset_t imgbase, struct image_section_header *hdr,
 	int i, sections;
 
 	if (imgbase == 0 || hdr == NULL)
-		return (EINVAL);
-
-	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
 
 	sections = pe_numsections(imgbase);
