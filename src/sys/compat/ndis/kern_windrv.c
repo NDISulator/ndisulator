@@ -353,7 +353,8 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 skipreloc:
 	/* Next step: find the driver entry point. */
 	pe_get_optional_header(img, &opt_hdr);
-	entry = (driver_entry)pe_translate_addr(img, opt_hdr.entryaddr);
+	entry = (driver_entry)pe_translate_addr(img,
+	    opt_hdr.address_of_entry_point);
 
 	/* Next step: allocate and store a driver object. */
 	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);

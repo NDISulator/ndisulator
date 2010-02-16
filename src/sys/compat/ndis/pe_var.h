@@ -43,35 +43,35 @@
 #define	IMAGE_NT_SIGNATURE	0x00004550	/* PE00 */
 
 struct image_dos_header {
-	uint16_t	magic;		/* Magic number */
-	uint16_t	cblp;		/* Bytes on last page of file */
-	uint16_t	cp;		/* Pages in file */
-	uint16_t	crlc;		/* Relocations */
-	uint16_t	cparhdr;	/* Size of header in paragraphs */
-	uint16_t	minalloc;	/* Minimum extra paragraphs needed */
-	uint16_t	maxalloc;	/* Maximum extra paragraphs needed */
-	uint16_t	ss;		/* Initial (relative) SS value */
-	uint16_t	sp;		/* Initial SP value */
-	uint16_t	csum;		/* Checksum */
-	uint16_t	ip;		/* Initial IP value */
-	uint16_t	cs;		/* Initial (relative) CS value */
-	uint16_t	lfarlc;		/* File address of relocation table */
-	uint16_t	ovno;		/* Overlay number */
-	uint16_t	rsvd1[4];	/* Reserved words */
-	uint16_t	oemid;		/* OEM identifier (for oeminfo) */
-	uint16_t	oeminfo;	/* OEM information; oemid specific */
-	uint16_t	rsvd2[10];	/* Reserved words */
-	uint32_t	lfanew;		/* File address of new exe header */
+	uint16_t	e_magic;	/* Magic number */
+	uint16_t	e_cblp;		/* Bytes on last page of file */
+	uint16_t	e_cp;		/* Pages in file */
+	uint16_t	e_crlc;		/* Relocations */
+	uint16_t	e_cparhdr;	/* Size of header in paragraphs */
+	uint16_t	e_minalloc;	/* Minimum extra paragraphs needed */
+	uint16_t	e_maxalloc;	/* Maximum extra paragraphs needed */
+	uint16_t	e_ss;		/* Initial (relative) SS value */
+	uint16_t	e_sp;		/* Initial SP value */
+	uint16_t	e_csum;		/* Checksum */
+	uint16_t	e_ip;		/* Initial IP value */
+	uint16_t	e_cs;		/* Initial (relative) CS value */
+	uint16_t	e_lfarlc;	/* File address of relocation table */
+	uint16_t	e_ovno;		/* Overlay number */
+	uint16_t	e_res[4];	/* Reserved words */
+	uint16_t	e_oemid;	/* OEM identifier (for oeminfo) */
+	uint16_t	e_oeminfo;	/* OEM information; oemid specific */
+	uint16_t	e_res2[10];	/* Reserved words */
+	uint32_t	e_lfanew;	/* File address of new exe header */
 };
 
 struct image_file_header {
-	uint16_t	machine;		/* Machine type */
-	uint16_t	numsections;		/* # of sections */
-	uint32_t	timestamp;		/* Date/time stamp */
-	uint32_t	symtblptr;		/* Offset to symbol table */
-	uint32_t	numsyms;		/* # of symbols */
-	uint16_t	optionalhdrlen;		/* Size of optional header */
-	uint16_t	characteristics;	/* Characteristics */
+	uint16_t	machine;
+	uint16_t	number_of_sections;
+	uint32_t	time_date_stamp;
+	uint32_t	pointer_to_symbol_table;
+	uint32_t	number_of_symbols;
+	uint16_t	size_of_optional_header;
+	uint16_t	characteristics;
 };
 
 /* Machine types */
@@ -127,8 +127,8 @@ struct image_file_header {
 #define	IMAGE_SIZEOF_FILE_HEADER		20
 
 struct image_data_directory {
-	uint32_t	vaddr;	/* virtual address */
-	uint32_t	size;	/* size */
+	uint32_t	virtual_address;
+	uint32_t	size;
 };
 
 #define	IMAGE_DIRECTORY_ENTRIES_MAX	16
@@ -136,39 +136,39 @@ struct image_data_directory {
 struct image_optional_header {
 	/* Standard fields */
 	uint16_t	magic;
-	uint8_t		linkerver_major;
-	uint8_t		linkerver_minor;
-	uint32_t	codesize;
-	uint32_t	datasize;
-	uint32_t	bsssize;
-	uint32_t	entryaddr;
-	uint32_t	codebaseaddr;
+	uint8_t		mayor_linker_version;
+	uint8_t		minor_linker_version;
+	uint32_t	size_of_code;
+	uint32_t	size_of_initialized_data;
+	uint32_t	size_of_uninitialized_data;
+	uint32_t	address_of_entry_point;
+	uint32_t	base_of_code;
 #ifndef __amd64__
-	uint32_t	databaseaddr;
+	uint32_t	base_of_data;
 #endif
 	/* NT-specific fields */
-	uintptr_t	imagebase;
-	uint32_t	sectalign;
-	uint32_t	filealign;
-	uint16_t	osver_major;
-	uint16_t	osver_minor;
-	uint16_t	imagever_major;
-	uint16_t	imagever_minor;
-	uint16_t	subsys_major;
-	uint16_t	subsys_minor;
-	uint32_t	win32ver;
-	uint32_t	imagesize;
-	uint32_t	headersize;
-	uint32_t	csum;
-	uint16_t	subsys;
+	uintptr_t	image_base;
+	uint32_t	section_aligment;
+	uint32_t	file_aligment;
+	uint16_t	mayor_operating_system_version;
+	uint16_t	minor_operating_system_version;
+	uint16_t	mayor_image_version;
+	uint16_t	minor_image_version;
+	uint16_t	mayor_subsystem_version;
+	uint16_t	minor_subsystem_version;
+	uint32_t	win32_version_value;
+	uint32_t	size_of_image;
+	uint32_t	size_of_headers;
+	uint32_t	check_sum;
+	uint16_t	subsystem;
 	uint16_t	dll_characteristics;
-	uintptr_t	stackreservesize;
-	uintptr_t	stackcommitsize;
-	uintptr_t	heapreservesize;
-	uintptr_t	heapcommitsize;
-	uint32_t	loaderflags;
-	uint32_t	rva_size_cnt;
-	struct image_data_directory	datadir[IMAGE_DIRECTORY_ENTRIES_MAX];
+	uintptr_t	size_of_stack_reserve;
+	uintptr_t	size_of_stack_commit;
+	uintptr_t	size_of_heap_reserve;
+	uintptr_t	size_of_heap_commit;
+	uint32_t	loader_flags;
+	uint32_t	number_of_rva_and_sizes;
+	struct image_data_directory	data_directory[IMAGE_DIRECTORY_ENTRIES_MAX];
 };
 
 /* Magic */
@@ -177,8 +177,8 @@ struct image_optional_header {
 
 struct image_nt_header {
 	uint32_t			signature;
-	struct image_file_header	filehdr;
-	struct image_optional_header	optionalhdr;
+	struct image_file_header	file_header;
+	struct image_optional_header	optional_header;
 };
 
 /* Directory Entries */
@@ -226,16 +226,16 @@ struct image_nt_header {
 struct image_section_header {
 	uint8_t		name[IMAGE_SHORT_NAME_LEN];
 	union {
-		uint32_t	paddr;
-		uint32_t	vsize;
+		uint32_t	physical_address;
+		uint32_t	virtual_size;
 	} misc;
-	uint32_t	vaddr;
-	uint32_t	rawdatasize;
-	uint32_t	rawdataaddr;
-	uint32_t	relocaddr;
-	uint32_t	linenumaddr;
-	uint16_t	numrelocs;
-	uint16_t	numlinenums;
+	uint32_t	virtual_address;
+	uint32_t	size_of_raw_data;
+	uint32_t	pointer_to_raw_data;
+	uint32_t	pointer_to_relocations;
+	uint32_t	pointer_to_linenumbers;
+	uint16_t	number_of_relocations;
+	uint16_t	number_of_linenumbers;
 	uint32_t	characteristics;
 };
 
@@ -243,30 +243,33 @@ struct image_section_header {
 
 #define	IMAGE_FIRST_SECTION(nthdr)					\
 	((struct image_section_header *)((vm_offset_t)(nthdr) +		\
-	  offsetof(struct image_nt_header, optionalhdr) +		\
-	  ((struct image_nt_header *)(nthdr))->filehdr.optionalhdrlen))
+	  offsetof(struct image_nt_header, optional_header) +	\
+	  ((struct image_nt_header *)(nthdr))->file_header.size_of_optional_header))
 
 /* Import format */
 struct image_import_by_name {
-	uint16_t	iibn_hint;
-	uint8_t		iibn_name[1];
+	uint16_t	hint;
+	uint8_t		name[1];
 };
 
 #define	IMAGE_ORDINAL_FLAG	0x80000000
 #define	IMAGE_ORDINAL(Ordinal)	(Ordinal & 0xffff)
 
 struct image_import_descriptor {
-	uint32_t	import_name_table_addr;
-	uint32_t	timestamp;
-	uint32_t	forwardchain;
-	uint32_t	nameaddr;
-	uint32_t	import_address_table_addr;
+	union {
+		uint32_t	characteristics;
+		uint32_t	original_first_thunk;
+	} u;
+	uint32_t	time_data_stamp;
+	uint32_t	forward_chain;
+	uint32_t	name;
+	uint32_t	first_thunk;
 };
 
-struct image_base_reloc {
-	uint32_t	vaddr;
-	uint32_t	blocksize;
-	uint16_t	rel[1];
+struct image_base_relocation {
+	uint32_t	virtual_address;
+	uint32_t	size_of_block;
+	uint16_t	type_offset[1];
 };
 
 #define	IMR_RELTYPE(x)		((x >> 12) & 0xF)
@@ -296,31 +299,26 @@ struct image_resource_directory_entry {
 
 struct image_resource_directory {
 	uint32_t	characteristics;
-	uint32_t	timestamp;
-	uint16_t	majorver;
-	uint16_t	minorver;
-	uint16_t	named_entries;
-	uint16_t	id_entries;
+	uint32_t	time_date_stamp;
+	uint16_t	major_version;
+	uint16_t	minor_version;
+	uint16_t	number_of_named_entries;
+	uint16_t	number_of_id_entries;
 #ifdef notdef
-	struct image_resource_directory_entry	entries[1];
+	struct image_resource_directory_entry	directory_entries[1];
 #endif
 };
 
 struct image_resource_directory_string {
-	uint16_t	len;
-	char		name[1];
-};
-
-struct image_resource_directory_string_u {
-	uint16_t	len;
-	char		name[1];
+	uint16_t	length;
+	char		name_string[1];
 };
 
 struct image_resource_data_entry {
-	uint32_t	offset;
+	uint32_t	offset_to_data;
 	uint32_t	size;
-	uint32_t	codepage;
-	uint32_t	rsvd;
+	uint32_t	code_page;
+	uint32_t	reserved;
 };
 
 struct message_resource_data {

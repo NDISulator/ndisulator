@@ -87,7 +87,7 @@ extern const char *__progname;
 				(align))
 #define	SET_HDRS(x)	\
 	dos_hdr = (struct image_dos_header *)x;				\
-	nt_hdr = (struct image_nt_header *)(x + dos_hdr->lfanew);	\
+	nt_hdr = (struct image_nt_header *)(x + dos_hdr->e_lfanew);	\
 	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
 
 static int
@@ -115,16 +115,16 @@ insert_padding(void **imgbase, int *imglen)
 	SET_HDRS(newimg);
 
 	for (i = 0; i < sections; i++) {
-		oldraddr = sect_hdr->rawdataaddr;
-		oldrlen = sect_hdr->rawdatasize;
-		sect_hdr->rawdataaddr = sect_hdr->vaddr;
-		offaccum += ROUND_UP(sect_hdr->vaddr - oldraddr,
-		    opt_hdr.filealign);
+		oldraddr = sect_hdr->pointer_to_raw_data;
+		oldrlen = sect_hdr->size_of_raw_data;
+		sect_hdr->pointer_to_raw_data = sect_hdr->virtual_address;
+		offaccum += ROUND_UP(sect_hdr->virtual_address - oldraddr,
+		    opt_hdr.file_aligment);
 		offaccum +=
-		    ROUND_UP(sect_hdr->misc.vsize,
-			opt_hdr.filealign) -
-		    ROUND_UP(sect_hdr->rawdatasize,
-			opt_hdr.filealign);
+		    ROUND_UP(sect_hdr->misc.virtual_size,
+			opt_hdr.file_aligment) -
+		    ROUND_UP(sect_hdr->size_of_raw_data,
+			opt_hdr.file_aligment);
 		tmp = realloc(newimg, *imglen + offaccum);
 		if (tmp == NULL) {
 			free(newimg);
@@ -133,11 +133,11 @@ insert_padding(void **imgbase, int *imglen)
 		newimg = tmp;
 		SET_HDRS(newimg);
 		sect_hdr += i;
-		bzero(newimg + sect_hdr->rawdataaddr,
-		    ROUND_UP(sect_hdr->misc.vsize,
-		    opt_hdr.filealign));
+		bzero(newimg + sect_hdr->pointer_to_raw_data,
+		    ROUND_UP(sect_hdr->misc.virtual_size,
+		    opt_hdr.file_aligment));
 		bcopy((uint8_t *)(*imgbase) + oldraddr,
-		    newimg + sect_hdr->rawdataaddr, oldrlen);
+		    newimg + sect_hdr->pointer_to_raw_data, oldrlen);
 		sect_hdr++;
 	}
 
