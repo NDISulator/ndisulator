@@ -309,11 +309,11 @@ main(int argc, char *argv[])
 	fp = fopen(sysfile, "r");
 	if (fp == NULL)
 		err(1, "opening .SYS file '%s' failed", sysfile);
-	fseek (fp, 0L, SEEK_END);
-	fsize = ftell (fp);
-	rewind (fp);
+	fseek(fp, 0L, SEEK_END);
+	fsize = ftell(fp);
+	rewind(fp);
 	img = calloc(fsize, 1);
-	n = fread (img, fsize, 1, fp);
+	n = fread(img, fsize, 1, fp);
 
 	fclose(fp);
 
