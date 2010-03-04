@@ -828,12 +828,18 @@ ndis_attach(device_t dev)
 			IEEE80211_C_IBSS;
 		setbit(ic->ic_modecaps, IEEE80211_MODE_AUTO);
 
-		if (!ndis_get_int(sc, OID_802_11_NUMBER_OF_ANTENNAS, &arg))
-			device_printf(dev, "number of antennas: %d\n", arg);
-		if (!ndis_get_int(sc, OID_802_11_RX_ANTENNA_SELECTED, &arg))
-			device_printf(dev, "rx antenna: %d\n", arg);
-		if (!ndis_get_int(sc, OID_802_11_TX_ANTENNA_SELECTED, &arg))
-			device_printf(dev, "tx antenna: %d\n", arg);
+		if (bootverbose) {
+			if (!ndis_get_int(sc,
+			    OID_802_11_NUMBER_OF_ANTENNAS, &arg))
+				device_printf(dev,
+				    "number of antennas: %d\n", arg);
+			if (!ndis_get_int(sc,
+			    OID_802_11_RX_ANTENNA_SELECTED, &arg))
+				device_printf(dev, "rx antenna: %d\n", arg);
+			if (!ndis_get_int(sc,
+			    OID_802_11_TX_ANTENNA_SELECTED, &arg))
+				device_printf(dev, "tx antenna: %d\n", arg);
+		}
 		rval = ndis_get_info(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, NULL, 0, NULL, &len);
 		if (!(rval == NDIS_STATUS_INVALID_LENGTH ||
