@@ -1781,8 +1781,7 @@ ndis_start(struct ifnet *ifp)
 	struct ndis_tcpip_csum *csum;
 	int pcnt = 0, status;
 
-	if (ifp->if_link_state != LINK_STATE_UP ||
-	    (ifp->if_drv_flags & IFF_DRV_OACTIVE))
+	if (ifp->if_drv_flags & IFF_DRV_OACTIVE)
 		return;
 
 	NDIS_LOCK(sc);
