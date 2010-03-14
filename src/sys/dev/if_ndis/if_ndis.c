@@ -2714,14 +2714,10 @@ static void
 ndis_set_channel(struct ieee80211com *ic)
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-	struct ieee80211vap *vap;
 	struct ndis_80211_config config;
 
-	if (sc->ndis_ifp->if_link_state == LINK_STATE_UP ||
-	    ic->ic_bsschan == IEEE80211_CHAN_ANYC)
+	if (ic->ic_bsschan == IEEE80211_CHAN_ANYC)
 		return;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	memset(&config, 0, sizeof(config));
 	config.len = sizeof(config);
