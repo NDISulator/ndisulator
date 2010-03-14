@@ -2670,8 +2670,6 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		ieee80211_state_name[vap->iv_state],
 		ieee80211_state_name[nstate]);
 
-	vap->iv_state = nstate;
-
 	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
 	case IEEE80211_S_INIT:
@@ -2701,6 +2699,7 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		break;
 	case IEEE80211_S_AUTH:
 		ndis_auth(sc, vap);
+		vap->iv_state = nstate;
 		ieee80211_new_state(vap, IEEE80211_S_ASSOC, 0);
 		break;
 	case IEEE80211_S_ASSOC:
@@ -2710,6 +2709,8 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 		break;
 	}
 	IEEE80211_LOCK(ic);
+
+	vap->iv_state = nstate;
 	return (nvp->newstate(vap, nstate, arg));
 }
 
