@@ -1600,13 +1600,19 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	if (status == NDIS_STATUS_MEDIA_CONNECT) {
-		if (vap != NULL)
+		if (vap != NULL) {
 			ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
-		if_link_state_change(sc->ndis_ifp, LINK_STATE_UP);
+			if_link_state_change(vap->iv_ifp, LINK_STATE_UP);
+		} else {
+			if_link_state_change(sc->ndis_ifp, LINK_STATE_UP);
+		}
 	} else if (status == NDIS_STATUS_MEDIA_DISCONNECT) {
-		if (vap != NULL)
+		if (vap != NULL) {
 			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
-		if_link_state_change(sc->ndis_ifp, LINK_STATE_DOWN);
+			if_link_state_change(vap->iv_ifp, LINK_STATE_DOWN);
+		} else {
+			if_link_state_change(sc->ndis_ifp, LINK_STATE_DOWN);
+		}
 	} else if (status == NDIS_STATUS_MEDIA_SPECIFIC_INDICATION) {
 		if (buf != NULL) {
 			struct ndis_80211_status_indication *nsi;
@@ -1894,6 +1900,9 @@ ndis_init(void *xsc)
 	struct ndis_softc *sc = xsc;
 	struct ifnet *ifp = sc->ndis_ifp;
 	struct ieee80211com *ic = ifp->if_l2com;
+	struct ieee80211vap *vap;
+
+	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	/* Program the packet filter */
 	sc->ndis_filter = NDIS_PACKET_TYPE_DIRECTED;
@@ -1912,7 +1921,12 @@ ndis_init(void *xsc)
 	NDIS_LOCK(sc);
 	sc->ndis_txidx = 0;
 	sc->ndis_txpending = sc->ndis_maxpkts;
-	if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
+
+	if (vap != NULL)
+		if_link_state_change(vap->iv_ifp, LINK_STATE_UNKNOWN);
+	else
+		if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
+
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	sc->ndis_tx_timer = 0;
@@ -2601,7 +2615,11 @@ ndis_resettask(device_object *d, void *arg)
 static void
 ndis_stop(struct ndis_softc *sc)
 {
+	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
+	struct ieee80211vap *vap;
 	int i;
+
+	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	callout_drain(&sc->ndis_stat_callout);
 	if (sc->ndis_80211 == 1)
@@ -2609,7 +2627,12 @@ ndis_stop(struct ndis_softc *sc)
 
 	NDIS_LOCK(sc);
 	sc->ndis_tx_timer = 0;
-	if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
+
+	if (vap != NULL)
+		if_link_state_change(vap->iv_ifp, LINK_STATE_UNKNOWN);
+	else
+		if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
+
 	sc->ndis_ifp->if_drv_flags &= ~(IFF_DRV_RUNNING|IFF_DRV_OACTIVE);
 	for (i = 0; i < NDIS_EVENTS; i++) {
 		if (sc->ndis_evt[i].ne_sts && sc->ndis_evt[i].ne_buf != NULL) {
