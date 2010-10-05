@@ -276,7 +276,6 @@ ntoskrnl_libinit(void)
 	kdpc_queue *kq;
 	callout_entry *e;
 	int i;
-	char name[64];
 
 	mtx_init(&ntoskrnl_dispatchlock,
 	    "ntoskrnl dispatch lock", MTX_NDIS_LOCK, MTX_DEF|MTX_RECURSE);
@@ -313,9 +312,8 @@ ntoskrnl_libinit(void)
 #endif
 		kq = kq_queues + i;
 		kq->kq_cpu = i;
-		sprintf(name, "Windows DPC %d", i);
 		if (kproc_create(ntoskrnl_dpc_thread, kq, &p,
-		    RFHIGHPID, NDIS_KSTACK_PAGES, name) != 0)
+		    RFHIGHPID, NDIS_KSTACK_PAGES, "Windows DPC %d", i) != 0)
 			panic("failed to launch DPC thread");
 	}
 
@@ -324,9 +322,9 @@ ntoskrnl_libinit(void)
 	 */
 	for (i = 0; i < WORKITEM_THREADS; i++) {
 		kq = wq_queues + i;
-		sprintf(name, "Windows Workitem %d", i);
 		if (kproc_create(ntoskrnl_workitem_thread, kq, &p,
-		    RFHIGHPID, NDIS_KSTACK_PAGES, name) != 0)
+		    RFHIGHPID, NDIS_KSTACK_PAGES,
+			"Windows Workitem %d", i) != 0)
 			panic("failed to launch workitem thread");
 	}
 
@@ -3152,7 +3150,6 @@ static ndis_status
 PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
     ndis_handle phandle, void *clientid, void *thrfunc, void *thrctx)
 {
-	char tname[128];
 	thread_context *tc;
 	struct proc *p;
 
@@ -3162,9 +3159,9 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	tc->tc_thrctx = thrctx;
 	tc->tc_thrfunc = thrfunc;
 
-	sprintf(tname, "windows kthread %d", ntoskrnl_kth);
 	if (kproc_create(ntoskrnl_thrfunc, tc, &p,
-	    RFHIGHPID, NDIS_KSTACK_PAGES, tname) != 0) {
+	    RFHIGHPID, NDIS_KSTACK_PAGES,
+		"Windows Kthread %d", ntoskrnl_kth) != 0) {
 		free(tc, M_NDIS_NTOSKRNL);
 		return (NDIS_STATUS_FAILURE);
 	}
