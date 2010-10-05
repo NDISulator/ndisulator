@@ -3539,9 +3539,7 @@ KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 	uint8_t r;
 	uint8_t irql;
 
-	if (dpc == NULL)
-		return (FALSE);
-
+	KASSERT(dpc != NULL, ("no dpc"));
 	kq = kq_queues;
 
 #ifdef NTOSKRNL_MULTIPLE_DPCS
