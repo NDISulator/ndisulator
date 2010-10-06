@@ -255,6 +255,7 @@ static ndis_status KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
 
+static struct proc *ndisproc;
 static struct mtx ntoskrnl_dispatchlock;
 static struct mtx ntoskrnl_interlock;
 static kspin_lock ntoskrnl_cancellock;
@@ -272,7 +273,7 @@ void
 ntoskrnl_libinit(void)
 {
 	struct image_patch_table *patch;
-	struct proc *p;
+	struct thread *t;
 	kdpc_queue *kq;
 	callout_entry *e;
 	int i;
@@ -312,8 +313,9 @@ ntoskrnl_libinit(void)
 #endif
 		kq = kq_queues + i;
 		kq->kq_cpu = i;
-		if (kproc_create(ntoskrnl_dpc_thread, kq, &p,
-		    RFHIGHPID, NDIS_KSTACK_PAGES, "Windows DPC %d", i) != 0)
+		if (kproc_kthread_add(ntoskrnl_dpc_thread, kq, &ndisproc,
+		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis",
+		    "Windows DPC %d", i) != 0)
 			panic("failed to launch DPC thread");
 	}
 
@@ -322,9 +324,9 @@ ntoskrnl_libinit(void)
 	 */
 	for (i = 0; i < WORKITEM_THREADS; i++) {
 		kq = wq_queues + i;
-		if (kproc_create(ntoskrnl_workitem_thread, kq, &p,
-		    RFHIGHPID, NDIS_KSTACK_PAGES,
-			"Windows Workitem %d", i) != 0)
+		if (kproc_kthread_add(ntoskrnl_workitem_thread, kq, &ndisproc,
+		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis",
+		    "Windows Workitem %d", i) != 0)
 			panic("failed to launch workitem thread");
 	}
 
@@ -2456,7 +2458,7 @@ ntoskrnl_workitem_thread(void *arg)
 		KeReleaseSpinLock(&kq->kq_lock, irql);
 	}
 
-	kproc_exit(0);
+	kthread_exit();
 	/* notreached */
 }
 
@@ -3151,7 +3153,7 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
     ndis_handle phandle, void *clientid, void *thrfunc, void *thrctx)
 {
 	thread_context *tc;
-	struct proc *p;
+	struct thread *t;
 
 	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (tc == NULL)
@@ -3159,14 +3161,14 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	tc->tc_thrctx = thrctx;
 	tc->tc_thrfunc = thrfunc;
 
-	if (kproc_create(ntoskrnl_thrfunc, tc, &p,
-	    RFHIGHPID, NDIS_KSTACK_PAGES,
-		"Windows Kthread %d", ntoskrnl_kth) != 0) {
+	if (kproc_kthread_add(ntoskrnl_thrfunc, tc, &ndisproc,
+	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis",
+	    "Windows Kthread %d", ntoskrnl_kth) != 0) {
 		free(tc, M_NDIS_NTOSKRNL);
 		return (NDIS_STATUS_FAILURE);
 	}
 
-	*handle = p;
+	*handle = t;
 	ntoskrnl_kth++;
 
 	return (NDIS_STATUS_SUCCESS);
@@ -3197,7 +3199,7 @@ PsTerminateSystemThread(ndis_status status)
 
 	ntoskrnl_kth--;
 
-	kproc_exit(0);
+	kthread_exit();
 
 	return (0);	/* notreached */
 }
@@ -3467,7 +3469,7 @@ ntoskrnl_dpc_thread(void *arg)
 
 		KeSetEvent(&kq->kq_done, IO_NO_INCREMENT, FALSE);
 	}
-	kproc_exit(0);
+	kthread_exit();
 	/* notreached */
 }
 
