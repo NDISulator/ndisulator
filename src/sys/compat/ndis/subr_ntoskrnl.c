@@ -94,14 +94,10 @@ struct kdpc_queue {
 	nt_kevent	kq_done;
 };
 
-typedef struct kdpc_queue kdpc_queue;
-
 struct wb_ext {
 	struct cv		we_cv;
 	struct thread		*we_td;
 };
-
-typedef struct wb_ext wb_ext;
 
 #define	NTOSKRNL_TIMEOUTS	256
 #ifdef NTOSKRNL_DEBUG_TIMERS
@@ -115,7 +111,6 @@ struct callout_entry {
 	struct callout		ce_callout;
 	list_entry		ce_list;
 };
-typedef struct callout_entry callout_entry;
 
 static struct list_entry ntoskrnl_calllist;
 static struct mtx ntoskrnl_calllock;
@@ -274,8 +269,8 @@ ntoskrnl_libinit(void)
 {
 	struct image_patch_table *patch;
 	struct thread *t;
-	kdpc_queue *kq;
-	callout_entry *e;
+	struct kdpc_queue *kq;
+	struct callout_entry *e;
 	int i;
 
 	mtx_init(&ntoskrnl_dispatchlock,
@@ -291,15 +286,15 @@ ntoskrnl_libinit(void)
 
 	kq_queues = ExAllocatePoolWithTag(NON_PAGED_POOL,
 #ifdef NTOSKRNL_MULTIPLE_DPCS
-	    sizeof(kdpc_queue) * mp_ncpus, 0);
+	    sizeof(struct kdpc_queue) * mp_ncpus, 0);
 #else
-	    sizeof(kdpc_queue), 0);
+	    sizeof(struct kdpc_queue), 0);
 #endif
 	if (kq_queues == NULL)
 		panic("failed to allocate kq_queues");
 
 	wq_queues = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(kdpc_queue) * WORKITEM_THREADS, 0);
+	    sizeof(struct kdpc_queue) * WORKITEM_THREADS, 0);
 	if (wq_queues == NULL)
 		panic("failed to allocate wq_queues");
 
@@ -340,7 +335,7 @@ ntoskrnl_libinit(void)
 
 	for (i = 0; i < NTOSKRNL_TIMEOUTS; i++) {
 		e = ExAllocatePoolWithTag(NON_PAGED_POOL,
-		    sizeof(callout_entry), 0);
+		    sizeof(struct callout_entry), 0);
 		if (e == NULL)
 			panic("failed to allocate timeouts");
 		mtx_lock_spin(&ntoskrnl_calllock);
@@ -371,7 +366,7 @@ void
 ntoskrnl_libfini(void)
 {
 	struct image_patch_table *patch;
-	callout_entry *e;
+	struct callout_entry *e;
 	list_entry *l;
 
 	patch = ntoskrnl_functbl;
@@ -392,7 +387,7 @@ ntoskrnl_libfini(void)
 	mtx_lock_spin(&ntoskrnl_calllock);
 	while (!IsListEmpty(&ntoskrnl_calllist)) {
 		l = RemoveHeadList(&ntoskrnl_calllist);
-		e = CONTAINING_RECORD(l, callout_entry, ce_list);
+		e = CONTAINING_RECORD(l, struct callout_entry, ce_list);
 		mtx_unlock_spin(&ntoskrnl_calllock);
 		ExFreePool(e);
 		mtx_lock_spin(&ntoskrnl_calllock);
@@ -1341,7 +1336,7 @@ ntoskrnl_waittest(nt_dispatch_header *obj, uint32_t increment)
 	wait_block *w, *next;
 	list_entry *e;
 	struct thread *td;
-	wb_ext *we;
+	struct wb_ext *we;
 	int satisfied;
 
 	/*
@@ -1500,10 +1495,10 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	wait_block w;
 	struct thread *td = curthread;
 	struct timeval tv;
+	struct wb_ext we;
 	nt_dispatch_header *obj = arg;
 	uint64_t curtime;
 	int error = 0;
-	wb_ext we;
 
 	if (obj == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
@@ -1610,7 +1605,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 	uint64_t curtime;
 	struct timespec t1, t2;
 	ndis_status status = NDIS_STATUS_SUCCESS;
-	wb_ext we;
+	struct wb_ext we;
 
 	if (cnt > MAX_WAIT_OBJECTS)
 		return (NDIS_STATUS_INVALID_PARAMETER);
@@ -2424,7 +2419,7 @@ ntoskrnl_finddev(device_t dev, uint64_t paddr, struct resource **res)
 static void
 ntoskrnl_workitem_thread(void *arg)
 {
-	kdpc_queue *kq = arg;
+	struct kdpc_queue *kq = arg;
 	list_entry *l;
 	io_workitem *iw;
 	uint8_t irql;
@@ -2465,7 +2460,7 @@ ntoskrnl_workitem_thread(void *arg)
 static void
 ntoskrnl_destroy_workitem_threads(void)
 {
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	int i;
 
 	for (i = 0; i < WORKITEM_THREADS; i++) {
@@ -2507,7 +2502,7 @@ void
 IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func, uint32_t qtype,
     void *ctx)
 {
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	list_entry *l;
 	io_workitem *cur;
 	uint8_t irql;
@@ -2583,7 +2578,7 @@ ExQueueWorkItem(work_queue_item *w, uint32_t qtype)
 {
 	io_workitem *iw, *cur;
 	io_workitem_func iwf;
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	list_entry *l;
 	uint8_t irql;
 
@@ -2968,7 +2963,7 @@ KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 	wait_block *w;
 	nt_dispatch_header *dh;
 	struct thread *td;
-	wb_ext *we;
+	struct wb_ext *we;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 	prevstate = kevent->k_header.dh_sigstate;
@@ -3331,7 +3326,7 @@ ntoskrnl_show_timers(void)
 static void
 ntoskrnl_insert_timer(ktimer *timer, int ticks)
 {
-	callout_entry *e;
+	struct callout_entry *e;
 	list_entry *l;
 	struct callout *c;
 
@@ -3349,7 +3344,7 @@ ntoskrnl_insert_timer(ktimer *timer, int ticks)
 	l = RemoveHeadList(&ntoskrnl_calllist);
 	mtx_unlock_spin(&ntoskrnl_calllock);
 
-	e = CONTAINING_RECORD(l, callout_entry, ce_list);
+	e = CONTAINING_RECORD(l, struct callout_entry, ce_list);
 	c = &e->ce_callout;
 
 	timer->k_callout = c;
@@ -3361,9 +3356,9 @@ ntoskrnl_insert_timer(ktimer *timer, int ticks)
 static void
 ntoskrnl_remove_timer(ktimer *timer)
 {
-	callout_entry *e;
+	struct callout_entry *e;
 
-	e = (callout_entry *)timer->k_callout;
+	e = (struct callout_entry *)timer->k_callout;
 	callout_stop(timer->k_callout);
 
 	mtx_lock_spin(&ntoskrnl_calllock);
@@ -3417,7 +3412,7 @@ KeInitializeTimerEx(ktimer *timer, uint32_t type)
 static void
 ntoskrnl_dpc_thread(void *arg)
 {
-	kdpc_queue *kq = arg;
+	struct kdpc_queue *kq = arg;
 	kdpc *d;
 	list_entry *l;
 	uint8_t irql;
@@ -3476,7 +3471,7 @@ ntoskrnl_dpc_thread(void *arg)
 static void
 ntoskrnl_destroy_dpc_threads(void)
 {
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	kdpc dpc;
 	int i;
 
@@ -3534,7 +3529,7 @@ KeInitializeDpc(kdpc *dpc, void *dpcfunc, void *dpcctx)
 uint8_t
 KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 {
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	uint8_t r;
 	uint8_t irql;
 
@@ -3574,7 +3569,7 @@ KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 uint8_t
 KeRemoveQueueDpc(kdpc *dpc)
 {
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	uint8_t irql;
 
 	if (dpc == NULL)
@@ -3627,7 +3622,7 @@ KeSetTargetProcessorDpc(kdpc *dpc, uint8_t cpu)
 void
 KeFlushQueuedDpcs(void)
 {
-	kdpc_queue *kq;
+	struct kdpc_queue *kq;
 	int i;
 
 	/*
