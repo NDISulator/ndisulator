@@ -3631,8 +3631,7 @@ KeFlushQueuedDpcs(void)
 	int i;
 
 	/*
-	 * Poke each DPC queue and wait
-	 * for them to drain.
+	 * Poke each DPC queue and wait for them to drain.
 	 */
 #ifdef NTOSKRNL_MULTIPLE_DPCS
 	for (i = 0; i < mp_ncpus; i++) {
