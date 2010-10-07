@@ -556,7 +556,8 @@ pe_patch_imports(vm_offset_t imgbase, char *module,
 	    imp_desc.first_thunk);
 
 	while (nptr != NULL && pe_translate_addr(imgbase, *nptr)) {
-		fname = (char *)pe_translate_addr(imgbase, (*nptr) + 2);
+		fname = (char *)pe_translate_addr(imgbase,
+		    (*nptr & ~IMAGE_ORDINAL_FLAG) + 2);
 		func = pe_functbl_match(functbl, fname);
 		if (func)
 			*fptr = func;

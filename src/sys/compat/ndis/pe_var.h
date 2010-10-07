@@ -252,8 +252,13 @@ struct image_import_by_name {
 	uint8_t		name[1];
 };
 
+#ifdef __i386__
 #define	IMAGE_ORDINAL_FLAG	0x80000000
-#define	IMAGE_ORDINAL(Ordinal)	(Ordinal & 0xffff)
+#endif
+
+#ifdef __amd64__
+#define	IMAGE_ORDINAL_FLAG	0x8000000000000000UL
+#endif
 
 struct image_import_descriptor {
 	union {
