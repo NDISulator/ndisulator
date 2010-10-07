@@ -382,8 +382,9 @@ struct image_patch_table {
  * they use a mix of _stdcall, _fastcall and _cdecl.
  */
 
-#ifdef __amd64__
+#define	FUNC void(*)(void)
 
+#ifdef __amd64__
 extern uint64_t x86_64_call1(void *, uint64_t);
 extern uint64_t x86_64_call2(void *, uint64_t, uint64_t);
 extern uint64_t x86_64_call3(void *, uint64_t, uint64_t, uint64_t);
@@ -410,41 +411,6 @@ extern uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
 	x86_64_call6((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c), (uint64_t)(d), (uint64_t)(e), (uint64_t)(f))
 
-#endif /* __amd64__ */
-
-#ifdef __i386__
-
-extern uint32_t x86_stdcall_call(void *, int, ...);
-
-#define	MSCALL1(fn, a)		x86_stdcall_call(fn, 1, (a))
-#define	MSCALL2(fn, a, b)	x86_stdcall_call(fn, 2, (a), (b))
-#define	MSCALL3(fn, a, b, c)	x86_stdcall_call(fn, 3, (a), (b), (c))
-#define	MSCALL4(fn, a, b, c, d)	x86_stdcall_call(fn, 4, (a), (b), (c), (d))
-#define	MSCALL5(fn, a, b, c, d, e)	\
-		x86_stdcall_call(fn, 5, (a), (b), (c), (d), (e))
-#define	MSCALL6(fn, a, b, c, d, e, f)	\
-		x86_stdcall_call(fn, 6, (a), (b), (c), (d), (e), (f))
-
-#endif /* __i386__ */
-
-#define	FUNC void(*)(void)
-
-#ifdef __i386__
-#define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_STDCALL }
-#define	IMPORT_SFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_STDCALL }
-#define	IMPORT_FFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_FASTCALL }
-#define	IMPORT_FFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_FASTCALL }
-#define	IMPORT_RFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_REGPARM }
-#define	IMPORT_RFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_REGPARM }
-#define	IMPORT_CFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_CDECL }
-#define	IMPORT_CFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_CDECL }
-#endif /* __i386__ */
-
-#ifdef __amd64__
 #define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
 #define	IMPORT_SFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
@@ -458,6 +424,32 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 #define	IMPORT_CFUNC_MAP(x, y, z)					\
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
 #endif /* __amd64__ */
+
+#ifdef __i386__
+extern uint32_t x86_stdcall_call(void *, int, ...);
+
+#define	MSCALL1(fn, a)		x86_stdcall_call(fn, 1, (a))
+#define	MSCALL2(fn, a, b)	x86_stdcall_call(fn, 2, (a), (b))
+#define	MSCALL3(fn, a, b, c)	x86_stdcall_call(fn, 3, (a), (b), (c))
+#define	MSCALL4(fn, a, b, c, d)	x86_stdcall_call(fn, 4, (a), (b), (c), (d))
+#define	MSCALL5(fn, a, b, c, d, e)	\
+		x86_stdcall_call(fn, 5, (a), (b), (c), (d), (e))
+#define	MSCALL6(fn, a, b, c, d, e, f)	\
+		x86_stdcall_call(fn, 6, (a), (b), (c), (d), (e), (f))
+
+#define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_STDCALL }
+#define	IMPORT_SFUNC_MAP(x, y, z)					\
+				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_STDCALL }
+#define	IMPORT_FFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_FASTCALL }
+#define	IMPORT_FFUNC_MAP(x, y, z)					\
+				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_FASTCALL }
+#define	IMPORT_RFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_REGPARM }
+#define	IMPORT_RFUNC_MAP(x, y, z)					\
+				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_REGPARM }
+#define	IMPORT_CFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_CDECL }
+#define	IMPORT_CFUNC_MAP(x, y, z)					\
+				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_CDECL }
+#endif /* __i386__ */
 
 __BEGIN_DECLS
 extern int	pe_validate_header(vm_offset_t);
