@@ -236,7 +236,6 @@ static ndis_status WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static ndis_status IoWMIRegistrationControl(device_object *, uint32_t);
 static ndis_status IoWMIQueryAllData(void *, uint32_t *, void *);
 static ndis_status IoWMIOpenBlock(void *, uint32_t, void **);
-static void *ntoskrnl_memset(void *, int, size_t);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
@@ -397,16 +396,6 @@ ntoskrnl_libfini(void)
 	mtx_destroy(&ntoskrnl_dispatchlock);
 	mtx_destroy(&ntoskrnl_interlock);
 	mtx_destroy(&ntoskrnl_calllock);
-}
-
-/*
- * We need to be able to reference this externally from the wrapper;
- * GCC only generates a local implementation of memset.
- */
-static void *
-ntoskrnl_memset(void *buf, int ch, size_t size)
-{
-	return (memset(buf, ch, size));
 }
 
 static void *
@@ -3842,7 +3831,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC_MAP(strrchr, rindex, 0),
 	IMPORT_CFUNC(memcpy, 0),
 	IMPORT_CFUNC(memmove, 0),
-	IMPORT_CFUNC_MAP(memset, ntoskrnl_memset, 0),
+	IMPORT_CFUNC(memset, 0),
 	IMPORT_CFUNC_MAP(memchr, ntoskrnl_memchr, 0),
 	IMPORT_SFUNC(IoAllocateDriverObjectExtension, 4),
 	IMPORT_SFUNC(IoGetDriverObjectExtension, 2),

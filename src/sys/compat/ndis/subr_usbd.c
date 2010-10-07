@@ -133,7 +133,7 @@ static union usbd_urb *USBD_CreateConfigurationRequestEx(
     usb_config_descriptor_t *, struct usbd_interface_list_entry *);
 static union usbd_urb *USBD_CreateConfigurationRequest(
     usb_config_descriptor_t *, uint16_t *);
-static void USBD_GetUSBDIVersion(usbd_version_info *);
+static void USBD_GetUSBDIVersion(struct usbd_version_info *);
 static usb_interface_descriptor_t *USBD_ParseConfigurationDescriptorEx(
     usb_config_descriptor_t *, void *, int32_t, int32_t, int32_t, int32_t,
     int32_t);
@@ -1391,7 +1391,7 @@ USBD_CreateConfigurationRequestEx(usb_config_descriptor_t *conf,
 }
 
 static void
-USBD_GetUSBDIVersion(usbd_version_info *ui)
+USBD_GetUSBDIVersion(struct usbd_version_info *ui)
 {
 
 	/* Pretend to be Windows XP. */
