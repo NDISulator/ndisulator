@@ -2133,8 +2133,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 			for (i = 0; i < len; i++)
 				if (rates[i] > tp->ucastrate)
 					rates[i] = 0;
-			ndis_set(sc,
-			    OID_802_11_DESIRED_RATES, &rates, len);
+			ndis_set(sc, OID_802_11_DESIRED_RATES, &rates, len);
 		}
 	}
 
