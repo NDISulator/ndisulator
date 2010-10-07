@@ -34,14 +34,10 @@
 
 #include <net80211/ieee80211_var.h>
 
-#define	NDIS_DEFAULT_NODENAME	"FreeBSD NDIS node"
-#define	NDIS_NODENAME_LEN	32
+extern int	ndis_alloc_amem(void *);
+extern void	ndis_free_amem(void *);
 
-extern int ndis_alloc_amem(void *);
-extern void ndis_free_amem(void *);
-
-/* For setting/getting OIDs from userspace. */
-struct ndis_oid_data {
+struct ndis_oid_data {		/* For setting/getting OIDs from userspace. */
 	uint32_t	oid;
 	size_t		len;
 };
@@ -78,7 +74,6 @@ struct ndis_cfglist {
 	struct sysctl_oid	*ndis_oid;
         TAILQ_ENTRY(ndis_cfglist)	link;
 };
-
 TAILQ_HEAD(nch, ndis_cfglist);
 
 #define	NDIS_INITIALIZED(sc)	(sc->ndis_block->device_ctx != NULL)
@@ -100,6 +95,7 @@ struct ndis_vap {
 	struct ieee80211vap	vap;
 	int	(*newstate)(struct ieee80211vap *, enum ieee80211_state, int);
 };
+
 #define	NDIS_VAP(vap)	((struct ndis_vap *)(vap))
 
 #define	NDISUSB_CONFIG_NO			0
@@ -108,7 +104,9 @@ struct ndis_vap {
 #define	NDISUSB_NO_TIMEOUT			0
 #define	NDISUSB_INTR_TIMEOUT			1000
 #define	NDISUSB_TX_TIMEOUT			10000
+
 struct ndisusb_xfer;
+
 struct ndisusb_ep {
 	struct usb_xfer		*ne_xfer[1];
 	list_entry		ne_active;
@@ -116,6 +114,7 @@ struct ndisusb_ep {
 	kspin_lock		ne_lock;
 	uint8_t			ne_dirin;
 };
+
 struct ndisusb_xfer {
 	struct ndisusb_ep	*nx_ep;
 	void			*nx_priv;
@@ -125,6 +124,7 @@ struct ndisusb_xfer {
 	uint8_t			nx_shortxfer;
 	list_entry		nx_next;
 };
+
 struct ndisusb_xferdone {
 	struct ndisusb_xfer	*nd_xfer;
 	usb_error_t		nd_status;
