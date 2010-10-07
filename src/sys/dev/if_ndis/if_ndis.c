@@ -1443,27 +1443,6 @@ ndis_rxeof(ndis_handle adapter, struct ndis_packet **packets, uint32_t pktcnt)
 			if (p->oob.npo_status == NDIS_STATUS_SUCCESS)
 				ndis_return_packet(block, p);
 		} else {
-#ifdef notdef
-			if (p->oob.npo_status ==
-			    NDIS_STATUS_INSUFFICIENT_RESOURCES) {
-				m = m_dup(m0, M_DONTWAIT);
-				/*
-				 * NOTE: we want to destroy the mbuf here, but
-				 * we don't actually want to return it to the
-				 * driver via the return packet handler. By
-				 * bumping refcnt, we can prevent the
-				 * ndis_return_packet() routine from actually
-				 * doing anything.
-				 */
-				p->refcnt++;
-				m_freem(m0);
-				if (m == NULL)
-					ifp->if_ierrors++;
-				else
-					m0 = m;
-			} else
-				p->oob.npo_status = NDIS_STATUS_PENDING;
-#endif
 			m = m_dup(m0, M_DONTWAIT);
 			if (p->oob.npo_status ==
 			    NDIS_STATUS_INSUFFICIENT_RESOURCES)
