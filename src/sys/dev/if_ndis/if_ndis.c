@@ -2162,8 +2162,10 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 
 	if (!(vap->iv_flags & IEEE80211_F_WPA)) {
-		if (ndis_set_authmode(sc, NDIS_802_11_AUTH_MODE_OPEN) != 0)
-			DPRINTF("OPEN authmode failed\n");
+		if (vap->iv_bss->ni_authmode == IEEE80211_AUTH_SHARED)
+			ndis_set_authmode(sc, NDIS_802_11_AUTH_MODE_SHARED);
+		else
+			ndis_set_authmode(sc, NDIS_802_11_AUTH_MODE_OPEN);
 	}
 	if (!(vap->iv_flags & IEEE80211_F_PRIVACY)) {
 		if (ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_DISABLED) != 0)
