@@ -91,13 +91,8 @@ pe_is_nt_image(vm_offset_t imgbase)
 	return (ENOEXEC);
 }
 
-/*
- * Return a copy of the optional header. This contains the
- * executable entry point and the directory listing which we
- * need to find the relocations and imports later.
- */
 int
-pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header *hdr)
+pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header **hdr)
 {
 	struct image_dos_header *dos_hdr;
 	struct image_nt_header *nt_hdr;
@@ -108,8 +103,7 @@ pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header *hdr)
 	dos_hdr = (struct image_dos_header *)(imgbase);
 	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
 
-	bcopy((char *)&nt_hdr->optional_header, (char *)hdr,
-	    nt_hdr->file_header.size_of_optional_header);
+	*hdr = &nt_hdr->optional_header;
 	return (0);
 }
 
@@ -136,7 +130,7 @@ int
 pe_validate_header(vm_offset_t imgbase)
 {
 	struct image_file_header *file_hdr;
-	struct image_optional_header opt_hdr;
+	struct image_optional_header *opt_hdr;
 
 	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
@@ -159,11 +153,11 @@ pe_validate_header(vm_offset_t imgbase)
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (EINVAL);
 #ifdef __amd64__
-	if (opt_hdr.magic != IMAGE_OPTIONAL_MAGIC_64)
+	if (opt_hdr->magic != IMAGE_OPTIONAL_MAGIC_64)
 		return (ENOEXEC);
 #endif
 #ifdef __i386__
-	if (opt_hdr.magic != IMAGE_OPTIONAL_MAGIC_32)
+	if (opt_hdr->magic != IMAGE_OPTIONAL_MAGIC_32)
 		return (ENOEXEC);
 #endif
 	return (0);
@@ -190,12 +184,12 @@ pe_numsections(vm_offset_t imgbase)
 static vm_offset_t
 pe_imagebase(vm_offset_t imgbase)
 {
-	struct image_optional_header optional_hdr;
+	struct image_optional_header *optional_hdr;
 
 	if (pe_get_optional_header(imgbase, &optional_hdr))
 		return (0);
 
-	return (optional_hdr.image_base);
+	return (optional_hdr->image_base);
 }
 
 /*
@@ -205,16 +199,16 @@ pe_imagebase(vm_offset_t imgbase)
 static vm_offset_t
 pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 {
-	struct image_optional_header opt_hdr;
+	struct image_optional_header *opt_hdr;
 	vm_offset_t dir;
 
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (0);
 
-	if (diridx >= opt_hdr.number_of_rva_and_sizes)
+	if (diridx >= opt_hdr->number_of_rva_and_sizes)
 		return (0);
 
-	dir = opt_hdr.data_directory[diridx].virtual_address;
+	dir = opt_hdr->data_directory[diridx].virtual_address;
 
 	return (pe_translate_addr(imgbase, dir));
 }
@@ -222,7 +216,7 @@ pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 vm_offset_t
 pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 {
-	struct image_optional_header opt_hdr;
+	struct image_optional_header *opt_hdr;
 	struct image_section_header *sect_hdr;
 	struct image_dos_header *dos_hdr;
 	struct image_nt_header *nt_hdr;
@@ -248,9 +242,9 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 	 */
 	while (i++ < sections) {
 		fixedlen = sect_hdr->misc.virtual_size;
-		fixedlen += ((opt_hdr.section_aligment - 1) -
+		fixedlen += ((opt_hdr->section_aligment - 1) -
 		    sect_hdr->misc.virtual_size) &
-		    (opt_hdr.section_aligment - 1);
+		    (opt_hdr->section_aligment - 1);
 		if (sect_hdr->virtual_address <= (uint32_t)rva &&
 		    (sect_hdr->virtual_address + fixedlen) >
 		    (uint32_t)rva)

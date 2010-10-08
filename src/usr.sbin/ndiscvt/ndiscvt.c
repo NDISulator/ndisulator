@@ -96,7 +96,7 @@ insert_padding(void **imgbase, int *imglen)
 	struct image_section_header *sect_hdr;
 	struct image_dos_header *dos_hdr;
 	struct image_nt_header *nt_hdr;
-	struct image_optional_header opt_hdr;
+	struct image_optional_header *opt_hdr;
 	int i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
 	uint8_t *newimg, *tmp;
 
@@ -121,12 +121,12 @@ insert_padding(void **imgbase, int *imglen)
 		oldrlen = sect_hdr->size_of_raw_data;
 		sect_hdr->pointer_to_raw_data = sect_hdr->virtual_address;
 		offaccum += ROUND_UP(sect_hdr->virtual_address - oldraddr,
-		    opt_hdr.file_aligment);
+		    opt_hdr->file_aligment);
 		offaccum +=
 		    ROUND_UP(sect_hdr->misc.virtual_size,
-			opt_hdr.file_aligment) -
+			opt_hdr->file_aligment) -
 		    ROUND_UP(sect_hdr->size_of_raw_data,
-			opt_hdr.file_aligment);
+			opt_hdr->file_aligment);
 		tmp = realloc(newimg, *imglen + offaccum);
 		if (tmp == NULL) {
 			free(newimg);
@@ -137,7 +137,7 @@ insert_padding(void **imgbase, int *imglen)
 		sect_hdr += i;
 		bzero(newimg + sect_hdr->pointer_to_raw_data,
 		    ROUND_UP(sect_hdr->misc.virtual_size,
-		    opt_hdr.file_aligment));
+		    opt_hdr->file_aligment));
 		bcopy((uint8_t *)(*imgbase) + oldraddr,
 		    newimg + sect_hdr->pointer_to_raw_data, oldrlen);
 		sect_hdr++;

@@ -454,7 +454,7 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 __BEGIN_DECLS
 extern int	pe_validate_header(vm_offset_t);
 extern int	pe_get_optional_header(vm_offset_t,
-		    struct image_optional_header *);
+		    struct image_optional_header **);
 extern int	pe_numsections(vm_offset_t);
 extern vm_offset_t pe_translate_addr(vm_offset_t, vm_offset_t);
 extern int	pe_relocate(vm_offset_t);
