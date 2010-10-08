@@ -113,12 +113,8 @@ pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header *hdr)
 	return (0);
 }
 
-/*
- * Return a copy of the file header. Contains the number of
- * sections in this image.
- */
 static int
-pe_get_file_header(vm_offset_t imgbase, struct image_file_header *hdr)
+pe_get_file_header(vm_offset_t imgbase, struct image_file_header **hdr)
 {
 	struct image_dos_header *dos_hdr;
 	struct image_nt_header *nt_hdr;
@@ -129,41 +125,33 @@ pe_get_file_header(vm_offset_t imgbase, struct image_file_header *hdr)
 	dos_hdr = (struct image_dos_header *)imgbase;
 	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
 
-	/*
-	 * Note: the size of the nt_header is variable since it can
-	 * contain optional fields, as indicated by size_of_optional_header.
-	 * However it happens we're only interested in fields in the
-	 * non-variant portion of the nt_header structure, so we don't
-	 * bother copying the optional parts here.
-	 */
-	bcopy((char *)&nt_hdr->file_header, (char *)hdr,
-	    sizeof(struct image_file_header));
+	*hdr = &nt_hdr->file_header;
 	return (0);
 }
 
 int
 pe_validate_header(vm_offset_t imgbase)
 {
-	struct image_file_header file_hdr;
+	struct image_file_header *file_hdr;
 	struct image_optional_header opt_hdr;
 
 	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
 	if (pe_get_file_header(imgbase, &file_hdr))
 		return (EINVAL);
-	if (!(file_hdr.characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
+	if (!(file_hdr->characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
 		return (ENOEXEC);
-	if (file_hdr.characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+	if (file_hdr->characteristics & IMAGE_FILE_RELOCS_STRIPPED)
 		return (ENOEXEC);
 #ifdef __amd64__
-	if (file_hdr.machine != IMAGE_FILE_MACHINE_AMD64)
+	if (file_hdr->machine != IMAGE_FILE_MACHINE_AMD64)
 		return (ENOEXEC);
 #endif
 #ifdef __i386__
-	if (file_hdr.machine != IMAGE_FILE_MACHINE_I386)
+	if (file_hdr->machine != IMAGE_FILE_MACHINE_I386)
 		return (ENOEXEC);
 #endif
-	if (file_hdr.number_of_sections == 0)
+	if (file_hdr->number_of_sections == 0)
 		return (ENOEXEC);
 	if (pe_get_optional_header(imgbase, &opt_hdr))
 		return (EINVAL);
@@ -184,12 +172,12 @@ pe_validate_header(vm_offset_t imgbase)
 int
 pe_numsections(vm_offset_t imgbase)
 {
-	struct image_file_header file_hdr;
+	struct image_file_header *file_hdr;
 
 	if (pe_get_file_header(imgbase, &file_hdr))
 		return (0);
 
-	return (file_hdr.number_of_sections);
+	return (file_hdr->number_of_sections);
 }
 
 /*
