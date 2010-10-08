@@ -804,11 +804,6 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
 	return (len);
 }
 
-/*
- * The errorlog routine uses a variable argument list, so we
- * have to declare it this way.
- */
-#define	ERRMSGLEN	512
 static void
 NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
     uint32_t numerrors, ...)
