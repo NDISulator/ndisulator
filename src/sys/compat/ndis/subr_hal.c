@@ -81,7 +81,7 @@ hal_libinit(void)
 
 	for (i = 0; i < NDIS_MAXCPUS; i++)
 		mtx_init(&disp_lock[i], "HAL preemption lock",
-		    "HAL lock", MTX_RECURSE|MTX_DEF);
+		    "HAL lock", MTX_DEF | MTX_RECURSE);
 
 	patch = hal_functbl;
 	while (patch->func != NULL) {

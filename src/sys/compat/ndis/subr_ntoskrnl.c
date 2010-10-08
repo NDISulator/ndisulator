@@ -273,7 +273,7 @@ ntoskrnl_libinit(void)
 	int i;
 
 	mtx_init(&ntoskrnl_dispatchlock,
-	    "ntoskrnl dispatch lock", MTX_NDIS_LOCK, MTX_DEF|MTX_RECURSE);
+	    "ntoskrnl dispatch lock", MTX_NDIS_LOCK, MTX_DEF | MTX_RECURSE);
 	mtx_init(&ntoskrnl_interlock, MTX_NTOSKRNL_SPIN_LOCK, NULL, MTX_SPIN);
 	KeInitializeSpinLock(&ntoskrnl_cancellock);
 	KeInitializeSpinLock(&ntoskrnl_intlock);
