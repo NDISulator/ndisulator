@@ -124,8 +124,11 @@ pe_get_file_header(vm_offset_t imgbase, struct image_file_header **hdr)
 
 	dos_hdr = (struct image_dos_header *)imgbase;
 	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
-
+	if (nt_hdr == NULL)
+		return (EINVAL);
 	*hdr = &nt_hdr->file_header;
+	if (*hdr == NULL)
+		return (EINVAL);
 	return (0);
 }
 
