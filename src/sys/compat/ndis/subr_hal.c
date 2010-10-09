@@ -70,18 +70,14 @@ static void _KeLowerIrql(uint8_t);
 static uint8_t KeRaiseIrqlToDpcLevel(void);
 static void dummy(void);
 
-#define	NDIS_MAXCPUS	64
-static struct mtx disp_lock[NDIS_MAXCPUS];
+static struct mtx disp_lock;
 
 void
 hal_libinit(void)
 {
 	struct image_patch_table *patch;
-	int i;
 
-	for (i = 0; i < NDIS_MAXCPUS; i++)
-		mtx_init(&disp_lock[i], "HAL preemption lock",
-		    "HAL lock", MTX_DEF | MTX_RECURSE);
+	mtx_init(&disp_lock, "HAL lock", NULL, MTX_DEF | MTX_RECURSE);
 
 	patch = hal_functbl;
 	while (patch->func != NULL) {
@@ -96,10 +92,8 @@ void
 hal_libfini(void)
 {
 	struct image_patch_table *patch;
-	int i;
 
-	for (i = 0; i < NDIS_MAXCPUS; i++)
-		mtx_destroy(&disp_lock[i]);
+	mtx_destroy(&disp_lock);
 
 	patch = hal_functbl;
 	while (patch->func != NULL) {
@@ -332,7 +326,7 @@ KfReleaseSpinLock(kspin_lock *lock, uint8_t newirql)
 uint8_t
 KeGetCurrentIrql(void)
 {
-	if (mtx_owned(&disp_lock[curthread->td_oncpu]))
+	if (mtx_owned(&disp_lock))
 		return (DISPATCH_LEVEL);
 	return (PASSIVE_LEVEL);
 }
@@ -356,7 +350,7 @@ KfRaiseIrql(uint8_t newirql)
 	KASSERT(oldirql <= newirql, ("newirql not less"));
 	if (oldirql != DISPATCH_LEVEL) {
 		sched_pin();
-		mtx_lock(&disp_lock[curthread->td_oncpu]);
+		mtx_lock(&disp_lock);
 	}
 	return (oldirql);
 }
@@ -368,7 +362,7 @@ KfLowerIrql(uint8_t oldirql)
 		return;
 
 	KASSERT(KeGetCurrentIrql() == DISPATCH_LEVEL, ("irql not greater"));
-	mtx_unlock(&disp_lock[curthread->td_oncpu]);
+	mtx_unlock(&disp_lock);
 	sched_unpin();
 }
 
