@@ -265,7 +265,7 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
  * ones (.text, .data, .rdata, .reloc).
  */
 static int
-pe_get_section(vm_offset_t imgbase, struct image_section_header *hdr,
+pe_get_section(vm_offset_t imgbase, struct image_section_header **hdr,
     const char *name)
 {
 	struct image_dos_header *dos_hdr;
@@ -284,8 +284,7 @@ pe_get_section(vm_offset_t imgbase, struct image_section_header *hdr,
 
 	for (i = 0; i < sections; i++) {
 		if (!strcmp((char *)&sect_hdr->name, name)) {
-			bcopy((char *)sect_hdr, (char *)hdr,
-			    sizeof(struct image_section_header));
+			*hdr = sect_hdr;
 			return (0);
 		} else
 			sect_hdr++;
@@ -301,7 +300,7 @@ pe_get_section(vm_offset_t imgbase, struct image_section_header *hdr,
 int
 pe_relocate(vm_offset_t imgbase)
 {
-	struct image_section_header sect;
+	struct image_section_header *sect;
 	struct image_base_relocation *relhdr;
 	vm_offset_t base, txt;
 	vm_size_t delta;
@@ -312,13 +311,13 @@ pe_relocate(vm_offset_t imgbase)
 
 	base = pe_imagebase(imgbase);
 	pe_get_section(imgbase, &sect, ".text");
-	txt = pe_translate_addr(imgbase, sect.virtual_address);
-	delta = (uint32_t)(txt) - base - sect.virtual_address;
+	txt = pe_translate_addr(imgbase, sect->virtual_address);
+	delta = (uint32_t)(txt) - base - sect->virtual_address;
 
 	pe_get_section(imgbase, &sect, ".reloc");
 
 	relhdr = (struct image_base_relocation *)(imgbase +
-	    sect.pointer_to_raw_data);
+	    sect->pointer_to_raw_data);
 
 	do {
 		count = (relhdr->size_of_block -
