@@ -310,12 +310,13 @@ pe_relocate(vm_offset_t imgbase)
 	int i, count;
 
 	base = pe_imagebase(imgbase);
-	pe_get_section(imgbase, &sect, ".text");
+	if (pe_get_section(imgbase, &sect, ".text"))
+		return (ENOEXEC);
 	txt = pe_translate_addr(imgbase, sect->virtual_address);
 	delta = (uint32_t)(txt) - base - sect->virtual_address;
 
-	pe_get_section(imgbase, &sect, ".reloc");
-
+	if (pe_get_section(imgbase, &sect, ".reloc"))
+		return (ENOEXEC);
 	relhdr = (struct image_base_relocation *)(imgbase +
 	    sect->pointer_to_raw_data);
 
