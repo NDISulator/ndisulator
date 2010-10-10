@@ -383,8 +383,8 @@ pe_get_import_descriptor(vm_offset_t imgbase,
 	vm_offset_t offset;
 	char *modname;
 
-	if (imgbase == 0 || module == NULL)
-		return (EINVAL);
+	KASSERT(imgbase != 0, ("bad imgbase"));
+	KASSERT(module != NULL, ("no module"));
 
 	offset = pe_directory_offset(imgbase, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (offset == 0)
@@ -528,8 +528,9 @@ pe_patch_imports(vm_offset_t imgbase, char *module,
 	char *fname;
 	vm_offset_t *nptr, *fptr, func;
 
-	if (imgbase == 0 || module == NULL || functbl == NULL)
-		return (EINVAL);
+	KASSERT(imgbase != 0, ("bad imgbase"));
+	KASSERT(module != NULL, ("no module"));
+	KASSERT(functbl != NULL, ("no functbl"));
 
 	if (pe_get_import_descriptor(imgbase, &imp_desc, module))
 		return (ENOEXEC);
