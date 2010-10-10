@@ -98,12 +98,14 @@ pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header **hdr)
 	struct image_nt_header *nt_hdr;
 
 	KASSERT(imgbase != 0, ("bad imgbase"));
-	KASSERT(hdr != NULL, ("no hdr"));
 
 	dos_hdr = (struct image_dos_header *)(imgbase);
 	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
-
+	if (nt_hdr == NULL)
+		return (EINVAL);
 	*hdr = &nt_hdr->optional_header;
+	if (*hdr == NULL)
+		return (EINVAL);
 	return (0);
 }
 
@@ -114,7 +116,6 @@ pe_get_file_header(vm_offset_t imgbase, struct image_file_header **hdr)
 	struct image_nt_header *nt_hdr;
 
 	KASSERT(imgbase != 0, ("bad imgbase"));
-	KASSERT(hdr != NULL, ("no hdr"));
 
 	dos_hdr = (struct image_dos_header *)imgbase;
 	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
@@ -274,7 +275,6 @@ pe_get_section(vm_offset_t imgbase, struct image_section_header **hdr,
 	int i, sections;
 
 	KASSERT(imgbase != 0, ("bad imgbase"));
-	KASSERT(hdr != NULL, ("no hdr"));
 
 	sections = pe_numsections(imgbase);
 
