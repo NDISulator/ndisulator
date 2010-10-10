@@ -377,13 +377,13 @@ pe_relocate(vm_offset_t imgbase)
  */
 int
 pe_get_import_descriptor(vm_offset_t imgbase,
-    struct image_import_descriptor *desc, char *module)
+    struct image_import_descriptor **desc, char *module)
 {
 	struct image_import_descriptor *imp_desc;
 	vm_offset_t offset;
 	char *modname;
 
-	if (imgbase == 0 || module == NULL || desc == NULL)
+	if (imgbase == 0 || module == NULL)
 		return (EINVAL);
 
 	offset = pe_directory_offset(imgbase, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -396,8 +396,7 @@ pe_get_import_descriptor(vm_offset_t imgbase,
 		modname = (char *)pe_translate_addr(imgbase,
 		    imp_desc->name);
 		if (!strncasecmp(module, modname, strlen(module))) {
-			bcopy((char *)imp_desc, (char *)desc,
-			    sizeof(struct image_import_descriptor));
+			*desc = imp_desc;
 			return (0);
 		}
 		imp_desc++;
@@ -525,7 +524,7 @@ int
 pe_patch_imports(vm_offset_t imgbase, char *module,
      struct image_patch_table *functbl)
 {
-	struct image_import_descriptor imp_desc;
+	struct image_import_descriptor *imp_desc;
 	char *fname;
 	vm_offset_t *nptr, *fptr, func;
 
@@ -536,9 +535,9 @@ pe_patch_imports(vm_offset_t imgbase, char *module,
 		return (ENOEXEC);
 
 	nptr = (vm_offset_t *)pe_translate_addr(imgbase,
-	    imp_desc.u.original_first_thunk);
+	    imp_desc->u.original_first_thunk);
 	fptr = (vm_offset_t *)pe_translate_addr(imgbase,
-	    imp_desc.first_thunk);
+	    imp_desc->first_thunk);
 
 	while (nptr != NULL && pe_translate_addr(imgbase, *nptr)) {
 		fname = (char *)pe_translate_addr(imgbase,
