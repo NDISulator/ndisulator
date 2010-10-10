@@ -115,22 +115,6 @@ enum interface_type {
 	MaximumInterfaceType
 };
 
-/*
- * XXX
- * Ordinarily, device_probe_desc is defined in device_if.h, which
- * is created from device_if.m. The problem is, the latter file
- * is only available if you have the kernel source code installed,
- * and not all users choose to install it. I'd like to let people
- * load Windows driver modules with the minimal amount of hassle
- * and dependencies. <sys/bus.h> wants both device_if.h and bus_if.h
- * to be defined, but it turns out the only thing we really need
- * to get this module compiled is device_probe_desc, so we define
- * that here, and let the build script create empty copies of
- * device_if.h and bus_if.h to make the compiler happy.
- */
-extern struct kobjop_desc device_probe_desc;
-typedef int device_probe_t(device_t dev);
-
 extern int windrv_load(module_t, vm_offset_t, size_t, enum interface_type,
     void *, void *);
 extern int windrv_unload(module_t, vm_offset_t, size_t);
