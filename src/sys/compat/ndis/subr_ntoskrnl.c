@@ -2067,17 +2067,8 @@ KeInitializeSpinLock(kspin_lock *lock)
 void
 KefAcquireSpinLockAtDpcLevel(kspin_lock *lock)
 {
-#ifdef NTOSKRNL_DEBUG_SPINLOCKS
-	int i = 0;
-#endif
-	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0) {
+	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0)
 		/* sit and spin */;
-#ifdef NTOSKRNL_DEBUG_SPINLOCKS
-		i++;
-		if (i > 200000000)
-			panic("DEADLOCK!");
-#endif
-	}
 }
 
 void
