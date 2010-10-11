@@ -1542,59 +1542,6 @@ typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
 typedef void (*ndis_shutdown_func)(void *);
 extern struct image_patch_table ndis_functbl[];
 
-#define	NDIS_TASKQUEUE 1
-#define	NDIS_SWI 2
-
-#define	NDIS_PSTATE_RUNNING 1
-#define	NDIS_PSTATE_SLEEPING 2
-
-#define	NdisQueryPacket(p, pbufcnt, bufcnt, firstbuf, plen)		\
-	do {								\
-		if ((firstbuf) != NULL) {				\
-			ndis_buffer		**_first;		\
-			_first = firstbuf;				\
-			*(_first) = (p)->np_private.head;		\
-		}							\
-		if ((plen) || (bufcnt) || (pbufcnt)) {			\
-			if ((p)->np_private.validcounts == FALSE) {	\
-				ndis_buffer		*tmp;		\
-				unsigned int		tlen = 0, pcnt = 0; \
-				unsigned int		add = 0;	\
-				unsigned int		pktlen, off;	\
-									\
-				tmp = (p)->np_private.head;		\
-				while (tmp != NULL) {			\
-					off = MmGetMdlByteOffset(tmp);	\
-					pktlen = MmGetMdlByteCount(tmp);\
-					tlen += pktlen;			\
-					pcnt +=				\
-					    NDIS_BUFFER_TO_SPAN_PAGES(tmp); \
-					add++;				\
-					tmp = tmp->mdl_next;		\
-				}					\
-				(p)->np_private.count = add;	\
-				(p)->np_private.totlen = tlen;	\
-				(p)->np_private.physcnt = pcnt;	\
-				(p)->np_private.validcounts = TRUE;	\
-			}						\
-			if (pbufcnt) {					\
-				unsigned int		*_pbufcnt;	\
-				_pbufcnt = (pbufcnt);			\
-				*(_pbufcnt) = (p)->np_private.physcnt; \
-			}						\
-			if (bufcnt) {					\
-				unsigned int		*_bufcnt;	\
-				_bufcnt = (bufcnt);			\
-				*(_bufcnt) = (p)->np_private.count;	\
-			}						\
-			if (plen) {					\
-				unsigned int		*_plen;		\
-				_plen = (plen);				\
-				*(_plen) = (p)->np_private.totlen;	\
-			}						\
-		}							\
-	} while (0)
-
 __BEGIN_DECLS
 extern void	ndis_libinit(void);
 extern void	ndis_libfini(void);
