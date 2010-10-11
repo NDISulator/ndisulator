@@ -35,8 +35,6 @@
 #ifndef _NTOSKRNL_VAR_H_
 #define	_NTOSKRNL_VAR_H_
 
-#define	MTX_NTOSKRNL_SPIN_LOCK "NDIS thread lock"
-
 /*
  * us_buf is really a wchar_t *, but it's inconvenient to include
  * all the necessary header goop needed to define it, and it's a

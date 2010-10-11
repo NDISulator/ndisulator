@@ -1271,9 +1271,6 @@ struct ndis_packet_pool {
 /* mbuf ext type for NDIS */
 #define	EXT_NDIS EXT_NET_DRV
 
-/* mtx type for NDIS */
-#define	MTX_NDIS_LOCK "NDIS lock"
-
 struct ndis_filter_dbs {
 	union {
 		void	*ethdb;
