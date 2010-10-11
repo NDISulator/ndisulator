@@ -81,9 +81,7 @@ inf_parse(FILE *fp, FILE *outfp)
 	dump_deviceids_pci();
 	dump_deviceids_pcmcia();
 	dump_deviceids_usb();
-	fprintf(outfp, "#ifdef NDIS_REGVALS\n");
 	dump_regvals();
-	fprintf(outfp, "#endif /* NDIS_REGVALS */\n");
 
 	return (0);
 }

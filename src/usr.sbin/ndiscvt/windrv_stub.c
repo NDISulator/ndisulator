@@ -43,8 +43,6 @@ __FBSDID("$FreeBSD$");
 #include <machine/resource.h>
 #include <sys/bus.h>
 
-#define	NDIS_REGVALS
-
 #include <compat/ndis/pe_var.h>
 #include <compat/ndis/cfg_var.h>
 #include <compat/ndis/resource_var.h>

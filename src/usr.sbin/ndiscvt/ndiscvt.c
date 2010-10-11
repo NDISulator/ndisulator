@@ -346,10 +346,8 @@ main(int argc, char *argv[])
 	}
 
 	if (inffile == NULL) {
-		fprintf(outfp, "#ifdef NDIS_REGVALS\n");
 		fprintf(outfp, "struct ndis_cfg ndis_regvals[] = {\n");
 		fprintf(outfp, "\t{ NULL, NULL, { 0 }, 0 }\n");
-		fprintf(outfp, "#endif /* NDIS_REGVALS */\n");
 		fprintf(outfp, "};\n\n");
 	} else {
 		fp = fopen(inffile, "r");
