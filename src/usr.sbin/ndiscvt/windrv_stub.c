@@ -45,13 +45,10 @@ __FBSDID("$FreeBSD$");
 
 #define	NDIS_REGVALS
 
-struct ndis_cfg {
-	char	*cfgkey;
-	char	*cfgdesc;
-	char	val[256];
-	int	idx;
-};
-
+#include <compat/ndis/pe_var.h>
+#include <compat/ndis/cfg_var.h>
+#include <compat/ndis/resource_var.h>
+#include <compat/ndis/ntoskrnl_var.h>
 #include "windrv.h"
 
 struct ndis_pci_type {
@@ -93,31 +90,6 @@ static struct ndis_usb_type ndis_devs_usb[] = {
 	{ 0, 0, NULL }
 };
 #endif
-
-enum interface_type {
-	InterfaceTypeUndefined = -1,
-	Internal,
-	Isa,
-	Eisa,
-	MicroChannel,
-	TurboChannel,
-	PCIBus,
-	VMEBus,
-	NuBus,
-	PCMCIABus,
-	CBus,
-	MPIBus,
-	MPSABus,
-	ProcessorInternal,
-	InternalPowerBus,
-	PNPISABus,
-	PNPBus,
-	MaximumInterfaceType
-};
-
-extern int windrv_load(module_t, vm_offset_t, size_t, enum interface_type,
-    void *, void *);
-extern int windrv_unload(module_t, vm_offset_t, size_t);
 
 #ifndef DRV_DATA_START
 #define	DRV_DATA_START UNDEF_START
