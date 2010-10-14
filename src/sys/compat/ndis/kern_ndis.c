@@ -443,18 +443,15 @@ ndis_convert_res(void *arg)
 				prd->flags = CM_RESOURCE_PORT_IO;
 				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.port.start.quad =
-				    brle->start;
+				prd->u.port.start.quad = brle->start;
 				prd->u.port.len = brle->count;
 				break;
 			case SYS_RES_MEMORY:
 				prd->type = CmResourceTypeMemory;
-				prd->flags =
-				    CM_RESOURCE_MEMORY_READ_WRITE;
+				prd->flags = CM_RESOURCE_MEMORY_READ_WRITE;
 				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.mem.start.quad =
-				    brle->start;
+				prd->u.mem.start.quad = brle->start;
 				prd->u.mem.len = brle->count;
 				break;
 			case SYS_RES_IRQ:
@@ -628,8 +625,7 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 		needed = &n;
 	KASSERT(sc->ndis_chars != NULL, ("no ndis_chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_chars->query_info_func != NULL, ("no query_info"));
 	KASSERT(sc->ndis_chars->set_info_func != NULL, ("no set_info"));
 	/*
@@ -725,8 +721,7 @@ ndis_send_packets(void *arg, struct ndis_packet **packets, int cnt)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_block->send_done_func != NULL, ("no send_done"));
 	KASSERT(sc->ndis_chars->send_packets_func != NULL, ("no send_packets"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
@@ -759,8 +754,7 @@ ndis_send_packet(void *arg, struct ndis_packet *packet)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_block->send_done_func != NULL, ("no send_done"));
 	KASSERT(sc->ndis_chars->send_func != NULL, ("no send"));
 	if (NDIS_SERIALIZED(sc->ndis_block))
@@ -832,8 +826,7 @@ ndis_reset_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_chars->reset_func != NULL, ("no reset"));
 	KeResetEvent(&sc->ndis_block->resetevent);
 	if (NDIS_SERIALIZED(sc->ndis_block))
@@ -843,8 +836,8 @@ ndis_reset_nic(void *arg)
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 	if (rval == NDIS_STATUS_PENDING) {
-		KeWaitForSingleObject(&sc->ndis_block->resetevent,
-		    0, 0, FALSE, NULL);
+		KeWaitForSingleObject(&sc->ndis_block->resetevent, 0, 0,
+		    FALSE, NULL);
 		rval = sc->ndis_block->resetstat;
 	}
 	if (rval)
@@ -860,8 +853,7 @@ ndis_check_for_hang_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	if (sc->ndis_chars->check_hang_func == NULL)
 		return (FALSE);
 	return (MSCALL1(sc->ndis_chars->check_hang_func,
@@ -875,8 +867,7 @@ ndis_disable_interrupts_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	if (sc->ndis_chars->disable_interrupts_func != NULL)
 		MSCALL1(sc->ndis_chars->disable_interrupts_func,
 		    sc->ndis_block->miniport_adapter_ctx);
@@ -889,8 +880,7 @@ ndis_enable_interrupts_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	if (sc->ndis_chars->enable_interrupts_func != NULL)
 		MSCALL1(sc->ndis_chars->enable_interrupts_func,
 		    sc->ndis_block->miniport_adapter_ctx);
@@ -905,8 +895,7 @@ ndis_halt_nic(void *arg)
 		KeFlushQueuedDpcs();
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_chars->halt_func != NULL, ("no halt"));
 	KASSERT(sc->ndis_block->device_ctx != NULL, ("already halted"));
 	NDIS_LOCK(sc);
@@ -923,8 +912,7 @@ ndis_shutdown_nic(void *arg)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_chars->shutdown_func != NULL, ("no shutdown"));
 	if (sc->ndis_chars->reserved0 == NULL)
 		MSCALL1(sc->ndis_chars->shutdown_func,
@@ -941,14 +929,12 @@ ndis_pnp_event_nic(void *arg, uint32_t event, uint32_t profile)
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	if (sc->ndis_chars->pnp_event_notify_func == NULL)
 		return;
 	switch (event) {
 	case NDIS_DEVICE_PNP_EVENT_SURPRISE_REMOVED:
-		if (sc->ndis_block->flags &
-		   NDIS_ATTRIBUTE_SURPRISE_REMOVE_OK)
+		if (sc->ndis_block->flags & NDIS_ATTRIBUTE_SURPRISE_REMOVE_OK)
 			MSCALL4(sc->ndis_chars->pnp_event_notify_func,
 			sc->ndis_block->miniport_adapter_ctx,
 			event, NULL, 0);
