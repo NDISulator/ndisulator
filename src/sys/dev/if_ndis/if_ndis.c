@@ -99,12 +99,6 @@ MODULE_DEPEND(ndis, wlan, 1, 1, 1);
 MODULE_DEPEND(ndis, ndisapi, 1, 1, 1);
 MODULE_VERSION(ndis, 1);
 
-int		ndis_attach(device_t);
-int		ndis_detach(device_t);
-int		ndis_suspend(device_t);
-int		ndis_resume(device_t);
-void		ndis_shutdown(device_t);
-int		ndisdrv_modevent(module_t, int, void *);
 static void	ndis_txeof(ndis_handle, struct ndis_packet *, ndis_status);
 static void	ndis_rxeof(ndis_handle, struct ndis_packet **, uint32_t);
 static void	ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *,
@@ -2633,10 +2627,11 @@ ndis_stop(struct ndis_softc *sc)
  * Stop all chip I/O so that the kernel's probe routines don't
  * get confused by errant DMAs when rebooting.
  */
-void
+int
 ndis_shutdown(device_t dev)
 {
 	ndis_shutdown_nic(device_get_softc(dev));
+	return (0);
 }
 
 static int

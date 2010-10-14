@@ -34,8 +34,14 @@
 
 #include <net80211/ieee80211_var.h>
 
-extern int	ndis_alloc_amem(void *);
-extern void	ndis_free_amem(void *);
+int	ndis_attach(device_t);
+int	ndis_detach(device_t);
+int	ndis_resume(device_t);
+int	ndis_shutdown(device_t);
+int	ndis_suspend(device_t);
+int	ndisdrv_modevent(module_t, int, void *);
+int	ndis_alloc_amem(void *);
+void	ndis_free_amem(void *);
 
 struct ndis_oid_data {		/* For setting/getting OIDs from userspace. */
 	uint32_t	oid;

@@ -61,13 +61,9 @@ __FBSDID("$FreeBSD$");
 
 MODULE_DEPEND(ndis, pci, 1, 1, 1);
 
-extern int	ndis_attach(device_t);
-extern int	ndis_detach(device_t);
-extern int	ndis_resume(device_t);
-extern int	ndis_shutdown(device_t);
-extern int	ndis_suspend(device_t);
-extern int	ndisdrv_modevent(module_t, int, void *);
 static int	ndis_attach_pci(device_t);
+static int	ndis_devcompare_pci(enum ndis_interface_type,
+		    struct ndis_pci_type *, device_t);
 static int	ndis_probe_pci(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 

@@ -65,14 +65,10 @@ SYSCTL_NODE(_hw, OID_AUTO, ndisusb, CTLFLAG_RD, 0, "NDIS USB driver parameters")
 
 MODULE_DEPEND(ndis, usb, 1, 1, 1);
 
-extern int	ndis_attach(device_t);
-extern int	ndis_detach(device_t);
-extern int	ndis_resume(device_t);
-extern int	ndis_shutdown(device_t);
-extern int	ndis_suspend(device_t);
-extern int	ndisdrv_modevent(module_t, int, void *);
 static int	ndis_attach_usb(device_t);
 static int	ndis_detach_usb(device_t);
+static int	ndis_devcompare_usb(enum ndis_interface_type,
+		    struct ndis_usb_type *, device_t);
 static int	ndis_probe_usb(device_t);
 static bus_get_resource_list_t ndis_get_resource_list;
 
