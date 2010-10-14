@@ -555,8 +555,6 @@ struct gdt {
 extern uint16_t x86_getfs(void);
 extern void x86_setfs(uint16_t);
 extern void *x86_gettid(void);
-extern void x86_critical_enter(void);
-extern void x86_critical_exit(void);
 extern void x86_getldt(struct gdt *, uint16_t *);
 extern void x86_setldt(struct gdt *, uint16_t);
 
@@ -596,7 +594,7 @@ ctxsw_utow(void)
 {
 	struct tid *t;
 
-	sched_pin();
+	critical_enter();
 	t = &my_tids[curthread->td_oncpu];
 	/*
 	 * Ugly hack. During system bootstrap (cold == 1), only CPU 0
@@ -625,7 +623,7 @@ ctxsw_wtou(void)
 
 	t = x86_gettid();
 	x86_setfs(t->tid_oldfs);
-	sched_unpin();
+	critical_exit();
 
 	/* Welcome back to UNIX land, we missed you. */
 }
