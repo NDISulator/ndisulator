@@ -905,12 +905,6 @@ enum ndis_media_state {
 #define	NDIS_DMA_32BITS		0x01
 #define	NDIS_DMA_64BITS		0x02
 
-struct ndis_ansi_string {
-	uint16_t	nas_len;
-	uint16_t	nas_maxlen;
-	char		*nas_buf;
-};
-
 enum ndis_parameter_type {
 	NDIS_PARAMETER_INTEGER,
 	NDIS_PARAMETER_HEX_INTEGER,
