@@ -102,15 +102,12 @@ ndis_devcompare_pccard(enum ndis_interface_type bustype,
     struct ndis_pccard_type *t, device_t dev)
 {
 	const char *prodstr, *vendstr;
-	int error;
 
 	if (bustype != PCMCIABus)
 		return (FALSE);
-	error = pccard_get_product_str(dev, &prodstr);
-	if (error)
+	if (pccard_get_product_str(dev, &prodstr))
 		return (FALSE);
-	error = pccard_get_vendor_str(dev, &vendstr);
-	if (error)
+	if (pccard_get_vendor_str(dev, &vendstr))
 		return (FALSE);
 
 	while (t->ndis_name != NULL) {
