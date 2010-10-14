@@ -375,7 +375,7 @@ pe_relocate(vm_offset_t imgbase)
  *
  * Note: module names are case insensitive!
  */
-int
+static int
 pe_get_import_descriptor(vm_offset_t imgbase,
     struct image_import_descriptor **desc, char *module)
 {

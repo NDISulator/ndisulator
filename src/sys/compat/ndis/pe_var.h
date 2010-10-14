@@ -458,8 +458,6 @@ extern int	pe_get_optional_header(vm_offset_t,
 extern int	pe_numsections(vm_offset_t);
 extern vm_offset_t pe_translate_addr(vm_offset_t, vm_offset_t);
 extern int	pe_relocate(vm_offset_t);
-extern int	pe_get_import_descriptor(vm_offset_t,
-		    struct image_import_descriptor **, char *);
 extern int	pe_patch_imports(vm_offset_t, char *,
 		    struct image_patch_table *);
 extern int	pe_get_message(vm_offset_t, uint32_t, char **, int *,

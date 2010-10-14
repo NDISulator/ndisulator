@@ -305,7 +305,6 @@ int
 windrv_load(module_t mod, vm_offset_t img, size_t len,
     enum ndis_interface_type bustype, void *devlist, void *regvals)
 {
-	struct image_import_descriptor *imp_desc;
 	struct image_optional_header *opt_hdr;
 	driver_entry entry;
 	struct drvdb_ent *new;
@@ -333,19 +332,13 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 		return (ENOEXEC);
 
 	/* Dynamically link the HAL.dll routines -- optional. */
-	if (pe_get_import_descriptor(img, &imp_desc, "HAL") == 0)
-		if (pe_patch_imports(img, "HAL", hal_functbl))
-			return (ENOEXEC);
+	pe_patch_imports(img, "HAL", hal_functbl);
 
 	/* Dynamically link ntoskrnl.exe -- optional. */
-	if (pe_get_import_descriptor(img, &imp_desc, "ntoskrnl") == 0)
-		if (pe_patch_imports(img, "ntoskrnl", ntoskrnl_functbl))
-			return (ENOEXEC);
+	pe_patch_imports(img, "ntoskrnl", ntoskrnl_functbl);
 
 	/* Dynamically link USBD.SYS -- optional */
-	if (pe_get_import_descriptor(img, &imp_desc, "USBD") == 0)
-		if (pe_patch_imports(img, "USBD", usbd_functbl))
-			return (ENOEXEC);
+	pe_patch_imports(img, "USBD", usbd_functbl);
 #ifdef __amd64__
 	patch_user_shared_data_address(img, len);
 #endif
