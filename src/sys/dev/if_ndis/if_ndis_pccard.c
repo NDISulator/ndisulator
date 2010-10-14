@@ -72,8 +72,6 @@ static int	ndis_attach_pccard(device_t);
 static int	ndis_probe_pccard(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
-extern unsigned char drv_data[];
-
 static device_method_t ndis_methods[] = {
 	DEVMETHOD(device_probe,		ndis_probe_pccard),
 	DEVMETHOD(device_attach,	ndis_attach_pccard),
