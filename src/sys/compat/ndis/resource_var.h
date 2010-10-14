@@ -35,8 +35,6 @@
 #ifndef _RESOURCE_VAR_H_
 #define	_RESOURCE_VAR_H_
 
-typedef int cm_resource_type;
-
 struct physaddr {
 	uint64_t	quad;
 #ifdef notdef
