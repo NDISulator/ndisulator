@@ -212,9 +212,7 @@ struct usbd_version_info {
 
 extern struct image_patch_table usbd_functbl[];
 
-__BEGIN_DECLS
-extern void usbd_libinit(void);
-extern void usbd_libfini(void);
-__END_DECLS
+void	usbd_libinit(void);
+void	usbd_libfini(void);
 
 #endif /* _USBD_VAR_H_ */

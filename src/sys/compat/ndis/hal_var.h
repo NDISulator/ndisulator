@@ -45,14 +45,12 @@
 
 extern struct image_patch_table hal_functbl[];
 
-__BEGIN_DECLS
-extern void	hal_libfini(void);
-extern void	hal_libinit(void);
-extern uint8_t	KeGetCurrentIrql(void);
-extern uint8_t	KfAcquireSpinLock(kspin_lock *);
-extern void	KfLowerIrql(uint8_t);
-extern uint8_t	KfRaiseIrql(uint8_t);
-extern void	KfReleaseSpinLock(kspin_lock *, uint8_t);
-__END_DECLS
+void	hal_libfini(void);
+void	hal_libinit(void);
+uint8_t	KeGetCurrentIrql(void);
+uint8_t	KfAcquireSpinLock(kspin_lock *);
+void	KfLowerIrql(uint8_t);
+uint8_t	KfRaiseIrql(uint8_t);
+void	KfReleaseSpinLock(kspin_lock *, uint8_t);
 
 #endif /* _HAL_VAR_H_ */

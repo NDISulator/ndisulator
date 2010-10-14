@@ -1542,49 +1542,46 @@ typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
 typedef void (*ndis_shutdown_func)(void *);
 extern struct image_patch_table ndis_functbl[];
 
-__BEGIN_DECLS
-extern void	ndis_libinit(void);
-extern void	ndis_libfini(void);
-extern void	ndis_unload_driver(void *);
-extern int	ndis_mtop(struct mbuf *, struct ndis_packet **);
-extern int	ndis_ptom(struct mbuf **, struct ndis_packet *);
-extern int	ndis_get(void *, ndis_oid, void *, uint32_t);
-extern int	ndis_get_int(void *, ndis_oid, uint32_t *);
-extern int	ndis_get_info(void *, ndis_oid, void *, uint32_t,
-		    uint32_t *, uint32_t *);
-extern int	ndis_set(void *, ndis_oid, void *, uint32_t);
-extern int	ndis_set_int(void *, ndis_oid, uint32_t);
-extern int	ndis_set_info(void *, ndis_oid, void *, uint32_t,
-		    uint32_t *, uint32_t *);
-extern void	ndis_send_packets(void *, struct ndis_packet **, int);
-extern int32_t	ndis_send_packet(void *, struct ndis_packet *);
-extern int	ndis_convert_res(void *);
-extern void	ndis_free_packet(struct ndis_packet *);
-extern void	ndis_free_bufs(ndis_buffer *);
-extern int32_t	ndis_reset_nic(void *);
-extern void	ndis_disable_interrupts_nic(void *);
-extern void	ndis_enable_interrupts_nic(void *);
-extern void	ndis_halt_nic(void *);
-extern void	ndis_shutdown_nic(void *);
-extern void	ndis_pnp_event_nic(void *, uint32_t, uint32_t);
-extern uint8_t	ndis_check_for_hang_nic(void *);
-extern int32_t	ndis_init_nic(void *);
-extern void	ndis_return_packet(void *, void *);
-extern int	ndis_init_dma(void *);
-extern void	ndis_destroy_dma(void *);
-extern void	ndis_create_sysctls(void *);
-extern void	ndis_flush_sysctls(void *);
-extern int	ndis_add_sysctl(void *, char *, char *, char *, int);
-extern int32_t	NdisAddDevice(driver_object *, device_object *);
-extern void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
-		    uint32_t);
-extern void	NdisAllocatePacketPoolEx(ndis_status *, ndis_handle *, uint32_t,
-		    uint32_t, uint32_t);
-extern uint32_t	NdisPacketPoolUsage(ndis_handle);
-extern void	NdisFreePacketPool(ndis_handle);
-extern void	NdisAllocatePacket(ndis_status *, struct ndis_packet **,
-		    ndis_handle);
-extern void	NdisFreePacket(struct ndis_packet *);
-__END_DECLS
+void	ndis_libinit(void);
+void	ndis_libfini(void);
+void	ndis_unload_driver(void *);
+int	ndis_mtop(struct mbuf *, struct ndis_packet **);
+int	ndis_ptom(struct mbuf **, struct ndis_packet *);
+int	ndis_get(void *, ndis_oid, void *, uint32_t);
+int	ndis_get_int(void *, ndis_oid, uint32_t *);
+int	ndis_get_info(void *, ndis_oid, void *, uint32_t, uint32_t *,
+	    uint32_t *);
+int	ndis_set(void *, ndis_oid, void *, uint32_t);
+int	ndis_set_int(void *, ndis_oid, uint32_t);
+int	ndis_set_info(void *, ndis_oid, void *, uint32_t, uint32_t *,
+	    uint32_t *);
+void	ndis_send_packets(void *, struct ndis_packet **, int);
+int32_t	ndis_send_packet(void *, struct ndis_packet *);
+int	ndis_convert_res(void *);
+void	ndis_free_packet(struct ndis_packet *);
+void	ndis_free_bufs(ndis_buffer *);
+int32_t	ndis_reset_nic(void *);
+void	ndis_disable_interrupts_nic(void *);
+void	ndis_enable_interrupts_nic(void *);
+void	ndis_halt_nic(void *);
+void	ndis_shutdown_nic(void *);
+void	ndis_pnp_event_nic(void *, uint32_t, uint32_t);
+uint8_t	ndis_check_for_hang_nic(void *);
+int32_t	ndis_init_nic(void *);
+void	ndis_return_packet(void *, void *);
+int	ndis_init_dma(void *);
+void	ndis_destroy_dma(void *);
+void	ndis_create_sysctls(void *);
+void	ndis_flush_sysctls(void *);
+int	ndis_add_sysctl(void *, char *, char *, char *, int);
+int32_t	NdisAddDevice(driver_object *, device_object *);
+void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
+	    uint32_t);
+void	NdisAllocatePacketPoolEx(ndis_status *, ndis_handle *, uint32_t,
+	    uint32_t, uint32_t);
+uint32_t	NdisPacketPoolUsage(ndis_handle);
+void	NdisFreePacketPool(ndis_handle);
+void	NdisAllocatePacket(ndis_status *, struct ndis_packet **, ndis_handle);
+void	NdisFreePacket(struct ndis_packet *);
 
 #endif /* _NDIS_VAR_H_ */

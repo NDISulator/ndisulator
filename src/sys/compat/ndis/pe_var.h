@@ -385,13 +385,12 @@ struct image_patch_table {
 #define	FUNC void(*)(void)
 
 #ifdef __amd64__
-extern uint64_t x86_64_call1(void *, uint64_t);
-extern uint64_t x86_64_call2(void *, uint64_t, uint64_t);
-extern uint64_t x86_64_call3(void *, uint64_t, uint64_t, uint64_t);
-extern uint64_t x86_64_call4(void *, uint64_t, uint64_t, uint64_t, uint64_t);
-extern uint64_t x86_64_call5(void *, uint64_t, uint64_t, uint64_t, uint64_t,
-    uint64_t);
-extern uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
+uint64_t x86_64_call1(void *, uint64_t);
+uint64_t x86_64_call2(void *, uint64_t, uint64_t);
+uint64_t x86_64_call3(void *, uint64_t, uint64_t, uint64_t);
+uint64_t x86_64_call4(void *, uint64_t, uint64_t, uint64_t, uint64_t);
+uint64_t x86_64_call5(void *, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
     uint64_t, uint64_t);
 
 #define	MSCALL1(fn, a)							\
@@ -399,8 +398,7 @@ extern uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
 #define	MSCALL2(fn, a, b)						\
 	x86_64_call2((fn), (uint64_t)(a), (uint64_t)(b))
 #define	MSCALL3(fn, a, b, c)						\
-	x86_64_call3((fn), (uint64_t)(a), (uint64_t)(b),		\
-	(uint64_t)(c))
+	x86_64_call3((fn), (uint64_t)(a), (uint64_t)(b), (uint64_t)(c))
 #define	MSCALL4(fn, a, b, c, d)						\
 	x86_64_call4((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c), (uint64_t)(d))
@@ -426,7 +424,7 @@ extern uint64_t x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
 #endif /* __amd64__ */
 
 #ifdef __i386__
-extern uint32_t x86_stdcall_call(void *, int, ...);
+uint32_t x86_stdcall_call(void *, int, ...);
 
 #define	MSCALL1(fn, a)		x86_stdcall_call(fn, 1, (a))
 #define	MSCALL2(fn, a, b)	x86_stdcall_call(fn, 2, (a), (b))
@@ -451,17 +449,12 @@ extern uint32_t x86_stdcall_call(void *, int, ...);
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_CDECL }
 #endif /* __i386__ */
 
-__BEGIN_DECLS
-extern int	pe_validate_header(vm_offset_t);
-extern int	pe_get_optional_header(vm_offset_t,
-		    struct image_optional_header **);
-extern int	pe_numsections(vm_offset_t);
-extern vm_offset_t pe_translate_addr(vm_offset_t, vm_offset_t);
-extern int	pe_relocate(vm_offset_t);
-extern int	pe_patch_imports(vm_offset_t, char *,
-		    struct image_patch_table *);
-extern int	pe_get_message(vm_offset_t, uint32_t, char **, int *,
-		    uint16_t *);
-__END_DECLS
+int	pe_get_optional_header(vm_offset_t, struct image_optional_header **);
+int	pe_get_message(vm_offset_t, uint32_t, char **, int *, uint16_t *);
+int	pe_patch_imports(vm_offset_t, char *, struct image_patch_table *);
+int	pe_numsections(vm_offset_t);
+int	pe_relocate(vm_offset_t);
+int	pe_validate_header(vm_offset_t);
+vm_offset_t pe_translate_addr(vm_offset_t, vm_offset_t);
 
 #endif /* _PE_VAR_H_ */
