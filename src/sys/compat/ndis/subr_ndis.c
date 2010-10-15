@@ -1743,10 +1743,7 @@ NdisBufferLength(ndis_buffer *buf)
  * Note: the vaddr argument is optional.
  */
 static void
-NdisQueryBuffer(buf, vaddr, len)
-	ndis_buffer		*buf;
-	void			**vaddr;
-	uint32_t		*len;
+NdisQueryBuffer(ndis_buffer *buf, void **vaddr, uint32_t *len)
 {
 	if (vaddr != NULL)
 		*vaddr = MmGetMdlVirtualAddress(buf);
@@ -1802,9 +1799,8 @@ static void
 NdisInitializeEvent(struct ndis_event *event)
 {
 	/*
-	 * NDIS events are always notification
-	 * events, and should be initialized to the
-	 * not signaled state.
+	 * NDIS events are always notification events,
+	 * and should be initialized to the not signaled state.
 	 */
 	KeInitializeEvent(&event->ne_event, EVENT_TYPE_NOTIFY, FALSE);
 }
@@ -1886,8 +1882,7 @@ ndis_interrupt_nic(kinterrupt *iobj, void *arg)
 	int call_isr = 0;
 
 	KASSERT(sc->ndis_block != NULL, ("no block"));
-	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	if (sc->ndis_block->interrupt == NULL)
 		return (FALSE);
 	if (sc->ndis_block->interrupt->isr_requested == TRUE)
@@ -1911,8 +1906,7 @@ ndis_intrhand(kdpc *dpc, struct ndis_miniport_interrupt *intr, void *sysarg1,
 
 	KASSERT(intr != NULL, ("no intr"));
 	KASSERT(intr->block != NULL, ("no block"));
-	KASSERT(intr->block->miniport_adapter_ctx != NULL,
-	    ("no adapter"));
+	KASSERT(intr->block->miniport_adapter_ctx != NULL, ("no adapter"));
 	sc = device_get_softc(intr->block->physdeviceobj->devext);
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLockAtDpcLevel(&intr->block->lock);
@@ -2219,8 +2213,7 @@ NdisInitUnicodeString(unicode_string *dst, uint16_t *src)
 static void
 NdisMGetDeviceProperty(ndis_handle adapter, device_object **phydevobj,
     device_object **funcdevobj, device_object **nextdevobj,
-    struct cm_resource_list *resources,
-    struct cm_resource_list *transresources)
+    struct cm_resource_list *resources, struct cm_resource_list *tresources)
 {
 	struct ndis_miniport_block *block;
 
@@ -2536,8 +2529,7 @@ NdisSystemProcessorCount(void)
 	return (mp_ncpus);
 }
 
-typedef void (*ndis_status_func)(ndis_handle, ndis_status,
-    void *, uint32_t);
+typedef void (*ndis_status_func)(ndis_handle, ndis_status, void *, uint32_t);
 typedef void (*ndis_status_done_func)(ndis_handle);
 
 static void

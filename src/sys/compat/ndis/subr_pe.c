@@ -67,6 +67,16 @@ __FBSDID("$FreeBSD$");
 
 #include <compat/ndis/pe_var.h>
 
+static int	pe_is_nt_image(vm_offset_t);
+static int	pe_get_file_header(vm_offset_t, struct image_file_header **);
+static int	pe_get_section(vm_offset_t, struct image_section_header **,
+		    const char *);
+static int	pe_get_import_descriptor(vm_offset_t,
+		    struct image_import_descriptor **, char *);
+static int	pe_get_messagetable(vm_offset_t,
+		    struct message_resource_data **);
+static vm_offset_t pe_imagebase(vm_offset_t);
+static vm_offset_t pe_directory_offset(vm_offset_t, uint32_t);
 static vm_offset_t pe_functbl_match(struct image_patch_table *, char *);
 
 /*
