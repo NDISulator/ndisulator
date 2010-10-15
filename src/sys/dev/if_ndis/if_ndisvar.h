@@ -32,6 +32,9 @@
  * $FreeBSD$
  */
 
+#ifndef _IF_NDISVAR_H_
+#define	_IF_NDISVAR_H_
+
 #include <net80211/ieee80211_var.h>
 
 int	ndis_attach(device_t);
@@ -239,3 +242,5 @@ struct ndis_softc {
 #define	NDISUSB_LOCK(_sc)		mtx_lock(&(_sc)->ndisusb_mtx)
 #define	NDISUSB_UNLOCK(_sc)		mtx_unlock(&(_sc)->ndisusb_mtx)
 #define	NDISUSB_LOCK_ASSERT(_sc, t)	mtx_assert(&(_sc)->ndisusb_mtx, t)
+
+#endif /* _IF_NDISVAR_H_ */
