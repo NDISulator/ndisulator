@@ -70,7 +70,7 @@ static int	ndis_detach_usb(device_t);
 static int	ndis_devcompare_usb(enum ndis_interface_type,
 		    struct ndis_usb_type *, device_t);
 static int	ndis_probe_usb(device_t);
-static bus_get_resource_list_t ndis_get_resource_list;
+static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
 static device_method_t ndis_methods[] = {
 	DEVMETHOD(device_probe,			ndis_probe_usb),
