@@ -489,11 +489,10 @@ pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
 static vm_offset_t
 pe_functbl_match(struct image_patch_table *functbl, char *name)
 {
-	struct image_patch_table *p;
+	struct image_patch_table *p = functbl;
 
-	if (functbl == NULL || name == NULL)
-		return (0);
-	p = functbl;
+	KASSERT(functbl != NULL, ("no functbl"));
+	KASSERT(name != NULL, ("no name"));
 
 	while (p->name != NULL) {
 		if (!strcmp(p->name, name))
