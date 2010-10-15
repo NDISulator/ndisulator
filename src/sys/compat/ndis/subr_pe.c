@@ -393,8 +393,7 @@ pe_get_import_descriptor(vm_offset_t imgbase,
 	imp_desc = (void *)offset;
 
 	while (imp_desc->name) {
-		modname = (char *)pe_translate_addr(imgbase,
-		    imp_desc->name);
+		modname = (char *)pe_translate_addr(imgbase, imp_desc->name);
 		if (!strncasecmp(module, modname, strlen(module))) {
 			*desc = imp_desc;
 			return (0);
@@ -435,7 +434,7 @@ pe_get_messagetable(vm_offset_t imgbase, struct message_resource_data **md)
 			    (dent2->dataoff & ~RESOURCE_DIR_FLAG));
 			dent2 = (struct image_resource_directory_entry *)
 			    ((uintptr_t)rtype +
-			     sizeof(struct image_resource_directory));
+			    sizeof(struct image_resource_directory));
 		}
 		rent = (struct image_resource_data_entry *)(offset +
 		    dent2->dataoff);
@@ -524,7 +523,7 @@ pe_patch_imports(vm_offset_t imgbase, char *module,
      struct image_patch_table *functbl)
 {
 	struct image_import_descriptor *imp_desc;
-	char *fname;
+	char *name;
 	vm_offset_t *nptr, *fptr, func;
 
 	KASSERT(imgbase != 0, ("bad imgbase"));
@@ -540,9 +539,9 @@ pe_patch_imports(vm_offset_t imgbase, char *module,
 	    imp_desc->first_thunk);
 
 	while (nptr != NULL && pe_translate_addr(imgbase, *nptr)) {
-		fname = (char *)pe_translate_addr(imgbase,
+		name = (char *)pe_translate_addr(imgbase,
 		    (*nptr & ~IMAGE_ORDINAL_FLAG) + 2);
-		func = pe_functbl_match(functbl, fname);
+		func = pe_functbl_match(functbl, name);
 		if (func)
 			*fptr = func;
 #ifdef notdef
