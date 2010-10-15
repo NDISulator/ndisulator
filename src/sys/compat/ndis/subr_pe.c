@@ -419,7 +419,6 @@ pe_get_messagetable(vm_offset_t imgbase, struct message_resource_data **md)
 		return (ENOENT);
 
 	rdir = (struct image_resource_directory *)offset;
-
 	dent = (struct image_resource_directory_entry *)(offset +
 	    sizeof(struct image_resource_directory));
 
@@ -450,13 +449,12 @@ int
 pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
     uint16_t *flags)
 {
-	struct message_resource_data *md = NULL;
+	struct message_resource_data *md;
 	struct message_resource_block *mb;
 	struct message_resource_entry *me;
 	uint32_t i;
 
-	pe_get_messagetable(imgbase, &md);
-	if (md == NULL)
+	if (pe_get_messagetable(imgbase, &md))
 		return (ENOENT);
 
 	mb = (struct message_resource_block *)((uintptr_t)md +
