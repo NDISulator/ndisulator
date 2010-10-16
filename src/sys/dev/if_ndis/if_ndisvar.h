@@ -114,8 +114,6 @@ struct ndis_vap {
 #define	NDISUSB_INTR_TIMEOUT			1000
 #define	NDISUSB_TX_TIMEOUT			10000
 
-struct ndisusb_xfer;
-
 struct ndisusb_ep {
 	struct usb_xfer		*ne_xfer[1];
 	list_entry		ne_active;
