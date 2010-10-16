@@ -64,18 +64,18 @@ enum ndis_interface_type {
 	MaximumInterfaceType
 };
 
-#define	CmResourceTypeNull		0	/* ResType_All or ResType_None (0x0000) */
-#define	CmResourceTypePort		1	/* ResType_IO (0x0002) */
-#define	CmResourceTypeInterrupt		2	/* ResType_IRQ (0x0004) */
-#define	CmResourceTypeMemory		3	/* ResType_Mem (0x0001) */
-#define	CmResourceTypeDma		4	/* ResType_DMA (0x0003) */
-#define	CmResourceTypeDeviceSpecific	5	/* ResType_ClassSpecific (0xFFFF) */
-#define	CmResourceTypeBusNumber		6	/* ResType_BusNumber (0x0006) */
+#define	CmResourceTypeNull		0
+#define	CmResourceTypePort		1
+#define	CmResourceTypeInterrupt		2
+#define	CmResourceTypeMemory		3
+#define	CmResourceTypeDma		4
+#define	CmResourceTypeDeviceSpecific	5
+#define	CmResourceTypeBusNumber		6
 #define	CmResourceTypeMaximum		7
-#define	CmResourceTypeNonArbitrated	128	/* Not arbitrated if 0x80 bit set */
-#define	CmResourceTypeConfigData	128	/* ResType_Reserved (0x8000) */
-#define	CmResourceTypeDevicePrivate	129	/* ResType_DevicePrivate (0x8001) */
-#define	CmResourceTypePcCardConfig	130	/* ResType_PcCardConfig (0x8002) */
+#define	CmResourceTypeNonArbitrated	128
+#define	CmResourceTypeConfigData	128
+#define	CmResourceTypeDevicePrivate	129
+#define	CmResourceTypePcCardConfig	130
 
 enum cm_share_disposition {
     CM_RESOURCE_SHARE_UNDETERMINED = 0,

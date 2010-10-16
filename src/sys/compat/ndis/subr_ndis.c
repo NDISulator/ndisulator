@@ -366,17 +366,17 @@ NdisInitializeWrapper(ndis_handle *wrapper, driver_object *drv, void *path,
 }
 
 static void
-NdisTerminateWrapper(ndis_handle handle, void *syspec)
+NdisTerminateWrapper(ndis_handle adapter, void *syspec)
 {
 	/* Nothing to see here, move along. */
 }
 
 static ndis_status
-NdisMRegisterMiniport(ndis_handle handle,
+NdisMRegisterMiniport(ndis_handle adapter,
     struct ndis_miniport_driver_characteristics *characteristics, uint32_t len)
 {
 	struct ndis_miniport_driver_characteristics *ch = NULL;
-	driver_object *drv;
+	driver_object *drv = adapter;
 
 	if (characteristics->version_major < 4)
 		return (NDIS_STATUS_BAD_VERSION);
@@ -389,7 +389,6 @@ NdisMRegisterMiniport(ndis_handle handle,
 	 * The extra extension info is automagically deleted when
 	 * the driver is unloaded (see windrv_unload()).
 	 */
-	drv = (driver_object *)handle;
 	if (IoAllocateDriverObjectExtension(drv, (void *)1,
 	    sizeof(struct ndis_miniport_driver_characteristics),
 	    (void **)&ch) != NDIS_STATUS_SUCCESS) {
@@ -431,16 +430,15 @@ NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 }
 
 static ndis_status
-NdisMSetAttributesEx(ndis_handle adapter_handle, ndis_handle adapter_ctx,
+NdisMSetAttributesEx(ndis_handle adapter, ndis_handle adapter_ctx,
     uint32_t hangsecs, uint32_t flags, enum ndis_interface_type iftype)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 
 	/*
 	 * Save the adapter context, we need it for calling
 	 * the driver's internal functions.
 	 */
-	block = (struct ndis_miniport_block *)adapter_handle;
 	block->miniport_adapter_ctx = adapter_ctx;
 	block->check_for_hang_secs = hangsecs;
 	block->flags = flags;
@@ -519,11 +517,10 @@ NdisReadConfiguration(ndis_status *status, struct ndis_config_parm **parm,
 	struct ndis_softc *sc;
 	struct sysctl_oid *oidp;
 	struct sysctl_ctx_entry *e;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = cfg;
 	char *keystr = NULL;
 	ansi_string as;
 
-	block = (struct ndis_miniport_block *)cfg;
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	if (key->us_len == 0 || key->us_buf == NULL) {
@@ -620,13 +617,12 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
     unicode_string *key, struct ndis_config_parm *parm)
 {
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = cfg;
 	struct sysctl_oid *oidp;
 	struct sysctl_ctx_entry *e;
 	ansi_string as;
 	char *keystr = NULL, val[256];
 
-	block = (struct ndis_miniport_block *)cfg;
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	if (RtlUnicodeStringToAnsiString(&as, key, TRUE)) {
@@ -660,12 +656,11 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 static void
 NdisCloseConfiguration(ndis_handle cfg)
 {
-	list_entry *e;
+	struct ndis_miniport_block *block = cfg;
 	struct ndis_parmlist_entry *pe;
-	struct ndis_miniport_block *block;
 	struct ndis_config_parm *p;
+	list_entry *e;
 
-	block = (struct ndis_miniport_block *)cfg;
 	while (!IsListEmpty(&block->parmlist)) {
 		e = RemoveHeadList(&block->parmlist);
 		pe = CONTAINING_RECORD(e, struct ndis_parmlist_entry, list);
@@ -772,13 +767,12 @@ static uint32_t
 NdisReadPciSlotInformation(ndis_handle adapter, uint32_t slot,
     uint32_t offset, void *buf, uint32_t len)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	device_t dev;
 	int i;
 	char *dest = buf;
 
 	KASSERT(adapter != NULL, ("no adapter"));
-	block = (struct ndis_miniport_block *)adapter;
 	dev = block->physdeviceobj->devext;
 	for (i = 0; i < len; i++)
 		dest[i] = pci_read_config(dev, i + offset, 1);
@@ -790,13 +784,12 @@ static uint32_t
 NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
     uint32_t offset, void *buf, uint32_t len)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	device_t dev;
 	int i;
 	char *dest = buf;
 
 	KASSERT(adapter != NULL, ("no adapter"));
-	block = (struct ndis_miniport_block *)adapter;
 	dev = block->physdeviceobj->devext;
 	for (i = 0; i < len; i++)
 		pci_write_config(dev, i + offset, dest[i], 1);
@@ -808,9 +801,9 @@ static void
 NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
     uint32_t numerrors, ...)
 {
+	struct ndis_miniport_block *block = adapter;
 	struct ifnet *ifp;
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
 	device_t dev;
 	driver_object *drv;
 	va_list ap;
@@ -820,7 +813,6 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	unicode_string us;
 	ansi_string as = { 0, 0, NULL };
 
-	block = (struct ndis_miniport_block *)adapter;
 	dev = block->physdeviceobj->devext;
 	drv = block->deviceobj->drvobj;
 	sc = device_get_softc(dev);
@@ -880,15 +872,12 @@ NdisMStartBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
     uint32_t mapreg, uint8_t writedev, struct ndis_paddr_unit *addrarray,
     uint32_t *arraysize)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_map_arg nma;
 	bus_dmamap_t map;
 
-	if (adapter == NULL)
-		return;
-
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	if (mapreg > sc->ndis_mmapcnt)
@@ -912,14 +901,11 @@ static void
 NdisMCompleteBufferPhysicalMapping(ndis_handle adapter, ndis_buffer *buf,
     uint32_t mapreg)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	bus_dmamap_t map;
 
-	if (adapter == NULL)
-		return;
-
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	if (mapreg > sc->ndis_mmapcnt)
@@ -983,19 +969,18 @@ ndis_timercall(kdpc *dpc, struct ndis_miniport_timer *timer, void *sysarg1,
  * free to clobber you.
  */
 static void
-NdisMInitializeTimer(struct ndis_miniport_timer *timer, ndis_handle handle,
+NdisMInitializeTimer(struct ndis_miniport_timer *timer, ndis_handle adapter,
     ndis_timer_function func, void *ctx)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	block = (struct ndis_miniport_block *)handle;
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	/* Save the driver's funcptr and context */
 	timer->nmt_timerfunc = func;
 	timer->nmt_timerctx = ctx;
-	timer->nmt_block = handle;
+	timer->nmt_block = block;
 
 	/*
 	 * Set up the timer so it will call our intermediate DPC.
@@ -1047,11 +1032,10 @@ static void
 NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
     struct cm_partial_resource_list *list, uint32_t *buflen)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	uint32_t rsclen;
 
-	block = (struct ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	rsclen = sizeof(struct cm_partial_resource_list) +
@@ -1070,15 +1054,11 @@ static ndis_status
 NdisMRegisterIoPortRange(void **offset, ndis_handle adapter, uint32_t port,
     uint32_t numports)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	if (adapter == NULL)
-		return (NDIS_STATUS_FAILURE);
-
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
-
 	if (sc->ndis_res_io == NULL)
 		return (NDIS_STATUS_FAILURE);
 
@@ -1101,11 +1081,11 @@ static void
 NdisReadNetworkAddress(ndis_status *status, void **addr, uint32_t *addrlen,
     ndis_handle adapter)
 {
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
 	uint8_t empty[] = { 0, 0, 0, 0, 0, 0 };
 
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 	if (sc->ndis_ifp == NULL) {
 		*status = NDIS_STATUS_FAILURE;
@@ -1145,12 +1125,10 @@ NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
     uint8_t dmasize, uint32_t physmapneeded, uint32_t maxmap)
 {
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	int i, nseg = NDIS_MAXSEG;
 
-	block = (struct ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->physdeviceobj->devext);
-
 	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * physmapneeded,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (sc->ndis_mmaps == NULL)
@@ -1184,12 +1162,10 @@ static void
 NdisMFreeMapRegisters(ndis_handle adapter)
 {
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	int i;
 
-	block = (struct ndis_miniport_block *)adapter;
 	sc = device_get_softc(block->physdeviceobj->devext);
-
 	for (i = 0; i < sc->ndis_mmapcnt; i++)
 		bus_dmamap_destroy(sc->ndis_mtag, sc->ndis_mmaps[i]);
 
@@ -1217,14 +1193,11 @@ static void
 NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
     void **vaddr, struct physaddr *paddr)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_shmem *sh;
 
-	if (adapter == NULL)
-		return;
-
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	sh = malloc(sizeof(struct ndis_shmem), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
@@ -1318,14 +1291,12 @@ static ndis_status
 NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
     uint8_t cached, void *ctx)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_allocwork *w;
 	io_workitem *iw;
 	io_workitem_func ifw;
 
-	if (adapter == NULL)
-		return (NDIS_STATUS_FAILURE);
-	block = adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 
 	w = malloc(sizeof(struct ndis_allocwork), M_NDIS_SUBR, M_NOWAIT);
 	if (w == NULL)
@@ -1352,15 +1323,12 @@ static void
 NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
     void *vaddr, struct physaddr paddr)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_shmem *sh = NULL;
 	list_entry *l;
 
-	if (vaddr == NULL || adapter == NULL)
-		return;
-
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	/* Sanity check: is list empty? */
@@ -1405,8 +1373,7 @@ static ndis_status
 NdisMMapIoSpace(void **vaddr, ndis_handle adapter, struct physaddr paddr,
     uint32_t len)
 {
-	if (adapter == NULL)
-		return (NDIS_STATUS_FAILURE);
+	KASSERT(adapter != NULL, ("no adapter"));
 
 	*vaddr = MmMapIoSpace(paddr.quad, len, 0);
 	if (*vaddr == NULL)
@@ -1428,7 +1395,7 @@ NdisGetCacheFillSize(void)
 }
 
 static uint32_t
-NdisMGetDmaAlignment(ndis_handle handle)
+NdisMGetDmaAlignment(ndis_handle adapter)
 {
 	return (16);
 }
@@ -1448,11 +1415,9 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
     uint32_t maxphysmap)
 {
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 
-	if (adapter == NULL)
-		return (NDIS_STATUS_FAILURE);
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	/* Don't do this twice. */
@@ -1864,11 +1829,9 @@ static ndis_status
 NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
     struct cm_partial_resource_list **list)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 
-	if (adapter == NULL || list == NULL)
-		return (NDIS_STATUS_FAILURE);
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	*list = block->rlist;
 
 	return (NDIS_STATUS_SUCCESS);
@@ -1936,9 +1899,9 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 	struct ndis_miniport_driver_characteristics *ch;
 	struct ndis_softc *sc;
 
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
-	ch = IoGetDriverObjectExtension(block->deviceobj->drvobj,
-	    (void *)1);
+	ch = IoGetDriverObjectExtension(block->deviceobj->drvobj, (void *)1);
 	if (ch == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -1989,12 +1952,10 @@ static void
 NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
     ndis_shutdown_func shutdownfunc)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	if (adapter == NULL)
-		return;
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 	sc->ndis_chars->shutdown_func = shutdownfunc;
 	sc->ndis_chars->reserved0 = shutdownctx;
@@ -2003,12 +1964,10 @@ NdisMRegisterAdapterShutdownHandler(ndis_handle adapter, void *shutdownctx,
 static void
 NdisMDeregisterAdapterShutdownHandler(ndis_handle adapter)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
-	if (adapter == NULL)
-		return;
-	block = (struct ndis_miniport_block *)adapter;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 	sc->ndis_chars->shutdown_func = NULL;
 	sc->ndis_chars->reserved0 = NULL;
@@ -2049,19 +2008,17 @@ NdisMSleep(uint32_t usecs)
 }
 
 static uint32_t
-NdisReadPcmciaAttributeMemory(ndis_handle handle, uint32_t offset, void *buf,
+NdisReadPcmciaAttributeMemory(ndis_handle adapter, uint32_t offset, void *buf,
     uint32_t len)
 {
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	bus_space_handle_t bh;
 	bus_space_tag_t bt;
 	char *dest;
 	int i;
 
-	if (handle == NULL)
-		return (0);
-	block = (struct ndis_miniport_block *)handle;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 	dest = buf;
 
@@ -2075,19 +2032,17 @@ NdisReadPcmciaAttributeMemory(ndis_handle handle, uint32_t offset, void *buf,
 }
 
 static uint32_t
-NdisWritePcmciaAttributeMemory(ndis_handle handle, uint32_t offset,
+NdisWritePcmciaAttributeMemory(ndis_handle adapter, uint32_t offset,
     void *buf, uint32_t len)
 {
 	struct ndis_softc *sc;
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	bus_space_handle_t bh;
 	bus_space_tag_t bt;
 	char *src;
 	int i;
 
-	if (handle == NULL)
-		return (0);
-	block = (struct ndis_miniport_block *)handle;
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 	src = buf;
 
@@ -2215,9 +2170,7 @@ NdisMGetDeviceProperty(ndis_handle adapter, device_object **phydevobj,
     device_object **funcdevobj, device_object **nextdevobj,
     struct cm_resource_list *resources, struct cm_resource_list *tresources)
 {
-	struct ndis_miniport_block *block;
-
-	block = (struct ndis_miniport_block *)adapter;
+	struct ndis_miniport_block *block = adapter;
 
 	if (phydevobj != NULL)
 		*phydevobj = block->physdeviceobj;
@@ -2535,9 +2488,8 @@ typedef void (*ndis_status_done_func)(ndis_handle);
 static void
 NdisMIndicateStatusComplete(ndis_handle adapter)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 
-	block = (struct ndis_miniport_block *)adapter;
 	KASSERT(adapter != NULL, ("no adapter"));
 	KASSERT(block->status_done_func != NULL, ("no status_done"));
 	MSCALL1(block->status_done_func, adapter);
@@ -2547,9 +2499,8 @@ static void
 NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
     uint32_t slen)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 
-	block = (struct ndis_miniport_block *)adapter;
 	KASSERT(adapter != NULL, ("no adapter"));
 	KASSERT(block->status_func != NULL, ("no status"));
 	MSCALL4(block->status_func, adapter, status, sbuf, slen);
@@ -2686,14 +2637,14 @@ NdisIMCopySendPerPacketInfo(struct ndis_packet *dpkt, struct ndis_packet *spkt)
 }
 
 static ndis_status
-NdisMRegisterDevice(ndis_handle handle, unicode_string *devname,
+NdisMRegisterDevice(ndis_handle adapter, unicode_string *devname,
     unicode_string *symname, driver_dispatch *majorfuncs[],
     void **devobj, ndis_handle *devhandle)
 {
 	uint32_t status;
 	device_object *dobj;
 
-	status = IoCreateDevice(handle, 0, devname,
+	status = IoCreateDevice(adapter, 0, devname,
 	    FILE_DEVICE_NETWORK, 0, FALSE, &dobj);
 	if (status == NDIS_STATUS_SUCCESS) {
 		*devobj = dobj;
@@ -2704,21 +2655,20 @@ NdisMRegisterDevice(ndis_handle handle, unicode_string *devname,
 }
 
 static ndis_status
-NdisMDeregisterDevice(ndis_handle handle)
+NdisMDeregisterDevice(ndis_handle adapter)
 {
-	IoDeleteDevice(handle);
+	IoDeleteDevice(adapter);
 
 	return (NDIS_STATUS_SUCCESS);
 }
 
 static ndis_status
-NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle handle)
+NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle adapter)
 {
-	struct ndis_miniport_block *block;
+	struct ndis_miniport_block *block = adapter;
 	device_t dev;
 	ansi_string as;
 
-	block = (struct ndis_miniport_block *)handle;
 	dev = block->physdeviceobj->devext;
 
 	RtlInitAnsiString(&as, __DECONST(char *, device_get_nameunit(dev)));
@@ -2729,7 +2679,7 @@ NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle handle)
 }
 
 static void
-NdisMRegisterUnloadHandler(ndis_handle handle, void *func)
+NdisMRegisterUnloadHandler(ndis_handle adapter, void *func)
 {
 }
 
