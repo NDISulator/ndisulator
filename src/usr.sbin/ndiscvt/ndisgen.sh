@@ -496,7 +496,6 @@ NDISCVT=/usr/sbin/ndiscvt
 STUBPATH=/usr/src/usr.sbin/ndiscvt
 STUBFILE=windrv_stub.c
 DNAME=windrv
-CP=/bin/cp
 MV=/bin/mv
 RM=/bin/rm
 TR=/usr/bin/tr
@@ -504,7 +503,6 @@ FILE=/usr/bin/file
 EGREP=/usr/bin/egrep
 MAKE=/usr/bin/make
 BASENAME=/usr/bin/basename
-TOUCH=/usr/bin/touch
 MKTEMP=/usr/bin/mktemp
 
 MAKEFILE=`${MKTEMP} /tmp/Makefile.XXXXXX`
