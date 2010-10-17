@@ -266,7 +266,7 @@ static void NdisCloseFile(ndis_handle);
 static uint8_t NdisSystemProcessorCount(void);
 static void NdisMIndicateStatusComplete(ndis_handle);
 static void NdisMIndicateStatus(ndis_handle, ndis_status, void *, uint32_t);
-static uint8_t ndis_interrupt_nic(kinterrupt *, void *);
+static uint8_t ndis_interrupt_nic(kinterrupt *, struct ndis_softc *);
 static void ndis_intrhand(kdpc *, struct ndis_miniport_interrupt *, void *,
     void *);
 static funcptr ndis_findwrap(funcptr);
@@ -1165,6 +1165,7 @@ NdisMFreeMapRegisters(ndis_handle adapter)
 	struct ndis_miniport_block *block = adapter;
 	int i;
 
+	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 	for (i = 0; i < sc->ndis_mmapcnt; i++)
 		bus_dmamap_destroy(sc->ndis_mtag, sc->ndis_mmaps[i]);
@@ -1838,9 +1839,8 @@ NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
 }
 
 static uint8_t
-ndis_interrupt_nic(kinterrupt *iobj, void *arg)
+ndis_interrupt_nic(kinterrupt *iobj, struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	uint8_t is_our_intr = FALSE;
 	int call_isr = 0;
 

@@ -38,6 +38,7 @@
 /* Forward declarations */
 struct ndis_miniport_block;
 struct ndis_mdriver_block;
+struct ndis_softc;
 
 /* Base types */
 typedef int32_t ndis_status;
@@ -1516,36 +1517,36 @@ extern struct image_patch_table ndis_functbl[];
 
 void	ndis_libinit(void);
 void	ndis_libfini(void);
-void	ndis_unload_driver(void *);
+void	ndis_unload_driver(struct ndis_softc *);
 int	ndis_mtop(struct mbuf *, struct ndis_packet **);
 int	ndis_ptom(struct mbuf **, struct ndis_packet *);
-int	ndis_get(void *, ndis_oid, void *, uint32_t);
-int	ndis_get_int(void *, ndis_oid, uint32_t *);
-int	ndis_get_info(void *, ndis_oid, void *, uint32_t, uint32_t *,
-	    uint32_t *);
-int	ndis_set(void *, ndis_oid, void *, uint32_t);
-int	ndis_set_int(void *, ndis_oid, uint32_t);
-int	ndis_set_info(void *, ndis_oid, void *, uint32_t, uint32_t *,
-	    uint32_t *);
-void	ndis_send_packets(void *, struct ndis_packet **, int);
-int32_t	ndis_send_packet(void *, struct ndis_packet *);
-int	ndis_convert_res(void *);
+int	ndis_get(struct ndis_softc *, ndis_oid, void *, uint32_t);
+int	ndis_get_int(struct ndis_softc *, ndis_oid, uint32_t *);
+int	ndis_get_info(struct ndis_softc *, ndis_oid, void *, uint32_t,
+	    uint32_t *, uint32_t *);
+int	ndis_set(struct ndis_softc *, ndis_oid, void *, uint32_t);
+int	ndis_set_int(struct ndis_softc *, ndis_oid, uint32_t);
+int	ndis_set_info(struct ndis_softc *, ndis_oid, void *, uint32_t,
+	    uint32_t *, uint32_t *);
+void	ndis_send_packets(struct ndis_softc *, struct ndis_packet **, int);
+int32_t	ndis_send_packet(struct ndis_softc *, struct ndis_packet *);
+int	ndis_convert_res(struct ndis_softc *);
 void	ndis_free_packet(struct ndis_packet *);
 void	ndis_free_bufs(ndis_buffer *);
-int32_t	ndis_reset_nic(void *);
-void	ndis_disable_interrupts_nic(void *);
-void	ndis_enable_interrupts_nic(void *);
-void	ndis_halt_nic(void *);
-void	ndis_shutdown_nic(void *);
-void	ndis_pnp_event_nic(void *, uint32_t, uint32_t);
-uint8_t	ndis_check_for_hang_nic(void *);
-int32_t	ndis_init_nic(void *);
+int32_t	ndis_reset_nic(struct ndis_softc *);
+void	ndis_disable_interrupts_nic(struct ndis_softc *);
+void	ndis_enable_interrupts_nic(struct ndis_softc *);
+void	ndis_halt_nic(struct ndis_softc *);
+void	ndis_shutdown_nic(struct ndis_softc *);
+void	ndis_pnp_event_nic(struct ndis_softc *, uint32_t, uint32_t);
+uint8_t	ndis_check_for_hang_nic(struct ndis_softc *);
+int32_t	ndis_init_nic(struct ndis_softc *);
 void	ndis_return_packet(void *, void *);
-int	ndis_init_dma(void *);
-void	ndis_destroy_dma(void *);
-void	ndis_create_sysctls(void *);
-void	ndis_flush_sysctls(void *);
-int	ndis_add_sysctl(void *, char *, char *, char *, int);
+int	ndis_init_dma(struct ndis_softc *);
+void	ndis_destroy_dma(struct ndis_softc *);
+void	ndis_create_sysctls(struct ndis_softc *);
+void	ndis_flush_sysctls(struct ndis_softc *);
+int	ndis_add_sysctl(struct ndis_softc *, char *, char *, char *, int);
 int32_t	NdisAddDevice(driver_object *, device_object *);
 void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
 	    uint32_t);

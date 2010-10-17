@@ -224,9 +224,8 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 }
 
 void
-ndis_create_sysctls(void *arg)
+ndis_create_sysctls(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	struct ndis_cfg *vals;
 	char buf[256];
 	struct sysctl_oid *oidp;
@@ -289,9 +288,9 @@ ndis_create_sysctls(void *arg)
 }
 
 int
-ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
+ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
+    int flag)
 {
-	struct ndis_softc *sc = arg;
 	struct ndis_cfglist *cfg;
 	char descstr[256];
 
@@ -318,9 +317,8 @@ ndis_add_sysctl(void *arg, char *key, char *desc, char *val, int flag)
 }
 
 void
-ndis_flush_sysctls(void *arg)
+ndis_flush_sysctls(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	struct ndis_cfglist *cfg;
 	struct sysctl_ctx_list *clist;
 
@@ -408,9 +406,8 @@ ndis_free_packet(struct ndis_packet *p)
 }
 
 int
-ndis_convert_res(void *arg)
+ndis_convert_res(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	struct cm_partial_resource_list *rl = NULL;
 	struct cm_partial_resource_desc *prd = NULL;
 	struct ndis_miniport_block *block;
@@ -608,10 +605,9 @@ ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 }
 
 static int
-ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
-    uint32_t buflen, uint32_t *written, uint32_t *needed)
+ndis_request_info(uint32_t request, struct ndis_softc *sc, ndis_oid oid,
+    void *buf, uint32_t buflen, uint32_t *written, uint32_t *needed)
 {
-	struct ndis_softc *sc = arg;
 	uint64_t duetime;
 	ndis_status rval;
 	uint32_t w = 0, n = 0;
@@ -621,7 +617,7 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 		written = &w;
 	if (!needed)
 		needed = &n;
-	KASSERT(sc->ndis_chars != NULL, ("no ndis_chars"));
+	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_chars->query_info_func != NULL, ("no query_info"));
@@ -664,55 +660,54 @@ ndis_request_info(uint32_t request, void *arg, ndis_oid oid, void *buf,
 }
 
 inline int
-ndis_get(void *arg, ndis_oid oid, void *val, uint32_t len)
+ndis_get(struct ndis_softc *sc, ndis_oid oid, void *val, uint32_t len)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
-	    arg, oid, val, len, NULL, NULL));
+	    sc, oid, val, len, NULL, NULL));
 }
 
 inline int
-ndis_get_int(void *arg, ndis_oid oid, uint32_t *val)
+ndis_get_int(struct ndis_softc *sc, ndis_oid oid, uint32_t *val)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
-	    arg, oid, val, sizeof(uint32_t), NULL, NULL));
+	    sc, oid, val, sizeof(uint32_t), NULL, NULL));
 }
 
 inline int
-ndis_get_info(void *arg, ndis_oid oid, void *buf, uint32_t buflen,
+ndis_get_info(struct ndis_softc *sc, ndis_oid oid, void *buf, uint32_t buflen,
     uint32_t *written, uint32_t *needed)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
-	    arg, oid, buf, buflen, written, needed));
+	    sc, oid, buf, buflen, written, needed));
 }
 
 inline int
-ndis_set(void *arg, ndis_oid oid, void *val, uint32_t len)
+ndis_set(struct ndis_softc *sc, ndis_oid oid, void *val, uint32_t len)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
-	    arg, oid, val, len, NULL, NULL));
+	    sc, oid, val, len, NULL, NULL));
 }
 
 inline int
-ndis_set_int(void *arg, ndis_oid oid, uint32_t val)
+ndis_set_int(struct ndis_softc *sc, ndis_oid oid, uint32_t val)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
-	    arg, oid, &val, sizeof(uint32_t), NULL, NULL));
+	    sc, oid, &val, sizeof(uint32_t), NULL, NULL));
 }
 
 inline int
-ndis_set_info(void *arg, ndis_oid oid, void *buf, uint32_t buflen,
+ndis_set_info(struct ndis_softc *sc, ndis_oid oid, void *buf, uint32_t buflen,
     uint32_t *written, uint32_t *needed)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
-	    arg, oid, buf, buflen, written, needed));
+	    sc, oid, buf, buflen, written, needed));
 }
 
 typedef void (*ndis_send_done_func) (ndis_handle, struct ndis_packet *, ndis_status);
 
 void
-ndis_send_packets(void *arg, struct ndis_packet **packets, int cnt)
+ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
 {
-	struct ndis_softc *sc = arg;
 	int i;
 	struct ndis_packet *p;
 	uint8_t irql = 0;
@@ -744,9 +739,8 @@ ndis_send_packets(void *arg, struct ndis_packet **packets, int cnt)
 }
 
 int32_t
-ndis_send_packet(void *arg, struct ndis_packet *packet)
+ndis_send_packet(struct ndis_softc *sc, struct ndis_packet *packet)
 {
-	struct ndis_softc *sc = arg;
 	ndis_status status;
 	uint8_t irql = 0;
 
@@ -773,9 +767,8 @@ ndis_send_packet(void *arg, struct ndis_packet *packet)
 }
 
 int
-ndis_init_dma(void *arg)
+ndis_init_dma(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	int i;
 
 	sc->ndis_tmaps = malloc(sizeof(bus_dmamap_t) * sc->ndis_maxpkts,
@@ -793,9 +786,8 @@ ndis_init_dma(void *arg)
 }
 
 void
-ndis_destroy_dma(void *arg)
+ndis_destroy_dma(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	struct mbuf *m;
 	struct ndis_packet *p = NULL;
 	int i;
@@ -815,9 +807,8 @@ ndis_destroy_dma(void *arg)
 }
 
 int32_t
-ndis_reset_nic(void *arg)
+ndis_reset_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	ndis_status rval;
 	uint8_t addressing_reset;
 	uint8_t irql = 0;
@@ -845,9 +836,8 @@ ndis_reset_nic(void *arg)
 }
 
 uint8_t
-ndis_check_for_hang_nic(void *arg)
+ndis_check_for_hang_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
@@ -859,9 +849,8 @@ ndis_check_for_hang_nic(void *arg)
 }
 
 void
-ndis_disable_interrupts_nic(void *arg)
+ndis_disable_interrupts_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
@@ -872,9 +861,8 @@ ndis_disable_interrupts_nic(void *arg)
 }
 
 void
-ndis_enable_interrupts_nic(void *arg)
+ndis_enable_interrupts_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
@@ -885,9 +873,8 @@ ndis_enable_interrupts_nic(void *arg)
 }
 
 void
-ndis_halt_nic(void *arg)
+ndis_halt_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 
 	if (!cold)
 		KeFlushQueuedDpcs();
@@ -904,9 +891,8 @@ ndis_halt_nic(void *arg)
 }
 
 void
-ndis_shutdown_nic(void *arg)
+ndis_shutdown_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
@@ -921,9 +907,8 @@ ndis_shutdown_nic(void *arg)
 }
 
 void
-ndis_pnp_event_nic(void *arg, uint32_t event, uint32_t profile)
+ndis_pnp_event_nic(struct ndis_softc *sc, uint32_t event, uint32_t profile)
 {
-	struct ndis_softc *sc =  arg;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
@@ -948,9 +933,8 @@ ndis_pnp_event_nic(void *arg, uint32_t event, uint32_t profile)
 }
 
 int32_t
-ndis_init_nic(void *arg)
+ndis_init_nic(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	ndis_status rval, status = 0;
 	enum ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
 	uint32_t chosen_medium = 0;
@@ -1069,9 +1053,8 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 }
 
 void
-ndis_unload_driver(void *arg)
+ndis_unload_driver(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	device_object *fdo;
 
 	KASSERT(sc->ndis_block->device_ctx == NULL, ("device present"));

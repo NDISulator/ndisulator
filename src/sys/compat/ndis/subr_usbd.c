@@ -124,9 +124,9 @@ static int32_t usbd_power(device_object *, irp *);
 static void usbd_irpcancel(device_object *, irp *);
 static int32_t usbd_submit_urb(irp *);
 static int32_t usbd_urb2nt(int32_t);
-static void usbd_task(device_object *, void *);
+static void usbd_task(device_object *, struct ndis_softc *);
 static int32_t usbd_taskadd(irp *, unsigned);
-static void usbd_xfertask(device_object *, void *);
+static void usbd_xfertask(device_object *, struct ndis_softc *);
 static void dummy(void);
 
 static union usbd_urb *USBD_CreateConfigurationRequestEx(
@@ -1102,12 +1102,11 @@ usbd_get_ndisep(irp *ip, usb_endpoint_descriptor_t *ep)
 }
 
 static void
-usbd_xfertask(device_object *dobj, void *arg)
+usbd_xfertask(device_object *dobj, struct ndis_softc *sc)
 {
 	irp *ip;
 	device_t dev;
 	list_entry *l;
-	struct ndis_softc *sc = arg;
 	struct ndisusb_xferdone *nd;
 	struct ndisusb_xfer *nq;
 	struct usbd_urb_bulk_or_intr_transfer *ubi;
@@ -1208,11 +1207,10 @@ usbd_taskadd(irp *ip, unsigned type)
 }
 
 static void
-usbd_task(device_object *dobj, void *arg)
+usbd_task(device_object *dobj, struct ndis_softc *sc)
 {
 	irp *ip;
 	list_entry *l;
-	struct ndis_softc *sc = arg;
 	struct ndisusb_ep *ne;
 	struct ndisusb_task *nt;
 	union usbd_urb *urb;
