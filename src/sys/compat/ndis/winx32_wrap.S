@@ -156,7 +156,7 @@ ENTRY(x86_stdcall_call)
 	mov	%esp,%esi	# Set source address register to point to
 	add	$20,%esi	# first agument to be forwarded.
 	shl	$2,%eax		# turn arg cnt into offset
-	sub	%eax,%esp	# shift stack to new location 
+	sub	%eax,%esp	# shift stack to new location
 	mov	%esp,%edi	# store dest copy addr
 	rep			# do the copy
 	movsl
@@ -297,7 +297,7 @@ ENTRY(x86_regparm_call)
  * Ugly hack alert:
  *
  * On Win32/i386, using __try/__except results in code that tries to
- * manipulate what's supposed to be the Windows Threads Environment 
+ * manipulate what's supposed to be the Windows Threads Environment
  * Block (TEB), which one accesses via the %fs register. In particular,
  * %fs:0 (the first DWORD in the TEB) points to the exception
  * registration list. Unfortunately, FreeBSD uses %fs for the
@@ -334,7 +334,7 @@ ENTRY(x86_regparm_call)
  *
  * The thunking routines themselves, ctxsw_utow() (Context SWitch UNIX
  * to Windows) and ctxsw_wtou() (Context SWitch Windows to UNIX), are
- * external to this module. This is done simply because it's easier 
+ * external to this module. This is done simply because it's easier
  * to manipulate data structures in C rather than assembly.
  */
 ENTRY(x86_getldt)
