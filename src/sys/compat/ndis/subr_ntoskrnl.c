@@ -308,8 +308,7 @@ ntoskrnl_libinit(void)
 		kq = kq_queues + i;
 		kq->kq_cpu = i;
 		if (kproc_kthread_add(ntoskrnl_dpc_thread, kq, &ndisproc,
-		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis",
-		    "Windows DPC %d", i) != 0)
+		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "dpc%d", i))
 			panic("failed to launch DPC thread");
 	}
 
@@ -319,8 +318,7 @@ ntoskrnl_libinit(void)
 	for (i = 0; i < WORKITEM_THREADS; i++) {
 		kq = wq_queues + i;
 		if (kproc_kthread_add(ntoskrnl_workitem_thread, kq, &ndisproc,
-		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis",
-		    "Windows Workitem %d", i) != 0)
+		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "workitem%d", i))
 			panic("failed to launch workitem thread");
 	}
 
@@ -3136,9 +3134,8 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	tc->tc_thrctx = thrctx;
 	tc->tc_thrfunc = thrfunc;
 
-	if (kproc_kthread_add(ntoskrnl_thrfunc, tc, &ndisproc,
-	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis",
-	    "Windows Kthread %d", ntoskrnl_kth) != 0) {
+	if (kproc_kthread_add(ntoskrnl_thrfunc, tc, &ndisproc, &t, RFHIGHPID,
+	    NDIS_KSTACK_PAGES, "ndis", "thread%d", ntoskrnl_kth)) {
 		free(tc, M_NDIS_NTOSKRNL);
 		return (NDIS_STATUS_FAILURE);
 	}
