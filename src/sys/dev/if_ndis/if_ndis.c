@@ -2685,7 +2685,6 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	}
 	IEEE80211_LOCK(ic);
 
-	vap->iv_state = nstate;
 	return (nvp->newstate(vap, nstate, arg));
 }
 
