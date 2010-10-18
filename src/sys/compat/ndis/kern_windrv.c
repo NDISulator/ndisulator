@@ -594,6 +594,7 @@ ctxsw_utow(void)
 {
 	struct tid *t;
 
+	sched_pin();
 	critical_enter();
 	t = &my_tids[curthread->td_oncpu];
 	/*
@@ -624,6 +625,7 @@ ctxsw_wtou(void)
 	t = x86_gettid();
 	x86_setfs(t->tid_oldfs);
 	critical_exit();
+	sched_unpin();
 
 	/* Welcome back to UNIX land, we missed you. */
 }
