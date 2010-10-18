@@ -2462,9 +2462,9 @@ IoAllocateWorkItem(device_object *dobj)
 		return (NULL);
 
 	InitializeListHead(&iw->iw_listentry);
-	iw->iw_dobj = dobj;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
+	iw->iw_dobj = dobj;
 	iw->iw_idx = wq_idx;
 	WORKIDX_INC(wq_idx);
 	mtx_unlock(&ntoskrnl_dispatchlock);
@@ -3149,28 +3149,9 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	return (NDIS_STATUS_SUCCESS);
 }
 
-/*
- * In Windows, the exit of a thread is an event that you're allowed
- * to wait on, assuming you've obtained a reference to the thread using
- * ObReferenceObjectByHandle(). Unfortunately, the only way we can
- * simulate this behavior is to register each thread we create in a
- * reference list, and if someone holds a reference to us, we poke
- * them.
- */
 static ndis_status
 PsTerminateSystemThread(ndis_status status)
 {
-	struct nt_objref *nr;
-
-	mtx_lock(&ntoskrnl_dispatchlock);
-	TAILQ_FOREACH(nr, &ntoskrnl_reflist, link) {
-		if (nr->no_obj != curthread->td_proc)
-			continue;
-		nr->no_dh.dh_sigstate = 1;
-		ntoskrnl_waittest(&nr->no_dh, IO_NO_INCREMENT);
-		break;
-	}
-	mtx_unlock(&ntoskrnl_dispatchlock);
 
 	ntoskrnl_kth--;
 
