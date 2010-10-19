@@ -52,18 +52,28 @@ static struct section_head sh;
 static struct reg_head rh;
 static struct assign_head ah;
 
-static struct assign *find_assign(const char *, const char *);
-static struct assign *find_next_assign(struct assign *);
-static struct section *find_section(const char *);
-static void dump_deviceids_pci(void);
-static void dump_deviceids_pcmcia (void);
-static void dump_deviceids_usb(void);
-static void dump_paramreg(const struct section *, const struct reg *, int);
-static void dump_pci_id(const char *);
-static void dump_pcmcia_id(const char *);
-static void dump_regvals(void);
-static void dump_usb_id(const char *);
-static char *sstrdup(const char *);
+static void	dump_addreg(const char *, int);
+static void	dump_defaultinfo(const struct section *,
+		    const struct reg *, int);
+static void	dump_deviceids_pci(void);
+static void	dump_deviceids_pcmcia(void);
+static void	dump_deviceids_usb(void);
+static void	dump_dwordreg(const struct section *, const struct reg *);
+static void	dump_editreg(const struct section *, const struct reg *);
+static void	dump_enumreg(const struct section *, const struct reg *);
+static void	dump_paramdesc(const struct section *, const struct reg *);
+static void	dump_paramreg(const struct section *, const struct reg *, int);
+static void	dump_pci_id(const char *);
+static void	dump_pcmcia_id(const char *);
+static void	dump_regvals(void);
+static void	dump_typeinfo(const struct section *, const struct reg *);
+static void	dump_usb_id(const char *);
+static struct assign	*find_assign(const char *, const char *);
+static struct assign	*find_next_assign(struct assign *);
+static struct section	*find_section(const char *);
+static int	satoi(const char *);
+static char	*sstrdup(const char *);
+static const char	*stringcvt(const char *);
 
 static FILE *ofp;
 

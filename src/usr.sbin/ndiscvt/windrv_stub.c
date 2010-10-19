@@ -119,7 +119,8 @@ MODULE_DECL(DRV_NAME);
 
 static int	windrv_modevent(module_t, int, void *);
 static int	windrv_probe(device_t);
-static int	windrv_loaded = 0;
+
+static int windrv_loaded = 0;
 
 static device_method_t windrv_methods[] = {
 	DEVMETHOD(device_probe, windrv_probe),
