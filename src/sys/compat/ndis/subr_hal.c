@@ -52,23 +52,23 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/ntoskrnl_var.h>
 #include <compat/ndis/hal_var.h>
 
-static void KeStallExecutionProcessor(uint32_t);
-static void WRITE_PORT_BUFFER_ULONG(uint32_t *, uint32_t *, uint32_t);
-static void WRITE_PORT_BUFFER_USHORT(uint16_t *, uint16_t *, uint32_t);
-static void WRITE_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
-static void WRITE_PORT_ULONG(uint32_t *, uint32_t);
-static void WRITE_PORT_USHORT(uint16_t *, uint16_t);
-static void WRITE_PORT_UCHAR(uint8_t *, uint8_t);
-static uint32_t READ_PORT_ULONG(uint32_t *);
-static uint16_t READ_PORT_USHORT(uint16_t *);
-static uint8_t READ_PORT_UCHAR(uint8_t *);
-static void READ_PORT_BUFFER_ULONG(uint32_t *, uint32_t *, uint32_t);
-static void READ_PORT_BUFFER_USHORT(uint16_t *, uint16_t *, uint32_t);
-static void READ_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
-static uint64_t KeQueryPerformanceCounter(uint64_t *);
-static void _KeLowerIrql(uint8_t);
-static uint8_t KeRaiseIrqlToDpcLevel(void);
-static void dummy(void);
+static uint64_t	KeQueryPerformanceCounter(uint64_t *);
+static uint8_t	KeRaiseIrqlToDpcLevel(void);
+static void	KeStallExecutionProcessor(uint32_t);
+static uint32_t	READ_PORT_ULONG(uint32_t *);
+static uint16_t	READ_PORT_USHORT(uint16_t *);
+static uint8_t	READ_PORT_UCHAR(uint8_t *);
+static void	READ_PORT_BUFFER_ULONG(uint32_t *, uint32_t *, uint32_t);
+static void	READ_PORT_BUFFER_USHORT(uint16_t *, uint16_t *, uint32_t);
+static void	READ_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
+static void	WRITE_PORT_BUFFER_ULONG(uint32_t *, uint32_t *, uint32_t);
+static void	WRITE_PORT_BUFFER_USHORT(uint16_t *, uint16_t *, uint32_t);
+static void	WRITE_PORT_BUFFER_UCHAR(uint8_t *, uint8_t *, uint32_t);
+static void	WRITE_PORT_ULONG(uint32_t *, uint32_t);
+static void	WRITE_PORT_USHORT(uint16_t *, uint16_t);
+static void	WRITE_PORT_UCHAR(uint8_t *, uint8_t);
+static void	_KeLowerIrql(uint8_t);
+static void	dummy(void);
 
 static struct mtx disp_lock;
 

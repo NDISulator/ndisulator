@@ -135,7 +135,7 @@ static void	ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
 static int32_t	ndis_get_bssid_list(struct ndis_softc *,
-			struct ndis_80211_bssid_list_ex **);
+		    struct ndis_80211_bssid_list_ex **);
 static int	ndis_get_oids(struct ndis_softc *, ndis_oid **, uint32_t *);
 static void	ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_ifmedia_sts(struct ifnet *, struct ifmediareq *);
@@ -145,11 +145,11 @@ static int	ndis_ioctl(struct ifnet *, u_long, caddr_t);
 static int	ndis_ioctl_80211(struct ifnet *, u_long, caddr_t);
 static void	ndis_inputtask(device_object *, void *);
 static int	ndis_key_set(struct ieee80211vap *,
-			const struct ieee80211_key *, const u_int8_t []);
+		    const struct ieee80211_key *, const u_int8_t []);
 static int	ndis_key_delete(struct ieee80211vap *,
-			const struct ieee80211_key *);
+		    const struct ieee80211_key *);
 static void	ndis_map_sclist(void *, bus_dma_segment_t *, int, bus_size_t,
-			int);
+		    int);
 static void	ndis_media_status(struct ifnet *, struct ifmediareq *);
 static int	ndis_nettype_chan(uint32_t);
 static int	ndis_nettype_mode(uint32_t);
@@ -157,7 +157,7 @@ static int	ndis_newstate(struct ieee80211vap *, enum ieee80211_state, int);
 static int	ndis_get_physical_medium(struct ndis_softc *, uint32_t *);
 static int	ndis_probe_task_offload(struct ndis_softc *);
 static int	ndis_raw_xmit(struct ieee80211_node *, struct mbuf *,
-			const struct ieee80211_bpf_params *);
+		    const struct ieee80211_bpf_params *);
 static void	ndis_resettask(device_object *, void *);
 static void	ndis_scan(void *);
 static void	ndis_scan_end(struct ieee80211com *);
@@ -1685,15 +1685,13 @@ static void
 ndis_map_sclist(void *arg, bus_dma_segment_t *segs, int nseg,
     bus_size_t mapsize, int error)
 {
-	struct ndis_sc_list *sclist;
+	struct ndis_sc_list *sclist = arg;
 	int i;
 
 	if (error || arg == NULL)
 		return;
 
-	sclist = arg;
 	sclist->frags = nseg;
-
 	for (i = 0; i < nseg; i++) {
 		sclist->elements[i].addr.quad = segs[i].ds_addr;
 		sclist->elements[i].len = segs[i].ds_len;

@@ -451,7 +451,7 @@ uint32_t x86_stdcall_call(void *, int, ...);
 
 int	pe_get_optional_header(vm_offset_t, struct image_optional_header **);
 int	pe_get_message(vm_offset_t, uint32_t, char **, int *, uint16_t *);
-int	pe_patch_imports(vm_offset_t, char *, struct image_patch_table *);
+int	pe_patch_imports(vm_offset_t, const char *, struct image_patch_table *);
 int	pe_numsections(vm_offset_t);
 int	pe_relocate(vm_offset_t);
 int	pe_validate_header(vm_offset_t);

@@ -69,7 +69,7 @@ static void	dump_regvals(void);
 static void	dump_typeinfo(const struct section *, const struct reg *);
 static void	dump_usb_id(const char *);
 static struct assign	*find_assign(const char *, const char *);
-static struct assign	*find_next_assign(struct assign *);
+static struct assign	*find_next_assign(const struct assign *);
 static struct section	*find_section(const char *);
 static int	satoi(const char *);
 static char	*sstrdup(const char *);
@@ -133,7 +133,7 @@ find_assign(const char *s, const char *k)
 }
 
 static struct assign *
-find_next_assign(struct assign *a)
+find_next_assign(const struct assign *a)
 {
 	struct assign *assign;
 

@@ -72,12 +72,12 @@ static int	pe_get_file_header(vm_offset_t, struct image_file_header **);
 static int	pe_get_section(vm_offset_t, struct image_section_header **,
 		    const char *);
 static int	pe_get_import_descriptor(vm_offset_t,
-		    struct image_import_descriptor **, char *);
+		    struct image_import_descriptor **, const char *);
 static int	pe_get_messagetable(vm_offset_t,
 		    struct message_resource_data **);
 static vm_offset_t pe_imagebase(vm_offset_t);
 static vm_offset_t pe_directory_offset(vm_offset_t, uint32_t);
-static vm_offset_t pe_functbl_match(struct image_patch_table *, char *);
+static vm_offset_t pe_functbl_match(struct image_patch_table *, const char *);
 
 /*
  * Verify that this image has a Windows NT PE signature.
@@ -387,7 +387,7 @@ pe_relocate(vm_offset_t imgbase)
  */
 static int
 pe_get_import_descriptor(vm_offset_t imgbase,
-    struct image_import_descriptor **desc, char *module)
+    struct image_import_descriptor **desc, const char *module)
 {
 	struct image_import_descriptor *imp_desc;
 	vm_offset_t offset;
@@ -494,7 +494,7 @@ pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
  * a module for the first time.
  */
 static vm_offset_t
-pe_functbl_match(struct image_patch_table *functbl, char *name)
+pe_functbl_match(struct image_patch_table *functbl, const char *name)
 {
 	struct image_patch_table *p = functbl;
 
@@ -527,7 +527,7 @@ pe_functbl_match(struct image_patch_table *functbl, char *name)
  * merged into the INIT segment.
  */
 int
-pe_patch_imports(vm_offset_t imgbase, char *module,
+pe_patch_imports(vm_offset_t imgbase, const char *module,
      struct image_patch_table *functbl)
 {
 	struct image_import_descriptor *imp_desc;
