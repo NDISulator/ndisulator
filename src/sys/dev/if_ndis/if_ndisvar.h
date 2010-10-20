@@ -86,6 +86,8 @@ struct ndis_cfglist {
 TAILQ_HEAD(nch, ndis_cfglist);
 
 #define	NDIS_INITIALIZED(sc)	(sc->ndis_block->device_ctx != NULL)
+#define	NDIS_80211(sc)		\
+	(sc->ndis_physical_medium == NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN)
 
 #define	NDIS_TXPKTS	16
 #define	NDIS_INC(x)		\
@@ -185,7 +187,6 @@ struct ndis_softc {
 	uint8_t				ndis_sc;
 	struct ndis_cfg			*ndis_regvals;
 	struct nch			ndis_cfglist_head;
-	uint8_t				ndis_80211;
 	uint32_t			ndis_physical_medium;
 	uint32_t			ndis_filter;
 	int				ndis_if_flags;

@@ -778,9 +778,7 @@ ndis_attach(device_t dev)
 		goto fail;
 	}
 
-	if (sc->ndis_physical_medium == NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN)
-		sc->ndis_80211 = 1;
-	if (sc->ndis_80211)
+	if (NDIS_80211(sc))
 		ifp = if_alloc(IFT_IEEE80211);
 	else
 		ifp = if_alloc(IFT_ETHER);
@@ -806,7 +804,7 @@ ndis_attach(device_t dev)
 	ifp->if_hwassist = sc->ndis_hwassist;
 
 	/* Do media setup */
-	if (sc->ndis_80211) {
+	if (NDIS_80211(sc)) {
 		struct ieee80211com *ic = ifp->if_l2com;
 		ndis_80211_rates_ex rates;
 		struct ndis_80211_network_type_list *ntl;
@@ -1110,7 +1108,7 @@ ndis_detach(device_t dev)
 	if (device_is_attached(dev)) {
 		if (sc->ndis_ifp != NULL) {
 			ndis_stop(sc);
-			if (sc->ndis_80211)
+			if (NDIS_80211(sc))
 				ieee80211_ifdetach(sc->ndis_ifp->if_l2com);
 			else
 				ether_ifdetach(sc->ndis_ifp);
@@ -1154,7 +1152,7 @@ ndis_detach(device_t dev)
 		ndis_destroy_dma(sc);
 	if (sc->ndis_txarray != NULL)
 		free(sc->ndis_txarray, M_NDIS_DEV);
-	if (sc->ndis_80211 == 0)
+	if (!NDIS_80211(sc))
 		ifmedia_removeall(&sc->ifmedia);
 	if (sc->ndis_txpool != NULL)
 		NdisFreePacketPool(sc->ndis_txpool);
@@ -1821,7 +1819,7 @@ ndis_start(struct ifnet *ifp)
 		 * If there's a BPF listener, bounce a copy of this frame
 		 * to him.
 		 */
-		if (sc->ndis_80211 == 0)
+		if (!NDIS_80211(sc))
 			BPF_MTAP(ifp, m);
 
 		/*
@@ -1913,7 +1911,7 @@ ndis_init(void *xsc)
 
 	ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D0);
 
-	if (sc->ndis_80211)
+	if (NDIS_80211(sc))
 		ieee80211_start_all(ic);	/* start all vap's */
 }
 
@@ -2588,7 +2586,7 @@ ndis_stop(struct ndis_softc *sc)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	callout_drain(&sc->ndis_stat_callout);
-	if (sc->ndis_80211 == 1)
+	if (NDIS_80211(sc))
 		callout_drain(&sc->ndis_scan_callout);
 
 	NDIS_LOCK(sc);
