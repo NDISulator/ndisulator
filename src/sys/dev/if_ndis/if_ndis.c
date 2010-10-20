@@ -1564,8 +1564,7 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 	struct ieee80211vap *vap;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	if ((sc->ndis_ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		return;
 
@@ -1629,9 +1628,7 @@ ndis_linksts_done(ndis_handle adapter)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
-
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	if (sc->ndis_ifp->if_link_state == LINK_STATE_UP) {
 		IoQueueWorkItem(sc->ndis_tickitem,
 		    (io_workitem_func)ndis_ticktask_wrap,
@@ -1675,8 +1672,7 @@ ndis_ticktask(device_object *d, void *arg)
 {
 	struct ndis_softc *sc = arg;
 
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	if (ndis_check_for_hang_nic(sc))
 		ndis_reset_nic(sc);
 }
@@ -2063,18 +2059,16 @@ ndis_set_wpa(struct ndis_softc *sc, void *ie, int ielen)
 }
 
 static void
-ndis_media_status(struct ifnet *ifp, struct ifmediareq *imr)
+ndis_media_status(struct ifnet *ifp, struct ifmediareq *ifmr)
 {
 	struct ieee80211vap *vap = ifp->if_softc;
 	struct ndis_softc *sc = vap->iv_ic->ic_ifp->if_softc;
 	uint32_t txrate;
 
-	if (!NDIS_INITIALIZED(sc))
-		return;
-
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	if (!ndis_get_int(sc, OID_GEN_LINK_SPEED, &txrate))
 		vap->iv_bss->ni_txrate = txrate / 5000;
-	ieee80211_media_status(ifp, imr);
+	ieee80211_media_status(ifp, ifmr);
 }
 
 static void
