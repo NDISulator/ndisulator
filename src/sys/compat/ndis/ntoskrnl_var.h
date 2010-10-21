@@ -180,8 +180,7 @@ struct slist_entry {
 };
 typedef struct slist_entry slist_entry;
 
-#ifdef __i386__
-union slist_header {
+union slist_header {  /* FIXME: amd64 */
 	uint64_t	slh_align;
 	struct {
 		struct slist_entry	*slh_next;
@@ -190,16 +189,6 @@ union slist_header {
 	} slh_list;
 };
 typedef union slist_header slist_header;
-#else
-struct slist_header {
-	uint64_t	slh_depth;
-	union {
-		uint64_t		slh_region;
-		struct slist_entry	*slh_next;
-	} slh_list;
-} __attribute__((aligned(16)));
-typedef struct slist_header slist_header;
-#endif
 
 struct list_entry {
 	struct list_entry	*nle_flink;
