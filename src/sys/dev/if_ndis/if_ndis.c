@@ -170,7 +170,7 @@ static void	ndis_set_bssid(struct ndis_softc *, ndis_80211_macaddr);
 static void	ndis_set_channel(struct ieee80211com *);
 static int	ndis_set_cipher(struct ndis_softc *, int);
 static int	ndis_set_encryption(struct ndis_softc *, uint32_t);
-static int	ndis_set_filter(struct ndis_softc *, uint32_t);
+static int	ndis_set_filter(struct ndis_softc *);
 static int	ndis_set_fragthreshold(struct ndis_softc *, uint16_t);
 static int	ndis_set_infra(struct ndis_softc *, int);
 static int	ndis_set_multi(struct ndis_softc *);
@@ -356,8 +356,19 @@ ndis_set_authmode(struct ndis_softc *sc, enum ndis_80211_authentication_mode m)
 }
 
 static int
-ndis_set_filter(struct ndis_softc *sc, uint32_t filter)
+ndis_set_filter(struct ndis_softc *sc)
 {
+	struct ifnet *ifp = sc->ndis_ifp;
+	uint32_t filter = NDIS_PACKET_TYPE_DIRECTED;
+
+	if (ifp->if_flags & IFF_ALLMULTI)
+		filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
+	if (ifp->if_flags & IFF_BROADCAST)
+		filter |= NDIS_PACKET_TYPE_BROADCAST;
+	if (ifp->if_flags & IFF_MULTICAST)
+		filter |= NDIS_PACKET_TYPE_MULTICAST;
+	if (ifp->if_flags & IFF_PROMISC)
+		filter |= NDIS_PACKET_TYPE_PROMISCUOUS;
 	return (ndis_set_int(sc, OID_GEN_CURRENT_PACKET_FILTER, filter));
 }
 
@@ -384,22 +395,13 @@ ndis_set_multi(struct ndis_softc *sc)
 	uint32_t len = 0, mclistsz;
 	uint8_t *mclist;
 
-	if (ifp->if_flags & IFF_ALLMULTI || ifp->if_flags & IFF_PROMISC) {
-		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
-		return (ndis_set_filter(sc, sc->ndis_filter));
-	}
-
 	if (TAILQ_EMPTY(&ifp->if_multiaddrs))
 		return (EINVAL);
 
 	ndis_get_int(sc, OID_802_3_MAXIMUM_LIST_SIZE, &mclistsz);
 	mclist = malloc(ETHER_ADDR_LEN * mclistsz, M_NDIS_DEV, M_NOWAIT|M_ZERO);
-	if (mclist == NULL) {
-		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
-		goto out;
-	}
-
-	sc->ndis_filter |= NDIS_PACKET_TYPE_MULTICAST;
+	if (mclist == NULL)
+		return (ENOMEM);
 
 	if_maddr_rlock(ifp);
 	TAILQ_FOREACH(ifma, &ifp->if_multiaddrs, ifma_link) {
@@ -411,9 +413,8 @@ ndis_set_multi(struct ndis_softc *sc)
 		len++;
 		if (len > mclistsz) {
 			if_maddr_runlock(ifp);
-			sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
-			sc->ndis_filter &= ~NDIS_PACKET_TYPE_MULTICAST;
-			goto out;
+			free(mclist, M_NDIS_DEV);
+			return (ENOSPC);
 		}
 	}
 	if_maddr_runlock(ifp);
@@ -421,12 +422,9 @@ ndis_set_multi(struct ndis_softc *sc)
 	len = len * ETHER_ADDR_LEN;
 	if (ndis_set(sc, OID_802_3_MULTICAST_LIST, mclist, len)) {
 		DPRINTF("set mclist failed\n");
-		sc->ndis_filter |= NDIS_PACKET_TYPE_ALL_MULTICAST;
-		sc->ndis_filter &= ~NDIS_PACKET_TYPE_MULTICAST;
 	}
-out:
 	free(mclist, M_NDIS_DEV);
-	return (ndis_set_filter(sc, sc->ndis_filter));
+	return (0);
 }
 
 static int
@@ -1870,12 +1868,7 @@ ndis_init(void *xsc)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	/* Program the packet filter */
-	sc->ndis_filter = NDIS_PACKET_TYPE_DIRECTED;
-	if (ifp->if_flags & IFF_BROADCAST)
-		sc->ndis_filter |= NDIS_PACKET_TYPE_BROADCAST;
-	if (ifp->if_flags & IFF_PROMISC)
-		sc->ndis_filter |= NDIS_PACKET_TYPE_PROMISCUOUS;
-	if (ndis_set_filter(sc, sc->ndis_filter) != 0)
+	if (ndis_set_filter(sc) != 0)
 		DPRINTF("set filter failed\n");
 
 	/* Program the multicast filter, if necessary */
@@ -2307,25 +2300,14 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 	switch (command) {
 	case SIOCSIFFLAGS:
 		if (ifp->if_flags & IFF_UP) {
-			if (ifp->if_drv_flags & IFF_DRV_RUNNING &&
-			    ifp->if_flags & IFF_PROMISC &&
-			    !(sc->ndis_if_flags & IFF_PROMISC)) {
-				sc->ndis_filter |=
-				    NDIS_PACKET_TYPE_PROMISCUOUS;
-				error = ndis_set_filter(sc, sc->ndis_filter);
-			} else if (ifp->if_drv_flags & IFF_DRV_RUNNING &&
-			    !(ifp->if_flags & IFF_PROMISC) &&
-			    sc->ndis_if_flags & IFF_PROMISC) {
-				sc->ndis_filter &=
-				    ~NDIS_PACKET_TYPE_PROMISCUOUS;
-				error = ndis_set_filter(sc, sc->ndis_filter);
+			if (ifp->if_drv_flags & IFF_DRV_RUNNING) {
+				error = ndis_set_filter(sc);
 			} else
 				ndis_init(sc);
 		} else {
 			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
 				ndis_stop(sc);
 		}
-		sc->ndis_if_flags = ifp->if_flags;
 		break;
 	case SIOCADDMULTI:
 	case SIOCDELMULTI:

@@ -188,8 +188,6 @@ struct ndis_softc {
 	struct ndis_cfg			*ndis_regvals;
 	struct nch			ndis_cfglist_head;
 	uint32_t			ndis_physical_medium;
-	uint32_t			ndis_filter;
-	int				ndis_if_flags;
 	uint32_t			ndis_devidx;
 	enum ndis_interface_type	ndis_iftype;
 	driver_object			*ndis_dobj;
