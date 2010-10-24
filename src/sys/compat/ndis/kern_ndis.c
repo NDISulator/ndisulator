@@ -78,9 +78,9 @@ static void	ndis_set_done_func(ndis_handle, ndis_status);
 static void	ndis_get_done_func(ndis_handle, ndis_status);
 static void	ndis_reset_done_func(ndis_handle, ndis_status, uint8_t);
 static void	ndis_send_rsrcavail_func(ndis_handle);
-static void	ndis_interrupt_setup(kdpc *, device_object *, irp *,
+static void	ndis_interrupt_setup(kdpc *, struct device_object *, irp *,
 		    struct ndis_softc *);
-static void	ndis_return_packet_nic(device_object *, void *);
+static void	ndis_return_packet_nic(struct device_object *, void *);
 
 static struct image_patch_table kernndis_functbl[] = {
 	IMPORT_SFUNC(ndis_status_func, 4),
@@ -336,7 +336,7 @@ ndis_flush_sysctls(struct ndis_softc *sc)
 }
 
 static void
-ndis_return_packet_nic(device_object *dobj, void *arg)
+ndis_return_packet_nic(struct device_object *dobj, void *arg)
 {
 	struct ndis_miniport_block *block = arg;
 	struct ndis_miniport_driver_characteristics *ch;
@@ -950,7 +950,7 @@ ndis_init_nic(struct ndis_softc *sc)
 }
 
 static void
-ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
+ndis_interrupt_setup(kdpc *dpc, struct device_object *dobj, irp *ip,
     struct ndis_softc *sc)
 {
 	struct ndis_miniport_interrupt *intr;
@@ -966,9 +966,9 @@ ndis_interrupt_setup(kdpc *dpc, device_object *dobj, irp *ip,
 }
 
 int32_t
-NdisAddDevice(driver_object *drv, device_object *pdo)
+NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
 {
-	device_object *fdo;
+	struct device_object *fdo;
 	struct ndis_miniport_block *block;
 	struct ndis_softc *sc;
 	int32_t status;
@@ -1047,7 +1047,7 @@ NdisAddDevice(driver_object *drv, device_object *pdo)
 void
 ndis_unload_driver(struct ndis_softc *sc)
 {
-	device_object *fdo;
+	struct device_object *fdo;
 
 	KASSERT(sc->ndis_block->device_ctx == NULL, ("device present"));
 	if (sc->ndis_intrhand) /* FIXME: doesn't belong here */

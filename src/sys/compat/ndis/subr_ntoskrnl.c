@@ -122,12 +122,13 @@ static kspin_lock ntoskrnl_intlock;
 static uint8_t RtlEqualUnicodeString(unicode_string *,
     unicode_string *, uint8_t);
 static void RtlCopyUnicodeString(unicode_string *, unicode_string *);
-static irp *IoBuildSynchronousFsdRequest(uint32_t, device_object *, void *,
-    uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
-static irp *IoBuildAsynchronousFsdRequest(uint32_t, device_object *, void *,
-    uint32_t, uint64_t *, struct io_status_block *);
-static irp *IoBuildDeviceIoControlRequest(uint32_t, device_object *, void *,
-    uint32_t, void *, uint32_t, uint8_t, nt_kevent *, struct io_status_block *);
+static irp *IoBuildSynchronousFsdRequest(uint32_t, struct device_object *,
+    void *, uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
+static irp *IoBuildAsynchronousFsdRequest(uint32_t, struct device_object *,
+    void *, uint32_t, uint64_t *, struct io_status_block *);
+static irp *IoBuildDeviceIoControlRequest(uint32_t, struct device_object *,
+    void *, uint32_t, void *, uint32_t, uint8_t, nt_kevent *,
+    struct io_status_block *);
 static irp *IoAllocateIrp(uint8_t, uint8_t);
 static void IoReuseIrp(irp *, uint32_t);
 static uint8_t IoCancelIrp(irp *);
@@ -150,7 +151,7 @@ static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_destroy_dpc_threads(void);
 static void ntoskrnl_destroy_workitem_threads(void);
 static void ntoskrnl_workitem_thread(void *);
-static void ntoskrnl_workitem(device_object *, void *);
+static void ntoskrnl_workitem(struct device_object *, void *);
 static void ntoskrnl_unicode_to_ascii(uint16_t *, char *, int);
 static void ntoskrnl_ascii_to_unicode(char *, uint16_t *, int);
 static uint8_t ntoskrnl_insert_dpc(list_entry *, kdpc *);
@@ -220,9 +221,9 @@ static ndis_status PsCreateSystemThread(ndis_handle *, uint32_t, void *,
     ndis_handle, void *, void *, void *);
 static ndis_status PsTerminateSystemThread(ndis_status);
 static ndis_status IoGetDeviceObjectPointer(unicode_string *, uint32_t,
-    void *, device_object *);
-static ndis_status IoGetDeviceProperty(device_object *, uint32_t, uint32_t,
-    void *, uint32_t *);
+    void *, struct device_object *);
+static ndis_status IoGetDeviceProperty(struct device_object *, uint32_t,
+    uint32_t, void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
 static int32_t KeReleaseMutex(kmutant *, uint8_t);
 static int32_t KeReadStateMutex(kmutant *);
@@ -233,7 +234,7 @@ static ndis_status ZwClose(ndis_handle);
 static ndis_status WmiQueryTraceInformation(uint32_t, void *, uint32_t,
     uint32_t, void *);
 static ndis_status WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
-static ndis_status IoWMIRegistrationControl(device_object *, uint32_t);
+static ndis_status IoWMIRegistrationControl(struct device_object *, uint32_t);
 static ndis_status IoWMIQueryAllData(void *, uint32_t *, void *);
 static ndis_status IoWMIOpenBlock(void *, uint32_t, void **);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
@@ -580,7 +581,7 @@ ExFreePool(void *buf)
 }
 
 int32_t
-IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
+IoAllocateDriverObjectExtension(struct driver_object *drv, void *clid,
     uint32_t extlen, void **ext)
 {
 	custom_extension *ce;
@@ -600,7 +601,7 @@ IoAllocateDriverObjectExtension(driver_object *drv, void *clid,
 }
 
 void *
-IoGetDriverObjectExtension(driver_object *drv, void *clid)
+IoGetDriverObjectExtension(struct driver_object *drv, void *clid)
 {
 	list_entry *e;
 	custom_extension *ce;
@@ -625,13 +626,14 @@ IoGetDriverObjectExtension(driver_object *drv, void *clid)
 
 
 int32_t
-IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
-    uint32_t devtype, uint32_t devchars, uint8_t exclusive,
-    device_object **newdev)
+IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
+    unicode_string *devname, uint32_t devtype, uint32_t devchars,
+    uint8_t exclusive, struct device_object **newdev)
 {
-	device_object *dev;
+	struct device_object *dev;
 
-	dev = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(device_object), 0);
+	dev = ExAllocatePoolWithTag(NON_PAGED_POOL,
+	    sizeof(struct device_object), 0);
 	if (dev == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -650,7 +652,7 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 	} else
 		dev->devext = NULL;
 
-	dev->size = sizeof(device_object) + devextlen;
+	dev->size = sizeof(struct device_object) + devextlen;
 	dev->refcnt = 1;
 	dev->attacheddev = NULL;
 	dev->nextdev = NULL;
@@ -699,9 +701,9 @@ IoCreateDevice(driver_object *drv, uint32_t devextlen, unicode_string *devname,
 }
 
 void
-IoDeleteDevice(device_object *dev)
+IoDeleteDevice(struct device_object *dev)
 {
-	device_object *prev;
+	struct device_object *prev;
 
 	if (dev == NULL)
 		return;
@@ -723,10 +725,10 @@ IoDeleteDevice(device_object *dev)
 	ExFreePool(dev);
 }
 
-device_object *
-IoGetAttachedDevice(device_object *dev)
+struct device_object *
+IoGetAttachedDevice(struct device_object *dev)
 {
-	device_object *d = dev;
+	struct device_object *d = dev;
 
 	if (d == NULL)
 		return (NULL);
@@ -737,8 +739,8 @@ IoGetAttachedDevice(device_object *dev)
 }
 
 static irp *
-IoBuildSynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
-    uint32_t len, uint64_t *off, nt_kevent *event,
+IoBuildSynchronousFsdRequest(uint32_t func, struct device_object *dobj,
+    void *buf, uint32_t len, uint64_t *off, nt_kevent *event,
     struct io_status_block *status)
 {
 	irp *ip;
@@ -752,8 +754,8 @@ IoBuildSynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 }
 
 static irp *
-IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
-    uint32_t len, uint64_t *off, struct io_status_block *status)
+IoBuildAsynchronousFsdRequest(uint32_t func, struct device_object *dobj,
+    void *buf, uint32_t len, uint64_t *off, struct io_status_block *status)
 {
 	irp *ip;
 	struct io_stack_location *sl;
@@ -818,8 +820,8 @@ IoBuildAsynchronousFsdRequest(uint32_t func, device_object *dobj, void *buf,
 }
 
 static irp *
-IoBuildDeviceIoControlRequest(uint32_t iocode, device_object *dobj, void *ibuf,
-    uint32_t ilen, void *obuf, uint32_t olen, uint8_t isinternal,
+IoBuildDeviceIoControlRequest(uint32_t iocode, struct device_object *dobj,
+    void *ibuf, uint32_t ilen, void *obuf, uint32_t olen, uint8_t isinternal,
     nt_kevent *event, struct io_status_block *status)
 {
 	irp *ip;
@@ -990,7 +992,7 @@ IoCancelIrp(irp *ip)
 }
 
 int32_t
-IofCallDriver(device_object *dobj, irp *ip)
+IofCallDriver(struct device_object *dobj, irp *ip)
 {
 	struct io_stack_location *sl;
 	int32_t status;
@@ -1017,7 +1019,7 @@ IofCallDriver(device_object *dobj, irp *ip)
 void
 IofCompleteRequest(irp *ip, uint8_t prioboost)
 {
-	device_object *dobj;
+	struct device_object *dobj;
 	struct io_stack_location *sl;
 	completion_func cf;
 
@@ -1197,10 +1199,11 @@ IoDisconnectInterrupt(kinterrupt *iobj)
 	ExFreePool(iobj);
 }
 
-device_object *
-IoAttachDeviceToDeviceStack(device_object *src, device_object *dst)
+struct device_object *
+IoAttachDeviceToDeviceStack(struct device_object *src,
+    struct device_object *dst)
 {
-	device_object *attached;
+	struct device_object *attached;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 	attached = IoGetAttachedDevice(dst);
@@ -1213,9 +1216,9 @@ IoAttachDeviceToDeviceStack(device_object *src, device_object *dst)
 }
 
 void
-IoDetachDevice(device_object *topdev)
+IoDetachDevice(struct device_object *topdev)
 {
-	device_object *tail;
+	struct device_object *tail;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 
@@ -2451,7 +2454,7 @@ ntoskrnl_destroy_workitem_threads(void)
 }
 
 io_workitem *
-IoAllocateWorkItem(device_object *dobj)
+IoAllocateWorkItem(struct device_object *dobj)
 {
 	io_workitem *iw;
 
@@ -2515,7 +2518,7 @@ IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func, uint32_t qtype,
 }
 
 static void
-ntoskrnl_workitem(device_object *dobj, void *arg)
+ntoskrnl_workitem(struct device_object *dobj, void *arg)
 {
 	io_workitem *iw = arg;
 	work_queue_item *w;
@@ -2573,7 +2576,7 @@ ExQueueWorkItem(work_queue_item *w, uint32_t qtype)
 	l = kq->kq_disp.nle_flink;
 	while (l != &kq->kq_disp) {
 		cur = CONTAINING_RECORD(l, io_workitem, iw_listentry);
-		if (cur->iw_dobj == (device_object *)w) {
+		if (cur->iw_dobj == (struct device_object *)w) {
 			/* Already queued -- do nothing. */
 			KeReleaseSpinLock(&kq->kq_lock, irql);
 			return;
@@ -2582,7 +2585,7 @@ ExQueueWorkItem(work_queue_item *w, uint32_t qtype)
 	}
 	KeReleaseSpinLock(&kq->kq_lock, irql);
 
-	iw = IoAllocateWorkItem((device_object *)w);
+	iw = IoAllocateWorkItem((struct device_object *)w);
 	if (iw == NULL)
 		return;
 
@@ -2836,7 +2839,7 @@ IoIsWdmVersionAvailable(uint8_t major, uint8_t minor)
 
 static ndis_status
 IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
-    void *fileobj, device_object *devobj)
+    void *fileobj, struct device_object *devobj)
 {
 	/* TODO */
 	devobj = NULL;
@@ -2845,10 +2848,10 @@ IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
 }
 
 static ndis_status
-IoGetDeviceProperty(device_object *devobj, uint32_t regprop, uint32_t buflen,
-    void *prop, uint32_t *reslen)
+IoGetDeviceProperty(struct device_object *devobj, uint32_t regprop,
+    uint32_t buflen, void *prop, uint32_t *reslen)
 {
-	driver_object *drv;
+	struct driver_object *drv;
 	uint16_t **name;
 
 	drv = devobj->drvobj;
@@ -3082,7 +3085,7 @@ WmiTraceMessage(uint64_t loghandle, uint32_t messageflags,
 }
 
 static ndis_status
-IoWMIRegistrationControl(device_object *dobj, uint32_t action)
+IoWMIRegistrationControl(struct device_object *dobj, uint32_t action)
 {
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
 }

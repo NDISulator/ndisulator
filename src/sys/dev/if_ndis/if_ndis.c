@@ -143,7 +143,7 @@ static int	ndis_ifmedia_upd(struct ifnet *);
 static void	ndis_init(void *);
 static int	ndis_ioctl(struct ifnet *, u_long, caddr_t);
 static int	ndis_ioctl_80211(struct ifnet *, u_long, caddr_t);
-static void	ndis_inputtask(device_object *, void *);
+static void	ndis_inputtask(struct device_object *, void *);
 static int	ndis_key_set(struct ieee80211vap *,
 		    const struct ieee80211_key *, const u_int8_t []);
 static int	ndis_key_delete(struct ieee80211vap *,
@@ -158,7 +158,7 @@ static int	ndis_get_physical_medium(struct ndis_softc *, uint32_t *);
 static int	ndis_probe_task_offload(struct ndis_softc *);
 static int	ndis_raw_xmit(struct ieee80211_node *, struct mbuf *,
 		    const struct ieee80211_bpf_params *);
-static void	ndis_resettask(device_object *, void *);
+static void	ndis_resettask(struct device_object *, void *);
 static void	ndis_scan(void *);
 static void	ndis_scan_end(struct ieee80211com *);
 static void	ndis_scan_curchan(struct ieee80211_scan_state *, unsigned long);
@@ -185,10 +185,10 @@ static int	ndis_set_txpower(struct ndis_softc *);
 static int	ndis_set_wpa(struct ndis_softc *, void *, int);
 static void	ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_start(struct ifnet *);
-static void	ndis_starttask(device_object *, void *);
+static void	ndis_starttask(struct device_object *, void *);
 static void	ndis_stop(struct ndis_softc *);
 static void	ndis_tick(void *);
-static void	ndis_ticktask(device_object *, void *);
+static void	ndis_ticktask(struct device_object *, void *);
 static void	ndis_update_mcast(struct ifnet *ifp);
 static void	ndis_update_promisc(struct ifnet *ifp);
 
@@ -613,8 +613,8 @@ ndis_attach(device_t dev)
 {
 	u_char eaddr[ETHER_ADDR_LEN];
 	struct ndis_softc *sc;
-	driver_object *pdrv;
-	device_object *pdo;
+	struct driver_object *pdrv;
+	struct device_object *pdo;
 	struct ifnet *ifp = NULL;
 	int mode, i = 0;
 	uint32_t rval, len;
@@ -1482,7 +1482,7 @@ ndis_rxeof(ndis_handle adapter, struct ndis_packet **packets, uint32_t pktcnt)
  * 'dispatch level' per-cpu sleep lock).
  */
 static void
-ndis_inputtask(device_object *dobj, void *arg)
+ndis_inputtask(struct device_object *dobj, void *arg)
 {
 	struct ifnet *ifp = arg;
 	struct ndis_softc *sc = ifp->if_softc;
@@ -1664,7 +1664,7 @@ ndis_tick(void *xsc)
 }
 
 static void
-ndis_ticktask(device_object *d, void *arg)
+ndis_ticktask(struct device_object *d, void *arg)
 {
 	struct ndis_softc *sc = arg;
 
@@ -1722,7 +1722,7 @@ ndis_update_promisc(struct ifnet *ifp)
 }
 
 static void
-ndis_starttask(device_object *d, void *arg)
+ndis_starttask(struct device_object *d, void *arg)
 {
 	struct ifnet *ifp = arg;
 
@@ -2548,7 +2548,7 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 }
 
 static void
-ndis_resettask(device_object *d, void *arg)
+ndis_resettask(struct device_object *d, void *arg)
 {
 	struct ndis_softc *sc = arg;
 

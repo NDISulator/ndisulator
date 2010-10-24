@@ -114,7 +114,7 @@ static int
 ndis_probe_pci(device_t dev)
 {
 	struct drvdb_ent *db;
-	driver_object *drv;
+	struct driver_object *drv;
 
 	drv = windrv_lookup(0, "PCI Bus");
 	if (drv == NULL)

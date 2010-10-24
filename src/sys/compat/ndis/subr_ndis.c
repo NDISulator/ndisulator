@@ -112,8 +112,8 @@ static char ndis_filepath[MAXPATHLEN] = "/compat/ndis";
 SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
     MAXPATHLEN, "Path used by NdisOpenFile() to search for files");
 
-static void NdisInitializeWrapper(ndis_handle *, driver_object *, void *,
-    void *);
+static void NdisInitializeWrapper(ndis_handle *, struct driver_object *,
+    void *, void *);
 static ndis_status NdisMRegisterMiniport(ndis_handle,
     struct ndis_miniport_driver_characteristics *, uint32_t);
 static ndis_status NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
@@ -183,7 +183,7 @@ static void NdisMFreeMapRegisters(ndis_handle);
 static void ndis_mapshared_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMAllocateSharedMemory(ndis_handle, uint32_t, uint8_t, void **,
     struct physaddr *);
-static void ndis_asyncmem_complete(device_object *, void *);
+static void ndis_asyncmem_complete(struct device_object *, void *);
 static ndis_status NdisMAllocateSharedMemoryAsync(ndis_handle, uint32_t,
     uint8_t, void *);
 static void NdisMFreeSharedMemory(ndis_handle, uint32_t, uint8_t, void *,
@@ -250,9 +250,9 @@ static void NdisInitUnicodeString(unicode_string *, uint16_t *);
 static void NdisFreeString(unicode_string *);
 static ndis_status NdisMRemoveMiniport(ndis_handle *);
 static void NdisTerminateWrapper(ndis_handle, void *);
-static void NdisMGetDeviceProperty(ndis_handle, device_object **,
-    device_object **, device_object **, struct cm_resource_list *,
-    struct cm_resource_list *);
+static void NdisMGetDeviceProperty(ndis_handle, struct device_object **,
+    struct device_object **, struct device_object **,
+    struct cm_resource_list *, struct cm_resource_list *);
 static void NdisGetFirstBufferFromPacket(struct ndis_packet *, ndis_buffer **,
     void **, uint32_t *, uint32_t *);
 static void NdisGetFirstBufferFromPacketSafe(struct ndis_packet *,
@@ -341,8 +341,8 @@ ndis_findwrap(funcptr func)
  * routine here
  */
 static void
-NdisInitializeWrapper(ndis_handle *wrapper, driver_object *drv, void *path,
-    void *unused)
+NdisInitializeWrapper(ndis_handle *wrapper, struct driver_object *drv,
+    void *path, void *unused)
 {
 	/*
 	 * As of yet, I haven't come up with a compelling
@@ -376,7 +376,7 @@ NdisMRegisterMiniport(ndis_handle adapter,
     struct ndis_miniport_driver_characteristics *characteristics, uint32_t len)
 {
 	struct ndis_miniport_driver_characteristics *ch = NULL;
-	driver_object *drv = adapter;
+	struct driver_object *drv = adapter;
 
 	if (characteristics->version_major < 4)
 		return (NDIS_STATUS_BAD_VERSION);
@@ -804,8 +804,8 @@ NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
 	struct ndis_miniport_block *block = adapter;
 	struct ifnet *ifp;
 	struct ndis_softc *sc;
+	struct driver_object *drv;
 	device_t dev;
-	driver_object *drv;
 	va_list ap;
 	int i;
 	char *str = NULL;
@@ -1261,7 +1261,7 @@ struct ndis_allocwork {
 };
 
 static void
-ndis_asyncmem_complete(device_object *dobj, void *arg)
+ndis_asyncmem_complete(struct device_object *dobj, void *arg)
 {
 	struct ndis_miniport_block *block;
 	struct ndis_softc *sc;
@@ -2166,8 +2166,8 @@ NdisInitUnicodeString(unicode_string *dst, uint16_t *src)
 }
 
 static void
-NdisMGetDeviceProperty(ndis_handle adapter, device_object **phydevobj,
-    device_object **funcdevobj, device_object **nextdevobj,
+NdisMGetDeviceProperty(ndis_handle adapter, struct device_object **phydevobj,
+    struct device_object **funcdevobj, struct device_object **nextdevobj,
     struct cm_resource_list *resources, struct cm_resource_list *tresources)
 {
 	struct ndis_miniport_block *block = adapter;
@@ -2641,8 +2641,8 @@ NdisMRegisterDevice(ndis_handle adapter, unicode_string *devname,
     unicode_string *symname, driver_dispatch *majorfuncs[],
     void **devobj, ndis_handle *devhandle)
 {
+	struct device_object *dobj;
 	uint32_t status;
-	device_object *dobj;
 
 	status = IoCreateDevice(adapter, 0, devname,
 	    FILE_DEVICE_NETWORK, 0, FALSE, &dobj);

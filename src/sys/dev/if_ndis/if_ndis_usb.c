@@ -147,7 +147,7 @@ ndis_attach_usb(device_t dev)
 	struct usb_attach_arg *uaa;
 	struct ndis_softc *sc;
 	struct ndis_usb_type *t;
-	driver_object *drv;
+	struct driver_object *drv;
 	int devidx = 0;
 
 	device_set_usb_desc(dev);

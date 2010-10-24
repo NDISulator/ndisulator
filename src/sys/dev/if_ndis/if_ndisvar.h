@@ -190,7 +190,7 @@ struct ndis_softc {
 	uint32_t			ndis_physical_medium;
 	uint32_t			ndis_devidx;
 	enum ndis_interface_type	ndis_iftype;
-	driver_object			*ndis_dobj;
+	struct driver_object		*ndis_dobj;
 	io_workitem			*ndis_tickitem;
 	io_workitem			*ndis_startitem;
 	io_workitem			*ndis_resetitem;

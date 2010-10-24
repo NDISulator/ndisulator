@@ -660,12 +660,11 @@ struct device_object {
 	struct devobj_extension	*devobj_ext;
 	void			*rsvd;
 };
-typedef struct device_object device_object;
 
 struct devobj_extension {
-	uint16_t	type;
-	uint16_t	size;
-	device_object	*devobj;
+	uint16_t		type;
+	uint16_t		size;
+	struct device_object	*devobj;
 };
 typedef struct devobj_extension devobj_extension;
 
@@ -879,8 +878,8 @@ struct kapc {
 };
 typedef struct kapc kapc;
 
-typedef uint32_t (*completion_func)(device_object *, struct irp *, void *);
-typedef uint32_t (*cancel_func)(device_object *, struct irp *);
+typedef uint32_t (*completion_func)(struct device_object *, struct irp *, void *);
+typedef uint32_t (*cancel_func)(struct device_object *, struct irp *);
 
 struct io_stack_location {
 	uint8_t		major;
@@ -1066,7 +1065,7 @@ typedef struct irp irp;
 #define	IoRequestDpc(dobj, irp, ctx)					\
 	KeInsertQueueDpc(&(dobj)->dpc, irp, ctx)
 
-typedef uint32_t (*driver_dispatch)(device_object *, irp *);
+typedef uint32_t (*driver_dispatch)(struct device_object *, irp *);
 
 /*
  * The driver_object is allocated once for each driver that's loaded
@@ -1080,7 +1079,7 @@ typedef uint32_t (*driver_dispatch)(device_object *, irp *);
 struct driver_object {
 	int16_t			type;
 	int16_t			size;
-	device_object		*device_object;
+	struct device_object	*device_object;
 	uint32_t		flags;
 	void			*driver_start;
 	uint32_t		driver_size;
@@ -1094,7 +1093,6 @@ struct driver_object {
 	void			*driver_unload_func;
 	driver_dispatch		dispatch[IRP_MJ_MAXIMUM_FUNCTION + 1];
 };
-typedef struct driver_object driver_object;
 
 #define	DEVPROP_DEVICE_DESCRIPTION	0x00000000
 #define	DEVPROP_HARDWARE_ID		0x00000001
@@ -1193,13 +1191,13 @@ typedef struct driver_object driver_object;
  * via IoAllocateWorkItem() and released via IoFreeWorkItem().
  * Consequently, we can define it any way we want.
  */
-typedef void (*io_workitem_func)(device_object *, void *);
+typedef void (*io_workitem_func)(struct device_object *, void *);
 
 struct io_workitem {
 	io_workitem_func	iw_func;
 	void			*iw_ctx;
 	list_entry		iw_listentry;
-	device_object		*iw_dobj;
+	struct device_object	*iw_dobj;
 	int			iw_idx;
 };
 typedef struct io_workitem io_workitem;
@@ -1250,7 +1248,7 @@ typedef struct work_queue_item work_queue_item;
 #define	WINDRV_WRAP_AMD64	5
 
 struct drvdb_ent {
-	driver_object			*windrv_object;
+	struct driver_object		*windrv_object;
 	void				*windrv_devlist;
 	struct ndis_cfg			*windrv_regvals;
 	enum ndis_interface_type	windrv_bustype;
@@ -1270,9 +1268,9 @@ struct drvdb_ent	*windrv_match(matchfuncptr, void *);
 int	windrv_load(module_t, vm_offset_t, size_t, enum ndis_interface_type,
 	    void *, void *);
 int	windrv_unload(module_t, vm_offset_t);
-int	windrv_create_pdo(driver_object *, device_t);
-void	windrv_destroy_pdo(driver_object *, device_t);
-int	windrv_bus_attach(driver_object *, char *);
+int	windrv_create_pdo(struct driver_object *, device_t);
+void	windrv_destroy_pdo(struct driver_object *, device_t);
+int	windrv_bus_attach(struct driver_object *, char *);
 void	windrv_wrap(funcptr, funcptr *, uint8_t, uint8_t);
 void	windrv_unwrap(funcptr);
 void	ctxsw_utow(void);
@@ -1330,29 +1328,30 @@ void	*MmMapIoSpace(uint64_t, uint32_t, uint32_t);
 void	MmUnmapIoSpace(void *, size_t);
 void	MmBuildMdlForNonPagedPool(mdl *);
 void	IoDisconnectInterrupt(kinterrupt *);
-void	*IoGetDriverObjectExtension(driver_object *, void *);
+void	*IoGetDriverObjectExtension(struct driver_object *, void *);
 int32_t IoConnectInterrupt(kinterrupt **, void *, void *, kspin_lock *,
 	    uint32_t, uint8_t, uint8_t, uint8_t, uint8_t, uint32_t, uint8_t);
-int32_t	IoAllocateDriverObjectExtension(driver_object *, void *, uint32_t,
-	    void **);
-int32_t	IoCreateDevice(driver_object *, uint32_t, unicode_string *, uint32_t,
-	    uint32_t, uint8_t, device_object **);
-void	IoDeleteDevice(device_object *);
-int32_t	IofCallDriver(device_object *, irp *);
+int32_t	IoAllocateDriverObjectExtension(struct driver_object *, void *,
+	    uint32_t, void **);
+int32_t	IoCreateDevice(struct driver_object *, uint32_t, unicode_string *,
+	    uint32_t, uint32_t, uint8_t, struct device_object **);
+void	IoDeleteDevice(struct device_object *);
+int32_t	IofCallDriver(struct device_object *, irp *);
 void	IofCompleteRequest(irp *, uint8_t);
 void	IoAcquireCancelSpinLock(uint8_t *);
 void	IoReleaseCancelSpinLock(uint8_t);
-void	IoDetachDevice(device_object *);
+void	IoDetachDevice(struct device_object *);
 mdl	*IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, irp *);
 void	IoFreeMdl(mdl *);
 void	ExQueueWorkItem(work_queue_item *, uint32_t);
 void	IoFreeWorkItem(io_workitem *);
 void	IoQueueWorkItem(io_workitem *, io_workitem_func, uint32_t, void *);
-io_workitem	*IoAllocateWorkItem(device_object *);
-driver_object	*windrv_lookup(vm_offset_t, char *);
-device_object	*IoGetAttachedDevice(device_object *);
-device_object	*IoAttachDeviceToDeviceStack(device_object *, device_object *);
-device_object	*windrv_find_pdo(driver_object *, device_t);
+io_workitem	*IoAllocateWorkItem(struct device_object *);
+struct driver_object	*windrv_lookup(vm_offset_t, char *);
+struct device_object	*IoGetAttachedDevice(struct device_object *);
+struct device_object	*IoAttachDeviceToDeviceStack(struct device_object *,
+			    struct device_object *);
+struct device_object	*windrv_find_pdo(struct driver_object *, device_t);
 
 #define	IoCallDriver(a, b)		IofCallDriver(a, b)
 #define	IoCompleteRequest(a, b)		IofCompleteRequest(a, b)

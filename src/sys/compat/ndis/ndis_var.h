@@ -1428,9 +1428,9 @@ struct ndis_miniport_block {
 	uint32_t			bus_num;
 	uint32_t			bus_type;
 	uint32_t			adapter_type;
-	device_object			*deviceobj; /* Functional device */
-	device_object			*physdeviceobj; /* Physical device */
-	device_object			*nextdeviceobj; /* Next dev in stack */
+	struct device_object		*deviceobj; /* Functional device */
+	struct device_object		*physdeviceobj; /* Physical device */
+	struct device_object		*nextdeviceobj; /* Next dev in stack */
 	void				*mapreg;
 	void				*callmgraflist;
 	void				*miniport_thread;
@@ -1547,7 +1547,7 @@ void	ndis_destroy_dma(struct ndis_softc *);
 void	ndis_create_sysctls(struct ndis_softc *);
 void	ndis_flush_sysctls(struct ndis_softc *);
 int	ndis_add_sysctl(struct ndis_softc *, char *, char *, char *, int);
-int32_t	NdisAddDevice(driver_object *, device_object *);
+int32_t	NdisAddDevice(struct driver_object *, struct device_object *);
 void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
 	    uint32_t);
 void	NdisAllocatePacketPoolEx(ndis_status *, ndis_handle *, uint32_t,

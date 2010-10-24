@@ -69,7 +69,7 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/usbd_var.h>
 #include <dev/if_ndis/if_ndisvar.h>
 
-static driver_object usbd_driver;
+static struct driver_object usbd_driver;
 static usb_callback_t usbd_non_isoc_callback;
 static usb_callback_t usbd_ctrl_callback;
 
@@ -117,16 +117,16 @@ static usb_error_t usbd_setup_endpoint_one(irp *, uint8_t,
 static int32_t usbd_func_getdesc(irp *);
 static union usbd_urb *usbd_geturb(irp *);
 static struct ndisusb_ep*usbd_get_ndisep(irp *, usb_endpoint_descriptor_t *);
-static int32_t usbd_iodispatch(device_object *, irp *);
-static int32_t usbd_ioinvalid(device_object *, irp *);
-static int32_t usbd_pnp(device_object *, irp *);
-static int32_t usbd_power(device_object *, irp *);
-static void usbd_irpcancel(device_object *, irp *);
+static int32_t usbd_iodispatch(struct device_object *, irp *);
+static int32_t usbd_ioinvalid(struct device_object *, irp *);
+static int32_t usbd_pnp(struct device_object *, irp *);
+static int32_t usbd_power(struct device_object *, irp *);
+static void usbd_irpcancel(struct device_object *, irp *);
 static int32_t usbd_submit_urb(irp *);
 static int32_t usbd_urb2nt(int32_t);
-static void usbd_task(device_object *, struct ndis_softc *);
+static void usbd_task(struct device_object *, struct ndis_softc *);
 static int32_t usbd_taskadd(irp *, unsigned);
-static void usbd_xfertask(device_object *, struct ndis_softc *);
+static void usbd_xfertask(struct device_object *, struct ndis_softc *);
 static void dummy(void);
 
 static union usbd_urb *USBD_CreateConfigurationRequestEx(
@@ -221,7 +221,7 @@ usbd_libfini(void)
 }
 
 static int32_t
-usbd_iodispatch(device_object *dobj, irp *ip)
+usbd_iodispatch(struct device_object *dobj, irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -249,7 +249,7 @@ usbd_iodispatch(device_object *dobj, irp *ip)
 }
 
 static int32_t
-usbd_ioinvalid(device_object *dobj, irp *ip)
+usbd_ioinvalid(struct device_object *dobj, irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -267,7 +267,7 @@ usbd_ioinvalid(device_object *dobj, irp *ip)
 }
 
 static int32_t
-usbd_pnp(device_object *dobj, irp *ip)
+usbd_pnp(struct device_object *dobj, irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -285,7 +285,7 @@ usbd_pnp(device_object *dobj, irp *ip)
 }
 
 static int32_t
-usbd_power(device_object *dobj, irp *ip)
+usbd_power(struct device_object *dobj, irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -759,7 +759,7 @@ usbd_func_vendorclass(irp *ip)
 }
 
 static void
-usbd_irpcancel(device_object *dobj, irp *ip)
+usbd_irpcancel(struct device_object *dobj, irp *ip)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -1102,7 +1102,7 @@ usbd_get_ndisep(irp *ip, usb_endpoint_descriptor_t *ep)
 }
 
 static void
-usbd_xfertask(device_object *dobj, struct ndis_softc *sc)
+usbd_xfertask(struct device_object *dobj, struct ndis_softc *sc)
 {
 	irp *ip;
 	device_t dev;
@@ -1207,7 +1207,7 @@ usbd_taskadd(irp *ip, unsigned type)
 }
 
 static void
-usbd_task(device_object *dobj, struct ndis_softc *sc)
+usbd_task(struct device_object *dobj, struct ndis_softc *sc)
 {
 	irp *ip;
 	list_entry *l;

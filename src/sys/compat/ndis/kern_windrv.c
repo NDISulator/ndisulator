@@ -67,8 +67,8 @@ __FBSDID("$FreeBSD$");
 static struct mtx drvdb_mtx;
 static STAILQ_HEAD(drvdb, drvdb_ent) drvdb_head;
 
-static driver_object fake_pci_driver; /* serves both PCI and cardbus */
-static driver_object fake_pccard_driver;
+static struct driver_object fake_pci_driver; /* serves both PCI and cardbus */
+static struct driver_object fake_pccard_driver;
 
 #ifdef __i386__
 static void x86_oldldt(void *);
@@ -146,7 +146,7 @@ windrv_libfini(void)
  * Given the address of a driver image, find its corresponding
  * driver_object.
  */
-driver_object *
+struct driver_object *
 windrv_lookup(vm_offset_t img, char *name)
 {
 	struct drvdb_ent *d;
@@ -210,8 +210,8 @@ int
 windrv_unload(module_t mod, vm_offset_t img)
 {
 	struct drvdb_ent *db, *r = NULL;
-	driver_object *drv;
-	device_object *d, *pdo;
+	struct driver_object *drv;
+	struct device_object *d, *pdo;
 	device_t dev;
 	list_entry *e;
 
@@ -354,7 +354,8 @@ skipreloc:
 	if (new == NULL)
 		return (ENOMEM);
 
-	drv = malloc(sizeof(driver_object), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
+	drv = malloc(sizeof(struct driver_object), M_NDIS_WINDRV,
+	    M_NOWAIT|M_ZERO);
 	if (drv == NULL) {
 		free (new, M_NDIS_WINDRV);
 		return (ENOMEM);
@@ -411,9 +412,9 @@ skipreloc:
  * get at the device_t.
  */
 int
-windrv_create_pdo(driver_object *drv, device_t bsddev)
+windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 {
-	device_object *dev;
+	struct device_object *dev;
 
 	/*
 	 * This is a new physical device object, which technically
@@ -431,9 +432,9 @@ windrv_create_pdo(driver_object *drv, device_t bsddev)
 }
 
 void
-windrv_destroy_pdo(driver_object *drv, device_t bsddev)
+windrv_destroy_pdo(struct driver_object *drv, device_t bsddev)
 {
-	device_object *pdo;
+	struct device_object *pdo;
 
 	pdo = windrv_find_pdo(drv, bsddev);
 	if (pdo == NULL)
@@ -448,10 +449,10 @@ windrv_destroy_pdo(driver_object *drv, device_t bsddev)
 /*
  * Given a device_t, find the corresponding PDO in a driver's device list.
  */
-device_object *
-windrv_find_pdo(driver_object *drv, device_t bsddev)
+struct device_object *
+windrv_find_pdo(struct driver_object *drv, device_t bsddev)
 {
-	device_object *pdo;
+	struct device_object *pdo;
 
 	mtx_lock(&drvdb_mtx);
 	pdo = drv->device_object;
@@ -472,7 +473,7 @@ windrv_find_pdo(driver_object *drv, device_t bsddev)
  * to set up an emulated bus driver so that it can receive IRPs.
  */
 int
-windrv_bus_attach(driver_object *drv, char *name)
+windrv_bus_attach(struct driver_object *drv, char *name)
 {
 	struct drvdb_ent *new;
 	ansi_string as;
