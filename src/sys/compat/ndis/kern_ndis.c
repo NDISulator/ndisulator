@@ -497,20 +497,14 @@ ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 	struct ether_header *eh;
 	int diff;
 
-	if (p == NULL || m0 == NULL)
-		return (EINVAL);
-
+	KASSERT(p != NULL, ("no packet"));
 	priv = &p->private;
 	buf = priv->head;
 	p->refcnt = 0;
 
 	for (buf = priv->head; buf != NULL; buf = buf->mdl_next) {
 		if (buf == priv->head)
-#ifdef MT_HEADER
 			MGETHDR(m, M_DONTWAIT, MT_HEADER);
-#else
-			MGETHDR(m, M_DONTWAIT, MT_DATA);
-#endif
 		else
 			MGET(m, M_DONTWAIT, MT_DATA);
 		if (m == NULL) {
@@ -575,9 +569,7 @@ ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 	ndis_buffer *buf = NULL, *prev = NULL;
 	struct ndis_packet_private *priv;
 
-	if (p == NULL || *p == NULL || m0 == NULL)
-		return (EINVAL);
-
+	KASSERT(*p != NULL, ("no packet"));
 	priv = &(*p)->private;
 	priv->totlen = m0->m_pkthdr.len;
 
