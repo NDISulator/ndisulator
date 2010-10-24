@@ -352,7 +352,7 @@ struct image_patch_table {
 	void	(*func)(void);
 	void	(*wrap)(void);
 	uint8_t	argcnt;
-	int	ftype;
+	uint8_t	ftype;
 };
 
 /*

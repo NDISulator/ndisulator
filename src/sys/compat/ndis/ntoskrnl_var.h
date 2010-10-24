@@ -1273,7 +1273,7 @@ int	windrv_unload(module_t, vm_offset_t, int);
 int	windrv_create_pdo(driver_object *, device_t);
 void	windrv_destroy_pdo(driver_object *, device_t);
 int	windrv_bus_attach(driver_object *, char *);
-void	windrv_wrap(funcptr, funcptr *, uint8_t, int);
+void	windrv_wrap(funcptr, funcptr *, uint8_t, uint8_t);
 void	windrv_unwrap(funcptr);
 void	ctxsw_utow(void);
 void	ctxsw_wtou(void);
