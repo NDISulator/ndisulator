@@ -207,7 +207,7 @@ windrv_match(matchfuncptr matchfunc, void *ctx)
  * away any custom driver extension info that may have been added.
  */
 int
-windrv_unload(module_t mod, vm_offset_t img, int len)
+windrv_unload(module_t mod, vm_offset_t img)
 {
 	struct drvdb_ent *db, *r = NULL;
 	driver_object *drv;
