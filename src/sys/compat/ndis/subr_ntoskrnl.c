@@ -119,9 +119,9 @@ struct kuser_shared_data kuser_shared_data;
 static struct list_entry ntoskrnl_intlist;
 static kspin_lock ntoskrnl_intlock;
 
-static uint8_t RtlEqualUnicodeString(unicode_string *,
-    unicode_string *, uint8_t);
-static void RtlCopyUnicodeString(unicode_string *, unicode_string *);
+static uint8_t RtlEqualUnicodeString(const unicode_string *,
+    const unicode_string *, uint8_t);
+static void RtlCopyUnicodeString(unicode_string *, const unicode_string *);
 static irp *IoBuildSynchronousFsdRequest(uint32_t, struct device_object *,
     void *, uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
 static irp *IoBuildAsynchronousFsdRequest(uint32_t, struct device_object *,
@@ -207,7 +207,7 @@ static void RtlMoveMemory(void *, const void *, size_t);
 static ndis_status RtlCharToInteger(const char *, uint32_t, uint32_t *);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
-static ndis_status RtlUnicodeStringToInteger(unicode_string *, uint32_t,
+static ndis_status RtlUnicodeStringToInteger(const unicode_string *, uint32_t,
     uint32_t *);
 static int atoi(const char *);
 static long atol(const char *);
@@ -242,7 +242,7 @@ static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
 static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(funcptr);
-static ndis_status DbgPrint(char *, ...);
+static ndis_status DbgPrint(const char *, ...);
 static void DbgBreakPoint(void);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
@@ -446,7 +446,7 @@ ntoskrnl_tolower(int c)
 }
 
 static uint8_t
-RtlEqualUnicodeString(unicode_string *str1, unicode_string *str2,
+RtlEqualUnicodeString(const unicode_string *str1, const unicode_string *str2,
     uint8_t caseinsensitive)
 {
 	int i;
@@ -469,7 +469,7 @@ RtlEqualUnicodeString(unicode_string *str1, unicode_string *str2,
 }
 
 static void
-RtlCopyUnicodeString(unicode_string *dst, unicode_string *src)
+RtlCopyUnicodeString(unicode_string *dst, const unicode_string *src)
 {
 	if (src != NULL && src->us_buf != NULL && dst->us_buf != NULL) {
 		dst->us_len = min(src->us_len, dst->us_maxlen);
@@ -2689,19 +2689,14 @@ RtlCompareMemory(const void *s1, const void *s2, size_t len)
 }
 
 void
-RtlInitAnsiString(ansi_string *dst, char *src)
+RtlInitAnsiString(ansi_string *dst, const char *src)
 {
-	ansi_string *a;
-
-	a = dst;
-	if (a == NULL)
-		return;
 	if (src == NULL) {
-		a->as_len = a->as_maxlen = 0;
-		a->as_buf = NULL;
+		dst->as_len = dst->as_maxlen = 0;
+		dst->as_buf = NULL;
 	} else {
-		a->as_buf = src;
-		a->as_len = a->as_maxlen = strlen(src);
+		dst->as_buf = (char *)src;
+		dst->as_len = dst->as_maxlen = strlen(src);
 	}
 }
 
@@ -2727,14 +2722,15 @@ RtlInitUnicodeString(unicode_string *dst, uint16_t *src)
 }
 
 static ndis_status
-RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
+RtlUnicodeStringToInteger(const unicode_string *ustr, uint32_t base,
+   uint32_t *value)
 {
 	uint16_t *uchr;
 	int len, neg = 0;
 	char abuf[64];
 	char *astr;
 
-	if (val == NULL)
+	if (value == NULL)
 		return (NDIS_STATUS_ACCESS_VIOLATION);
 
 	uchr = ustr->us_buf;
@@ -2776,7 +2772,7 @@ RtlUnicodeStringToInteger(unicode_string *ustr, uint32_t base, uint32_t *val)
 	}
 
 	ntoskrnl_unicode_to_ascii(uchr, astr, len);
-	*val = strtoul(abuf, NULL, base);
+	*value = strtoul(abuf, NULL, base);
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -3161,7 +3157,7 @@ PsTerminateSystemThread(ndis_status status)
 }
 
 static ndis_status
-DbgPrint(char *fmt, ...)
+DbgPrint(const char *fmt, ...)
 {
 	va_list ap;
 

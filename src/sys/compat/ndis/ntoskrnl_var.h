@@ -1270,7 +1270,7 @@ int	windrv_load(module_t, vm_offset_t, size_t, enum ndis_interface_type,
 int	windrv_unload(module_t, vm_offset_t);
 int	windrv_create_pdo(struct driver_object *, device_t);
 void	windrv_destroy_pdo(struct driver_object *, device_t);
-int	windrv_bus_attach(struct driver_object *, char *);
+int	windrv_bus_attach(struct driver_object *, const char *);
 void	windrv_wrap(funcptr, funcptr *, uint8_t, uint8_t);
 void	windrv_unwrap(funcptr);
 void	ctxsw_utow(void);
@@ -1286,7 +1286,7 @@ int32_t	RtlUnicodeStringToAnsiString(ansi_string *, const unicode_string *,
 	    uint8_t);
 int32_t	RtlAnsiStringToUnicodeString(unicode_string *, const ansi_string *,
 	    uint8_t);
-void	RtlInitAnsiString(ansi_string *, char *);
+void	RtlInitAnsiString(ansi_string *, const char *);
 void	RtlInitUnicodeString(unicode_string *, uint16_t *);
 void	RtlFreeUnicodeString(unicode_string *);
 void	RtlFreeAnsiString(ansi_string *);
@@ -1347,7 +1347,7 @@ void	ExQueueWorkItem(work_queue_item *, uint32_t);
 void	IoFreeWorkItem(io_workitem *);
 void	IoQueueWorkItem(io_workitem *, io_workitem_func, uint32_t, void *);
 io_workitem	*IoAllocateWorkItem(struct device_object *);
-struct driver_object	*windrv_lookup(vm_offset_t, char *);
+struct driver_object	*windrv_lookup(vm_offset_t, const char *);
 struct device_object	*IoGetAttachedDevice(struct device_object *);
 struct device_object	*IoAttachDeviceToDeviceStack(struct device_object *,
 			    struct device_object *);

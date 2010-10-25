@@ -147,7 +147,7 @@ windrv_libfini(void)
  * driver_object.
  */
 struct driver_object *
-windrv_lookup(vm_offset_t img, char *name)
+windrv_lookup(vm_offset_t img, const char *name)
 {
 	struct drvdb_ent *d;
 	unicode_string us;
@@ -473,7 +473,7 @@ windrv_find_pdo(struct driver_object *drv, device_t bsddev)
  * to set up an emulated bus driver so that it can receive IRPs.
  */
 int
-windrv_bus_attach(struct driver_object *drv, char *name)
+windrv_bus_attach(struct driver_object *drv, const char *name)
 {
 	struct drvdb_ent *new;
 	ansi_string as;
