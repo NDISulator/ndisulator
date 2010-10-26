@@ -354,15 +354,6 @@ NdisInitializeWrapper(ndis_handle *wrapper, struct driver_object *drv,
 	 * really all the private data we need.
 	 */
 	*wrapper = drv;
-
-	/*
-	 * If this was really Windows, we'd be registering dispatch
-	 * routines for the NDIS miniport module here, but we're
-	 * not Windows so all we really need to do is set up an
-	 * AddDevice function that'll be invoked when a new device
-	 * instance appears.
-	 */
-	drv->driver_extension->adddevicefunc = NdisAddDevice;
 }
 
 static void
