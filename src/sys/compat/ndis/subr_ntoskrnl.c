@@ -76,13 +76,6 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/hal_var.h>
 #include <compat/ndis/ndis_var.h>
 
-#ifdef NTOSKRNL_DEBUG_TIMERS
-static int sysctl_show_timers(SYSCTL_HANDLER_ARGS);
-
-SYSCTL_PROC(_debug, OID_AUTO, ntoskrnl_timers, CTLFLAG_RW, 0, 0,
-	sysctl_show_timers, "I", "Show ntoskrnl timer stats");
-#endif
-
 struct kdpc_queue {
 	list_entry	kq_disp;
 	struct thread	*kq_td;
@@ -100,12 +93,6 @@ struct wb_ext {
 };
 
 #define	NTOSKRNL_TIMEOUTS	256
-#ifdef NTOSKRNL_DEBUG_TIMERS
-static uint64_t ntoskrnl_timer_fires;
-static uint64_t ntoskrnl_timer_sets;
-static uint64_t ntoskrnl_timer_reloads;
-static uint64_t ntoskrnl_timer_cancels;
-#endif
 
 struct callout_entry {
 	struct callout		ce_callout;
@@ -143,9 +130,6 @@ static void ntoskrnl_satisfy_multiple_waits(wait_block *);
 static int ntoskrnl_is_signalled(nt_dispatch_header *, struct thread *);
 static void ntoskrnl_insert_timer(ktimer *, int);
 static void ntoskrnl_remove_timer(ktimer *);
-#ifdef NTOSKRNL_DEBUG_TIMERS
-static void ntoskrnl_show_timers(void);
-#endif
 static void ntoskrnl_timercall(void *);
 static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_destroy_dpc_threads(void);
@@ -3186,16 +3170,12 @@ KeBugCheckEx(uint32_t code, unsigned long param1, unsigned long param2,
 static void
 ntoskrnl_timercall(void *arg)
 {
-	ktimer *timer;
+	ktimer *timer = arg;
 	struct timeval tv;
 	kdpc *dpc;
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 
-	timer = arg;
-#ifdef NTOSKRNL_DEBUG_TIMERS
-	ntoskrnl_timer_fires++;
-#endif
 	ntoskrnl_remove_timer(timer);
 	/*
 	 * This should never happen, but complain
@@ -3228,9 +3208,6 @@ ntoskrnl_timercall(void *arg)
 		tv.tv_usec = timer->k_period * 1000;
 		timer->k_header.dh_inserted = TRUE;
 		ntoskrnl_insert_timer(timer, tvtohz(&tv));
-#ifdef NTOSKRNL_DEBUG_TIMERS
-		ntoskrnl_timer_reloads++;
-#endif
 	}
 
 	dpc = timer->k_dpc;
@@ -3241,41 +3218,6 @@ ntoskrnl_timercall(void *arg)
 	if (dpc != NULL)
 		KeInsertQueueDpc(dpc, NULL, NULL);
 }
-
-#ifdef NTOSKRNL_DEBUG_TIMERS
-static int
-sysctl_show_timers(SYSCTL_HANDLER_ARGS)
-{
-	int ret = 0;
-
-	ntoskrnl_show_timers();
-
-	return (sysctl_handle_int(oidp, &ret, 0, req));
-}
-
-static void
-ntoskrnl_show_timers(void)
-{
-	int i = 0;
-	list_entry *l;
-
-	mtx_lock_spin(&ntoskrnl_calllock);
-	l = ntoskrnl_calllist.nle_flink;
-	while (l != &ntoskrnl_calllist) {
-		i++;
-		l = l->nle_flink;
-	}
-	mtx_unlock_spin(&ntoskrnl_calllock);
-
-	printf("\n");
-	printf("%d timers available (out of %d)\n", i, NTOSKRNL_TIMEOUTS);
-	printf("timer sets: %qu\n", ntoskrnl_timer_sets);
-	printf("timer reloads: %qu\n", ntoskrnl_timer_reloads);
-	printf("timer cancels: %qu\n", ntoskrnl_timer_cancels);
-	printf("timer fires: %qu\n", ntoskrnl_timer_fires);
-	printf("\n");
-}
-#endif
 
 /*
  * Must be called with dispatcher lock held.
@@ -3293,9 +3235,6 @@ ntoskrnl_insert_timer(ktimer *timer, int ticks)
 	mtx_lock_spin(&ntoskrnl_calllock);
 	if (IsListEmpty(&ntoskrnl_calllist)) {
 		mtx_unlock_spin(&ntoskrnl_calllock);
-#ifdef NTOSKRNL_DEBUG_TIMERS
-		ntoskrnl_show_timers();
-#endif
 		panic("out of timers!");
 	}
 	l = RemoveHeadList(&ntoskrnl_calllist);
@@ -3486,12 +3425,10 @@ KeInitializeDpc(kdpc *dpc, void *dpcfunc, void *dpcctx)
 uint8_t
 KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 {
-	struct kdpc_queue *kq;
 	uint8_t r;
 	uint8_t irql;
 
 	KASSERT(dpc != NULL, ("no dpc"));
-	kq = kq_queues;
 
 #ifdef NTOSKRNL_MULTIPLE_DPCS
 	KeRaiseIrql(DISPATCH_LEVEL, &irql);
@@ -3501,24 +3438,24 @@ KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 	 * that scheduled it.
 	 */
 	if (dpc->k_num == KDPC_CPU_DEFAULT)
-		kq += curthread->td_oncpu;
+		kq_queues += curthread->td_oncpu;
 	else
-		kq += dpc->k_num;
-	KeAcquireSpinLockAtDpcLevel(&kq->kq_lock);
+		kq_queues += dpc->k_num;
+	KeAcquireSpinLockAtDpcLevel(&kq_queues->kq_lock);
 #else
-	KeAcquireSpinLock(&kq->kq_lock, &irql);
+	KeAcquireSpinLock(&kq_queues->kq_lock, &irql);
 #endif
-	r = ntoskrnl_insert_dpc(&kq->kq_disp, dpc);
+	r = ntoskrnl_insert_dpc(&kq_queues->kq_disp, dpc);
 	if (r == TRUE) {
 		dpc->k_sysarg1 = sysarg1;
 		dpc->k_sysarg2 = sysarg2;
 	}
-	KeReleaseSpinLock(&kq->kq_lock, irql);
+	KeReleaseSpinLock(&kq_queues->kq_lock, irql);
 
 	if (r == FALSE)
 		return (r);
 
-	KeSetEvent(&kq->kq_proc, IO_NO_INCREMENT, FALSE);
+	KeSetEvent(&kq_queues->kq_proc, IO_NO_INCREMENT, FALSE);
 
 	return (r);
 }
@@ -3615,9 +3552,6 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 
 	if (timer->k_header.dh_inserted == TRUE) {
 		ntoskrnl_remove_timer(timer);
-#ifdef NTOSKRNL_DEBUG_TIMERS
-		ntoskrnl_timer_cancels++;
-#endif
 		timer->k_header.dh_inserted = FALSE;
 		pending = TRUE;
 	} else
@@ -3644,9 +3578,6 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 	}
 	timer->k_header.dh_inserted = TRUE;
 	ntoskrnl_insert_timer(timer, tvtohz(&tv));
-#ifdef NTOSKRNL_DEBUG_TIMERS
-	ntoskrnl_timer_sets++;
-#endif
 
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
@@ -3679,9 +3610,6 @@ KeCancelTimer(ktimer *timer)
 	if (timer->k_header.dh_inserted == TRUE) {
 		timer->k_header.dh_inserted = FALSE;
 		ntoskrnl_remove_timer(timer);
-#ifdef NTOSKRNL_DEBUG_TIMERS
-		ntoskrnl_timer_cancels++;
-#endif
 	}
 	mtx_unlock(&ntoskrnl_dispatchlock);
 
