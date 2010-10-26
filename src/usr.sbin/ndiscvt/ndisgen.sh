@@ -343,14 +343,14 @@ return
 
 firmcvt() {
 	while : ; do
-header
-echo "			Firmware file conversion"
-echo ""
-echo "	If your driver uses additional firmware files, please list them"
-echo "	below. When you're finished, just press enter to continue. (If your"
-echo "	driver doesn't need any extra firmware files, just press enter"
-echo "	to move to the next step.)"
-echo ""
+		header
+		echo "			Firmware file conversion"
+		echo ""
+		echo "	If your driver uses additional firmware files, please list them"
+		echo "	below. When you're finished, just press enter to continue. (If your"
+		echo "	driver doesn't need any extra firmware files, just press enter"
+		echo "	to move to the next step.)"
+		echo ""
 		echo -n "	> "
 		read FIRMPATH
 
@@ -385,10 +385,10 @@ header
 echo ""
 echo "	List of files converted firmware files:"
 echo ""
-for i in ${FRMLIST}
-do
-	echo "	"$i
-done
+	for i in ${FRMLIST}
+		do
+			echo "	"$i
+		done
 echo ""
 echo -n "	Press enter to continue... "
 read KEYPRESS
