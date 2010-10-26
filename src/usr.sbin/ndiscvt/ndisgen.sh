@@ -33,7 +33,7 @@
 # $FreeBSD$
 #
 
-header () {
+header() {
 clear
 echo "	=================================================================="
 echo "	------------------ Windows(r) driver converter -------------------"
@@ -57,11 +57,10 @@ echo "	4] Exit"
 echo ""
 echo -n "	Enter your selection here and press return: "
 read KEYPRESS
-return
 }
 
 
-help1 () {
+help1() {
 header
 echo "				General information"
 echo ""
@@ -81,7 +80,6 @@ echo "	with FreeBSD/amd64: you must obtain a Windows/amd64 driver."
 echo ""
 echo -n "	Press return to continue... "
 read KEYPRESS
-return
 }
 
 help2() {
@@ -106,10 +104,9 @@ echo "	kit on the card or computer vendor's web site."
 echo ""
 echo -n "	Press return to continue... "
 read KEYPRESS
-return
 }
 
-help3 () {
+help3() {
 header
 echo "				What files do I need?"
 echo ""
@@ -131,10 +128,9 @@ echo "	compatibility system as well."
 echo ""
 echo -n "	Press return to continue... "
 read KEYPRESS
-return
 }
 
-help4 () {
+help4() {
 header
 echo "				How does it all work?"
 echo ""
@@ -156,10 +152,9 @@ echo "	experimentation)."
 echo ""
 echo -n "	Press return to continue... "
 read KEYPRESS
-return
 }
 
-help5 () {
+help5() {
 header
 echo "				Prerequisites"
 echo ""
@@ -181,10 +176,9 @@ echo "	will need to install the libiconv package or port."
 echo ""
 echo -n "	Press return to continue... "
 read KEYPRESS
-return
 }
 
-infconv () {
+infconv() {
 header
 echo "			INF file validation"
 
@@ -257,7 +251,6 @@ else
 	read KEYPRESS
 	INFPATH=""
 fi
-return
 }
 
 sysconv() {
@@ -310,7 +303,6 @@ else
 	read KEYPRESS
 	SYSPATH=""
 fi
-return
 }
 
 ndiscvt() {
@@ -338,7 +330,6 @@ else
 	echo -n "	Press enter to continue... "
 	read KEYPRESS
 fi
-return
 }
 
 firmcvt() {
@@ -381,21 +372,22 @@ firmcvt() {
 		fi
 	done
 
-header
-echo ""
-echo "	List of files converted firmware files:"
-echo ""
-	for i in ${FRMLIST}
-		do
-			echo "	"$i
-		done
-echo ""
-echo -n "	Press enter to continue... "
-read KEYPRESS
-return
+if [ ${FRMLIST} ]; then
+	header
+	echo ""
+	echo "	List of converted firmware files:"
+	echo ""
+		for i in ${FRMLIST}
+			do
+				echo "	"$i
+			done
+	echo ""
+	echo -n "	Press enter to continue... "
+	read KEYPRESS
+fi
 }
 
-drvgen () {
+drvgen() {
 header
 echo "			Kernel module generation"
 echo ""
@@ -467,10 +459,9 @@ echo -n "	Press return to exit. "
 read KEYPRESS
 echo ""
 echo ""
-return
 }
 
-convert_driver () {
+convert_driver() {
 	while : ; do
 		infconv
 		if [ ${INFPATH} ]; then
@@ -488,7 +479,6 @@ convert_driver () {
 	ndiscvt
 	firmcvt
 	drvgen
-	return
 }
 
 ICONVPATH=/usr/local/bin/iconv
