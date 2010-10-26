@@ -3327,9 +3327,7 @@ ntoskrnl_dpc_thread(void *arg)
 	 * once scheduled by an ISR.
 	 */
 	thread_lock(curthread);
-#ifdef NTOSKRNL_MULTIPLE_DPCS
 	sched_bind(curthread, kq->kq_cpu);
-#endif
 	sched_prio(curthread, PRI_MIN_KERN);
 	thread_unlock(curthread);
 
