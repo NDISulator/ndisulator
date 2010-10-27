@@ -1363,7 +1363,6 @@ static ndis_status
 NdisMMapIoSpace(void **vaddr, ndis_handle adapter, struct physaddr paddr,
     uint32_t len)
 {
-	KASSERT(adapter != NULL, ("no adapter"));
 
 	*vaddr = MmMapIoSpace(paddr.quad, len, 0);
 	if (*vaddr == NULL)
