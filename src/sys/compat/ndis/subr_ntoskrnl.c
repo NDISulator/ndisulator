@@ -2685,23 +2685,21 @@ RtlInitAnsiString(ansi_string *dst, const char *src)
 }
 
 void
-RtlInitUnicodeString(unicode_string *dst, uint16_t *src)
+RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
 {
-	unicode_string *u;
 	int i;
 
-	u = dst;
-	if (u == NULL)
+	if (dst == NULL)
 		return;
 	if (src == NULL) {
-		u->us_len = u->us_maxlen = 0;
-		u->us_buf = NULL;
+		dst->us_len = dst->us_maxlen = 0;
+		dst->us_buf = NULL;
 	} else {
 		i = 0;
 		while (src[i] != 0)
 			i++;
-		u->us_buf = src;
-		u->us_len = u->us_maxlen = i * 2;
+		dst->us_buf = (uint16_t *)src;
+		dst->us_len = dst->us_maxlen = i * 2;
 	}
 }
 

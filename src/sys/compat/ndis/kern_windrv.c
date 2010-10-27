@@ -211,7 +211,7 @@ windrv_unload(module_t mod, vm_offset_t img)
 {
 	struct drvdb_ent *db, *r = NULL;
 	struct driver_object *drv;
-	struct device_object *d, *pdo;
+	struct device_object *pdo;
 	device_t dev;
 	list_entry *e;
 
@@ -237,8 +237,7 @@ windrv_unload(module_t mod, vm_offset_t img)
 			continue;
 		pdo = db->windrv_object->device_object;
 		while (pdo != NULL) {
-			d = pdo->attacheddev;
-			if (d->drvobj != drv) {
+			if (pdo->attacheddev->drvobj != drv) {
 				pdo = pdo->nextdev;
 				continue;
 			}
@@ -450,7 +449,7 @@ windrv_destroy_pdo(struct driver_object *drv, device_t bsddev)
  * Given a device_t, find the corresponding PDO in a driver's device list.
  */
 struct device_object *
-windrv_find_pdo(struct driver_object *drv, device_t bsddev)
+windrv_find_pdo(const struct driver_object *drv, device_t bsddev)
 {
 	struct device_object *pdo;
 

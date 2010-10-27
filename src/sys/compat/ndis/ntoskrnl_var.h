@@ -1287,7 +1287,7 @@ int32_t	RtlUnicodeStringToAnsiString(ansi_string *, const unicode_string *,
 int32_t	RtlAnsiStringToUnicodeString(unicode_string *, const ansi_string *,
 	    uint8_t);
 void	RtlInitAnsiString(ansi_string *, const char *);
-void	RtlInitUnicodeString(unicode_string *, uint16_t *);
+void	RtlInitUnicodeString(unicode_string *, const uint16_t *);
 void	RtlFreeUnicodeString(unicode_string *);
 void	RtlFreeAnsiString(ansi_string *);
 void	KeInitializeDpc(kdpc *, void *, void *);
@@ -1351,7 +1351,8 @@ struct driver_object	*windrv_lookup(vm_offset_t, const char *);
 struct device_object	*IoGetAttachedDevice(struct device_object *);
 struct device_object	*IoAttachDeviceToDeviceStack(struct device_object *,
 			    struct device_object *);
-struct device_object	*windrv_find_pdo(struct driver_object *, device_t);
+struct device_object	*windrv_find_pdo(const struct driver_object *,
+			    device_t);
 
 #define	IoCallDriver(a, b)		IofCallDriver(a, b)
 #define	IoCompleteRequest(a, b)		IofCompleteRequest(a, b)
