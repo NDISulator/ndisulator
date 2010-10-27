@@ -169,7 +169,7 @@ windrv_lookup(vm_offset_t img, const char *name)
 		    (char *)us.us_buf, us.us_len) == 0 && us.us_len)) {
 			mtx_unlock(&drvdb_mtx);
 			if (name != NULL)
-				ExFreePool(us.us_buf);
+				RtlFreeUnicodeString(&us);
 			return (d->windrv_object);
 		}
 	}
