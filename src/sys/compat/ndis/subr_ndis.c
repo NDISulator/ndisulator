@@ -395,12 +395,10 @@ NdisMRegisterMiniport(ndis_handle adapter,
 static ndis_status
 NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 {
-	void *mem;
 
-	mem = ExAllocatePoolWithTag(NON_PAGED_POOL, len, tag);
-	if (mem == NULL)
+	*vaddr = malloc(len, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
+	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
-	*vaddr = mem;
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -417,7 +415,7 @@ NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 {
 	if (len == 0)
 		return;
-	ExFreePool(vaddr);
+	free(vaddr, M_NDIS_SUBR);
 }
 
 static ndis_status
@@ -469,8 +467,8 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 	unicode_string *us;
 	ansi_string as;
 
-	np = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(struct ndis_parmlist_entry), 0);
+	np = malloc(sizeof(struct ndis_parmlist_entry),
+	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (np == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	InsertHeadList((&block->parmlist), (&np->list));
@@ -482,7 +480,7 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 		us = &p->parmdata.stringdata;
 		RtlInitAnsiString(&as, (char *)oid->oid_arg1);
 		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
-			ExFreePool(np);
+			free(np, M_NDIS_SUBR);
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		}
 		break;
@@ -658,7 +656,7 @@ NdisCloseConfiguration(ndis_handle cfg)
 		p = &pe->parm;
 		if (p->type == NDIS_PARAMETER_STRING)
 			RtlFreeUnicodeString(&p->parmdata.stringdata);
-		ExFreePool(e);
+		free(e, M_NDIS_SUBR);
 	}
 }
 
@@ -1443,8 +1441,8 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 	struct ndis_packet *packets;
 	int i;
 
-	p = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(struct ndis_packet_pool), 0);
+	p = malloc(sizeof(struct ndis_packet_pool),
+	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (p == NULL) {
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
@@ -1453,10 +1451,9 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 	p->cnt = descnum + NDIS_POOL_EXTRA;
 	p->len = sizeof(struct ndis_packet) + protrsvdlen;
 
-	packets = ExAllocatePoolWithTag(NON_PAGED_POOL, p->cnt *
-	    p->len, 0);
+	packets = malloc(p->cnt * p->len, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (packets == NULL) {
-		ExFreePool(p);
+		free(p, M_NDIS_SUBR);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
@@ -1517,8 +1514,8 @@ NdisFreePacketPool(ndis_handle pool)
 	} else
 		KeReleaseSpinLock(&p->lock, irql);
 #endif
-	ExFreePool(p->pktmem);
-	ExFreePool(p);
+	free(p->pktmem, M_NDIS_SUBR);
+	free(p, M_NDIS_SUBR);
 }
 
 void
@@ -2203,12 +2200,12 @@ ndis_find_sym(linker_file_t lf, char *filename, char *suffix, caddr_t *sym)
 	char *fullsym, *suf;
 	int i;
 
-	fullsym = ExAllocatePoolWithTag(NON_PAGED_POOL, MAXPATHLEN, 0);
+	fullsym = malloc(MAXPATHLEN, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (fullsym == NULL)
 		return (ENOMEM);
 	strncpy(fullsym, filename, MAXPATHLEN);
 	if (strlen(filename) < 4) {
-		ExFreePool(fullsym);
+		free(fullsym, M_NDIS_SUBR);
 		return (EINVAL);
 	}
 
@@ -2225,7 +2222,7 @@ ndis_find_sym(linker_file_t lf, char *filename, char *suffix, caddr_t *sym)
 	}
 	strcat(fullsym, suffix);
 	*sym = linker_file_lookup_symbol(lf, fullsym, 0);
-	ExFreePool(fullsym);
+	free(fullsym, M_NDIS_SUBR);
 	if (*sym == 0)
 		return (ENOENT);
 
@@ -2278,7 +2275,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle, uint32_t *filelength,
 	afilename = strdup(as.as_buf, M_NDIS_SUBR);
 	RtlFreeAnsiString(&as);
 
-	fh = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(struct ndis_fh), 0);
+	fh = malloc(sizeof(struct ndis_fh), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (fh == NULL) {
 		free(afilename, M_NDIS_SUBR);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
@@ -2315,7 +2312,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle, uint32_t *filelength,
 	}
 
 	if (TAILQ_EMPTY(&mountlist)) {
-		ExFreePool(fh);
+		free(fh, M_NDIS_SUBR);
 		*status = NDIS_STATUS_FILE_NOT_FOUND;
 		printf("NDIS: could not find file %s in linker list\n",
 		    afilename);
@@ -2325,9 +2322,9 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle, uint32_t *filelength,
 		return;
 	}
 
-	path = ExAllocatePoolWithTag(NON_PAGED_POOL, MAXPATHLEN, 0);
+	path = malloc(MAXPATHLEN, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (path == NULL) {
-		ExFreePool(fh);
+		free(fh, M_NDIS_SUBR);
 		free(afilename, M_NDIS_SUBR);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
@@ -2345,15 +2342,15 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle, uint32_t *filelength,
 	flags = FREAD;
 	if (vn_open(&nd, &flags, 0, NULL) != 0) {
 		*status = NDIS_STATUS_FILE_NOT_FOUND;
-		ExFreePool(fh);
+		free(fh, M_NDIS_SUBR);
 		printf("NDIS: open file %s failed\n", path);
-		ExFreePool(path);
+		free(path, M_NDIS_SUBR);
 		free(afilename, M_NDIS_SUBR);
 		return;
 	}
 	vfslocked = NDHASGIANT(&nd);
 
-	ExFreePool(path);
+	free(path, M_NDIS_SUBR);
 
 	NDFREE(&nd, NDF_ONLY_PNBUF);
 
@@ -2405,7 +2402,7 @@ NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
 		return;
 	}
 
-	fh->map = ExAllocatePoolWithTag(NON_PAGED_POOL, fh->maplen, 0);
+	fh->map = malloc(fh->maplen, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (fh->map == NULL) {
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
@@ -2434,7 +2431,7 @@ NdisUnmapFile(ndis_handle filehandle)
 		return;
 
 	if (fh->type == NDIS_FH_TYPE_VFS)
-		ExFreePool(fh->map);
+		free(fh->map, M_NDIS_SUBR);
 	fh->map = NULL;
 }
 
@@ -2451,7 +2448,7 @@ NdisCloseFile(ndis_handle filehandle)
 	fh = (struct ndis_fh *)filehandle;
 	if (fh->map != NULL) {
 		if (fh->type == NDIS_FH_TYPE_VFS)
-			ExFreePool(fh->map);
+			free(fh->map, M_NDIS_SUBR);
 		fh->map = NULL;
 	}
 	if (fh->vp == NULL)
@@ -2464,7 +2461,7 @@ NdisCloseFile(ndis_handle filehandle)
 	}
 	fh->vp = NULL;
 	free(fh->name, M_NDIS_SUBR);
-	ExFreePool(fh);
+	free(fh, M_NDIS_SUBR);
 }
 
 static uint8_t
