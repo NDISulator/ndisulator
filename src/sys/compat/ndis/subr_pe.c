@@ -68,7 +68,8 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/pe_var.h>
 
 static int	pe_is_nt_image(vm_offset_t);
-static int	pe_get_file_header(vm_offset_t, struct image_file_header **);
+static void	pe_get_nt_header(vm_offset_t, struct image_nt_header **);
+static void	pe_get_file_header(vm_offset_t, struct image_file_header **);
 static int	pe_get_section(vm_offset_t, struct image_section_header **,
 		    const char *);
 static int	pe_get_import_descriptor(vm_offset_t,
@@ -101,40 +102,42 @@ pe_is_nt_image(vm_offset_t imgbase)
 	return (ENOEXEC);
 }
 
-int
-pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header **hdr)
+static void
+pe_get_nt_header(vm_offset_t imgbase, struct image_nt_header **hdr)
 {
 	struct image_dos_header *dos_hdr;
-	struct image_nt_header *nt_hdr;
-
-	KASSERT(imgbase != 0, ("bad imgbase"));
 
 	dos_hdr = (struct image_dos_header *)(imgbase);
-	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
-	if (nt_hdr == NULL)
-		return (EINVAL);
-	*hdr = &nt_hdr->optional_header;
-	if (*hdr == NULL)
-		return (EINVAL);
-	return (0);
+	*hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
 }
 
-static int
-pe_get_file_header(vm_offset_t imgbase, struct image_file_header **hdr)
+void
+pe_get_section_header(vm_offset_t imgbase, struct image_section_header **hdr)
 {
-	struct image_dos_header *dos_hdr;
 	struct image_nt_header *nt_hdr;
 
-	KASSERT(imgbase != 0, ("bad imgbase"));
+	pe_get_nt_header(imgbase, &nt_hdr);
+	*hdr = ((struct image_section_header *)((vm_offset_t)(nt_hdr) +
+	    offsetof(struct image_nt_header, optional_header) +
+	    ((struct image_nt_header *)(nt_hdr))->file_header.size_of_optional_header));
+}
 
-	dos_hdr = (struct image_dos_header *)imgbase;
-	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
-	if (nt_hdr == NULL)
-		return (EINVAL);
+void
+pe_get_optional_header(vm_offset_t imgbase, struct image_optional_header **hdr)
+{
+	struct image_nt_header *nt_hdr;
+
+	pe_get_nt_header(imgbase, &nt_hdr);
+	*hdr = &nt_hdr->optional_header;
+}
+
+static void
+pe_get_file_header(vm_offset_t imgbase, struct image_file_header **hdr)
+{
+	struct image_nt_header *nt_hdr;
+
+	pe_get_nt_header(imgbase, &nt_hdr);
 	*hdr = &nt_hdr->file_header;
-	if (*hdr == NULL)
-		return (EINVAL);
-	return (0);
 }
 
 int
@@ -145,8 +148,7 @@ pe_validate_header(vm_offset_t imgbase)
 
 	if (pe_is_nt_image(imgbase))
 		return (EINVAL);
-	if (pe_get_file_header(imgbase, &file_hdr))
-		return (EINVAL);
+	pe_get_file_header(imgbase, &file_hdr);
 	if (!(file_hdr->characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
 		return (ENOEXEC);
 	if (file_hdr->characteristics & IMAGE_FILE_RELOCS_STRIPPED)
@@ -161,8 +163,7 @@ pe_validate_header(vm_offset_t imgbase)
 #endif
 	if (file_hdr->number_of_sections == 0)
 		return (ENOEXEC);
-	if (pe_get_optional_header(imgbase, &opt_hdr))
-		return (EINVAL);
+	pe_get_optional_header(imgbase, &opt_hdr);
 #ifdef __amd64__
 	if (opt_hdr->magic != IMAGE_OPTIONAL_MAGIC_64)
 		return (ENOEXEC);
@@ -182,8 +183,7 @@ pe_numsections(vm_offset_t imgbase)
 {
 	struct image_file_header *file_hdr;
 
-	if (pe_get_file_header(imgbase, &file_hdr))
-		return (0);
+	pe_get_file_header(imgbase, &file_hdr);
 
 	return (file_hdr->number_of_sections);
 }
@@ -197,8 +197,7 @@ pe_imagebase(vm_offset_t imgbase)
 {
 	struct image_optional_header *optional_hdr;
 
-	if (pe_get_optional_header(imgbase, &optional_hdr))
-		return (0);
+	pe_get_optional_header(imgbase, &optional_hdr);
 
 	return (optional_hdr->image_base);
 }
@@ -213,8 +212,7 @@ pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
 	struct image_optional_header *opt_hdr;
 	vm_offset_t dir;
 
-	if (pe_get_optional_header(imgbase, &opt_hdr))
-		return (0);
+	pe_get_optional_header(imgbase, &opt_hdr);
 
 	if (diridx >= opt_hdr->number_of_rva_and_sizes)
 		return (0);
@@ -229,18 +227,11 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 {
 	struct image_optional_header *opt_hdr;
 	struct image_section_header *sect_hdr;
-	struct image_dos_header *dos_hdr;
-	struct image_nt_header *nt_hdr;
 	int i = 0, sections, fixedlen;
 
-	if (pe_get_optional_header(imgbase, &opt_hdr))
-		return (0);
-
 	sections = pe_numsections(imgbase);
-
-	dos_hdr = (struct image_dos_header *)imgbase;
-	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
-	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
+	pe_get_optional_header(imgbase, &opt_hdr);
+	pe_get_section_header(imgbase, &sect_hdr);
 
 	/*
 	 * The test here is to see if the RVA falls somewhere
@@ -279,19 +270,11 @@ static int
 pe_get_section(vm_offset_t imgbase, struct image_section_header **hdr,
     const char *name)
 {
-	struct image_dos_header *dos_hdr;
-	struct image_nt_header *nt_hdr;
 	struct image_section_header *sect_hdr;
 	int i, sections;
 
-	KASSERT(imgbase != 0, ("bad imgbase"));
-
 	sections = pe_numsections(imgbase);
-
-	dos_hdr = (struct image_dos_header *)imgbase;
-	nt_hdr = (struct image_nt_header *)(imgbase + dos_hdr->e_lfanew);
-	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
-
+	pe_get_section_header(imgbase, &sect_hdr);
 	for (i = 0; i < sections; i++) {
 		if (!strcmp((char *)&sect_hdr->name, name)) {
 			*hdr = sect_hdr;
@@ -393,7 +376,6 @@ pe_get_import_descriptor(vm_offset_t imgbase,
 	vm_offset_t offset;
 	char *modname;
 
-	KASSERT(imgbase != 0, ("bad imgbase"));
 	KASSERT(module != NULL, ("no module"));
 
 	offset = pe_directory_offset(imgbase, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -421,8 +403,6 @@ pe_get_messagetable(vm_offset_t imgbase, struct message_resource_data **md)
 	struct image_resource_data_entry *rent;
 	vm_offset_t offset;
 	int i;
-
-	KASSERT(imgbase != 0, ("bad imgbase"));
 
 	offset = pe_directory_offset(imgbase, IMAGE_DIRECTORY_ENTRY_RESOURCE);
 	if (offset == 0)
@@ -534,7 +514,6 @@ pe_patch_imports(vm_offset_t imgbase, const char *module,
 	char *name;
 	vm_offset_t *nptr, *fptr, func;
 
-	KASSERT(imgbase != 0, ("bad imgbase"));
 	KASSERT(module != NULL, ("no module"));
 	KASSERT(functbl != NULL, ("no functbl"));
 

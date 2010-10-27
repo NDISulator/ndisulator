@@ -124,8 +124,6 @@ struct image_file_header {
 #define	IMAGE_FILE_UP_SYSTEM_ONLY		0x4000
 #define	IMAGE_FILE_BYTES_REVERSED_HI		0x8000
 
-#define	IMAGE_SIZEOF_FILE_HEADER		20
-
 struct image_data_directory {
 	uint32_t	virtual_address;
 	uint32_t	size;
@@ -238,13 +236,6 @@ struct image_section_header {
 	uint16_t	number_of_linenumbers;
 	uint32_t	characteristics;
 };
-
-#define	IMAGE_SIZEOF_SECTION_HEADER          40
-
-#define	IMAGE_FIRST_SECTION(nthdr)					\
-	((struct image_section_header *)((vm_offset_t)(nthdr) +		\
-	  offsetof(struct image_nt_header, optional_header) +	\
-	  ((struct image_nt_header *)(nthdr))->file_header.size_of_optional_header))
 
 /* Import format */
 struct image_import_by_name {
@@ -449,7 +440,8 @@ uint32_t x86_stdcall_call(void *, int, ...);
 				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_CDECL }
 #endif /* __i386__ */
 
-int	pe_get_optional_header(vm_offset_t, struct image_optional_header **);
+void	pe_get_optional_header(vm_offset_t, struct image_optional_header **);
+void	pe_get_section_header(vm_offset_t, struct image_section_header **);
 int	pe_get_message(vm_offset_t, uint32_t, char **, int *, uint16_t *);
 int	pe_patch_imports(vm_offset_t, const char *, struct image_patch_table *);
 int	pe_numsections(vm_offset_t);
