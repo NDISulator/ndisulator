@@ -1048,12 +1048,6 @@ struct ndis_work_item {
 	uint8_t		nwi_wraprsvd[sizeof(void *) * 8];
 };
 
-#define	NdisInitializeWorkItem(w, f, c)	\
-	do {				\
-		(w)->nwi_ctx = c;	\
-		(w)->nwi_func = f;	\
-	} while (0)
-
 struct ndis_sc_element {
 	struct physaddr	addr;
 	uint32_t	len;
