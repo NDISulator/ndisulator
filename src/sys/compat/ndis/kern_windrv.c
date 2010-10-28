@@ -185,14 +185,12 @@ struct drvdb_ent *
 windrv_match(matchfuncptr matchfunc, void *ctx)
 {
 	struct drvdb_ent *d;
-	int match;
 
 	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(d, &drvdb_head, link) {
 		if (d->windrv_devlist == NULL)
 			continue;
-		match = matchfunc(d->windrv_bustype, d->windrv_devlist, ctx);
-		if (match == TRUE) {
+		if (matchfunc(d->windrv_bustype, d->windrv_devlist, ctx)) {
 			mtx_unlock(&drvdb_mtx);
 			return (d);
 		}
