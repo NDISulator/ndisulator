@@ -409,10 +409,11 @@ skipreloc:
  * Make a new Physical Device Object for a device that was detected/plugged in.
  * For us, the PDO is just a way to get at the device_t.
  */
-int
+int32_t
 windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 {
 	struct device_object *dev;
+	ndis_status rval;
 
 	/*
 	 * This is a new physical device object, which technically
@@ -420,11 +421,12 @@ windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 	 * an IoAttachDeviceToDeviceStack() here.
 	 */
 	mtx_lock(&drvdb_mtx);
-	IoCreateDevice(drv, 0, NULL, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
+	rval = IoCreateDevice(drv, 0, NULL, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
 	mtx_unlock(&drvdb_mtx);
 
+	if (rval)
+		return (rval);
 	dev->devext = bsddev;	/* Stash pointer to our BSD device handle. */
-
 	return (NDIS_STATUS_SUCCESS);
 }
 

@@ -1270,7 +1270,7 @@ struct drvdb_ent	*windrv_match(matchfuncptr, void *);
 int	windrv_load(module_t, vm_offset_t, size_t, enum ndis_interface_type,
 	    void *, void *);
 int	windrv_unload(module_t, vm_offset_t);
-int	windrv_create_pdo(struct driver_object *, device_t);
+int32_t	windrv_create_pdo(struct driver_object *, device_t);
 void	windrv_destroy_pdo(struct driver_object *, device_t);
 int	windrv_bus_attach(struct driver_object *, const char *);
 void	windrv_wrap(funcptr, funcptr *, uint8_t, uint8_t);
