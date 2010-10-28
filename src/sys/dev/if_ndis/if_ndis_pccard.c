@@ -130,12 +130,9 @@ ndis_probe_pccard(device_t dev)
 		return (ENXIO);
 
 	db = windrv_match((matchfuncptr)ndis_devcompare_pccard, dev);
-	if (db != NULL) {
-		windrv_create_pdo(drv, dev);
-		return (0);
-	}
-
-	return (ENXIO);
+	if (db == NULL)
+		return (ENXIO);
+	return (windrv_create_pdo(drv, dev));
 }
 
 static int
