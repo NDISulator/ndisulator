@@ -406,9 +406,8 @@ skipreloc:
 }
 
 /*
- * Make a new Physical Device Object for a device that was
- * detected/plugged in. For us, the PDO is just a way to
- * get at the device_t.
+ * Make a new Physical Device Object for a device that was detected/plugged in.
+ * For us, the PDO is just a way to get at the device_t.
  */
 int
 windrv_create_pdo(struct driver_object *drv, device_t bsddev)
@@ -424,8 +423,7 @@ windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 	IoCreateDevice(drv, 0, NULL, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
 	mtx_unlock(&drvdb_mtx);
 
-	/* Stash pointer to our BSD device handle. */
-	dev->devext = bsddev;
+	dev->devext = bsddev;	/* Stash pointer to our BSD device handle. */
 
 	return (NDIS_STATUS_SUCCESS);
 }
