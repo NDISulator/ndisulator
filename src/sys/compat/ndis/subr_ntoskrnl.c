@@ -2464,8 +2464,8 @@ IoFreeWorkItem(io_workitem *iw)
 }
 
 void
-IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func, uint32_t qtype,
-    void *ctx)
+IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func,
+    enum work_queue_type qtype, void *ctx)
 {
 	struct kdpc_queue *kq;
 	list_entry *l;
@@ -2539,7 +2539,7 @@ ntoskrnl_workitem(struct device_object *dobj, void *arg)
  * be queued twice. If it's already pending, we silently return
  */
 void
-ExQueueWorkItem(work_queue_item *w, uint32_t qtype)
+ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
 {
 	io_workitem *iw, *cur;
 	io_workitem_func iwf;

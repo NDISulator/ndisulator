@@ -1202,9 +1202,11 @@ struct io_workitem {
 };
 typedef struct io_workitem io_workitem;
 
-#define	WORKQUEUE_CRITICAL	0
-#define	WORKQUEUE_DELAYED	1
-#define	WORKQUEUE_HYPERCRITICAL	2
+enum work_queue_type {
+	WORKQUEUE_CRITICAL,
+	WORKQUEUE_DELAYED,
+	WORKQUEUE_HYPERCRITICAL
+};
 
 #define	WORKITEM_THREADS	4
 #define	WORKITEM_LEGACY_THREAD	3
@@ -1343,9 +1345,10 @@ void	IoReleaseCancelSpinLock(uint8_t);
 void	IoDetachDevice(struct device_object *);
 mdl	*IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, irp *);
 void	IoFreeMdl(mdl *);
-void	ExQueueWorkItem(work_queue_item *, uint32_t);
+void	ExQueueWorkItem(work_queue_item *, enum work_queue_type);
 void	IoFreeWorkItem(io_workitem *);
-void	IoQueueWorkItem(io_workitem *, io_workitem_func, uint32_t, void *);
+void	IoQueueWorkItem(io_workitem *, io_workitem_func, enum work_queue_type,
+	    void *);
 io_workitem	*IoAllocateWorkItem(struct device_object *);
 struct driver_object	*windrv_lookup(vm_offset_t, const char *);
 struct device_object	*IoGetAttachedDevice(struct device_object *);
