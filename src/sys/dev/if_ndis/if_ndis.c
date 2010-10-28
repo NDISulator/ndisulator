@@ -631,14 +631,6 @@ ndis_attach(device_t dev)
 	InitializeListHead(&sc->ndisusb_xferdonelist);
 	callout_init(&sc->ndis_stat_callout, CALLOUT_MPSAFE);
 
-	if (sc->ndis_iftype == PCMCIABus) {
-		rval = ndis_alloc_amem(sc);
-		if (rval) {
-			device_printf(dev, "failed to allocate "
-			    "attribute memory\n");
-			goto fail;
-		}
-	}
 	ndis_create_sysctls(sc);
 
 	/* Find the PDO for this device instance. */

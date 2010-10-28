@@ -62,6 +62,7 @@ __FBSDID("$FreeBSD$");
 
 MODULE_DEPEND(ndis, pccard, 1, 1, 1);
 
+static int	ndis_alloc_amem(struct ndis_softc *);
 static int	ndis_attach_pccard(device_t);
 static int	ndis_devcompare_pccard(enum ndis_interface_type,
 		    struct ndis_pccard_type *, device_t);
@@ -162,8 +163,7 @@ ndis_attach_pccard(device_t dev)
 	    0, ~0, 1, RF_ACTIVE);
 	if (sc->ndis_res_io == NULL) {
 		device_printf(dev, "couldn't map iospace\n");
-		error = ENXIO;
-		goto fail;
+		return (ENXIO);
 	}
 	sc->ndis_rescnt++;
 	resource_list_add(&sc->ndis_rl, SYS_RES_IOPORT, rid,
@@ -176,8 +176,7 @@ ndis_attach_pccard(device_t dev)
 	    RF_SHAREABLE | RF_ACTIVE);
 	if (sc->ndis_irq == NULL) {
 		device_printf(dev, "couldn't map interrupt\n");
-		error = ENXIO;
-		goto fail;
+		return (ENXIO);
 	}
 	sc->ndis_rescnt++;
 	resource_list_add(&sc->ndis_rl, SYS_RES_IRQ, rid,
@@ -201,9 +200,12 @@ ndis_attach_pccard(device_t dev)
 	}
 	sc->ndis_devidx = devidx;
 
-	error = ndis_attach(dev);
-fail:
-	return (error);
+	error = ndis_alloc_amem(sc);
+	if (error) {
+		ndis_free_amem(sc);
+		return (error);
+	}
+	return (ndis_attach(dev));
 }
 
 static struct resource_list *
@@ -217,10 +219,9 @@ ndis_get_resource_list(device_t dev, device_t child)
 
 #define	NDIS_AM_RID 3
 
-int
-ndis_alloc_amem(void *arg)
+static int
+ndis_alloc_amem(struct ndis_softc *sc)
 {
-	struct ndis_softc *sc = arg;
 	int error, rid = NDIS_AM_RID;
 
 	sc->ndis_res_am = bus_alloc_resource(sc->ndis_dev, SYS_RES_MEMORY,

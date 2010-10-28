@@ -2002,12 +2002,11 @@ NdisReadPcmciaAttributeMemory(ndis_handle adapter, uint32_t offset, void *buf,
 	struct ndis_miniport_block *block = adapter;
 	bus_space_handle_t bh;
 	bus_space_tag_t bt;
-	char *dest;
+	char *dest = buf;
 	int i;
 
 	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
-	dest = buf;
 
 	bh = rman_get_bushandle(sc->ndis_res_am);
 	bt = rman_get_bustag(sc->ndis_res_am);
