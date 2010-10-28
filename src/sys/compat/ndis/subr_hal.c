@@ -109,42 +109,42 @@ KeStallExecutionProcessor(uint32_t usecs)
 }
 
 static void
-WRITE_PORT_ULONG(uint32_t *port, uint32_t val)
+WRITE_PORT_ULONG(uint32_t *port, uint32_t value)
 {
-	bus_space_write_4(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, val);
+	bus_space_write_4(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
 }
 
 static void
-WRITE_PORT_USHORT(uint16_t *port, uint16_t val)
+WRITE_PORT_USHORT(uint16_t *port, uint16_t value)
 {
-	bus_space_write_2(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, val);
+	bus_space_write_2(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
 }
 
 static void
-WRITE_PORT_UCHAR(uint8_t *port, uint8_t val)
+WRITE_PORT_UCHAR(uint8_t *port, uint8_t value)
 {
-	bus_space_write_1(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, val);
+	bus_space_write_1(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
 }
 
 static void
-WRITE_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *val, uint32_t cnt)
+WRITE_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *buffer, uint32_t count)
 {
 	bus_space_write_multi_4(NDIS_BUS_SPACE_IO, 0x0,
-	    (bus_size_t)port, val, cnt);
+	    (bus_size_t)port, buffer, count);
 }
 
 static void
-WRITE_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *val, uint32_t cnt)
+WRITE_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *buffer, uint32_t count)
 {
 	bus_space_write_multi_2(NDIS_BUS_SPACE_IO, 0x0,
-	    (bus_size_t)port, val, cnt);
+	    (bus_size_t)port, buffer, count);
 }
 
 static void
-WRITE_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *val, uint32_t cnt)
+WRITE_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *buffer, uint32_t count)
 {
 	bus_space_write_multi_1(NDIS_BUS_SPACE_IO, 0x0,
-	    (bus_size_t)port, val, cnt);
+	    (bus_size_t)port, buffer, count);
 }
 
 static uint16_t
@@ -166,24 +166,24 @@ READ_PORT_UCHAR(uint8_t *port)
 }
 
 static void
-READ_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *val, uint32_t cnt)
+READ_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *buffer, uint32_t count)
 {
 	bus_space_read_multi_4(NDIS_BUS_SPACE_IO, 0x0,
-	    (bus_size_t)port, val, cnt);
+	    (bus_size_t)port, buffer, count);
 }
 
 static void
-READ_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *val, uint32_t cnt)
+READ_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *buffer, uint32_t count)
 {
 	bus_space_read_multi_2(NDIS_BUS_SPACE_IO, 0x0,
-	    (bus_size_t)port, val, cnt);
+	    (bus_size_t)port, buffer, count);
 }
 
 static void
-READ_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *val, uint32_t cnt)
+READ_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *buffer, uint32_t count)
 {
 	bus_space_read_multi_1(NDIS_BUS_SPACE_IO, 0x0,
-	    (bus_size_t)port, val, cnt);
+	    (bus_size_t)port, buffer, count);
 }
 
 uint8_t
