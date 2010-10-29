@@ -225,7 +225,7 @@ static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
 static int ntoskrnl_tolower(int);
-static funcptr ntoskrnl_findwrap(funcptr);
+static funcptr ntoskrnl_findwrap(void *);
 static ndis_status DbgPrint(const char *, ...);
 static void DbgBreakPoint(void);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
@@ -234,6 +234,9 @@ static ndis_status KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
 
+static funcptr ntoskrnl_workitem_wrap;
+static funcptr ExFreePool_wrap;
+static funcptr ExAllocatePoolWithTag_wrap;
 static struct proc *ndisproc;
 static struct mtx ntoskrnl_dispatchlock;
 static struct mtx ntoskrnl_interlock;
@@ -307,13 +310,16 @@ ntoskrnl_libinit(void)
 			panic("failed to launch workitem thread");
 	}
 
+	windrv_wrap((funcptr)ntoskrnl_workitem,
+	    (funcptr *)&ntoskrnl_workitem_wrap, 2, WINDRV_WRAP_STDCALL);
 	patch = ntoskrnl_functbl;
 	while (patch->func != NULL) {
-		windrv_wrap((funcptr)patch->func,
-		    (funcptr *)&patch->wrap,
+		windrv_wrap((funcptr)patch->func, (funcptr *)&patch->wrap,
 		    patch->argcnt, patch->ftype);
 		patch++;
 	}
+	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
+	ExFreePool_wrap = ntoskrnl_findwrap(ExFreePool);
 
 	for (i = 0; i < NTOSKRNL_TIMEOUTS; i++) {
 		e = ExAllocatePoolWithTag(NON_PAGED_POOL,
@@ -356,6 +362,7 @@ ntoskrnl_libfini(void)
 		windrv_unwrap(patch->wrap);
 		patch++;
 	}
+	windrv_unwrap(ntoskrnl_workitem_wrap);
 
 	ntoskrnl_destroy_workitem_threads();
 	ntoskrnl_destroy_dpc_threads();
@@ -1889,7 +1896,7 @@ ntoskrnl_popsl(slist_header *head)
  * becomes a no-op since func and wrap are the same.
  */
 static funcptr
-ntoskrnl_findwrap(funcptr func)
+ntoskrnl_findwrap(void *func)
 {
 	struct image_patch_table *patch;
 
@@ -1916,14 +1923,12 @@ ExInitializePagedLookasideList(paged_lookaside_list *lookaside,
 		lookaside->nll_l.size = size;
 	lookaside->nll_l.tag = tag;
 	if (allocfunc == NULL)
-		lookaside->nll_l.allocfunc =
-		    ntoskrnl_findwrap((funcptr)ExAllocatePoolWithTag);
+		lookaside->nll_l.allocfunc = ExAllocatePoolWithTag_wrap;
 	else
 		lookaside->nll_l.allocfunc = allocfunc;
 
 	if (freefunc == NULL)
-		lookaside->nll_l.freefunc =
-		    ntoskrnl_findwrap((funcptr)ExFreePool);
+		lookaside->nll_l.freefunc = ExFreePool_wrap;
 	else
 		lookaside->nll_l.freefunc = freefunc;
 #ifdef __i386__
@@ -1958,14 +1963,12 @@ ExInitializeNPagedLookasideList(npaged_lookaside_list *lookaside,
 		lookaside->nll_l.size = size;
 	lookaside->nll_l.tag = tag;
 	if (allocfunc == NULL)
-		lookaside->nll_l.allocfunc =
-		    ntoskrnl_findwrap((funcptr)ExAllocatePoolWithTag);
+		lookaside->nll_l.allocfunc = ExAllocatePoolWithTag_wrap;
 	else
 		lookaside->nll_l.allocfunc = allocfunc;
 
 	if (freefunc == NULL)
-		lookaside->nll_l.freefunc =
-		    ntoskrnl_findwrap((funcptr)ExFreePool);
+		lookaside->nll_l.freefunc = ExFreePool_wrap;
 	else
 		lookaside->nll_l.freefunc = freefunc;
 #ifdef __i386__
@@ -2574,7 +2577,7 @@ ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
 		return;
 
 	iw->iw_idx = WORKITEM_LEGACY_THREAD;
-	iwf = (io_workitem_func)ntoskrnl_findwrap((funcptr)ntoskrnl_workitem);
+	iwf = (io_workitem_func)ntoskrnl_workitem_wrap;
 	IoQueueWorkItem(iw, iwf, qtype, iw);
 }
 
@@ -3833,7 +3836,6 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(IoFreeWorkItem, 1),
 	IMPORT_SFUNC(IoQueueWorkItem, 4),
 	IMPORT_SFUNC(ExQueueWorkItem, 2),
-	IMPORT_SFUNC(ntoskrnl_workitem, 2),
 	IMPORT_SFUNC(KeInitializeMutex, 2),
 	IMPORT_SFUNC(KeReleaseMutex, 2),
 	IMPORT_SFUNC(KeReadStateMutex, 1),
