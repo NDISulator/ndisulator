@@ -2258,8 +2258,7 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		    config.dsconfig / 1000, chanflag);
 		if (ic->ic_curchan == NULL)
 			ic->ic_curchan = &ic->ic_channels[0];
-		ni->ni_chan = ic->ic_curchan;
-		ic->ic_bsschan = ic->ic_curchan;
+		ni->ni_chan = ic->ic_bsschan = ic->ic_curchan;
 		ni->ni_intval = config.beaconperiod;
 	}
 }
@@ -2756,13 +2755,11 @@ ndis_scan_end(struct ieee80211com *ic)
 			/* XXX - check units */
 			if (wb->supportedrates[j] == 0)
 				break;
-			rates[2 + j] =
-			wb->supportedrates[j] & 0x7f;
+			rates[2 + j] = wb->supportedrates[j] & 0x7f;
 		}
 		rates[1] = j;
 		sp.ssid = (uint8_t *)&ssid[0];
-		memcpy(sp.ssid + 2, &wb->ssid.ssid,
-		    wb->ssid.len);
+		memcpy(sp.ssid + 2, &wb->ssid.ssid, wb->ssid.len);
 		sp.ssid[1] = wb->ssid.len;
 
 		chanflag = ndis_nettype_chan(wb->nettype);
@@ -2787,8 +2784,7 @@ ndis_scan_end(struct ieee80211com *ic)
 		}
 done:
 		DPRINTF("scan: bssid %s chan %dMHz (%d/%d) rssi %d\n",
-		    ether_sprintf(wb->macaddr), freq, sp.bchan, chanflag,
-		    rssi);
+		    ether_sprintf(wb->macaddr), freq, sp.bchan, chanflag, rssi);
 		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, -96);
 		wb = (struct ndis_wlan_bssid_ex *)((char *)wb + wb->len);
 	}

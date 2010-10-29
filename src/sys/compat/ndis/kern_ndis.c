@@ -226,12 +226,10 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 void
 ndis_create_sysctls(struct ndis_softc *sc)
 {
-	struct ndis_cfg *vals;
+	struct ndis_cfg *vals = sc->ndis_regvals;
 	char buf[256];
 	struct sysctl_oid *oidp;
 	struct sysctl_ctx_entry *e;
-
-	vals = sc->ndis_regvals;
 
 	TAILQ_INIT(&sc->ndis_cfglist_head);
 
@@ -354,8 +352,7 @@ ndis_return_packet_nic(struct device_object *dobj, void *arg)
 		p = CONTAINING_RECORD(l, struct ndis_packet, list);
 		InitializeListHead((&p->list));
 		KeReleaseSpinLock(&block->returnlock, irql);
-		MSCALL2(ch->return_packet_func,
-		block->miniport_adapter_ctx, p);
+		MSCALL2(ch->return_packet_func, block->miniport_adapter_ctx, p);
 		KeAcquireSpinLock(&block->returnlock, &irql);
 	}
 	KeReleaseSpinLock(&block->returnlock, irql);
@@ -410,13 +407,8 @@ ndis_convert_res(struct ndis_softc *sc)
 {
 	struct cm_partial_resource_list *rl = NULL;
 	struct cm_partial_resource_desc *prd = NULL;
-	struct ndis_miniport_block *block;
-	device_t dev;
 	struct resource_list *brl;
 	struct resource_list_entry *brle;
-
-	block = sc->ndis_block;
-	dev = sc->ndis_dev;
 
 	rl = malloc(sizeof(struct cm_partial_resource_list) +
 	    (sizeof(struct cm_partial_resource_desc) * (sc->ndis_rescnt - 1)),
@@ -429,7 +421,7 @@ ndis_convert_res(struct ndis_softc *sc)
 	rl->count = sc->ndis_rescnt;
 	prd = rl->partial_descs;
 
-	brl = BUS_GET_RESOURCE_LIST(dev, dev);
+	brl = BUS_GET_RESOURCE_LIST(sc->ndis_dev, sc->ndis_dev);
 	if (brl != NULL) {
 		STAILQ_FOREACH(brle, brl, link) {
 			switch (brle->type) {
@@ -469,7 +461,7 @@ ndis_convert_res(struct ndis_softc *sc)
 		}
 	}
 
-	block->rlist = rl;
+	sc->ndis_block->rlist = rl;
 
 	return (0);
 }
@@ -911,8 +903,8 @@ ndis_pnp_event_nic(struct ndis_softc *sc, uint32_t event, uint32_t profile)
 	case NDIS_DEVICE_PNP_EVENT_SURPRISE_REMOVED:
 		if (sc->ndis_block->flags & NDIS_ATTRIBUTE_SURPRISE_REMOVE_OK)
 			MSCALL4(sc->ndis_chars->pnp_event_notify_func,
-			sc->ndis_block->miniport_adapter_ctx,
-			event, NULL, 0);
+			    sc->ndis_block->miniport_adapter_ctx,
+			    event, NULL, 0);
 		break;
 	case NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED:
 		MSCALL4(sc->ndis_chars->pnp_event_notify_func,
@@ -1047,8 +1039,6 @@ NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
 void
 ndis_unload_driver(struct ndis_softc *sc)
 {
-	struct device_object *fdo;
-
 	KASSERT(sc->ndis_block->device_ctx == NULL, ("device present"));
 	if (sc->ndis_intrhand) /* FIXME: doesn't belong here */
 		bus_teardown_intr(sc->ndis_dev,
@@ -1060,8 +1050,7 @@ ndis_unload_driver(struct ndis_softc *sc)
 	TAILQ_REMOVE(&ndis_devhead, sc->ndis_block, link);
 	if (sc->ndis_chars->transfer_data_func != NULL)
 		NdisFreePacketPool(sc->ndis_block->rxpool);
-	fdo = sc->ndis_block->deviceobj;
 	IoFreeWorkItem(sc->ndis_block->returnitem);
 	IoDetachDevice(sc->ndis_block->nextdeviceobj);
-	IoDeleteDevice(fdo);
+	IoDeleteDevice(sc->ndis_block->deviceobj);
 }

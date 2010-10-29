@@ -143,8 +143,7 @@ windrv_libfini(void)
 }
 
 /*
- * Given the address of a driver image, find its corresponding
- * driver_object.
+ * Given the address of a driver image, find its corresponding driver_object.
  */
 struct driver_object *
 windrv_lookup(vm_offset_t img, const char *name)
@@ -480,8 +479,7 @@ windrv_bus_attach(struct driver_object *drv, const char *name)
 		return (ENOMEM);
 
 	RtlInitAnsiString(&as, name);
-	if (RtlAnsiStringToUnicodeString(&drv->driver_name, &as, TRUE))
-	{
+	if (RtlAnsiStringToUnicodeString(&drv->driver_name, &as, TRUE)) {
 		free(new, M_NDIS_WINDRV);
 		return (ENOMEM);
 	}

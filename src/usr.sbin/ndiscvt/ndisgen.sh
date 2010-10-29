@@ -354,11 +354,10 @@ firmcvt() {
 				read KEYPRESS
 				continue
 			fi
-			if ! ${NDISCVT} -f ${FIRMPATH} > /dev/null; then
 				echo ""
+			if ! ${NDISCVT} -f ${FIRMPATH} > /dev/null; then
 				echo "CONVERSION FAILED"
 			else
-				echo ""
 				echo "	Conversion was successful."
 				echo ""
 				FRMBASE=`${BASENAME} ${FIRMPATH}`

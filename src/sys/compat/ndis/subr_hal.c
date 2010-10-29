@@ -75,15 +75,13 @@ static struct mtx disp_lock;
 void
 hal_libinit(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = hal_functbl;
 
 	mtx_init(&disp_lock, "HAL lock", NULL, MTX_DEF | MTX_RECURSE);
 
-	patch = hal_functbl;
 	while (patch->func != NULL) {
 		windrv_wrap((funcptr)patch->func,
-		    (funcptr *)&patch->wrap,
-		    patch->argcnt, patch->ftype);
+		    (funcptr *)&patch->wrap, patch->argcnt, patch->ftype);
 		patch++;
 	}
 }
@@ -91,11 +89,10 @@ hal_libinit(void)
 void
 hal_libfini(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = hal_functbl;
 
 	mtx_destroy(&disp_lock);
 
-	patch = hal_functbl;
 	while (patch->func != NULL) {
 		windrv_unwrap(patch->wrap);
 		patch++;

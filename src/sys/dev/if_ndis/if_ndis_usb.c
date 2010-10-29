@@ -216,6 +216,5 @@ ndis_get_resource_list(device_t dev, device_t child)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
-
 	return (BUS_GET_RESOURCE_LIST(device_get_parent(sc->ndis_dev), dev));
 }

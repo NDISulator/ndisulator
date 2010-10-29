@@ -297,13 +297,11 @@ MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
 void
 ndis_libinit(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = ndis_functbl;
 
-	patch = ndis_functbl;
 	while (patch->func != NULL) {
 		windrv_wrap((funcptr)patch->func,
-		    (funcptr *)&patch->wrap,
-		    patch->argcnt, patch->ftype);
+		    (funcptr *)&patch->wrap, patch->argcnt, patch->ftype);
 		patch++;
 	}
 }
@@ -311,9 +309,8 @@ ndis_libinit(void)
 void
 ndis_libfini(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = ndis_functbl;
 
-	patch = ndis_functbl;
 	while (patch->func != NULL) {
 		windrv_unwrap(patch->wrap);
 		patch++;
@@ -381,10 +378,9 @@ NdisMRegisterMiniport(ndis_handle adapter,
 	 * the driver is unloaded (see windrv_unload()).
 	 */
 	if (IoAllocateDriverObjectExtension(drv, (void *)1,
-	    sizeof(struct ndis_miniport_driver_characteristics),
-	    (void **)&ch) != NDIS_STATUS_SUCCESS) {
+	    sizeof(struct ndis_miniport_characteristics),
+	    (void **)&ch) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-	}
 
 	memset(ch, 0, sizeof(struct ndis_miniport_driver_characteristics));
 	memcpy(ch, characteristics, len);

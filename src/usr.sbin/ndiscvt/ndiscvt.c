@@ -85,11 +85,6 @@ extern const char *__progname;
 #define	ROUND_DOWN(n, align)	(((uintptr_t)n) & ~((align) - 1l))
 #define	ROUND_UP(n, align)	ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
 				(align))
-#define	SET_HDRS(x)	\
-	dos_hdr = (struct image_dos_header *)x;				\
-	nt_hdr = (struct image_nt_header *)(x + dos_hdr->e_lfanew);	\
-	sect_hdr = IMAGE_FIRST_SECTION(nt_hdr);
-
 static int
 insert_padding(void **imgbase, int *imglen)
 {

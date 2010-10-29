@@ -155,10 +155,9 @@ static funcptr usbd_xfertask_wrap;
 void
 usbd_libinit(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = usbd_functbl;
 	int i;
 
-	patch = usbd_functbl;
 	while (patch->func != NULL) {
 		windrv_wrap((funcptr)patch->func,
 		    (funcptr *)&patch->wrap,
@@ -192,18 +191,15 @@ usbd_libinit(void)
 	    (driver_dispatch)usbd_iodispatch_wrap;
 	usbd_driver.dispatch[IRP_MJ_DEVICE_CONTROL] =
 	    (driver_dispatch)usbd_iodispatch_wrap;
-	usbd_driver.dispatch[IRP_MJ_POWER] =
-	    (driver_dispatch)usbd_power_wrap;
-	usbd_driver.dispatch[IRP_MJ_PNP] =
-	    (driver_dispatch)usbd_pnp_wrap;
+	usbd_driver.dispatch[IRP_MJ_POWER] = (driver_dispatch)usbd_power_wrap;
+	usbd_driver.dispatch[IRP_MJ_PNP] = (driver_dispatch)usbd_pnp_wrap;
 }
 
 void
 usbd_libfini(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = usbd_functbl;
 
-	patch = usbd_functbl;
 	while (patch->func != NULL) {
 		windrv_unwrap(patch->wrap);
 		patch++;

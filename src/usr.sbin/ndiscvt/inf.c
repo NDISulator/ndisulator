@@ -143,10 +143,8 @@ find_next_assign(const struct assign *a)
 	}
 
 	assign = assign->link.tqe_next;
-
 	if (assign == NULL || assign->section != a->section)
 		return (NULL);
-
 	return (assign);
 }
 
@@ -343,7 +341,6 @@ retry:
 
 	/* Handle Manufacturer sections with multiple entries. */
 	manf = find_next_assign(manf);
-
 	if (manf != NULL)
 		goto nextmanf;
 done:
@@ -385,7 +382,6 @@ nextmanf:
 			}
 		}
 	}
-
 	if (found == 0)
 		goto done;
 	found = 0;
@@ -424,7 +420,6 @@ retry:
 
 	/* Handle Manufacturer sections with multiple entries. */
 	manf = find_next_assign(manf);
-
 	if (manf != NULL)
 		goto nextmanf;
 done:
@@ -466,7 +461,6 @@ nextmanf:
 			}
 		}
 	}
-
 	if (found == 0)
 		goto done;
 	found = 0;

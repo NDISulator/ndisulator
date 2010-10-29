@@ -254,7 +254,7 @@ MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 void
 ntoskrnl_libinit(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = ntoskrnl_functbl;
 	struct thread *t;
 	struct kdpc_queue *kq;
 	struct callout_entry *e;
@@ -312,7 +312,6 @@ ntoskrnl_libinit(void)
 
 	windrv_wrap((funcptr)ntoskrnl_workitem,
 	    (funcptr *)&ntoskrnl_workitem_wrap, 2, WINDRV_WRAP_STDCALL);
-	patch = ntoskrnl_functbl;
 	while (patch->func != NULL) {
 		windrv_wrap((funcptr)patch->func, (funcptr *)&patch->wrap,
 		    patch->argcnt, patch->ftype);
@@ -353,11 +352,10 @@ ntoskrnl_libinit(void)
 void
 ntoskrnl_libfini(void)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = ntoskrnl_functbl;
 	struct callout_entry *e;
 	list_entry *l;
 
-	patch = ntoskrnl_functbl;
 	while (patch->func != NULL) {
 		windrv_unwrap(patch->wrap);
 		patch++;
@@ -519,8 +517,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
 		if (dst->as_maxlen < dst->as_len)
 			dst->as_len = dst->as_maxlen;
 	}
-	ntoskrnl_unicode_to_ascii(src->us_buf, dst->as_buf,
-	    dst->as_len * 2);
+	ntoskrnl_unicode_to_ascii(src->us_buf, dst->as_buf, dst->as_len * 2);
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -543,8 +540,7 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
 		if (dst->us_maxlen < dst->us_len)
 			dst->us_len = dst->us_maxlen;
 	}
-	ntoskrnl_ascii_to_unicode(src->as_buf, dst->us_buf,
-	    dst->us_len / 2);
+	ntoskrnl_ascii_to_unicode(src->as_buf, dst->us_buf, dst->us_len / 2);
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -583,8 +579,7 @@ IoAllocateDriverObjectExtension(struct driver_object *drv, void *clid,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	ce->ce_clid = clid;
-	InsertTailList((&drv->driver_extension->usrext),
-	    (&ce->ce_list));
+	InsertTailList((&drv->driver_extension->usrext), (&ce->ce_list));
 
 	*ext = (void *)(ce + 1);
 
@@ -1610,8 +1605,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 	w = whead;
 
 	for (i = 0; i < cnt; i++) {
-		InsertTailList((&obj[i]->dh_waitlisthead),
-		    (&w->wb_waitlist));
+		InsertTailList((&obj[i]->dh_waitlisthead), (&w->wb_waitlist));
 		w->wb_ext = &we;
 		w->wb_object = obj[i];
 		w->wb_waittype = wtype;
@@ -1898,9 +1892,8 @@ ntoskrnl_popsl(slist_header *head)
 static funcptr
 ntoskrnl_findwrap(void *func)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *patch = ntoskrnl_functbl;
 
-	patch = ntoskrnl_functbl;
 	while (patch->func != NULL) {
 		if ((funcptr)patch->func == func)
 			return ((funcptr)patch->wrap);
