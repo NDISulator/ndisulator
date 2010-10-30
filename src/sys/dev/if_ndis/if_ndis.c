@@ -783,7 +783,6 @@ ndis_attach(device_t dev)
 
 	if_initname(ifp, device_get_name(dev), device_get_unit(dev));
 	ifp->if_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST;
-	ifp->if_ioctl = ndis_ioctl;
 	ifp->if_start = ndis_start;
 	ifp->if_init = ndis_init;
 	ifp->if_baudrate = 10000000;
@@ -1011,6 +1010,7 @@ got_crypto:
 		if (bootverbose)
 			ieee80211_announce(ic);
 	} else {
+		ifp->if_ioctl = ndis_ioctl;
 		ifmedia_init(&sc->ifmedia, IFM_IMASK, ndis_ifmedia_upd,
 		    ndis_ifmedia_sts);
 		ifmedia_add(&sc->ifmedia, IFM_ETHER|IFM_10_T, 0, NULL);
