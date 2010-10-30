@@ -2276,9 +2276,9 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 	switch (command) {
 	case SIOCSIFFLAGS:
 		if (ifp->if_flags & IFF_UP) {
-			if (ifp->if_drv_flags & IFF_DRV_RUNNING) {
+			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
 				error = ndis_set_filter(sc);
-			} else
+			else
 				ndis_init(sc);
 		} else {
 			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
@@ -2322,7 +2322,9 @@ ndis_ioctl_80211(struct ifnet *ifp, u_long command, caddr_t data)
 	switch (command) {
 	case SIOCSIFFLAGS:
 		if (ifp->if_flags & IFF_UP) {
-			if (!(ifp->if_drv_flags & IFF_DRV_RUNNING))
+			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
+				error = ndis_set_filter(sc);
+			else
 				ndis_init(sc);
 		} else {
 			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
