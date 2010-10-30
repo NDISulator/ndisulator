@@ -176,7 +176,6 @@ static int	ndis_set_infra(struct ndis_softc *, int);
 static int	ndis_set_multi(struct ndis_softc *);
 static int	ndis_set_task_offload(struct ndis_softc *);
 static int	ndis_set_powersave(struct ndis_softc *, uint32_t);
-static int	ndis_get_powerstate(struct ndis_softc *, uint32_t *);
 static int	ndis_set_powerstate(struct ndis_softc *, uint32_t);
 static void	ndis_set_privacy_filter(struct ndis_softc *, uint32_t);
 static int	ndis_set_rtsthreshold(struct ndis_softc *, uint16_t);
@@ -308,22 +307,8 @@ ndis_set_powersave(struct ndis_softc *sc, uint32_t flags)
 }
 
 static int
-ndis_get_powerstate(struct ndis_softc *sc, enum ndis_device_power_state *state)
-{
-	return (ndis_get_int(sc, OID_PNP_QUERY_POWER, state));
-}
-
-static int
 ndis_set_powerstate(struct ndis_softc *sc, enum ndis_device_power_state nstate)
 {
-	int error;
-	enum ndis_device_power_state ostate;
-
-	error = ndis_get_powerstate(sc, &ostate);
-	if (error)
-		return (error);
-	if (ostate == nstate)
-		return (0);
 	return (ndis_set_int(sc, OID_PNP_SET_POWER, nstate));
 }
 
