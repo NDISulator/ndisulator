@@ -151,77 +151,67 @@ ndis_attach_pci(device_t dev)
 	 */
 	pci_enable_busmaster(dev);
 	rl = BUS_GET_RESOURCE_LIST(device_get_parent(dev), dev);
-	if (rl != NULL) {
-		STAILQ_FOREACH(rle, rl, link) {
-			switch (rle->type) {
-			case SYS_RES_IOPORT:
-				sc->ndis_io_rid = rle->rid;
-				sc->ndis_res_io = bus_alloc_resource(dev,
-				    SYS_RES_IOPORT, &sc->ndis_io_rid,
-				    0, ~0, 1, RF_ACTIVE);
-				if (sc->ndis_res_io == NULL) {
-					device_printf(dev,
-					    "couldn't map iospace\n");
-					error = ENXIO;
-					goto fail;
-				}
-				pci_enable_io(dev, SYS_RES_IOPORT);
-				break;
-			case SYS_RES_MEMORY:
-				if (sc->ndis_res_altmem != NULL &&
-				    sc->ndis_res_mem != NULL) {
-					device_printf(dev,
-					    "too many memory resources\n");
-					error = ENXIO;
-					goto fail;
-				}
-				if (sc->ndis_res_mem) {
-					sc->ndis_altmem_rid = rle->rid;
-					sc->ndis_res_altmem =
-					    bus_alloc_resource(dev,
-						SYS_RES_MEMORY,
-						&sc->ndis_altmem_rid,
-						0, ~0, 1, RF_ACTIVE);
-					if (sc->ndis_res_altmem == NULL) {
-						device_printf(dev,
-						    "couldn't map alt "
-						    "memory\n");
-						error = ENXIO;
-						goto fail;
-					}
-				} else {
-					sc->ndis_mem_rid = rle->rid;
-					sc->ndis_res_mem =
-					    bus_alloc_resource(dev,
-						SYS_RES_MEMORY,
-						&sc->ndis_mem_rid,
-						0, ~0, 1, RF_ACTIVE);
-					if (sc->ndis_res_mem == NULL) {
-						device_printf(dev,
-						    "couldn't map memory\n");
-						error = ENXIO;
-						goto fail;
-					}
-				}
-				pci_enable_io(dev, SYS_RES_MEMORY);
-				break;
-			case SYS_RES_IRQ:
-				rid = rle->rid;
-				sc->ndis_irq = bus_alloc_resource(dev,
-				    SYS_RES_IRQ, &rid, 0, ~0, 1,
-				RF_SHAREABLE | RF_ACTIVE);
-				if (sc->ndis_irq == NULL) {
-					device_printf(dev,
-					    "couldn't map interrupt\n");
-					error = ENXIO;
-					goto fail;
-				}
-				break;
-			default:
-				break;
+	if (rl == NULL)
+		return (ENXIO);
+
+	STAILQ_FOREACH(rle, rl, link) {
+		switch (rle->type) {
+		case SYS_RES_IOPORT:
+			sc->ndis_io_rid = rle->rid;
+			sc->ndis_res_io = bus_alloc_resource(dev,
+			    SYS_RES_IOPORT, &sc->ndis_io_rid,
+			    0, ~0, 1, RF_ACTIVE);
+			if (sc->ndis_res_io == NULL) {
+				device_printf(dev, "no ioport\n");
+				error = ENXIO;
+				goto fail;
 			}
-			sc->ndis_rescnt++;
+			pci_enable_io(dev, SYS_RES_IOPORT);
+			break;
+		case SYS_RES_MEMORY:
+			if (sc->ndis_res_altmem != NULL &&
+			    sc->ndis_res_mem != NULL) {
+				device_printf(dev, "too many mem\n");
+				error = ENXIO;
+				goto fail;
+			}
+			if (sc->ndis_res_mem) {
+				sc->ndis_altmem_rid = rle->rid;
+				sc->ndis_res_altmem = bus_alloc_resource(dev,
+				    SYS_RES_MEMORY, &sc->ndis_altmem_rid,
+				    0, ~0, 1, RF_ACTIVE);
+				if (sc->ndis_res_altmem == NULL) {
+					device_printf(dev, "no map alt\n");
+					error = ENXIO;
+					goto fail;
+				}
+			} else {
+				sc->ndis_mem_rid = rle->rid;
+				sc->ndis_res_mem = bus_alloc_resource(dev,
+				    SYS_RES_MEMORY, &sc->ndis_mem_rid,
+				    0, ~0, 1, RF_ACTIVE);
+				if (sc->ndis_res_mem == NULL) {
+					device_printf(dev, "no map\n");
+					error = ENXIO;
+					goto fail;
+				}
+			}
+			pci_enable_io(dev, SYS_RES_MEMORY);
+			break;
+		case SYS_RES_IRQ:
+			rid = rle->rid;
+			sc->ndis_irq = bus_alloc_resource(dev, SYS_RES_IRQ,
+			    &rid, 0, ~0, 1, RF_SHAREABLE | RF_ACTIVE);
+			if (sc->ndis_irq == NULL) {
+				device_printf(dev, "no irq\n");
+				error = ENXIO;
+				goto fail;
+			}
+			break;
+		default:
+			break;
 		}
+		sc->ndis_rescnt++;
 	}
 
 	/*
