@@ -674,13 +674,8 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 	 * routine must explicitly call IoAddDeviceToDeviceStack()
 	 * to do that.
 	 */
-	if (drv->device_object == NULL) {
-		drv->device_object = dev;
-		dev->nextdev = NULL;
-	} else {
-		dev->nextdev = drv->device_object;
-		drv->device_object = dev;
-	}
+	dev->nextdev = drv->device_object;
+	drv->device_object = dev;
 	*newdev = dev;
 
 	return (NDIS_STATUS_SUCCESS);
