@@ -223,7 +223,7 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 void
 ndis_create_sysctls(struct ndis_softc *sc)
 {
-	struct ndis_cfg *vals = sc->ndis_regvals;
+	struct ndis_cfg *cfg = sc->ndis_regvals;
 	char buf[256];
 	struct sysctl_oid *oidp;
 	struct sysctl_ctx_entry *e;
@@ -232,10 +232,10 @@ ndis_create_sysctls(struct ndis_softc *sc)
 
 	/* Add the driver-specific registry keys. */
 	for (;;) {
-		if (vals->cfgkey == NULL)
+		if (cfg->key == NULL)
 			break;
-		if (vals->idx != sc->ndis_devidx) {
-			vals++;
+		if (cfg->idx != sc->ndis_devidx) {
+			cfg++;
 			continue;
 		}
 
@@ -243,18 +243,17 @@ ndis_create_sysctls(struct ndis_softc *sc)
 		oidp = NULL;
 		TAILQ_FOREACH(e, device_get_sysctl_ctx(sc->ndis_dev), link) {
 			oidp = e->entry;
-			if (strcasecmp(oidp->oid_name, vals->cfgkey) == 0)
+			if (strcasecmp(oidp->oid_name, cfg->key) == 0)
 				break;
 			oidp = NULL;
 		}
 		if (oidp != NULL) {
-			vals++;
+			cfg++;
 			continue;
 		}
 
-		ndis_add_sysctl(sc, vals->cfgkey, vals->cfgdesc,
-		    vals->val, CTLFLAG_RW);
-		vals++;
+		ndis_add_sysctl(sc, cfg->key, cfg->desc, cfg->val, CTLFLAG_RW);
+		cfg++;
 	}
 
 	/* Now add a couple of builtin keys. */
@@ -291,19 +290,19 @@ ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
 	cfg = malloc(sizeof(struct ndis_cfglist), M_NDIS_KERN, M_NOWAIT|M_ZERO);
 	if (cfg == NULL)
 		return (ENOMEM);
-	cfg->ndis_cfg.cfgkey = strdup(key, M_NDIS_KERN);
+	cfg->ndis_cfg.key = strdup(key, M_NDIS_KERN);
 	if (desc == NULL) {
-		cfg->ndis_cfg.cfgdesc = NULL;
+		cfg->ndis_cfg.desc = NULL;
 	} else
-		cfg->ndis_cfg.cfgdesc = strdup(desc, M_NDIS_KERN);
+		cfg->ndis_cfg.desc = strdup(desc, M_NDIS_KERN);
 	strcpy(cfg->ndis_cfg.val, val);
 
 	TAILQ_INSERT_TAIL(&sc->ndis_cfglist_head, cfg, link);
 
 	cfg->ndis_oid = SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
 	    SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
-	    OID_AUTO, cfg->ndis_cfg.cfgkey, flag, cfg->ndis_cfg.val,
-	    sizeof(cfg->ndis_cfg.val), cfg->ndis_cfg.cfgdesc);
+	    OID_AUTO, cfg->ndis_cfg.key, flag, cfg->ndis_cfg.val,
+	    sizeof(cfg->ndis_cfg.val), cfg->ndis_cfg.desc);
 
 	return (0);
 }
@@ -321,8 +320,8 @@ ndis_flush_sysctls(struct ndis_softc *sc)
 		TAILQ_REMOVE(&sc->ndis_cfglist_head, cfg, link);
 		sysctl_ctx_entry_del(clist, cfg->ndis_oid);
 		sysctl_remove_oid(cfg->ndis_oid, 1, 0);
-		free(cfg->ndis_cfg.cfgkey, M_NDIS_KERN);
-		free(cfg->ndis_cfg.cfgdesc, M_NDIS_KERN);
+		free(cfg->ndis_cfg.key, M_NDIS_KERN);
+		free(cfg->ndis_cfg.desc, M_NDIS_KERN);
 		free(cfg, M_NDIS_KERN);
 	}
 }
