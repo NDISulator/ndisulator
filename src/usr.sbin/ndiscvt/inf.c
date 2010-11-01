@@ -527,7 +527,7 @@ dump_addreg(const char *s, int devidx)
 			if (reg->subkey == NULL) {
 				fprintf(ofp, "\n\t{ \"%s\",", reg->key);
 				fprintf(ofp, "\n\t\"%s \",", reg->key);
-				fprintf(ofp, "\n\t{ \"%s\" }, %d },",
+				fprintf(ofp, "\n\t\"%s\", %d },",
 				    reg->value == NULL ? "" :
 				    stringcvt(reg->value), devidx);
 			} else if (strncasecmp(reg->subkey,
@@ -610,12 +610,12 @@ dump_defaultinfo(const struct section *s, const struct reg *r, int devidx)
 			continue;
 		if (reg->key == NULL || strcasecmp(reg->key, "Default"))
 			continue;
-		fprintf(ofp, "\n\t{ \"%s\" }, %d },", reg->value == NULL ? "" :
+		fprintf(ofp, "\n\t\"%s\", %d },", reg->value == NULL ? "" :
 		    stringcvt(reg->value), devidx);
 		return;
 	}
 	/* Default registry entry missing */
-	fprintf(ofp, "\n\t{ \"\" }, %d },", devidx);
+	fprintf(ofp, "\n\t\"\", %d },", devidx);
 }
 
 static void
@@ -753,7 +753,7 @@ retry:
 	if (manf != NULL)
 		goto nextmanf;
 
-	fprintf(ofp, "\n\t{ NULL, NULL, { 0 }, 0 }\n};\n\n");
+	fprintf(ofp, "\n\t{ NULL, NULL, 0, 0 }\n};\n\n");
 }
 
 void

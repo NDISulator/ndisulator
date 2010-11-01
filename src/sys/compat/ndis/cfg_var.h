@@ -38,7 +38,7 @@
 struct ndis_cfg {
 	char	*key;
 	char	*desc;
-	char	val[256];
+	char	*val;
 	int	idx;
 };
 

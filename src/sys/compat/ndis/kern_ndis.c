@@ -295,7 +295,7 @@ ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
 		cfg->ndis_cfg.desc = NULL;
 	} else
 		cfg->ndis_cfg.desc = strdup(desc, M_NDIS_KERN);
-	strcpy(cfg->ndis_cfg.val, val);
+	cfg->ndis_cfg.val = strdup(val, M_NDIS_KERN);
 
 	TAILQ_INSERT_TAIL(&sc->ndis_cfglist_head, cfg, link);
 
@@ -322,6 +322,7 @@ ndis_flush_sysctls(struct ndis_softc *sc)
 		sysctl_remove_oid(cfg->ndis_oid, 1, 0);
 		free(cfg->ndis_cfg.key, M_NDIS_KERN);
 		free(cfg->ndis_cfg.desc, M_NDIS_KERN);
+		free(cfg->ndis_cfg.val, M_NDIS_KERN);
 		free(cfg, M_NDIS_KERN);
 	}
 }
