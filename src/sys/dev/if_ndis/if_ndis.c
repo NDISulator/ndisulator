@@ -262,15 +262,17 @@ static int
 ndis_get_oids(struct ndis_softc *sc, ndis_oid **oids, uint32_t *oidcnt)
 {
 	uint32_t len;
+	int32_t	rval;
 
 	*oidcnt = 0;
 	ndis_get_info(sc, OID_GEN_SUPPORTED_LIST, NULL, 0, NULL, &len);
 	*oids = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (*oids == NULL)
 		return (ENOMEM);
-	if (ndis_get(sc, OID_GEN_SUPPORTED_LIST, *oids, len)) {
+	rval = ndis_get(sc, OID_GEN_SUPPORTED_LIST, *oids, len);
+	if (rval) {
 		free(*oids, M_NDIS_DEV);
-		return (ENXIO);
+		return (rval);
 	}
 	*oidcnt = len / 4;
 	return (0);
@@ -601,8 +603,9 @@ ndis_attach(device_t dev)
 	struct driver_object *pdrv;
 	struct device_object *pdo;
 	struct ifnet *ifp = NULL;
+	ndis_oid *ndis_oids;
 	int mode, i = 0;
-	uint32_t rval, len;
+	uint32_t rval, len, ndis_oidcnt;
 	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
@@ -679,19 +682,20 @@ ndis_attach(device_t dev)
 	if (ndis_init_nic(sc) != NDIS_STATUS_SUCCESS)
 		goto fail;
 
-	rval = ndis_get_oids(sc, &sc->ndis_oids, &sc->ndis_oidcnt);
-	if (rval) {
-		device_printf(dev, "failed to get supported oids; "
-		    "status: 0x%08X\n", rval);
-		goto fail;
-	}
 	if (bootverbose) {
+		rval = ndis_get_oids(sc, &ndis_oids, &ndis_oidcnt);
+		if (rval) {
+			device_printf(dev, "failed to get supported oids; "
+			    "status: 0x%08X\n", rval);
+			goto fail;
+		}
 		device_printf(dev, "NDIS API %d.%d\n",
 		    sc->ndis_chars->version_major,
 		    sc->ndis_chars->version_minor);
 		device_printf(dev,"supported oids:\n");
-		for (i = 0; i < sc->ndis_oidcnt; i++)
-			device_printf(dev, "\t\t0x%08X\n", sc->ndis_oids[i]);
+		for (i = 0; i < ndis_oidcnt; i++)
+			device_printf(dev, "\t\t0x%08X\n", ndis_oids[i]);
+		free(ndis_oids, M_NDIS_DEV);
 		if (!ndis_get_int(sc, OID_GEN_VENDOR_DRIVER_VERSION, &i))
 			device_printf(dev, "driver version: 0x%08X\n", i);
 		if (!ndis_get_int(sc, OID_GEN_HARDWARE_STATUS, &i))
@@ -1131,8 +1135,6 @@ ndis_detach(device_t dev)
 		ifmedia_removeall(&sc->ifmedia);
 	if (sc->ndis_txpool != NULL)
 		NdisFreePacketPool(sc->ndis_txpool);
-	if (sc->ndis_oids != NULL)
-		free(sc->ndis_oids, M_NDIS_DEV);
 	if (sc->ndis_iftype == PCIBus) {
 		windrv_destroy_pdo(windrv_lookup(0, "PCI Bus"), dev);
 		bus_dma_tag_destroy(sc->ndis_parent_tag);

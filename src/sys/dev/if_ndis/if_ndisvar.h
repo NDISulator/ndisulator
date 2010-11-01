@@ -177,8 +177,6 @@ struct ndis_softc {
 	struct callout			ndis_scan_callout;
 	struct callout			ndis_stat_callout;
 	uint32_t			ndis_maxpkts;
-	ndis_oid			*ndis_oids;
-	uint32_t			ndis_oidcnt;
 	uint32_t			ndis_txidx;
 	uint32_t			ndis_txpending;
 	struct ndis_packet		**ndis_txarray;
