@@ -128,13 +128,15 @@ static void NdisOpenConfigurationKeyByIndex(ndis_status *, ndis_handle,
 static void NdisOpenConfigurationKeyByName(ndis_status *, ndis_handle,
     unicode_string *, ndis_handle *);
 static ndis_status ndis_encode_parm(struct ndis_miniport_block *,
-    struct sysctl_oid *, enum ndis_parameter_type, struct ndis_config_parm **);
+    struct sysctl_oid *, enum ndis_parameter_type,
+    struct ndis_configuration_parameter **);
 static ndis_status ndis_decode_parm(struct ndis_miniport_block *,
-    struct ndis_config_parm *, char *);
-static void NdisReadConfiguration(ndis_status *, struct ndis_config_parm **,
-    ndis_handle, unicode_string *, enum ndis_parameter_type);
+    struct ndis_configuration_parameter *, char *);
+static void NdisReadConfiguration(ndis_status *,
+    struct ndis_configuration_parameter **, ndis_handle, unicode_string *,
+    enum ndis_parameter_type);
 static void NdisWriteConfiguration(ndis_status *, ndis_handle,
-    unicode_string *, struct ndis_config_parm *);
+    unicode_string *, struct ndis_configuration_parameter *);
 static void NdisCloseConfiguration(ndis_handle);
 static void NdisAllocateSpinLock(struct ndis_spin_lock *);
 static void NdisFreeSpinLock(struct ndis_spin_lock *);
@@ -454,9 +456,9 @@ NdisOpenConfigurationKeyByIndex(ndis_status *status, ndis_handle cfg,
 
 static ndis_status
 ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
-    enum ndis_parameter_type type, struct ndis_config_parm **parm)
+    enum ndis_parameter_type type, struct ndis_configuration_parameter **parm)
 {
-	struct ndis_config_parm *p;
+	struct ndis_configuration_parameter *p;
 	struct ndis_parmlist_entry *np;
 	unicode_string *us;
 	ansi_string as;
@@ -467,11 +469,11 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 	InsertHeadList((&block->parmlist), (&np->list));
 	*parm = p = &np->parm;
-	p->type = type;
+	p->parameter_type = type;
 
 	switch (type) {
 	case NDIS_PARAMETER_STRING:
-		us = &p->parmdata.stringdata;
+		us = &p->parameter_data.string_data;
 		RtlInitAnsiString(&as, (char *)oid->oid_arg1);
 		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
 			free(np, M_NDIS_SUBR);
@@ -479,13 +481,16 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 		}
 		break;
 	case NDIS_PARAMETER_INTEGER:
-		p->parmdata.intdata = strtol((char *)oid->oid_arg1, NULL, 0);
+		p->parameter_data.integer_data =
+		   strtol((char *)oid->oid_arg1, NULL, 0);
 		break;
 	case NDIS_PARAMETER_HEX_INTEGER:
-		p->parmdata.intdata = strtoul((char *)oid->oid_arg1, NULL, 16);
+		p->parameter_data.integer_data =
+		   strtoul((char *)oid->oid_arg1, NULL, 16);
 		break;
 	case NDIS_PARAMETER_BINARY:
-		p->parmdata.intdata = strtoul((char *)oid->oid_arg1, NULL, 2);
+		p->parameter_data.integer_data =
+		   strtoul((char *)oid->oid_arg1, NULL, 2);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
@@ -494,8 +499,9 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 }
 
 static void
-NdisReadConfiguration(ndis_status *status, struct ndis_config_parm **parm,
-    ndis_handle cfg, unicode_string *key, enum ndis_parameter_type type)
+NdisReadConfiguration(ndis_status *status,
+    struct ndis_configuration_parameter **parm, ndis_handle cfg,
+    unicode_string *key, enum ndis_parameter_type type)
 {
 	struct ndis_softc *sc;
 	struct sysctl_oid *oidp;
@@ -567,27 +573,30 @@ NdisReadConfiguration(ndis_status *status, struct ndis_config_parm **parm,
 
 static ndis_status
 ndis_decode_parm(struct ndis_miniport_block *block,
-    struct ndis_config_parm *parm, char *val)
+    struct ndis_configuration_parameter *parm, char *val)
 {
 	unicode_string *ustr;
 	ansi_string as;
 
-	switch (parm->type) {
+	switch (parm->parameter_type) {
 	case NDIS_PARAMETER_STRING:
-		ustr = &parm->parmdata.stringdata;
+		ustr = &parm->parameter_data.string_data;
 		if (RtlUnicodeStringToAnsiString(&as, ustr, TRUE))
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		memcpy(val, as.as_buf, as.as_len);
 		RtlFreeAnsiString(&as);
 		break;
 	case NDIS_PARAMETER_INTEGER:
-		snprintf(val, sizeof(uint32_t), "%d", parm->parmdata.intdata);
+		snprintf(val, sizeof(uint32_t), "%d",
+		    parm->parameter_data.integer_data);
 		break;
 	case NDIS_PARAMETER_HEX_INTEGER:
-		snprintf(val, sizeof(uint32_t), "%x", parm->parmdata.intdata);
+		snprintf(val, sizeof(uint32_t), "%x",
+		    parm->parameter_data.integer_data);
 		break;
 	case NDIS_PARAMETER_BINARY:
-		snprintf(val, sizeof(uint32_t), "%u", parm->parmdata.intdata);
+		snprintf(val, sizeof(uint32_t), "%u",
+		    parm->parameter_data.integer_data);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
@@ -597,7 +606,7 @@ ndis_decode_parm(struct ndis_miniport_block *block,
 
 static void
 NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
-    unicode_string *key, struct ndis_config_parm *parm)
+    unicode_string *key, struct ndis_configuration_parameter *parm)
 {
 	struct ndis_softc *sc;
 	struct ndis_miniport_block *block = cfg;
@@ -640,15 +649,15 @@ NdisCloseConfiguration(ndis_handle cfg)
 {
 	struct ndis_miniport_block *block = cfg;
 	struct ndis_parmlist_entry *pe;
-	struct ndis_config_parm *p;
+	struct ndis_configuration_parameter *p;
 	list_entry *e;
 
 	while (!IsListEmpty(&block->parmlist)) {
 		e = RemoveHeadList(&block->parmlist);
 		pe = CONTAINING_RECORD(e, struct ndis_parmlist_entry, list);
 		p = &pe->parm;
-		if (p->type == NDIS_PARAMETER_STRING)
-			RtlFreeUnicodeString(&p->parmdata.stringdata);
+		if (p->parameter_type == NDIS_PARAMETER_STRING)
+			RtlFreeUnicodeString(&p->parameter_data.string_data);
 		free(e, M_NDIS_SUBR);
 	}
 }

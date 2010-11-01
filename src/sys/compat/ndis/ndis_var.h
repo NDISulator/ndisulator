@@ -901,18 +901,18 @@ struct ndis_binary_data {
  * Not part of Windows NDIS spec; we uses this to keep a
  * list of ndis_config_parm structures that we've allocated.
  */
-struct ndis_config_parm {
-	enum ndis_parameter_type	type;
+struct ndis_configuration_parameter {
+	enum ndis_parameter_type	parameter_type;
 	union {
-		uint32_t		intdata;
-		unicode_string		stringdata;
-		struct ndis_binary_data	binarydata;
-	} parmdata;
+		uint32_t		integer_data;
+		unicode_string		string_data;
+		struct ndis_binary_data	binary_data;
+	} parameter_data;
 };
 
 struct ndis_parmlist_entry {
-	list_entry		list;
-	struct ndis_config_parm	parm;
+	list_entry				list;
+	struct ndis_configuration_parameter	parm;
 };
 
 struct ndis_bind_paths {
