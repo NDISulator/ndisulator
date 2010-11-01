@@ -635,7 +635,6 @@ NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
 
 	ndis_add_sysctl(sc, keystr, "(dynamically set key)", val, CTLFLAG_RW);
 	RtlFreeAnsiString(&as);
-	*status = NDIS_STATUS_SUCCESS;
 }
 
 static void
