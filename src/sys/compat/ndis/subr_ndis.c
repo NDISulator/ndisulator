@@ -382,9 +382,7 @@ NdisMRegisterMiniport(ndis_handle adapter,
 	    (void **)&ch) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
-	memset(ch, 0, sizeof(struct ndis_miniport_driver_characteristics));
 	memcpy(ch, characteristics, len);
-
 	return (NDIS_STATUS_SUCCESS);
 }
 
