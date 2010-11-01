@@ -224,7 +224,7 @@ void
 ndis_create_sysctls(struct ndis_softc *sc)
 {
 	struct ndis_cfg *cfg = sc->ndis_regvals;
-	char buf[256];
+	char buf[32];
 	struct sysctl_oid *oidp;
 	struct sysctl_ctx_entry *e;
 
@@ -267,7 +267,7 @@ ndis_create_sysctls(struct ndis_softc *sc)
 	ndis_add_sysctl(sc, "NdisVersion",
 	    "NDIS API Version", "0x00050001", CTLFLAG_RD);
 	/* Bus type (PCI, PCMCIA, etc...) */
-	sprintf(buf, "%d", (int)sc->ndis_iftype);
+	sprintf(buf, "%d", sc->ndis_iftype);
 	ndis_add_sysctl(sc, "BusType", "Bus Type", buf, CTLFLAG_RD);
 	if (sc->ndis_res_io != NULL) {
 		sprintf(buf, "0x%lx", rman_get_start(sc->ndis_res_io));
