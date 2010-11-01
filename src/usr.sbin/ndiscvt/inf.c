@@ -111,12 +111,11 @@ static struct assign *
 find_assign(const char *s, const char *k)
 {
 	struct assign *assign;
-	char newkey[256];
+	char *newkey;
 
 	/* Deal with string section lookups. */
 	if (k != NULL && k[0] == '%') {
-		bzero(newkey, sizeof(newkey));
-		strncpy(newkey, k + 1, strlen(k) - 2);
+		newkey = strndup(k + 1, strlen(k) - 2);
 		k = newkey;
 	}
 
@@ -274,7 +273,7 @@ dump_deviceids_pci(void)
 {
 	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	char xpsec[256];
+	char *xpsec = NULL;
 	int first = 1, found = 0;
 
 	/* Find manufacturer name */
@@ -287,8 +286,8 @@ nextmanf:
 	    strcasecmp(manf->vals[1], "NTx86.5.1") == 0 ||
 	    strcasecmp(manf->vals[1], "NTamd64") == 0)) {
 		/* Handle Windows XP INF files. */
-		snprintf(xpsec, sizeof(xpsec), "%s.%s",
-		    manf->vals[0], manf->vals[1]);
+		free(xpsec);
+		asprintf(&xpsec, "%s.%s", manf->vals[0], manf->vals[1]);
 		sec = find_section(xpsec);
 	} else
 		sec = find_section(manf->vals[0]);
@@ -346,6 +345,7 @@ retry:
 done:
 	/* Emit end of table */
 	fprintf(ofp, "\n\n");
+	free(xpsec);
 }
 
 static void
@@ -353,7 +353,7 @@ dump_deviceids_pcmcia(void)
 {
 	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	char xpsec[256];
+	char *xpsec = NULL;
 	int first = 1, found = 0;
 
 	/* Find manufacturer name */
@@ -366,8 +366,8 @@ nextmanf:
 	    strcasecmp(manf->vals[1], "NTx86.5.1") == 0 ||
 	    strcasecmp(manf->vals[1], "NTamd64") == 0)) {
 		/* Handle Windows XP INF files. */
-		snprintf(xpsec, sizeof(xpsec), "%s.%s",
-		    manf->vals[0], manf->vals[1]);
+		free(xpsec);
+		asprintf(&xpsec, "%s.%s", manf->vals[0], manf->vals[1]);
 		sec = find_section(xpsec);
 	} else
 		sec = find_section(manf->vals[0]);
@@ -425,6 +425,7 @@ retry:
 done:
 	/* Emit end of table */
 	fprintf(ofp, "\n\n");
+	free(xpsec);
 }
 
 static void
@@ -432,7 +433,7 @@ dump_deviceids_usb(void)
 {
 	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	char xpsec[256];
+	char *xpsec = NULL;
 	int first = 1, found = 0;
 
 	/* Find manufacturer name */
@@ -445,8 +446,8 @@ nextmanf:
 	    strcasecmp(manf->vals[1], "NTx86.5.1") == 0 ||
 	    strcasecmp(manf->vals[1], "NTamd64") == 0)) {
 		/* Handle Windows XP INF files. */
-		snprintf(xpsec, sizeof(xpsec), "%s.%s",
-		    manf->vals[0], manf->vals[1]);
+		free(xpsec);
+		asprintf(&xpsec, "%s.%s", manf->vals[0], manf->vals[1]);
 		sec = find_section(xpsec);
 	} else
 		sec = find_section(manf->vals[0]);
@@ -504,6 +505,7 @@ retry:
 done:
 	/* Emit end of table */
 	fprintf(ofp, "\n\n");
+	free(xpsec);
 }
 
 static void
@@ -543,9 +545,9 @@ static void
 dump_enumreg(const struct section *s, const struct reg *r)
 {
 	struct reg *reg;
-	char enumkey[256];
+	char *enumkey;
 
-	sprintf(enumkey, "%s\\enum", r->subkey);
+	asprintf(&enumkey, "%s\\enum", r->subkey);
 	TAILQ_FOREACH(reg, &rh, link) {
 		if (reg->section != s)
 			continue;
@@ -553,6 +555,7 @@ dump_enumreg(const struct section *s, const struct reg *r)
 			continue;
 		fprintf(ofp, " [%s=%s]", reg->key, stringcvt(reg->value));
 	}
+	free(enumkey);
 }
 
 static void
@@ -677,7 +680,7 @@ dump_regvals(void)
 {
 	struct assign *manf, *dev, *assign;
 	struct section *sec;
-	char sname[256];
+	char *sname = NULL;
 	int i, found = 0, is_winxp = 0, is_winnt = 0, devidx = 0;
 
 	/* Find signature to check for special case of WinNT. */
@@ -699,8 +702,8 @@ nextmanf:
 	    strcasecmp(manf->vals[1], "NTamd64") == 0)) {
 		is_winxp++;
 		/* Handle Windows XP INF files. */
-		snprintf(sname, sizeof(sname), "%s.%s",
-		    manf->vals[0], manf->vals[1]);
+		free(sname);
+		asprintf(&sname, "%s.%s", manf->vals[0], manf->vals[1]);
 		sec = find_section(sname);
 	} else
 		sec = find_section(manf->vals[0]);
@@ -714,10 +717,12 @@ retry:
 			 * this is a WinXP .INF file.
 			 */
 			if (is_winxp) {
-				sprintf(sname, "%s.NTx86", assign->vals[0]);
+				free(sname);
+				asprintf(&sname, "%s.NTx86", assign->vals[0]);
 				dev = find_assign(sname, "AddReg");
 				if (dev == NULL) {
-					sprintf(sname, "%s.NT",
+					free(sname);
+					asprintf(&sname, "%s.NT",
 					    assign->vals[0]);
 					dev = find_assign(sname, "AddReg");
 				}
@@ -725,7 +730,8 @@ retry:
 					dev = find_assign(assign->vals[0],
 					    "AddReg");
 			} else {
-				sprintf(sname, "%s.NT", assign->vals[0]);
+				free(sname);
+				asprintf(&sname, "%s.NT", assign->vals[0]);
 				dev = find_assign(sname, "AddReg");
 				if (dev == NULL && is_winnt)
 					dev = find_assign(assign->vals[0],
