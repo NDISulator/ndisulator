@@ -897,10 +897,6 @@ struct ndis_binary_data {
 	void		*buf;
 };
 
-/*
- * Not part of Windows NDIS spec; we uses this to keep a
- * list of ndis_config_parm structures that we've allocated.
- */
 struct ndis_configuration_parameter {
 	enum ndis_parameter_type	parameter_type;
 	union {
@@ -910,6 +906,10 @@ struct ndis_configuration_parameter {
 	} parameter_data;
 };
 
+/*
+ * Not part of Windows NDIS spec; we uses this to keep a
+ * list of ndis_config_parm structures that we've allocated.
+ */
 struct ndis_parmlist_entry {
 	list_entry				list;
 	struct ndis_configuration_parameter	parm;
