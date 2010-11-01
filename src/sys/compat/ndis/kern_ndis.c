@@ -123,7 +123,6 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 
 	switch (cmd) {
 	case MOD_LOAD:
-		/* Initialize subsystems */
 		hal_libinit();
 		ntoskrnl_libinit();
 		windrv_libinit();
@@ -142,7 +141,6 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		break;
 	case MOD_SHUTDOWN:
 		if (TAILQ_FIRST(&ndis_devhead) == NULL) {
-			/* Shut down subsystems */
 			usbd_libfini();
 			ndis_libfini();
 			windrv_libfini();
@@ -157,7 +155,6 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		}
 		break;
 	case MOD_UNLOAD:
-		/* Shut down subsystems */
 		usbd_libfini();
 		ndis_libfini();
 		windrv_libfini();
@@ -290,15 +287,13 @@ ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
     int flag)
 {
 	struct ndis_cfglist *cfg;
-	char descstr[256];
 
 	cfg = malloc(sizeof(struct ndis_cfglist), M_NDIS_KERN, M_NOWAIT|M_ZERO);
 	if (cfg == NULL)
 		return (ENOMEM);
 	cfg->ndis_cfg.cfgkey = strdup(key, M_NDIS_KERN);
 	if (desc == NULL) {
-		snprintf(descstr, sizeof(descstr), "%s (dynamic)", key);
-		cfg->ndis_cfg.cfgdesc = strdup(descstr, M_NDIS_KERN);
+		cfg->ndis_cfg.cfgdesc = NULL;
 	} else
 		cfg->ndis_cfg.cfgdesc = strdup(desc, M_NDIS_KERN);
 	strcpy(cfg->ndis_cfg.val, val);
@@ -307,9 +302,8 @@ ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
 
 	cfg->ndis_oid = SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
 	    SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
-	    OID_AUTO, cfg->ndis_cfg.cfgkey, flag,
-	    cfg->ndis_cfg.val, sizeof(cfg->ndis_cfg.val),
-	    cfg->ndis_cfg.cfgdesc);
+	    OID_AUTO, cfg->ndis_cfg.cfgkey, flag, cfg->ndis_cfg.val,
+	    sizeof(cfg->ndis_cfg.val), cfg->ndis_cfg.cfgdesc);
 
 	return (0);
 }
