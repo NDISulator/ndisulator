@@ -100,13 +100,6 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/ndis_var.h>
 #include <dev/if_ndis/if_ndisvar.h>
 
-#include <vm/vm.h>
-#include <vm/vm_param.h>
-#include <vm/pmap.h>
-#include <vm/uma.h>
-#include <vm/vm_kern.h>
-#include <vm/vm_map.h>
-
 static char ndis_filepath[MAXPATHLEN] = "/compat/ndis";
 
 SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
