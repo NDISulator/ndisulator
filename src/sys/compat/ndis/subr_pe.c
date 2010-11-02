@@ -59,7 +59,7 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 #include <string.h>
 
-#define KASSERT(exp, msg) do {		\
+#define	KASSERT(exp, msg) do {		\
 	if (!(exp)) 			\
 		return (EINVAL);	\
 } while (0)
@@ -482,8 +482,13 @@ pe_functbl_match(struct image_patch_table *functbl, const char *name)
 	KASSERT(name != NULL, ("no name"));
 
 	while (p->name != NULL) {
-		if (!strcmp(p->name, name))
+		if (!strcmp(p->name, name)) {
+#ifdef _KERNEL
+			if (bootverbose)
+				printf("NDIS:    match for %s\n", name);
+#endif
 			return ((vm_offset_t)p->wrap);
+		}
 		p++;
 	}
 	printf("NDIS: no match for %s\n", name);
