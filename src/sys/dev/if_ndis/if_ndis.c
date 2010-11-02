@@ -2663,28 +2663,34 @@ static void
 ndis_set_channel(struct ieee80211com *ic)
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
-	struct ndis_80211_config config;
+	struct ndis_80211_config *config;
 
 	if (ic->ic_bsschan == IEEE80211_CHAN_ANYC ||
 	    sc->ndis_ifp->if_link_state == LINK_STATE_UP)
 		return;
 
-	memset(&config, 0, sizeof(config));
-	config.len = sizeof(config);
-	config.fhconfig.len = sizeof(struct ndis_80211_config_fh);
-	if (ndis_get(sc, OID_802_11_CONFIGURATION, &config, sizeof(config)))
+	config = malloc(sizeof(struct ndis_80211_config),
+	    M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	if (config == NULL)
 		return;
+	config->len = sizeof(struct ndis_80211_config);
+	config->fhconfig.len = sizeof(struct ndis_80211_config_fh);
+	if (ndis_get(sc, OID_802_11_CONFIGURATION, config, config->len)) {
+		free(config, M_NDIS_DEV);
+		return;
+	}
 
-	config.beaconperiod = ic->ic_bintval;
-	if (config.atimwin == 0)
-		config.atimwin = 100;
-	if (config.fhconfig.dwelltime == 0)
-		config.fhconfig.dwelltime = 100;
-	config.dsconfig = ic->ic_bsschan->ic_freq * 1000;
-	config.len = sizeof(config);
-	config.fhconfig.len = sizeof(struct ndis_80211_config_fh);
-	DPRINTF("Setting channel to %ukHz\n", config.dsconfig);
-	ndis_set(sc, OID_802_11_CONFIGURATION, &config, sizeof(config));
+	config->beaconperiod = ic->ic_bintval;
+	if (config->atimwin == 0)
+		config->atimwin = 100;
+	if (config->fhconfig.dwelltime == 0)
+		config->fhconfig.dwelltime = 100;
+	config->dsconfig = ic->ic_bsschan->ic_freq * 1000;
+	config->len = sizeof(struct ndis_80211_config);
+	config->fhconfig.len = sizeof(struct ndis_80211_config_fh);
+	DPRINTF("Setting channel to %ukHz\n", config->dsconfig);
+	ndis_set(sc, OID_802_11_CONFIGURATION, config, config->len);
+	free(config, M_NDIS_DEV);
 }
 
 static void
