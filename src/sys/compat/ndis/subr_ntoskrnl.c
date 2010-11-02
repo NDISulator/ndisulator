@@ -206,8 +206,8 @@ static ndis_status PsCreateSystemThread(ndis_handle *, uint32_t, void *,
 static ndis_status PsTerminateSystemThread(ndis_status);
 static ndis_status IoGetDeviceObjectPointer(unicode_string *, uint32_t,
     void *, struct device_object *);
-static ndis_status IoGetDeviceProperty(struct device_object *, uint32_t,
-    uint32_t, void *, uint32_t *);
+static ndis_status IoGetDeviceProperty(struct device_object *,
+    enum device_registry_property, uint32_t, void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
 static int32_t KeReleaseMutex(kmutant *, uint8_t);
 static int32_t KeReadStateMutex(kmutant *);
@@ -613,7 +613,7 @@ IoGetDriverObjectExtension(struct driver_object *drv, void *clid)
 
 int32_t
 IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
-    unicode_string *devname, uint32_t devtype, uint32_t devchars,
+    unicode_string *devname, enum device_type devtype, uint32_t devchars,
     uint8_t exclusive, struct device_object **newdev)
 {
 	struct device_object *dev;
@@ -2817,7 +2817,8 @@ IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
 }
 
 static ndis_status
-IoGetDeviceProperty(struct device_object *devobj, uint32_t regprop,
+IoGetDeviceProperty(struct device_object *devobj,
+    enum device_registry_property regprop,
     uint32_t buflen, void *prop, uint32_t *reslen)
 {
 	struct driver_object *drv;
@@ -2826,7 +2827,7 @@ IoGetDeviceProperty(struct device_object *devobj, uint32_t regprop,
 	drv = devobj->drvobj;
 
 	switch (regprop) {
-	case DEVPROP_DRIVER_KEYNAME:
+	case DEVICE_PROPERTY_DRIVER_KEY_NAME:
 		name = prop;
 		*name = drv->driver_name.us_buf;
 		*reslen = drv->driver_name.us_len;
