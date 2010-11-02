@@ -725,7 +725,7 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
-	bcopy(x86_regparm_wrap, p, (wrapend - wrapstart));
+	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
 
 	/* Insert the function address into the new wrapper instance. */
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
