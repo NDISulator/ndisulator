@@ -1842,9 +1842,6 @@ ndis_init(void *xsc)
 	struct ndis_softc *sc = xsc;
 	struct ifnet *ifp = sc->ndis_ifp;
 	struct ieee80211com *ic = ifp->if_l2com;
-	struct ieee80211vap *vap;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	/* Program the packet filter */
 	if (ndis_set_filter(sc) != 0)
@@ -1858,11 +1855,6 @@ ndis_init(void *xsc)
 	NDIS_LOCK(sc);
 	sc->ndis_txidx = 0;
 	sc->ndis_txpending = sc->ndis_maxpkts;
-
-	if (vap != NULL)
-		if_link_state_change(vap->iv_ifp, LINK_STATE_UNKNOWN);
-	else
-		if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
@@ -2548,11 +2540,7 @@ ndis_resettask(struct device_object *d, void *arg)
 static void
 ndis_stop(struct ndis_softc *sc)
 {
-	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
-	struct ieee80211vap *vap;
 	int i;
-
-	vap = TAILQ_FIRST(&ic->ic_vaps);
 
 	callout_drain(&sc->ndis_stat_callout);
 	if (NDIS_80211(sc))
@@ -2560,11 +2548,6 @@ ndis_stop(struct ndis_softc *sc)
 
 	NDIS_LOCK(sc);
 	sc->ndis_tx_timer = 0;
-
-	if (vap != NULL)
-		if_link_state_change(vap->iv_ifp, LINK_STATE_UNKNOWN);
-	else
-		if_link_state_change(sc->ndis_ifp, LINK_STATE_UNKNOWN);
 
 	sc->ndis_ifp->if_drv_flags &= ~(IFF_DRV_RUNNING|IFF_DRV_OACTIVE);
 	for (i = 0; i < NDIS_EVENTS; i++) {
