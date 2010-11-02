@@ -221,6 +221,7 @@ if [ ${INFPATH} ] && [ -e ${INFPATH} ]; then
 		echo "	This .INF file appears to be Unicode."
 		if [ -e ${ICONVPATH} ]; then
 			echo "	Trying to convert to ASCII..."
+			INFFILE=`${MKTEMP} /tmp/ascii_inf.XXXXXX`
 			${ICONVPATH} -f utf-16 -t utf-8 ${INFPATH} > ${INFFILE}
 			INFPATH=${INFFILE}
 			echo "	Done."
@@ -400,6 +401,7 @@ echo -n "	module now: "
 read KEYPRESS
 echo ""
 echo -n "	Generating Makefile... "
+MAKEFILE=`${MKTEMP} /tmp/Makefile.XXXXXX`
 echo ".PATH:  ${PWD} ${STUBPATH}"				>  ${MAKEFILE}
 echo "KMOD= ${SYSBASE}"						>> ${MAKEFILE}
 echo "SRCS+= ${STUBFILE} ${DNAME}.h bus_if.h device_if.h"	>> ${MAKEFILE}
@@ -493,9 +495,6 @@ EGREP=/usr/bin/egrep
 MAKE=/usr/bin/make
 BASENAME=/usr/bin/basename
 MKTEMP=/usr/bin/mktemp
-
-MAKEFILE=`${MKTEMP} /tmp/Makefile.XXXXXX`
-INFFILE=`${MKTEMP} /tmp/ascii_inf.XXXXXX`
 
 INFPATH=""
 FRMLIST=""
