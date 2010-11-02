@@ -2151,7 +2151,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 			last->mdl_next = m;
 		} else {
 			if (iopkt->mdl != NULL)
-				panic("leaking an MDL in IoAllocateMdl()");
+				panic("leaking an MDL");
 			iopkt->mdl = m;
 		}
 	}
