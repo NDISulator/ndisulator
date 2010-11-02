@@ -1945,14 +1945,21 @@ ndis_set_cipher(struct ndis_softc *sc, int cipher)
 {
 	uint32_t arg;
 
-	if (cipher == WPA_CSE_WEP40 || cipher == WPA_CSE_WEP104)
+	switch (cipher) {
+	case WPA_CSE_WEP40:
+	case WPA_CSE_WEP104:
 		arg = NDIS_802_11_WEPSTAT_ENC1ENABLED;
-	else if (cipher == WPA_CSE_TKIP)
+		break;
+	case WPA_CSE_TKIP:
 		arg = NDIS_802_11_WEPSTAT_ENC2ENABLED;
-	else if (cipher == WPA_CSE_CCMP)
+		break;
+	case WPA_CSE_CCMP:
 		arg = NDIS_802_11_WEPSTAT_ENC3ENABLED;
-	else
+		break;
+	default:
 		arg = NDIS_802_11_WEPSTAT_DISABLED;
+		break;
+	}
 	return (ndis_set_encryption(sc, arg));
 }
 
@@ -2739,12 +2746,12 @@ ndis_scan_end(struct ieee80211com *ic)
 		if (wb->config.fhconfig.len != 0)
 			sp.fhdwell = wb->config.fhconfig.dwelltime;
 		switch (wb->netinfra) {
-			case NDIS_802_11_IBSS:
-				sp.capinfo |= IEEE80211_CAPINFO_IBSS;
-				break;
-			case NDIS_802_11_INFRASTRUCTURE:
-				sp.capinfo |= IEEE80211_CAPINFO_ESS;
-				break;
+		case NDIS_802_11_IBSS:
+			sp.capinfo |= IEEE80211_CAPINFO_IBSS;
+			break;
+		case NDIS_802_11_INFRASTRUCTURE:
+			sp.capinfo |= IEEE80211_CAPINFO_ESS;
+			break;
 		}
 		sp.rates = &rates[0];
 		for (j = 0; j < IEEE80211_RATE_MAXSIZE; j++) {
