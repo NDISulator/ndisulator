@@ -1534,6 +1534,8 @@ static void
 ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 {
 	struct ndis_miniport_block *block = adapter;
+	struct ndis_80211_status_indication *nsi;
+	struct ndis_80211_radio_status_indication *rsi;
 	struct ndis_softc *sc;
 	struct ieee80211com *ic;
 	struct ieee80211vap *vap;
@@ -1546,38 +1548,48 @@ ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
 	ic = sc->ndis_ifp->if_l2com;
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 
-	if (status == NDIS_STATUS_MEDIA_CONNECT) {
+	switch (status) {
+	case NDIS_STATUS_MEDIA_CONNECT:
 		if (vap != NULL) {
 			ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
 			if_link_state_change(vap->iv_ifp, LINK_STATE_UP);
-		} else {
+		} else
 			if_link_state_change(sc->ndis_ifp, LINK_STATE_UP);
-		}
-	} else if (status == NDIS_STATUS_MEDIA_DISCONNECT) {
+		break;
+	case NDIS_STATUS_MEDIA_DISCONNECT:
 		if (vap != NULL) {
 			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
 			if_link_state_change(vap->iv_ifp, LINK_STATE_DOWN);
-		} else {
+		} else
 			if_link_state_change(sc->ndis_ifp, LINK_STATE_DOWN);
-		}
-	} else if (status == NDIS_STATUS_MEDIA_SPECIFIC_INDICATION) {
-		if (buf != NULL) {
-			struct ndis_80211_status_indication *nsi;
+		break;
+	case NDIS_STATUS_MEDIA_SPECIFIC_INDICATION:
+		if (buf == NULL)
+			break;
 
-			nsi = buf;
-			switch (nsi->type) {
-			case NDIS_802_11_STATUS_TYPE_AUTHENTICATION:
-				break;
-			case NDIS_802_11_STATUS_TYPE_MEDIA_STREAM_MODE:
-				break;
-			case NDIS_802_11_STATUS_TYPE_PMKID_CANDIDATE_LIST:
-				break;
-			case NDIS_802_11_STATUS_TYPE_RADIO_STATE:
-				break;
-			default:
+		nsi = buf;
+		switch (nsi->status_type) {
+		case NDIS_802_11_STATUS_TYPE_AUTHENTICATION:
+			break;
+		case NDIS_802_11_STATUS_TYPE_MEDIA_STREAM_MODE:
+			break;
+		case NDIS_802_11_STATUS_TYPE_PMKID_CANDIDATE_LIST:
+			break;
+		case NDIS_802_11_STATUS_TYPE_RADIO_STATE:
+			rsi = buf;
+			switch (rsi->radio_status) {
+			case NDIS_802_11_RADIO_STATUS_ON:
+			case NDIS_802_11_RADIO_STATUS_HARDWARE_OFF:
+			case NDIS_802_11_RADIO_STATUS_SOFTWARE_OFF:
 				break;
 			}
+			break;
+		default:
+			break;
 		}
+		break;
+	default:
+		break;
 	}
 
 	/* Event list is all full up, drop this one. */

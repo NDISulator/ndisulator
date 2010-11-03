@@ -613,13 +613,18 @@ enum ndis_80211_status_type {
 };
 
 struct ndis_80211_status_indication {
-	uint32_t	type;
+	enum ndis_80211_status_type	status_type;
 };
 
 enum ndis_80211_radio_status {
 	NDIS_802_11_RADIO_STATUS_ON,
 	NDIS_802_11_RADIO_STATUS_HARDWARE_OFF,
 	NDIS_802_11_RADIO_STATUS_SOFTWARE_OFF
+};
+
+struct ndis_80211_radio_status_indication {
+	enum ndis_80211_status_type	status_type;
+	enum ndis_80211_radio_status	radio_status;
 };
 
 #define	NDIS_802_11_AUTH_REQUEST_REAUTH			0x01
