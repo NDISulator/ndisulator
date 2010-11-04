@@ -469,7 +469,7 @@ ndis_convert_res(struct ndis_softc *sc)
  * the ndis_packet as external storage. In most cases, this will
  * point to a memory region allocated by the driver (either by
  * ndis_malloc_withtag() or ndis_alloc_sharedmem()). We expect
- * the driver to handle free()ing this region for is, so we set up
+ * the driver to handle free()ing this region for us, so we set up
  * a dummy no-op free handler for it.
  */
 int
