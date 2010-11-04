@@ -100,6 +100,10 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/ndis_var.h>
 #include <dev/if_ndis/if_ndisvar.h>
 
+static funcptr ndis_timercall_wrap;
+static funcptr ndis_asyncmem_complete_wrap;
+static funcptr ndis_interrupt_nic_wrap;
+static funcptr ndis_intrhand_wrap;
 static char ndis_filepath[MAXPATHLEN] = "/compat/ndis";
 
 SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
@@ -264,7 +268,6 @@ static void NdisMIndicateStatus(ndis_handle, ndis_status, void *, uint32_t);
 static uint8_t ndis_interrupt_nic(kinterrupt *, struct ndis_softc *);
 static void ndis_intrhand(kdpc *, struct ndis_miniport_interrupt *, void *,
     void *);
-static funcptr ndis_findwrap(funcptr);
 static void NdisCopyFromPacketToPacket(struct ndis_packet *, uint32_t, uint32_t,
     struct ndis_packet *, uint32_t, uint32_t *);
 static void NdisCopyFromPacketToPacketSafe(struct ndis_packet *, uint32_t,
@@ -294,6 +297,14 @@ ndis_libinit(void)
 {
 	struct image_patch_table *patch = ndis_functbl;
 
+	windrv_wrap((funcptr)ndis_timercall,
+	    (funcptr *)&ndis_timercall_wrap, 4, WINDRV_WRAP_STDCALL);
+	windrv_wrap((funcptr)ndis_asyncmem_complete,
+	    (funcptr *)&ndis_asyncmem_complete_wrap, 2, WINDRV_WRAP_STDCALL);
+	windrv_wrap((funcptr)ndis_interrupt_nic,
+	    (funcptr *)&ndis_interrupt_nic_wrap, 2, WINDRV_WRAP_STDCALL);
+	windrv_wrap((funcptr)ndis_intrhand,
+	    (funcptr *)&ndis_intrhand_wrap, 4, WINDRV_WRAP_STDCALL);
 	while (patch->func != NULL) {
 		windrv_wrap((funcptr)patch->func,
 		    (funcptr *)&patch->wrap, patch->argcnt, patch->ftype);
@@ -310,21 +321,10 @@ ndis_libfini(void)
 		windrv_unwrap(patch->wrap);
 		patch++;
 	}
-}
-
-static funcptr
-ndis_findwrap(funcptr func)
-{
-	struct image_patch_table *patch;
-
-	patch = ndis_functbl;
-	while (patch->func != NULL) {
-		if ((funcptr)patch->func == func)
-			return ((funcptr)patch->wrap);
-		patch++;
-	}
-
-	return (NULL);
+	windrv_unwrap(ndis_intrhand_wrap);
+	windrv_unwrap(ndis_interrupt_nic_wrap);
+	windrv_unwrap(ndis_asyncmem_complete_wrap);
+	windrv_unwrap(ndis_timercall_wrap);
 }
 
 /*
@@ -973,8 +973,7 @@ NdisMInitializeTimer(struct ndis_miniport_timer *timer, ndis_handle adapter,
 	 * Microsoft calling conventions.
 	 */
 	KeInitializeTimer(&timer->nmt_ktimer);
-	KeInitializeDpc(&timer->nmt_kdpc,
-	    ndis_findwrap((funcptr)ndis_timercall), timer);
+	KeInitializeDpc(&timer->nmt_kdpc, ndis_timercall_wrap, timer);
 	timer->nmt_ktimer.k_dpc = &timer->nmt_kdpc;
 }
 
@@ -1298,7 +1297,7 @@ NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
 	w->na_ctx = ctx;
 	w->na_iw = iw;
 
-	ifw = (io_workitem_func)ndis_findwrap((funcptr)ndis_asyncmem_complete);
+	ifw = (io_workitem_func)ndis_asyncmem_complete_wrap;
 	IoQueueWorkItem(iw, ifw, WORKQUEUE_DELAYED, w);
 
 	return (NDIS_STATUS_PENDING);
@@ -1896,12 +1895,11 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 
 	KeInitializeEvent(&intr->dpcs_completed_event,
 	    EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeDpc(&intr->interrupt_dpc,
-	    ndis_findwrap((funcptr)ndis_intrhand), intr);
+	KeInitializeDpc(&intr->interrupt_dpc, ndis_intrhand_wrap, intr);
 	KeSetImportanceDpc(&intr->interrupt_dpc, KDPC_IMPORTANCE_LOW);
 
 	if (IoConnectInterrupt(&intr->interrupt_object,
-	    ndis_findwrap((funcptr)ndis_interrupt_nic), sc, NULL,
+	    ndis_interrupt_nic_wrap, sc, NULL,
 	    ivec, ilevel, 0, imode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
 
@@ -2799,10 +2797,6 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisMDeregisterDevice, 1),
 	IMPORT_SFUNC(NdisMQueryAdapterInstanceName, 2),
 	IMPORT_SFUNC(NdisMRegisterUnloadHandler, 2),
-	IMPORT_SFUNC(ndis_timercall, 4),
-	IMPORT_SFUNC(ndis_asyncmem_complete, 2),
-	IMPORT_SFUNC(ndis_interrupt_nic, 2),
-	IMPORT_SFUNC(ndis_intrhand, 4),
 
 	/*
 	 * This last entry is a catch-all for any function we haven't
