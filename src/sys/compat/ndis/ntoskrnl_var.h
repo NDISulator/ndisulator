@@ -520,10 +520,10 @@ struct driver_object;
 struct devobj_extension;
 
 struct driver_extension {
-	struct driver_object	*driverobj;
-	void			*adddevicefunc;
-	uint32_t		reinitcnt;
-	unicode_string		srvname;
+	struct driver_object	*driver_object;
+	void			*add_device;
+	uint32_t		count;
+	unicode_string		service_key_name;
 
 	/*
 	 * Drivers are allowed to add one or more custom extensions
