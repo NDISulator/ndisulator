@@ -532,7 +532,6 @@ struct driver_extension {
 	 */
 	list_entry 		usrext;
 };
-typedef struct driver_extension driver_extension;
 
 struct custom_extension {
 	list_entry	ce_list;
@@ -666,7 +665,6 @@ struct devobj_extension {
 	uint16_t		size;
 	struct device_object	*devobj;
 };
-typedef struct devobj_extension devobj_extension;
 
 /* Device object flags */
 #define	DO_VERIFY_VOLUME		0x00000002
@@ -1084,7 +1082,7 @@ struct driver_object {
 	void			*driver_start;
 	uint32_t		driver_size;
 	void			*driver_section;
-	driver_extension	*driver_extension;
+	struct driver_extension	*driver_extension;
 	unicode_string		driver_name;
 	unicode_string		*hardware_database;
 	void			*fast_io_dispatch;

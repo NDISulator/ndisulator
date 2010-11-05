@@ -661,7 +661,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 	dev->vpb = NULL;
 
 	dev->devobj_ext = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(devobj_extension), 0);
+	    sizeof(struct devobj_extension), 0);
 	if (dev->devobj_ext == NULL) {
 		if (dev->devext != NULL)
 			ExFreePool(dev->devext);
@@ -670,7 +670,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 	}
 
 	dev->devobj_ext->type = 0;
-	dev->devobj_ext->size = sizeof(devobj_extension);
+	dev->devobj_ext->size = sizeof(struct devobj_extension);
 	dev->devobj_ext->devobj = dev;
 
 	/*

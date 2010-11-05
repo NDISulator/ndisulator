@@ -358,7 +358,7 @@ skipreloc:
 	}
 
 	/* Allocate a driver extension structure too. */
-	drv->driver_extension = malloc(sizeof(driver_extension),
+	drv->driver_extension = malloc(sizeof(struct driver_extension),
 	    M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (drv->driver_extension == NULL) {
 		free(new, M_NDIS_WINDRV);
