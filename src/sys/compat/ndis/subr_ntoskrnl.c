@@ -100,11 +100,13 @@ struct callout_entry {
 };
 
 static struct list_entry ntoskrnl_calllist;
-static struct mtx ntoskrnl_calllock;
-struct kuser_shared_data kuser_shared_data;
-
 static struct list_entry ntoskrnl_intlist;
+static struct mtx ntoskrnl_calllock;
 static kspin_lock ntoskrnl_intlock;
+
+#ifdef __amd64__
+struct kuser_shared_data kuser_shared_data;
+#endif
 
 static uint8_t RtlEqualUnicodeString(const unicode_string *,
     const unicode_string *, uint8_t);
@@ -347,6 +349,10 @@ ntoskrnl_libinit(void)
 
 	iw_zone = uma_zcreate("Windows WorkItem", sizeof(io_workitem),
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
+
+#ifdef __amd64__
+	memset(&kuser_shared_data, 0, sizeof(struct kuser_shared_data));
+#endif
 }
 
 void
