@@ -756,10 +756,10 @@ struct ndis_80211_enc_indication {
 
 #define	NDIS_ENCAPFLAG_FIXEDHDRLEN		0x00000001
 
-struct ndis_encap_fmt {
-	uint32_t	encap;
+struct ndis_encapsulation_format {
+	uint32_t	encapsulation;
 	uint32_t	flags;
-	uint32_t	encaphdrlen;
+	uint32_t	encapsulation_header_size;
 };
 
 struct ndis_pm_wake_up_capabilities {
@@ -773,21 +773,21 @@ struct ndis_pnp_capabilities {
 	struct ndis_pm_wake_up_capabilities	wake_up_capabilities;
 };
 
-struct ndis_task_offload_hdr {
-	uint32_t		vers;
-	uint32_t		len;
-	uint32_t		reserved;
-	uint32_t		offset_firsttask;
-	struct ndis_encap_fmt	encapfmt;
+struct ndis_task_offload_header {
+	uint32_t				version;
+	uint32_t				size;
+	uint32_t				reserved;
+	uint32_t				offset_first_task;
+	struct ndis_encapsulation_format	encapsulation_format;
 };
 
 struct ndis_task_offload {
-	uint32_t	vers;
-	uint32_t	len;
+	uint32_t	version;
+	uint32_t	size;
 	uint32_t	task;
-	uint32_t	offset_nexttask;
-	uint32_t	taskbuflen;
-	uint8_t		taskbuf[1];
+	uint32_t	offset_next_task;
+	uint32_t	task_buffer_length;
+	uint8_t		task_buffer[1];
 };
 
 #define	NDIS_TCPSUM_FLAGS_IP_OPTS	0x00000001

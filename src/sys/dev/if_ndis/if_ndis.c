@@ -419,7 +419,7 @@ ndis_set_task_offload(struct ndis_softc *sc)
 {
 	struct ifnet *ifp = sc->ndis_ifp;
 	struct ndis_task_offload *nto;
-	struct ndis_task_offload_hdr *ntoh;
+	struct ndis_task_offload_header *ntoh;
 	struct ndis_task_tcpip_csum *nttc;
 	int error;
 	uint32_t len;
@@ -434,29 +434,30 @@ ndis_set_task_offload(struct ndis_softc *sc)
 	if (sc->ndis_hwassist == 0 && ifp->if_capabilities == 0)
 		return (0);
 
-	len = sizeof(struct ndis_task_offload_hdr) +
+	len = sizeof(struct ndis_task_offload_header) +
 	    sizeof(struct ndis_task_offload) +
 	    sizeof(struct ndis_task_tcpip_csum);
 
 	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
-	ntoh->vers = NDIS_TASK_OFFLOAD_VERSION;
-	ntoh->len = sizeof(struct ndis_task_offload_hdr);
-	ntoh->offset_firsttask = sizeof(struct ndis_task_offload_hdr);
-	ntoh->encapfmt.encaphdrlen = sizeof(struct ether_header);
-	ntoh->encapfmt.encap = NDIS_ENCAP_IEEE802_3;
-	ntoh->encapfmt.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
+	ntoh->version = NDIS_TASK_OFFLOAD_VERSION;
+	ntoh->size = sizeof(struct ndis_task_offload_header);
+	ntoh->offset_first_task = sizeof(struct ndis_task_offload_header);
+	ntoh->encapsulation_format.encapsulation_header_size =
+	    sizeof(struct ether_header);
+	ntoh->encapsulation_format.encapsulation = NDIS_ENCAP_IEEE802_3;
+	ntoh->encapsulation_format.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
 
 	nto = (struct ndis_task_offload *)((char *)ntoh +
-	    ntoh->offset_firsttask);
-	nto->vers = NDIS_TASK_OFFLOAD_VERSION;
-	nto->len = sizeof(struct ndis_task_offload);
+	    ntoh->offset_first_task);
+	nto->version = NDIS_TASK_OFFLOAD_VERSION;
+	nto->size = sizeof(struct ndis_task_offload);
 	nto->task = NDIS_TASK_TCPIP_CSUM;
-	nto->offset_nexttask = 0;
-	nto->taskbuflen = sizeof(struct ndis_task_tcpip_csum);
+	nto->offset_next_task = 0;
+	nto->task_buffer_length = sizeof(struct ndis_task_tcpip_csum);
 
-	nttc = (struct ndis_task_tcpip_csum *)nto->taskbuf;
+	nttc = (struct ndis_task_tcpip_csum *)nto->task_buffer;
 
 	if (ifp->if_capenable & IFCAP_TXCSUM)
 		nttc->v4tx = sc->ndis_v4tx;
@@ -474,7 +475,7 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 {
 	struct ifnet *ifp = sc->ndis_ifp;
 	struct ndis_task_offload *nto;
-	struct ndis_task_offload_hdr *ntoh;
+	struct ndis_task_offload_header *ntoh;
 	struct ndis_task_tcpip_csum *nttc = NULL;
 	int error, dummy;
 	uint32_t len;
@@ -488,11 +489,12 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
-	ntoh->vers = NDIS_TASK_OFFLOAD_VERSION;
-	ntoh->len = sizeof(struct ndis_task_offload_hdr);
-	ntoh->encapfmt.encaphdrlen = sizeof(struct ether_header);
-	ntoh->encapfmt.encap = NDIS_ENCAP_IEEE802_3;
-	ntoh->encapfmt.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
+	ntoh->version = NDIS_TASK_OFFLOAD_VERSION;
+	ntoh->size = sizeof(struct ndis_task_offload_header);
+	ntoh->encapsulation_format.encapsulation_header_size =
+	    sizeof(struct ether_header);
+	ntoh->encapsulation_format.encapsulation = NDIS_ENCAP_IEEE802_3;
+	ntoh->encapsulation_format.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
 
 	error = ndis_get(sc, OID_TCP_TASK_OFFLOAD, ntoh, len);
 	if (error) {
@@ -500,17 +502,17 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 		return (error);
 	}
 
-	if (ntoh->vers != NDIS_TASK_OFFLOAD_VERSION) {
+	if (ntoh->version != NDIS_TASK_OFFLOAD_VERSION) {
 		free(ntoh, M_NDIS_DEV);
 		return (EINVAL);
 	}
 
 	nto = (struct ndis_task_offload *)((char *)ntoh +
-	    ntoh->offset_firsttask);
+	    ntoh->offset_first_task);
 	for (;;) {
 		switch (nto->task) {
 		case NDIS_TASK_TCPIP_CSUM:
-			nttc = (struct ndis_task_tcpip_csum *)nto->taskbuf;
+			nttc = (struct ndis_task_tcpip_csum *)nto->task_buffer;
 			break;
 		/* Don't handle these yet. */
 		case NDIS_TASK_IPSEC:
@@ -518,10 +520,10 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 		default:
 			break;
 		}
-		if (nto->offset_nexttask == 0)
+		if (nto->offset_next_task == 0)
 			break;
 		nto = (struct ndis_task_offload *)((char *)nto +
-		    nto->offset_nexttask);
+		    nto->offset_next_task);
 	}
 
 	if (nttc == NULL) {
