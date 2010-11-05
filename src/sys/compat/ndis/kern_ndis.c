@@ -72,6 +72,8 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/usbd_var.h>
 #include <dev/if_ndis/if_ndisvar.h>
 
+static void	ndis_create_sysctls(struct ndis_softc *);
+static void	ndis_flush_sysctls(struct ndis_softc *);
 static void	ndis_status_func(ndis_handle, ndis_status, void *, uint32_t);
 static void	ndis_status_done_func(ndis_handle);
 static void	ndis_set_done_func(ndis_handle, ndis_status);
@@ -220,7 +222,7 @@ ndis_reset_done_func(ndis_handle adapter, ndis_status status,
 	KeSetEvent(&block->resetevent, IO_NO_INCREMENT, FALSE);
 }
 
-void
+static void
 ndis_create_sysctls(struct ndis_softc *sc)
 {
 	struct ndis_cfg *cfg = sc->ndis_regvals;
@@ -307,7 +309,7 @@ ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
 	return (0);
 }
 
-void
+static void
 ndis_flush_sysctls(struct ndis_softc *sc)
 {
 	struct ndis_cfglist *cfg;
@@ -960,6 +962,7 @@ NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
 	int32_t status;
 
 	sc = device_get_softc(pdo->devext);
+	ndis_create_sysctls(sc);
 	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus) {
 		status = bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
 		    INTR_TYPE_NET|INTR_MPSAFE, NULL, ntoskrnl_intr, NULL,
@@ -1047,4 +1050,5 @@ ndis_unload_driver(struct ndis_softc *sc)
 	IoFreeWorkItem(sc->ndis_block->returnitem);
 	IoDetachDevice(sc->ndis_block->nextdeviceobj);
 	IoDeleteDevice(sc->ndis_block->deviceobj);
+	ndis_flush_sysctls(sc);
 }

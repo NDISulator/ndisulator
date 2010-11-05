@@ -1543,8 +1543,6 @@ int32_t	ndis_init_nic(struct ndis_softc *);
 void	ndis_return_packet(void *, void *);
 int	ndis_init_dma(struct ndis_softc *);
 void	ndis_destroy_dma(struct ndis_softc *);
-void	ndis_create_sysctls(struct ndis_softc *);
-void	ndis_flush_sysctls(struct ndis_softc *);
 int	ndis_add_sysctl(struct ndis_softc *, char *, char *, char *, int);
 int32_t	NdisAddDevice(struct driver_object *, struct device_object *);
 void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,

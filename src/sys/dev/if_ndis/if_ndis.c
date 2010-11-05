@@ -619,8 +619,6 @@ ndis_attach(device_t dev)
 	InitializeListHead(&sc->ndisusb_xferdonelist);
 	callout_init(&sc->ndis_stat_callout, CALLOUT_MPSAFE);
 
-	ndis_create_sysctls(sc);
-
 	/* Find the PDO for this device instance. */
 	if (sc->ndis_iftype == PCIBus)
 		pdrv = windrv_lookup(0, "PCI Bus");
@@ -1143,7 +1141,6 @@ ndis_detach(device_t dev)
 	} else if (sc->ndis_iftype == PNPBus) {
 		windrv_destroy_pdo(windrv_lookup(0, "USB Bus"), dev);
 	}
-	ndis_flush_sysctls(sc);
 	mtx_destroy(&sc->ndis_mtx);
 	return (0);
 }
