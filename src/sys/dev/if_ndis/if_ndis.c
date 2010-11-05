@@ -477,18 +477,12 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 	struct ndis_task_offload *nto;
 	struct ndis_task_offload_header *ntoh;
 	struct ndis_task_tcpip_csum *nttc = NULL;
-	int error, dummy;
-	uint32_t len;
+	int error;
 
-	len = sizeof(dummy);
-	error = ndis_get(sc, OID_TCP_TASK_OFFLOAD, &dummy, len);
-	if (!(error == NDIS_STATUS_INVALID_LENGTH ||
-	    error == NDIS_STATUS_BUFFER_TOO_SHORT))
-		return (error);
-
-	ntoh = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	ntoh = malloc(256, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (ntoh == NULL)
 		return (ENOMEM);
+
 	ntoh->version = NDIS_TASK_OFFLOAD_VERSION;
 	ntoh->size = sizeof(struct ndis_task_offload_header);
 	ntoh->encapsulation_format.encapsulation_header_size =
@@ -496,7 +490,7 @@ ndis_probe_task_offload(struct ndis_softc *sc)
 	ntoh->encapsulation_format.encapsulation = NDIS_ENCAP_IEEE802_3;
 	ntoh->encapsulation_format.flags = NDIS_ENCAPFLAG_FIXEDHDRLEN;
 
-	error = ndis_get(sc, OID_TCP_TASK_OFFLOAD, ntoh, len);
+	error = ndis_get(sc, OID_TCP_TASK_OFFLOAD, ntoh, sizeof(ntoh));
 	if (error) {
 		free(ntoh, M_NDIS_DEV);
 		return (error);
