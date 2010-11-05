@@ -134,7 +134,7 @@ static int	ndis_auth_mode(uint32_t);
 static void	ndis_auth(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
-static int32_t	ndis_get_bssid_list(struct ndis_softc *,
+static void	ndis_get_bssid_list(struct ndis_softc *,
 		    struct ndis_80211_bssid_list_ex **);
 static int	ndis_get_oids(struct ndis_softc *, ndis_oid **, uint32_t *);
 static void	ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
@@ -2153,7 +2153,7 @@ ndis_disassociate(struct ndis_softc *sc, struct ieee80211vap *vap)
 		vap->iv_bss->ni_associd = 0;
 }
 
-static int32_t
+static void
 ndis_get_bssid_list(struct ndis_softc *sc, struct ndis_80211_bssid_list_ex **bl)
 {
 	uint32_t len;
@@ -2162,7 +2162,7 @@ ndis_get_bssid_list(struct ndis_softc *sc, struct ndis_80211_bssid_list_ex **bl)
 	len = sizeof(uint32_t) + (sizeof(struct ndis_wlan_bssid_ex) * 16);
 	*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 	if (*bl == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return;
 	rval = ndis_get_info(sc, OID_802_11_BSSID_LIST,
 	    *bl, len, NULL, &len);
 	if (rval == NDIS_STATUS_INVALID_LENGTH ||
@@ -2170,12 +2170,11 @@ ndis_get_bssid_list(struct ndis_softc *sc, struct ndis_80211_bssid_list_ex **bl)
 		free(*bl, M_NDIS_DEV);
 		*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (*bl == NULL)
-			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+			return;
 		rval = ndis_get(sc, OID_802_11_BSSID_LIST, *bl, len);
 	}
 	if (rval)
 		free(*bl, M_NDIS_DEV);
-	return (rval);
 }
 
 static void
@@ -2717,7 +2716,8 @@ ndis_scan_end(struct ieee80211com *ic)
 	vap = TAILQ_FIRST(&ic->ic_vaps);
 	saved_chan = ic->ic_curchan;
 
-	if (ndis_get_bssid_list(sc, &bl) || bl == NULL)
+	ndis_get_bssid_list(sc, &bl);
+	if (bl == NULL)
 		return;
 
 	DPRINTF("%d scan results\n", bl->items);
