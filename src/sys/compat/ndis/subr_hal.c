@@ -279,13 +279,6 @@ struct image_patch_table hal_functbl[] = {
 	IMPORT_SFUNC(KeRaiseIrqlToDpcLevel, 0),
 #undef KeLowerIrql
 	IMPORT_SFUNC_MAP(KeLowerIrql, _KeLowerIrql, 1),
-
-	/*
-	 * This last entry is a catch-all for any function we haven't
-	 * implemented yet. The PE import list patching routine will
-	 * use it for any function that doesn't have an explicit match
-	 * in this table.
-	 */
 	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
 	{ NULL, NULL, NULL }
 };

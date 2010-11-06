@@ -487,6 +487,13 @@ pe_functbl_match(struct image_patch_table *functbl, const char *name)
 			if (bootverbose)
 				printf("NDIS:    match for %s\n", name);
 #endif
+			/*
+			 * Return the wrapper pointer for this routine.
+			 * For x86, this is the same as the funcptr.
+			 * For amd64, this points to a wrapper routine
+			 * that does calling convention translation and
+			 * then invokes the underlying routine.
+			 */
 			return ((vm_offset_t)p->wrap);
 		}
 		p++;
@@ -494,11 +501,8 @@ pe_functbl_match(struct image_patch_table *functbl, const char *name)
 	printf("NDIS: no match for %s\n", name);
 
 	/*
-	 * Return the wrapper pointer for this routine.
-	 * For x86, this is the same as the funcptr.
-	 * For amd64, this points to a wrapper routine
-	 * that does calling convention translation and
-	 * then invokes the underlying routine.
+	 * Same as above but for dummy routine:
+	 * the one which is not implemented yet.
 	 */
 	return ((vm_offset_t)p->wrap);
 }

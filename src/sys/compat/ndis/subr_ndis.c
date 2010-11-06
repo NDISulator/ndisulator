@@ -2788,15 +2788,6 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisMDeregisterDevice, 1),
 	IMPORT_SFUNC(NdisMQueryAdapterInstanceName, 2),
 	IMPORT_SFUNC(NdisMRegisterUnloadHandler, 2),
-
-	/*
-	 * This last entry is a catch-all for any function we haven't
-	 * implemented yet. The PE import list patching routine will
-	 * use it for any function that doesn't have an explicit match
-	 * in this table.
-	 */
 	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
-
-	/* End of list. */
 	{ NULL, NULL, NULL }
 };
