@@ -295,7 +295,6 @@ MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
 void
 ndis_libinit(void)
 {
-	struct image_patch_table *patch = ndis_functbl;
 
 	windrv_wrap((funcptr)ndis_timercall,
 	    (funcptr *)&ndis_timercall_wrap, 4, WINDRV_WRAP_STDCALL);
@@ -305,22 +304,14 @@ ndis_libinit(void)
 	    (funcptr *)&ndis_interrupt_nic_wrap, 2, WINDRV_WRAP_STDCALL);
 	windrv_wrap((funcptr)ndis_intrhand,
 	    (funcptr *)&ndis_intrhand_wrap, 4, WINDRV_WRAP_STDCALL);
-	while (patch->func != NULL) {
-		windrv_wrap((funcptr)patch->func,
-		    (funcptr *)&patch->wrap, patch->argcnt, patch->ftype);
-		patch++;
-	}
+	windrv_wrap_table(ndis_functbl);
 }
 
 void
 ndis_libfini(void)
 {
-	struct image_patch_table *patch = ndis_functbl;
 
-	while (patch->func != NULL) {
-		windrv_unwrap(patch->wrap);
-		patch++;
-	}
+	windrv_unwrap_table(ndis_functbl);
 	windrv_unwrap(ndis_intrhand_wrap);
 	windrv_unwrap(ndis_interrupt_nic_wrap);
 	windrv_unwrap(ndis_asyncmem_complete_wrap);

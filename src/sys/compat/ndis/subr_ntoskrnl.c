@@ -256,7 +256,6 @@ MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 void
 ntoskrnl_libinit(void)
 {
-	struct image_patch_table *patch = ntoskrnl_functbl;
 	struct thread *t;
 	struct kdpc_queue *kq;
 	struct callout_entry *e;
@@ -314,11 +313,7 @@ ntoskrnl_libinit(void)
 
 	windrv_wrap((funcptr)ntoskrnl_workitem,
 	    (funcptr *)&ntoskrnl_workitem_wrap, 2, WINDRV_WRAP_STDCALL);
-	while (patch->func != NULL) {
-		windrv_wrap((funcptr)patch->func, (funcptr *)&patch->wrap,
-		    patch->argcnt, patch->ftype);
-		patch++;
-	}
+	windrv_wrap_table(ntoskrnl_functbl);
 	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
 	ExFreePool_wrap = ntoskrnl_findwrap(ExFreePool);
 
@@ -358,14 +353,10 @@ ntoskrnl_libinit(void)
 void
 ntoskrnl_libfini(void)
 {
-	struct image_patch_table *patch = ntoskrnl_functbl;
 	struct callout_entry *e;
 	list_entry *l;
 
-	while (patch->func != NULL) {
-		windrv_unwrap(patch->wrap);
-		patch++;
-	}
+	windrv_unwrap_table(ntoskrnl_functbl);
 	windrv_unwrap(ntoskrnl_workitem_wrap);
 
 	ntoskrnl_destroy_workitem_threads();

@@ -121,7 +121,6 @@ MALLOC_DEFINE(M_NDIS_KERN, "ndis_kern", "ndis_kern buffers");
 static int
 ndis_modevent(module_t mod, int cmd, void *arg)
 {
-	struct image_patch_table *patch;
 
 	switch (cmd) {
 	case MOD_LOAD:
@@ -131,13 +130,7 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		ndis_libinit();
 		usbd_libinit();
 
-		patch = kernndis_functbl;
-		while (patch->func != NULL) {
-			windrv_wrap((funcptr)patch->func,
-			    (funcptr *)&patch->wrap,
-			    patch->argcnt, patch->ftype);
-			patch++;
-		}
+		windrv_wrap_table(kernndis_functbl);
 
 		TAILQ_INIT(&ndis_devhead);
 		break;
@@ -149,11 +142,7 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 			ntoskrnl_libfini();
 			hal_libfini();
 
-			patch = kernndis_functbl;
-			while (patch->func != NULL) {
-				windrv_unwrap(patch->wrap);
-				patch++;
-			}
+			windrv_unwrap_table(kernndis_functbl);
 		}
 		break;
 	case MOD_UNLOAD:
@@ -163,11 +152,7 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		ntoskrnl_libfini();
 		hal_libfini();
 
-		patch = kernndis_functbl;
-		while (patch->func != NULL) {
-			windrv_unwrap(patch->wrap);
-			patch++;
-		}
+		windrv_unwrap_table(kernndis_functbl);
 		break;
 	default:
 		return (EINVAL);

@@ -155,16 +155,9 @@ static funcptr usbd_xfertask_wrap;
 void
 usbd_libinit(void)
 {
-	struct image_patch_table *patch = usbd_functbl;
 	int i;
 
-	while (patch->func != NULL) {
-		windrv_wrap((funcptr)patch->func,
-		    (funcptr *)&patch->wrap,
-		    patch->argcnt, patch->ftype);
-		patch++;
-	}
-
+	windrv_wrap_table(usbd_functbl);
 	windrv_wrap((funcptr)usbd_ioinvalid,
 	    (funcptr *)&usbd_ioinvalid_wrap, 2, WINDRV_WRAP_STDCALL);
 	windrv_wrap((funcptr)usbd_iodispatch,
@@ -198,13 +191,8 @@ usbd_libinit(void)
 void
 usbd_libfini(void)
 {
-	struct image_patch_table *patch = usbd_functbl;
 
-	while (patch->func != NULL) {
-		windrv_unwrap(patch->wrap);
-		patch++;
-	}
-
+	windrv_unwrap_table(usbd_functbl);
 	windrv_unwrap(usbd_xfertask_wrap);
 	windrv_unwrap(usbd_task_wrap);
 	windrv_unwrap(usbd_irpcancel_wrap);

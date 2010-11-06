@@ -1276,6 +1276,8 @@ void	windrv_destroy_pdo(struct driver_object *, device_t);
 int	windrv_bus_attach(struct driver_object *, const char *);
 void	windrv_wrap(funcptr, funcptr *, uint8_t, uint8_t);
 void	windrv_unwrap(funcptr);
+void	windrv_wrap_table(struct image_patch_table *);
+void	windrv_unwrap_table(struct image_patch_table *);
 void	ctxsw_utow(void);
 void	ctxsw_wtou(void);
 void	ntoskrnl_libinit(void);
