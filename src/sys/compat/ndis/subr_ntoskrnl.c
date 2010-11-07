@@ -159,6 +159,7 @@ static uint64_t _aullshr(uint64_t, uint8_t);
 static uint64_t _aullshl(uint64_t, uint8_t);
 static slist_entry *ntoskrnl_pushsl(slist_header *, slist_entry *);
 static slist_entry *ntoskrnl_popsl(slist_header *);
+static void *ExAllocatePoolWithTag(uint32_t, size_t, uint32_t);
 static void ExFreePoolWithTag(void *, uint32_t);
 static void ExInitializePagedLookasideList(paged_lookaside_list *,
     lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
@@ -272,17 +273,16 @@ ntoskrnl_libinit(void)
 	InitializeListHead(&ntoskrnl_intlist);
 	mtx_init(&ntoskrnl_calllock, "ntoskrnl calllock", NULL, MTX_SPIN);
 
-	kq_queues = ExAllocatePoolWithTag(NON_PAGED_POOL,
+	kq_queues = ExAllocatePool(
 #ifdef NTOSKRNL_MULTIPLE_DPCS
-	    sizeof(struct kdpc_queue) * mp_ncpus, 0);
+	    sizeof(struct kdpc_queue) * mp_ncpus);
 #else
-	    sizeof(struct kdpc_queue), 0);
+	    sizeof(struct kdpc_queue));
 #endif
 	if (kq_queues == NULL)
 		panic("failed to allocate kq_queues");
 
-	wq_queues = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(struct kdpc_queue) * WORKITEM_THREADS, 0);
+	wq_queues = ExAllocatePool(sizeof(struct kdpc_queue) * WORKITEM_THREADS);
 	if (wq_queues == NULL)
 		panic("failed to allocate wq_queues");
 
@@ -318,8 +318,7 @@ ntoskrnl_libinit(void)
 	ExFreePool_wrap = ntoskrnl_findwrap(ExFreePool);
 
 	for (i = 0; i < NTOSKRNL_TIMEOUTS; i++) {
-		e = ExAllocatePoolWithTag(NON_PAGED_POOL,
-		    sizeof(struct callout_entry), 0);
+		e = ExAllocatePool(sizeof(struct callout_entry));
 		if (e == NULL)
 			panic("failed to allocate timeouts");
 		mtx_lock_spin(&ntoskrnl_calllock);
@@ -504,8 +503,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
 		dst->as_len = dst->as_maxlen;
 
 	if (allocate == TRUE) {
-		dst->as_buf = ExAllocatePoolWithTag(NON_PAGED_POOL,
-		    (src->us_len / 2) + 1, 0);
+		dst->as_buf = ExAllocatePool((src->us_len / 2) + 1);
 		if (dst->as_buf == NULL)
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		dst->as_len = dst->as_maxlen = src->us_len / 2;
@@ -527,8 +525,7 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	if (allocate == TRUE) {
-		dst->us_buf = ExAllocatePoolWithTag(NON_PAGED_POOL,
-		    src->as_len * 2, 0);
+		dst->us_buf = ExAllocatePool(src->as_len * 2);
 		if (dst->us_buf == NULL)
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 		dst->us_len = dst->us_maxlen = strlen(src->as_buf) * 2;
@@ -543,7 +540,7 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
 }
 
 void *
-ExAllocatePoolWithTag(uint32_t pooltype, size_t len, uint32_t tag)
+ExAllocatePool(size_t len)
 {
 	void *buf;
 
@@ -552,10 +549,10 @@ ExAllocatePoolWithTag(uint32_t pooltype, size_t len, uint32_t tag)
 	return (buf);
 }
 
-static void
-ExFreePoolWithTag(void *buf, uint32_t tag)
+static void *
+ExAllocatePoolWithTag(uint32_t pooltype, size_t len, uint32_t tag)
 {
-	ExFreePool(buf);
+	return (ExAllocatePool(len));
 }
 
 void
@@ -564,14 +561,19 @@ ExFreePool(void *buf)
 	free(buf, M_NDIS_NTOSKRNL);
 }
 
+static void
+ExFreePoolWithTag(void *buf, uint32_t tag)
+{
+	ExFreePool(buf);
+}
+
 int32_t
 IoAllocateDriverObjectExtension(struct driver_object *drv, void *clid,
     uint32_t extlen, void **ext)
 {
 	custom_extension *ce;
 
-	ce = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(custom_extension)
-	    + extlen, 0);
+	ce = ExAllocatePool(sizeof(custom_extension) + extlen);
 	if (ce == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -615,8 +617,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 {
 	struct device_object *dev;
 
-	dev = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(struct device_object), 0);
+	dev = ExAllocatePool(sizeof(struct device_object));
 	if (dev == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -626,8 +627,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 	dev->flags = 0;
 
 	if (devextlen) {
-		dev->devext = ExAllocatePoolWithTag(NON_PAGED_POOL,
-		    devextlen, 0);
+		dev->devext = ExAllocatePool(devextlen);
 		if (dev->devext == NULL) {
 			ExFreePool(dev);
 			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
@@ -651,8 +651,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 	 */
 	dev->vpb = NULL;
 
-	dev->devobj_ext = ExAllocatePoolWithTag(NON_PAGED_POOL,
-	    sizeof(struct devobj_extension), 0);
+	dev->devobj_ext = ExAllocatePool(sizeof(struct devobj_extension));
 	if (dev->devobj_ext == NULL) {
 		if (dev->devext != NULL)
 			ExFreePool(dev->devext);
@@ -757,8 +756,7 @@ IoBuildAsynchronousFsdRequest(uint32_t func, struct device_object *dobj,
 	ip->userbuf = buf;
 
 	if (dobj->flags & DO_BUFFERED_IO) {
-		ip->assoc.sysbuf =
-		    ExAllocatePoolWithTag(NON_PAGED_POOL, len, 0);
+		ip->assoc.sysbuf = ExAllocatePool(len);
 		if (ip->assoc.sysbuf == NULL) {
 			IoFreeIrp(ip);
 			return (NULL);
@@ -833,8 +831,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, struct device_object *dobj,
 		else
 			buflen = olen;
 		if (buflen) {
-			ip->assoc.sysbuf =
-			    ExAllocatePoolWithTag(NON_PAGED_POOL, buflen, 0);
+			ip->assoc.sysbuf = ExAllocatePool(buflen);
 			if (ip->assoc.sysbuf == NULL) {
 				IoFreeIrp(ip);
 				return (NULL);
@@ -847,8 +844,7 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, struct device_object *dobj,
 	case METHOD_IN_DIRECT:
 	case METHOD_OUT_DIRECT:
 		if (ilen && ibuf != NULL) {
-			ip->assoc.sysbuf =
-			    ExAllocatePoolWithTag(NON_PAGED_POOL, ilen, 0);
+			ip->assoc.sysbuf = ExAllocatePool(ilen);
 			if (ip->assoc.sysbuf == NULL) {
 				IoFreeIrp(ip);
 				return (NULL);
@@ -883,7 +879,7 @@ IoAllocateIrp(uint8_t stsize, uint8_t chargequota)
 {
 	irp *i;
 
-	i = ExAllocatePoolWithTag(NON_PAGED_POOL, IoSizeOfIrp(stsize), 0);
+	i = ExAllocatePool(IoSizeOfIrp(stsize));
 	if (i == NULL)
 		return (NULL);
 	IoInitializeIrp(i, IoSizeOfIrp(stsize), stsize);
@@ -1142,7 +1138,7 @@ IoConnectInterrupt(kinterrupt **iobj, void *svcfunc, void *svcctx,
 {
 	uint8_t curirql;
 
-	*iobj = ExAllocatePoolWithTag(NON_PAGED_POOL, sizeof(kinterrupt), 0);
+	*iobj = ExAllocatePool(sizeof(kinterrupt));
 	if (*iobj == NULL)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
@@ -2120,8 +2116,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 	int zone = 0;
 
 	if (MmSizeOfMdl(vaddr, len) > MDL_ZONE_SIZE)
-		m = ExAllocatePoolWithTag(NON_PAGED_POOL,
-		    MmSizeOfMdl(vaddr, len), 0);
+		m = ExAllocatePool(MmSizeOfMdl(vaddr, len));
 	else {
 		m = uma_zalloc(mdl_zone, M_NOWAIT|M_ZERO);
 		zone++;
@@ -2171,14 +2166,14 @@ IoFreeMdl(mdl *m)
 static void *
 MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 {
-	return (ExAllocatePoolWithTag(NON_PAGED_POOL, roundup(size, PAGE_SIZE), 0));
+	return (ExAllocatePool(roundup(size, PAGE_SIZE)));
 }
 
 static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
     uint64_t highest, uint64_t boundary, uint32_t cachetype)
 {
-	return (ExAllocatePoolWithTag(NON_PAGED_POOL, roundup(size, PAGE_SIZE), 0));
+	return (ExAllocatePool(roundup(size, PAGE_SIZE)));
 }
 
 static void

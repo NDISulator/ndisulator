@@ -1327,7 +1327,7 @@ uint8_t	KeAcquireInterruptSpinLock(kinterrupt *);
 void	KeReleaseInterruptSpinLock(kinterrupt *, uint8_t);
 uint8_t	KeSynchronizeExecution(kinterrupt *, void *, void *);
 uintptr_t	InterlockedExchange(volatile uint32_t *, uintptr_t);
-void	*ExAllocatePoolWithTag(uint32_t, size_t, uint32_t);
+void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
 void	*MmMapIoSpace(uint64_t, uint32_t, uint32_t);
 void	MmUnmapIoSpace(void *, size_t);
