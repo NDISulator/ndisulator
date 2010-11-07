@@ -2173,7 +2173,8 @@ static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
     uint64_t highest, uint64_t boundary, uint32_t cachetype)
 {
-	return (ExAllocatePool(roundup(size, PAGE_SIZE)));
+	return (contigmalloc(size, M_NDIS_NTOSKRNL, M_ZERO|M_NOWAIT, lowest,
+	    highest, PAGE_SIZE, boundary));
 }
 
 static void
@@ -2186,7 +2187,7 @@ static void
 MmFreeContiguousMemorySpecifyCache(void *base, uint32_t size,
      uint32_t cachetype)
 {
-	ExFreePool(base);
+	contigfree(base, size, M_NDIS_NTOSKRNL);
 }
 
 static uint32_t
