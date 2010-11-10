@@ -43,7 +43,6 @@ struct ndis_softc;
 /* Base types */
 typedef int32_t ndis_status;
 typedef void *ndis_handle;
-typedef uint32_t ndis_oid;
 typedef register_t ndis_kspin_lock;
 typedef uint8_t ndis_kirql;
 
@@ -997,14 +996,14 @@ struct ndis_request {
 	uint32_t	requesttype;
 	union _ndis_data {
 		struct _ndis_query_information {
-			ndis_oid	oid;
+			uint32_t	oid;
 			void		*infobuf;
 			uint32_t	infobuflen;
 			uint32_t	written;
 			uint32_t	needed;
 		} ndis_query_information;
 		struct _ndis_set_information {
-			ndis_oid	oid;
+			uint32_t	oid;
 			void		*infobuf;
 			uint32_t	infobuflen;
 			uint32_t	written;
@@ -1495,12 +1494,12 @@ typedef void (*ndis_interrupt_func)(ndis_handle);
 typedef ndis_status (*ndis_init_func)(ndis_status *, uint32_t *,
     enum ndis_medium *, uint32_t, ndis_handle, ndis_handle);
 typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, ndis_handle);
-typedef ndis_status (*ndis_query_info_func)(ndis_handle, ndis_oid, void *,
+typedef ndis_status (*ndis_query_info_func)(ndis_handle, uint32_t, void *,
     uint32_t, uint32_t *, uint32_t *);
 typedef int (*ndis_reset_func)(uint8_t *, ndis_handle);
 typedef ndis_status (*ndis_send_func)(ndis_handle, struct ndis_packet *,
     uint32_t);
-typedef ndis_status (*ndis_set_info_func)(ndis_handle, ndis_oid, void *,
+typedef ndis_status (*ndis_set_info_func)(ndis_handle, uint32_t, void *,
     uint32_t, uint32_t *, uint32_t *);
 typedef ndis_status (*ndis_transfer_data_func)(ndis_handle,
     struct ndis_packet *, uint32_t *, uint32_t);
@@ -1518,13 +1517,13 @@ void	ndis_libfini(void);
 void	ndis_unload_driver(struct ndis_softc *);
 int	ndis_mtop(struct mbuf *, struct ndis_packet **);
 int	ndis_ptom(struct mbuf **, struct ndis_packet *);
-int	ndis_get(struct ndis_softc *, ndis_oid, void *, uint32_t);
-int	ndis_get_int(struct ndis_softc *, ndis_oid, uint32_t *);
-int	ndis_get_info(struct ndis_softc *, ndis_oid, void *, uint32_t,
+int	ndis_get(struct ndis_softc *, uint32_t, void *, uint32_t);
+int	ndis_get_int(struct ndis_softc *, uint32_t, uint32_t *);
+int	ndis_get_info(struct ndis_softc *, uint32_t, void *, uint32_t,
 	    uint32_t *, uint32_t *);
-int	ndis_set(struct ndis_softc *, ndis_oid, void *, uint32_t);
-int	ndis_set_int(struct ndis_softc *, ndis_oid, uint32_t);
-int	ndis_set_info(struct ndis_softc *, ndis_oid, void *, uint32_t,
+int	ndis_set(struct ndis_softc *, uint32_t, void *, uint32_t);
+int	ndis_set_int(struct ndis_softc *, uint32_t, uint32_t);
+int	ndis_set_info(struct ndis_softc *, uint32_t, void *, uint32_t,
 	    uint32_t *, uint32_t *);
 void	ndis_send_packets(struct ndis_softc *, struct ndis_packet **, int);
 int32_t	ndis_send_packet(struct ndis_softc *, struct ndis_packet *);

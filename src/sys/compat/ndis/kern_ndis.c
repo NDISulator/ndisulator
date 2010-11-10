@@ -570,7 +570,7 @@ ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 }
 
 static int
-ndis_request_info(uint32_t request, struct ndis_softc *sc, ndis_oid oid,
+ndis_request_info(uint32_t request, struct ndis_softc *sc, uint32_t oid,
     void *buf, uint32_t buflen, uint32_t *written, uint32_t *needed)
 {
 	uint64_t duetime;
@@ -625,21 +625,21 @@ ndis_request_info(uint32_t request, struct ndis_softc *sc, ndis_oid oid,
 }
 
 inline int
-ndis_get(struct ndis_softc *sc, ndis_oid oid, void *val, uint32_t len)
+ndis_get(struct ndis_softc *sc, uint32_t oid, void *val, uint32_t len)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
 	    sc, oid, val, len, NULL, NULL));
 }
 
 inline int
-ndis_get_int(struct ndis_softc *sc, ndis_oid oid, uint32_t *val)
+ndis_get_int(struct ndis_softc *sc, uint32_t oid, uint32_t *val)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
 	    sc, oid, val, sizeof(uint32_t), NULL, NULL));
 }
 
 inline int
-ndis_get_info(struct ndis_softc *sc, ndis_oid oid, void *buf, uint32_t buflen,
+ndis_get_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
     uint32_t *written, uint32_t *needed)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
@@ -647,21 +647,21 @@ ndis_get_info(struct ndis_softc *sc, ndis_oid oid, void *buf, uint32_t buflen,
 }
 
 inline int
-ndis_set(struct ndis_softc *sc, ndis_oid oid, void *val, uint32_t len)
+ndis_set(struct ndis_softc *sc, uint32_t oid, void *val, uint32_t len)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
 	    sc, oid, val, len, NULL, NULL));
 }
 
 inline int
-ndis_set_int(struct ndis_softc *sc, ndis_oid oid, uint32_t val)
+ndis_set_int(struct ndis_softc *sc, uint32_t oid, uint32_t val)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
 	    sc, oid, &val, sizeof(uint32_t), NULL, NULL));
 }
 
 inline int
-ndis_set_info(struct ndis_softc *sc, ndis_oid oid, void *buf, uint32_t buflen,
+ndis_set_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
     uint32_t *written, uint32_t *needed)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,

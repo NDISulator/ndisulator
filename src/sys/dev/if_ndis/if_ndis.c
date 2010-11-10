@@ -136,7 +136,7 @@ static void	ndis_assoc(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_disassociate(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_get_bssid_list(struct ndis_softc *,
 		    struct ndis_80211_bssid_list_ex **);
-static int	ndis_get_oids(struct ndis_softc *, ndis_oid **, uint32_t *);
+static int	ndis_get_oids(struct ndis_softc *, uint32_t **, uint32_t *);
 static void	ndis_getstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_ifmedia_sts(struct ifnet *, struct ifmediareq *);
 static int	ndis_ifmedia_upd(struct ifnet *);
@@ -259,7 +259,7 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 }
 
 static int
-ndis_get_oids(struct ndis_softc *sc, ndis_oid **oids, uint32_t *oidcnt)
+ndis_get_oids(struct ndis_softc *sc, uint32_t **oids, uint32_t *oidcnt)
 {
 	uint32_t len;
 	int32_t	rval;
@@ -599,9 +599,8 @@ ndis_attach(device_t dev)
 	struct driver_object *pdrv;
 	struct device_object *pdo;
 	struct ifnet *ifp = NULL;
-	ndis_oid *ndis_oids;
+	uint32_t rval, len, *ndis_oids, ndis_oidcnt;
 	int mode, i = 0;
-	uint32_t rval, len, ndis_oidcnt;
 	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
