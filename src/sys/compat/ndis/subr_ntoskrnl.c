@@ -161,10 +161,6 @@ static slist_entry *ntoskrnl_pushsl(slist_header *, slist_entry *);
 static slist_entry *ntoskrnl_popsl(slist_header *);
 static void *ExAllocatePoolWithTag(uint32_t, size_t, uint32_t);
 static void ExFreePoolWithTag(void *, uint32_t);
-static void ExInitializePagedLookasideList(paged_lookaside_list *,
-    lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
-    uint16_t);
-static void ExDeletePagedLookasideList(paged_lookaside_list *);
 static void ExInitializeNPagedLookasideList(npaged_lookaside_list *,
     lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
     uint16_t);
@@ -1889,46 +1885,6 @@ ntoskrnl_findwrap(void *func)
 	}
 
 	return (NULL);
-}
-
-static void
-ExInitializePagedLookasideList(paged_lookaside_list *lookaside,
-    lookaside_alloc_func *allocfunc, lookaside_free_func *freefunc,
-    uint32_t flags, size_t size, uint32_t tag, uint16_t depth)
-{
-	bzero((char *)lookaside, sizeof(paged_lookaside_list));
-
-	if (size < sizeof(slist_entry))
-		lookaside->nll_l.size = sizeof(slist_entry);
-	else
-		lookaside->nll_l.size = size;
-	lookaside->nll_l.tag = tag;
-	if (allocfunc == NULL)
-		lookaside->nll_l.allocfunc = ExAllocatePoolWithTag_wrap;
-	else
-		lookaside->nll_l.allocfunc = allocfunc;
-
-	if (freefunc == NULL)
-		lookaside->nll_l.freefunc = ExFreePool_wrap;
-	else
-		lookaside->nll_l.freefunc = freefunc;
-#ifdef __i386__
-	KeInitializeSpinLock(&lookaside->nll_obsoletelock);
-#endif
-	lookaside->nll_l.type = NON_PAGED_POOL;
-	lookaside->nll_l.depth = depth;
-	lookaside->nll_l.maximum_depth = LOOKASIDE_DEPTH;
-}
-
-static void
-ExDeletePagedLookasideList(paged_lookaside_list *lookaside)
-{
-	void *buf;
-	void (*freefunc)(void *);
-
-	freefunc = lookaside->nll_l.freefunc;
-	while ((buf = ntoskrnl_popsl(&lookaside->nll_l.list_head)) != NULL)
-		MSCALL1(freefunc, buf);
 }
 
 static void
@@ -3757,10 +3713,12 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(READ_REGISTER_ULONG, 1),
 	IMPORT_SFUNC(READ_REGISTER_UCHAR, 1),
 	IMPORT_SFUNC(WRITE_REGISTER_UCHAR, 2),
-	IMPORT_SFUNC(ExInitializePagedLookasideList, 7),
-	IMPORT_SFUNC(ExDeletePagedLookasideList, 1),
 	IMPORT_SFUNC(ExInitializeNPagedLookasideList, 7),
+	IMPORT_SFUNC_MAP(ExInitializePagedLookasideList,
+	    ExInitializeNPagedLookasideList, 7),
 	IMPORT_SFUNC(ExDeleteNPagedLookasideList, 1),
+	IMPORT_SFUNC_MAP(ExDeletePagedLookasideList,
+	    ExDeleteNPagedLookasideList, 1),
 	IMPORT_FFUNC(InterlockedPopEntrySList, 1),
 	IMPORT_FFUNC(InitializeSListHead, 1),
 	IMPORT_FFUNC(InterlockedPushEntrySList, 2),

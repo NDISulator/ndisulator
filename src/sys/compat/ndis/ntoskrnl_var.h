@@ -444,7 +444,6 @@ struct npaged_lookaside_list {
 };
 
 typedef struct npaged_lookaside_list npaged_lookaside_list;
-typedef struct npaged_lookaside_list paged_lookaside_list;
 
 typedef void * (*lookaside_alloc_func)(uint32_t, size_t, uint32_t);
 typedef void (*lookaside_free_func)(void *);
