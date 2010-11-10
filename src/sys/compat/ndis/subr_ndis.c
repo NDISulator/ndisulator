@@ -379,7 +379,6 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 	*vaddr = malloc(len, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
-
 	return (NDIS_STATUS_SUCCESS);
 }
 
@@ -393,8 +392,6 @@ NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags,
 static void
 NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 {
-	if (len == 0)
-		return;
 	free(vaddr, M_NDIS_SUBR);
 }
 

@@ -2702,8 +2702,6 @@ RtlUnicodeStringToInteger(const unicode_string *ustr, uint32_t base,
 void
 RtlFreeUnicodeString(unicode_string *ustr)
 {
-	if (ustr->us_buf == NULL)
-		return;
 	ExFreePool(ustr->us_buf);
 	ustr->us_buf = NULL;
 }
@@ -2711,8 +2709,6 @@ RtlFreeUnicodeString(unicode_string *ustr)
 void
 RtlFreeAnsiString(ansi_string *astr)
 {
-	if (astr->as_buf == NULL)
-		return;
 	ExFreePool(astr->as_buf);
 	astr->as_buf = NULL;
 }
