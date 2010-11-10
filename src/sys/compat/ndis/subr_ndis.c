@@ -111,28 +111,28 @@ SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
 
 static void NdisInitializeWrapper(ndis_handle *, struct driver_object *,
     void *, void *);
-static ndis_status NdisMRegisterMiniport(ndis_handle,
+static int32_t NdisMRegisterMiniport(ndis_handle,
     struct ndis_miniport_driver_characteristics *, uint32_t);
-static ndis_status NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
-static ndis_status NdisAllocateMemory(void **, uint32_t, uint32_t,
+static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
+static int32_t NdisAllocateMemory(void **, uint32_t, uint32_t,
     struct physaddr);
 static void NdisFreeMemory(void *, uint32_t, uint32_t);
-static ndis_status NdisMSetAttributesEx(ndis_handle, ndis_handle,
+static int32_t NdisMSetAttributesEx(ndis_handle, ndis_handle,
     uint32_t, uint32_t, enum ndis_interface_type);
-static void NdisOpenConfiguration(ndis_status *, ndis_handle *, ndis_handle);
-static void NdisOpenConfigurationKeyByIndex(ndis_status *, ndis_handle,
+static void NdisOpenConfiguration(int32_t *, ndis_handle *, ndis_handle);
+static void NdisOpenConfigurationKeyByIndex(int32_t *, ndis_handle,
     uint32_t, unicode_string *, ndis_handle *);
-static void NdisOpenConfigurationKeyByName(ndis_status *, ndis_handle,
+static void NdisOpenConfigurationKeyByName(int32_t *, ndis_handle,
     unicode_string *, ndis_handle *);
-static ndis_status ndis_encode_parm(struct ndis_miniport_block *,
+static int32_t ndis_encode_parm(struct ndis_miniport_block *,
     struct sysctl_oid *, enum ndis_parameter_type,
     struct ndis_configuration_parameter **);
-static ndis_status ndis_decode_parm(struct ndis_miniport_block *,
+static int32_t ndis_decode_parm(struct ndis_miniport_block *,
     struct ndis_configuration_parameter *, char *);
-static void NdisReadConfiguration(ndis_status *,
+static void NdisReadConfiguration(int32_t *,
     struct ndis_configuration_parameter **, ndis_handle, unicode_string *,
     enum ndis_parameter_type);
-static void NdisWriteConfiguration(ndis_status *, ndis_handle,
+static void NdisWriteConfiguration(int32_t *, ndis_handle,
     unicode_string *, struct ndis_configuration_parameter *);
 static void NdisCloseConfiguration(ndis_handle);
 static void NdisAllocateSpinLock(struct ndis_spin_lock *);
@@ -162,43 +162,43 @@ static void NdisMInitializeTimer(struct ndis_miniport_timer *, ndis_handle,
 static void NdisInitializeTimer(struct ndis_timer *, ndis_timer_function,
     void *);
 static void NdisSetTimer(struct ndis_timer *, uint32_t);
-static ndis_status NdisScheduleWorkItem(struct ndis_work_item *);
+static int32_t NdisScheduleWorkItem(struct ndis_work_item *);
 static void NdisMSetPeriodicTimer(struct ndis_miniport_timer *, uint32_t);
 static void NdisMSleep(uint32_t);
 static void NdisMCancelTimer(struct ndis_timer *, uint8_t *);
 static void ndis_timercall(kdpc *, struct ndis_miniport_timer *, void *,
     void *);
-static void NdisMQueryAdapterResources(ndis_status *, ndis_handle,
+static void NdisMQueryAdapterResources(int32_t *, ndis_handle,
     struct cm_partial_resource_list *, uint32_t *);
-static ndis_status NdisMRegisterIoPortRange(void **, ndis_handle, uint32_t,
+static int32_t NdisMRegisterIoPortRange(void **, ndis_handle, uint32_t,
     uint32_t);
 static void NdisMDeregisterIoPortRange(ndis_handle, uint32_t, uint32_t, void *);
-static void NdisReadNetworkAddress(ndis_status *, void **, uint32_t *,
+static void NdisReadNetworkAddress(int32_t *, void **, uint32_t *,
     ndis_handle);
-static ndis_status NdisQueryMapRegisterCount(uint32_t, uint32_t *);
-static ndis_status NdisMAllocateMapRegisters(ndis_handle, uint32_t, uint8_t,
+static int32_t NdisQueryMapRegisterCount(uint32_t, uint32_t *);
+static int32_t NdisMAllocateMapRegisters(ndis_handle, uint32_t, uint8_t,
     uint32_t, uint32_t);
 static void NdisMFreeMapRegisters(ndis_handle);
 static void ndis_mapshared_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMAllocateSharedMemory(ndis_handle, uint32_t, uint8_t, void **,
     struct physaddr *);
 static void ndis_asyncmem_complete(struct device_object *, void *);
-static ndis_status NdisMAllocateSharedMemoryAsync(ndis_handle, uint32_t,
+static int32_t NdisMAllocateSharedMemoryAsync(ndis_handle, uint32_t,
     uint8_t, void *);
 static void NdisMFreeSharedMemory(ndis_handle, uint32_t, uint8_t, void *,
     struct physaddr);
-static ndis_status NdisMMapIoSpace(void **, ndis_handle, struct physaddr,
+static int32_t NdisMMapIoSpace(void **, ndis_handle, struct physaddr,
     uint32_t);
 static void NdisMUnmapIoSpace(ndis_handle, void *, uint32_t);
 static uint32_t NdisGetCacheFillSize(void);
 static uint32_t NdisMGetDmaAlignment(ndis_handle);
-static ndis_status NdisMInitializeScatterGatherDma(ndis_handle, uint8_t,
+static int32_t NdisMInitializeScatterGatherDma(ndis_handle, uint8_t,
     uint32_t);
 static void NdisUnchainBufferAtFront(struct ndis_packet *, ndis_buffer **);
 static void NdisUnchainBufferAtBack(struct ndis_packet *, ndis_buffer **);
-static void NdisAllocateBufferPool(ndis_status *, ndis_handle *, uint32_t);
+static void NdisAllocateBufferPool(int32_t *, ndis_handle *, uint32_t);
 static void NdisFreeBufferPool(ndis_handle);
-static void NdisAllocateBuffer(ndis_status *, ndis_buffer **, ndis_handle,
+static void NdisAllocateBuffer(int32_t *, ndis_buffer **, ndis_handle,
     void *, uint32_t);
 static void NdisFreeBuffer(ndis_buffer *);
 static uint32_t NdisBufferLength(ndis_buffer *);
@@ -213,13 +213,13 @@ static void NdisInitializeEvent(struct ndis_event *);
 static void NdisSetEvent(struct ndis_event *);
 static void NdisResetEvent(struct ndis_event *);
 static uint8_t NdisWaitEvent(struct ndis_event *, uint32_t);
-static ndis_status NdisUnicodeStringToAnsiString(ansi_string *,
+static int32_t NdisUnicodeStringToAnsiString(ansi_string *,
     unicode_string *);
-static ndis_status NdisAnsiStringToUnicodeString(unicode_string *,
+static int32_t NdisAnsiStringToUnicodeString(unicode_string *,
     ansi_string *);
-static ndis_status NdisMPciAssignResources(ndis_handle, uint32_t,
+static int32_t NdisMPciAssignResources(ndis_handle, uint32_t,
     struct cm_partial_resource_list **);
-static ndis_status NdisMRegisterInterrupt(struct ndis_miniport_interrupt *,
+static int32_t NdisMRegisterInterrupt(struct ndis_miniport_interrupt *,
     ndis_handle, uint32_t, uint32_t, uint8_t, uint8_t,
     enum ndis_interrupt_mode);
 static void NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *);
@@ -247,7 +247,7 @@ static void NdisInitializeString(unicode_string *, char *);
 static void NdisInitAnsiString(ansi_string *, char *);
 static void NdisInitUnicodeString(unicode_string *, uint16_t *);
 static void NdisFreeString(unicode_string *);
-static ndis_status NdisMRemoveMiniport(ndis_handle *);
+static int32_t NdisMRemoveMiniport(ndis_handle *);
 static void NdisTerminateWrapper(ndis_handle, void *);
 static void NdisMGetDeviceProperty(ndis_handle, struct device_object **,
     struct device_object **, struct device_object **,
@@ -257,14 +257,14 @@ static void NdisGetFirstBufferFromPacket(struct ndis_packet *, ndis_buffer **,
 static void NdisGetFirstBufferFromPacketSafe(struct ndis_packet *,
     ndis_buffer **, void **, uint32_t *, uint32_t *, uint32_t);
 static int ndis_find_sym(linker_file_t, char *, char *, caddr_t *);
-static void NdisOpenFile(ndis_status *, ndis_handle *, uint32_t *,
+static void NdisOpenFile(int32_t *, ndis_handle *, uint32_t *,
     unicode_string *, struct physaddr);
-static void NdisMapFile(ndis_status *, void **, ndis_handle);
+static void NdisMapFile(int32_t *, void **, ndis_handle);
 static void NdisUnmapFile(ndis_handle);
 static void NdisCloseFile(ndis_handle);
 static uint8_t NdisSystemProcessorCount(void);
 static void NdisMIndicateStatusComplete(ndis_handle);
-static void NdisMIndicateStatus(ndis_handle, ndis_status, void *, uint32_t);
+static void NdisMIndicateStatus(ndis_handle, int32_t, void *, uint32_t);
 static uint8_t ndis_interrupt_nic(kinterrupt *, struct ndis_softc *);
 static void ndis_intrhand(kdpc *, struct ndis_miniport_interrupt *, void *,
     void *);
@@ -274,10 +274,10 @@ static void NdisCopyFromPacketToPacketSafe(struct ndis_packet *, uint32_t,
     uint32_t, struct ndis_packet *, uint32_t, uint32_t *, uint32_t);
 static void NdisIMCopySendPerPacketInfo(struct ndis_packet *,
     struct ndis_packet *);
-static ndis_status NdisMRegisterDevice(ndis_handle, unicode_string *,
+static int32_t NdisMRegisterDevice(ndis_handle, unicode_string *,
     unicode_string *, driver_dispatch **, void **, ndis_handle *);
-static ndis_status NdisMDeregisterDevice(ndis_handle);
-static ndis_status NdisMQueryAdapterInstanceName(unicode_string *, ndis_handle);
+static int32_t NdisMDeregisterDevice(ndis_handle);
+static int32_t NdisMQueryAdapterInstanceName(unicode_string *, ndis_handle);
 static void NdisMRegisterUnloadHandler(ndis_handle, void *);
 static void dummy(void);
 
@@ -345,7 +345,7 @@ NdisTerminateWrapper(ndis_handle adapter, void *syspec)
 	/* Nothing to see here, move along. */
 }
 
-static ndis_status
+static int32_t
 NdisMRegisterMiniport(ndis_handle adapter,
     struct ndis_miniport_driver_characteristics *characteristics, uint32_t len)
 {
@@ -372,7 +372,7 @@ NdisMRegisterMiniport(ndis_handle adapter,
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 {
 
@@ -383,7 +383,7 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags,
     struct physaddr highaddr)
 {
@@ -398,7 +398,7 @@ NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 	free(vaddr, M_NDIS_SUBR);
 }
 
-static ndis_status
+static int32_t
 NdisMSetAttributesEx(ndis_handle adapter, ndis_handle adapter_ctx,
     uint32_t hangsecs, uint32_t flags, enum ndis_interface_type iftype)
 {
@@ -416,7 +416,7 @@ NdisMSetAttributesEx(ndis_handle adapter, ndis_handle adapter_ctx,
 }
 
 static void
-NdisOpenConfiguration(ndis_status *status, ndis_handle *cfg,
+NdisOpenConfiguration(int32_t *status, ndis_handle *cfg,
     ndis_handle wrapctx)
 {
 	*cfg = wrapctx;
@@ -424,7 +424,7 @@ NdisOpenConfiguration(ndis_status *status, ndis_handle *cfg,
 }
 
 static void
-NdisOpenConfigurationKeyByName(ndis_status *status, ndis_handle cfg,
+NdisOpenConfigurationKeyByName(int32_t *status, ndis_handle cfg,
     unicode_string *subkey, ndis_handle *subhandle)
 {
 	*subhandle = cfg;
@@ -432,13 +432,13 @@ NdisOpenConfigurationKeyByName(ndis_status *status, ndis_handle cfg,
 }
 
 static void
-NdisOpenConfigurationKeyByIndex(ndis_status *status, ndis_handle cfg,
+NdisOpenConfigurationKeyByIndex(int32_t *status, ndis_handle cfg,
     uint32_t idx, unicode_string *subkey, ndis_handle *subhandle)
 {
 	*status = NDIS_STATUS_FAILURE;
 }
 
-static ndis_status
+static int32_t
 ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
     enum ndis_parameter_type type, struct ndis_configuration_parameter **parm)
 {
@@ -483,7 +483,7 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 }
 
 static void
-NdisReadConfiguration(ndis_status *status,
+NdisReadConfiguration(int32_t *status,
     struct ndis_configuration_parameter **parm, ndis_handle cfg,
     unicode_string *key, enum ndis_parameter_type type)
 {
@@ -555,7 +555,7 @@ NdisReadConfiguration(ndis_status *status,
 	*status = NDIS_STATUS_FAILURE;
 }
 
-static ndis_status
+static int32_t
 ndis_decode_parm(struct ndis_miniport_block *block,
     struct ndis_configuration_parameter *parm, char *val)
 {
@@ -589,7 +589,7 @@ ndis_decode_parm(struct ndis_miniport_block *block,
 }
 
 static void
-NdisWriteConfiguration(ndis_status *status, ndis_handle cfg,
+NdisWriteConfiguration(int32_t *status, ndis_handle cfg,
     unicode_string *key, struct ndis_configuration_parameter *parm)
 {
 	struct ndis_softc *sc;
@@ -1003,7 +1003,7 @@ NdisMCancelTimer(struct ndis_timer *timer, uint8_t *cancelled)
 }
 
 static void
-NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
+NdisMQueryAdapterResources(int32_t *status, ndis_handle adapter,
     struct cm_partial_resource_list *list, uint32_t *buflen)
 {
 	struct ndis_miniport_block *block = adapter;
@@ -1024,7 +1024,7 @@ NdisMQueryAdapterResources(ndis_status *status, ndis_handle adapter,
 	*status = NDIS_STATUS_SUCCESS;
 }
 
-static ndis_status
+static int32_t
 NdisMRegisterIoPortRange(void **offset, ndis_handle adapter, uint32_t port,
     uint32_t numports)
 {
@@ -1052,7 +1052,7 @@ NdisMDeregisterIoPortRange(ndis_handle adapter, uint32_t port,
 }
 
 static void
-NdisReadNetworkAddress(ndis_status *status, void **addr, uint32_t *addrlen,
+NdisReadNetworkAddress(int32_t *status, void **addr, uint32_t *addrlen,
     ndis_handle adapter)
 {
 	struct ndis_miniport_block *block = adapter;
@@ -1076,7 +1076,7 @@ NdisReadNetworkAddress(ndis_status *status, void **addr, uint32_t *addrlen,
 	}
 }
 
-static ndis_status
+static int32_t
 NdisQueryMapRegisterCount(uint32_t bustype, uint32_t *cnt)
 {
 	*cnt = 8192;
@@ -1094,7 +1094,7 @@ ndis_dmasize(uint8_t dmasize)
 	return (BUS_SPACE_MAXADDR_24BIT);
 }
 
-static ndis_status
+static int32_t
 NdisMAllocateMapRegisters(ndis_handle adapter, uint32_t dmachannel,
     uint8_t dmasize, uint32_t physmapneeded, uint32_t maxmap)
 {
@@ -1262,7 +1262,7 @@ ndis_asyncmem_complete(struct device_object *dobj, void *arg)
 	free(w, M_NDIS_SUBR);
 }
 
-static ndis_status
+static int32_t
 NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
     uint8_t cached, void *ctx)
 {
@@ -1344,7 +1344,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	free(sh, M_NDIS_SUBR);
 }
 
-static ndis_status
+static int32_t
 NdisMMapIoSpace(void **vaddr, ndis_handle adapter, struct physaddr paddr,
     uint32_t len)
 {
@@ -1384,7 +1384,7 @@ NdisMGetDmaAlignment(ndis_handle adapter)
  * NdisMInitializeScatterGatherDma(), it wants to use the latter
  * method.
  */
-static ndis_status
+static int32_t
 NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
     uint32_t maxphysmap)
 {
@@ -1418,7 +1418,7 @@ NdisMInitializeScatterGatherDma(ndis_handle adapter, uint8_t is64,
 }
 
 void
-NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
+NdisAllocatePacketPool(int32_t *status, ndis_handle *pool,
     uint32_t descnum, uint32_t protrsvdlen)
 {
 	struct ndis_packet_pool *p;
@@ -1459,7 +1459,7 @@ NdisAllocatePacketPool(ndis_status *status, ndis_handle *pool,
 }
 
 void
-NdisAllocatePacketPoolEx(ndis_status *status, ndis_handle *pool,
+NdisAllocatePacketPoolEx(int32_t *status, ndis_handle *pool,
     uint32_t descnum, uint32_t oflowdescnum, uint32_t protrsvdlen)
 {
 	return (NdisAllocatePacketPool(status, pool,
@@ -1503,7 +1503,7 @@ NdisFreePacketPool(ndis_handle pool)
 }
 
 void
-NdisAllocatePacket(ndis_status *status, struct ndis_packet **packet,
+NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
     ndis_handle pool)
 {
 	struct ndis_packet_pool *p;
@@ -1629,7 +1629,7 @@ NdisUnchainBufferAtBack(struct ndis_packet *packet, ndis_buffer **buf)
  * them, and IoAllocateMdl() just grabs them out of the heap.
  */
 static void
-NdisAllocateBufferPool(ndis_status *status, ndis_handle *pool,
+NdisAllocateBufferPool(int32_t *status, ndis_handle *pool,
     uint32_t descnum)
 {
 	/*
@@ -1647,7 +1647,7 @@ NdisFreeBufferPool(ndis_handle pool)
 }
 
 static void
-NdisAllocateBuffer(ndis_status *status, ndis_buffer **buffer, ndis_handle pool,
+NdisAllocateBuffer(int32_t *status, ndis_buffer **buffer, ndis_handle pool,
     void *vaddr, uint32_t len)
 {
 	ndis_buffer *buf;
@@ -1770,7 +1770,7 @@ NdisWaitEvent(struct ndis_event *event, uint32_t msecs)
 	return (TRUE);
 }
 
-static ndis_status
+static int32_t
 NdisUnicodeStringToAnsiString(ansi_string *dstr, unicode_string *sstr)
 {
 	uint32_t rval;
@@ -1784,7 +1784,7 @@ NdisUnicodeStringToAnsiString(ansi_string *dstr, unicode_string *sstr)
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 NdisAnsiStringToUnicodeString(unicode_string *dstr, ansi_string *sstr)
 {
 	uint32_t rval;
@@ -1798,7 +1798,7 @@ NdisAnsiStringToUnicodeString(unicode_string *dstr, ansi_string *sstr)
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
     struct cm_partial_resource_list **list)
 {
@@ -1862,7 +1862,7 @@ ndis_intrhand(kdpc *dpc, struct ndis_miniport_interrupt *intr, void *sysarg1,
 	KeReleaseSpinLockFromDpcLevel(&intr->dpc_count_lock);
 }
 
-static ndis_status
+static int32_t
 NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
     ndis_handle adapter, uint32_t ivec, uint32_t ilevel, uint8_t reqisr,
     uint8_t shared, enum ndis_interrupt_mode imode)
@@ -2117,7 +2117,7 @@ NdisFreeString(unicode_string *str)
 	RtlFreeUnicodeString(str);
 }
 
-static ndis_status
+static int32_t
 NdisMRemoveMiniport(ndis_handle *adapter)
 {
 	return (NDIS_STATUS_SUCCESS);
@@ -2238,7 +2238,7 @@ NdisCheckModule(linker_file_t lf, void *context)
 }
 
 static void
-NdisOpenFile(ndis_status *status, ndis_handle *filehandle, uint32_t *filelength,
+NdisOpenFile(int32_t *status, ndis_handle *filehandle, uint32_t *filelength,
     unicode_string *filename, struct physaddr highestaddr)
 {
 	ansi_string as;
@@ -2350,7 +2350,7 @@ NdisOpenFile(ndis_status *status, ndis_handle *filehandle, uint32_t *filelength,
 }
 
 static void
-NdisMapFile(ndis_status *status, void **mappedbuffer, ndis_handle filehandle)
+NdisMapFile(int32_t *status, void **mappedbuffer, ndis_handle filehandle)
 {
 	struct vnode *vp;
 	struct thread *td = curthread;
@@ -2452,7 +2452,7 @@ NdisSystemProcessorCount(void)
 	return (mp_ncpus);
 }
 
-typedef void (*ndis_status_func)(ndis_handle, ndis_status, void *, uint32_t);
+typedef void (*ndis_status_func)(ndis_handle, int32_t, void *, uint32_t);
 typedef void (*ndis_status_done_func)(ndis_handle);
 
 static void
@@ -2466,7 +2466,7 @@ NdisMIndicateStatusComplete(ndis_handle adapter)
 }
 
 static void
-NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
+NdisMIndicateStatus(ndis_handle adapter, int32_t status, void *sbuf,
     uint32_t slen)
 {
 	struct ndis_miniport_block *block = adapter;
@@ -2495,7 +2495,7 @@ NdisMIndicateStatus(ndis_handle adapter, ndis_status status, void *sbuf,
  *
  * Got all that? (Sheesh.)
  */
-static ndis_status
+static int32_t
 NdisScheduleWorkItem(struct ndis_work_item *work)
 {
 	work_queue_item *wqi;
@@ -2606,7 +2606,7 @@ NdisIMCopySendPerPacketInfo(struct ndis_packet *dpkt, struct ndis_packet *spkt)
 	memcpy(&dpkt->ext, &spkt->ext, sizeof(struct ndis_packet_extension));
 }
 
-static ndis_status
+static int32_t
 NdisMRegisterDevice(ndis_handle adapter, unicode_string *devname,
     unicode_string *symname, driver_dispatch *majorfuncs[],
     void **devobj, ndis_handle *devhandle)
@@ -2624,7 +2624,7 @@ NdisMRegisterDevice(ndis_handle adapter, unicode_string *devname,
 	return (status);
 }
 
-static ndis_status
+static int32_t
 NdisMDeregisterDevice(ndis_handle adapter)
 {
 	IoDeleteDevice(adapter);
@@ -2632,7 +2632,7 @@ NdisMDeregisterDevice(ndis_handle adapter)
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle adapter)
 {
 	struct ndis_miniport_block *block = adapter;

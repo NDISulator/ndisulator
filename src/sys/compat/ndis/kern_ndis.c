@@ -74,11 +74,11 @@ __FBSDID("$FreeBSD$");
 
 static void	ndis_create_sysctls(struct ndis_softc *);
 static void	ndis_flush_sysctls(struct ndis_softc *);
-static void	ndis_status_func(ndis_handle, ndis_status, void *, uint32_t);
+static void	ndis_status_func(ndis_handle, int32_t, void *, uint32_t);
 static void	ndis_status_done_func(ndis_handle);
-static void	ndis_set_done_func(ndis_handle, ndis_status);
-static void	ndis_get_done_func(ndis_handle, ndis_status);
-static void	ndis_reset_done_func(ndis_handle, ndis_status, uint8_t);
+static void	ndis_set_done_func(ndis_handle, int32_t);
+static void	ndis_get_done_func(ndis_handle, int32_t);
+static void	ndis_reset_done_func(ndis_handle, int32_t, uint8_t);
 static void	ndis_send_rsrcavail_func(ndis_handle);
 static void	ndis_interrupt_setup(kdpc *, struct device_object *, irp *,
 		    struct ndis_softc *);
@@ -169,7 +169,7 @@ ndis_send_rsrcavail_func(ndis_handle adapter)
 }
 
 static void
-ndis_status_func(ndis_handle adapter, ndis_status status, void *sbuf,
+ndis_status_func(ndis_handle adapter, int32_t status, void *sbuf,
     uint32_t slen)
 {
 }
@@ -180,7 +180,7 @@ ndis_status_done_func(ndis_handle adapter)
 }
 
 static void
-ndis_set_done_func(ndis_handle adapter, ndis_status status)
+ndis_set_done_func(ndis_handle adapter, int32_t status)
 {
 	struct ndis_miniport_block *block = adapter;
 
@@ -189,7 +189,7 @@ ndis_set_done_func(ndis_handle adapter, ndis_status status)
 }
 
 static void
-ndis_get_done_func(ndis_handle adapter, ndis_status status)
+ndis_get_done_func(ndis_handle adapter, int32_t status)
 {
 	struct ndis_miniport_block *block = adapter;
 
@@ -198,7 +198,7 @@ ndis_get_done_func(ndis_handle adapter, ndis_status status)
 }
 
 static void
-ndis_reset_done_func(ndis_handle adapter, ndis_status status,
+ndis_reset_done_func(ndis_handle adapter, int32_t status,
     uint8_t addressingreset)
 {
 	struct ndis_miniport_block *block = adapter;
@@ -574,8 +574,7 @@ ndis_request_info(uint32_t request, struct ndis_softc *sc, uint32_t oid,
     void *buf, uint32_t buflen, uint32_t *written, uint32_t *needed)
 {
 	uint64_t duetime;
-	ndis_status rval;
-	uint32_t w = 0, n = 0;
+	int32_t rval, w = 0, n = 0;
 	uint8_t irql;
 
 	if (!written)
@@ -668,7 +667,7 @@ ndis_set_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
 	    sc, oid, buf, buflen, written, needed));
 }
 
-typedef void (*ndis_send_done_func) (ndis_handle, struct ndis_packet *, ndis_status);
+typedef void (*ndis_send_done_func) (ndis_handle, struct ndis_packet *, int32_t);
 
 void
 ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
@@ -706,7 +705,7 @@ ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
 int32_t
 ndis_send_packet(struct ndis_softc *sc, struct ndis_packet *packet)
 {
-	ndis_status status;
+	int32_t status;
 	uint8_t irql = 0;
 
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
@@ -774,7 +773,7 @@ ndis_destroy_dma(struct ndis_softc *sc)
 int32_t
 ndis_reset_nic(struct ndis_softc *sc)
 {
-	ndis_status rval;
+	int32_t rval;
 	uint8_t addressing_reset;
 	uint8_t irql = 0;
 
@@ -900,7 +899,7 @@ ndis_pnp_event_nic(struct ndis_softc *sc, uint32_t event, uint32_t profile)
 int32_t
 ndis_init_nic(struct ndis_softc *sc)
 {
-	ndis_status rval, status = 0;
+	int32_t rval, status = 0;
 	enum ndis_medium medium_array[] = { NDIS_MEDIUM_802_3 };
 	uint32_t chosen_medium = 0;
 

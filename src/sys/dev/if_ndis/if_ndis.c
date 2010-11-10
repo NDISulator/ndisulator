@@ -99,7 +99,7 @@ MODULE_DEPEND(ndis, wlan, 1, 1, 1);
 MODULE_DEPEND(ndis, ndisapi, 1, 1, 1);
 MODULE_VERSION(ndis, 1);
 
-static void	ndis_txeof(ndis_handle, struct ndis_packet *, ndis_status);
+static void	ndis_txeof(ndis_handle, struct ndis_packet *, int32_t);
 static void	ndis_rxeof(ndis_handle, struct ndis_packet **, uint32_t);
 static void	ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *,
 			uint32_t, void *, uint32_t, uint32_t);
@@ -107,7 +107,7 @@ static void	ndis_rxeof_done(ndis_handle);
 static void	ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
 static void	ndis_rxeof_xfr_done(ndis_handle, struct ndis_packet *, uint32_t,
 			uint32_t);
-static void	ndis_linksts(ndis_handle, ndis_status, void *, uint32_t);
+static void	ndis_linksts(ndis_handle, int32_t, void *, uint32_t);
 static void	ndis_linksts_done(ndis_handle);
 
 /* We need to wrap these functions for amd64. */
@@ -1253,7 +1253,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct ndis_softc *sc;
 	struct ndis_packet *p;
 	list_entry *l;
-	ndis_status status;
+	int32_t status;
 	struct ndis_ethpriv *priv;
 	struct ifnet *ifp;
 	struct mbuf *m;
@@ -1484,7 +1484,7 @@ ndis_inputtask(struct device_object *dobj, void *arg)
  * the list buffers.
  */
 static void
-ndis_txeof(ndis_handle adapter, struct ndis_packet *packet, ndis_status status)
+ndis_txeof(ndis_handle adapter, struct ndis_packet *packet, int32_t status)
 {
 	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
@@ -1523,7 +1523,7 @@ ndis_txeof(ndis_handle adapter, struct ndis_packet *packet, ndis_status status)
 }
 
 static void
-ndis_linksts(ndis_handle adapter, ndis_status status, void *buf, uint32_t len)
+ndis_linksts(ndis_handle adapter, int32_t status, void *buf, uint32_t len)
 {
 	struct ndis_miniport_block *block = adapter;
 	struct ndis_80211_status_indication *nsi;
@@ -2156,7 +2156,7 @@ static void
 ndis_get_bssid_list(struct ndis_softc *sc, struct ndis_80211_bssid_list_ex **bl)
 {
 	uint32_t len;
-	ndis_status rval;
+	int32_t rval;
 
 	len = sizeof(uint32_t) + (sizeof(struct ndis_wlan_bssid_ex) * 16);
 	*bl = malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);

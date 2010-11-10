@@ -306,7 +306,7 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 	struct drvdb_ent *new;
 	struct driver_object *drv;
 	uint32_t *ptr;
-	ndis_status rval;
+	int32_t rval;
 	ansi_string as;
 
 	if (pe_validate_header(img))
@@ -410,7 +410,7 @@ int32_t
 windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 {
 	struct device_object *dev;
-	ndis_status rval;
+	int32_t rval;
 
 	/*
 	 * This is a new physical device object, which technically

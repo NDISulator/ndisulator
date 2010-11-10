@@ -191,10 +191,10 @@ static void RtlZeroMemory(void *, size_t);
 static void RtlSecureZeroMemory(void *, size_t);
 static void RtlFillMemory(void *, size_t, uint8_t);
 static void RtlMoveMemory(void *, const void *, size_t);
-static ndis_status RtlCharToInteger(const char *, uint32_t, uint32_t *);
+static int32_t RtlCharToInteger(const char *, uint32_t, uint32_t *);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
-static ndis_status RtlUnicodeStringToInteger(const unicode_string *, uint32_t,
+static int32_t RtlUnicodeStringToInteger(const unicode_string *, uint32_t,
     uint32_t *);
 static int atoi(const char *);
 static long atol(const char *);
@@ -204,36 +204,36 @@ static void KeQuerySystemTime(int64_t *);
 static uint32_t KeTickCount(void);
 static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
 static void ntoskrnl_thrfunc(void *);
-static ndis_status PsCreateSystemThread(ndis_handle *, uint32_t, void *,
+static int32_t PsCreateSystemThread(ndis_handle *, uint32_t, void *,
     ndis_handle, void *, void *, void *);
-static ndis_status PsTerminateSystemThread(ndis_status);
-static ndis_status IoGetDeviceObjectPointer(unicode_string *, uint32_t,
+static int32_t PsTerminateSystemThread(int32_t);
+static int32_t IoGetDeviceObjectPointer(unicode_string *, uint32_t,
     void *, struct device_object *);
-static ndis_status IoGetDeviceProperty(struct device_object *,
+static int32_t IoGetDeviceProperty(struct device_object *,
     enum device_registry_property, uint32_t, void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
 static int32_t KeReleaseMutex(kmutant *, uint8_t);
 static int32_t KeReadStateMutex(kmutant *);
-static ndis_status ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
+static int32_t ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
     uint8_t, void **, void **);
 static void ObfDereferenceObject(void *);
-static ndis_status ZwClose(ndis_handle);
-static ndis_status WmiQueryTraceInformation(uint32_t, void *, uint32_t,
+static int32_t ZwClose(ndis_handle);
+static int32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t,
     uint32_t, void *);
-static ndis_status WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
-static ndis_status IoWMIRegistrationControl(struct device_object *, uint32_t);
-static ndis_status IoWMIQueryAllData(void *, uint32_t *, void *);
-static ndis_status IoWMIOpenBlock(void *, uint32_t, void **);
+static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
+static int32_t IoWMIRegistrationControl(struct device_object *, uint32_t);
+static int32_t IoWMIQueryAllData(void *, uint32_t *, void *);
+static int32_t IoWMIOpenBlock(void *, uint32_t, void **);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
 static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(void *);
-static ndis_status DbgPrint(const char *, ...);
+static int32_t DbgPrint(const char *, ...);
 static void DbgBreakPoint(void);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
-static ndis_status KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
+static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
 
@@ -1555,7 +1555,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 */
 }
 
-static ndis_status
+static int32_t
 KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
     uint32_t wtype, uint32_t reason, uint32_t mode, uint8_t alertable,
     int64_t *duetime, wait_block *wb_array)
@@ -1568,7 +1568,7 @@ KeWaitForMultipleObjects(uint32_t cnt, nt_dispatch_header *obj[],
 	int i, wcnt = 0, error = 0;
 	uint64_t curtime;
 	struct timespec t1, t2;
-	ndis_status status = NDIS_STATUS_SUCCESS;
+	int32_t status = NDIS_STATUS_SUCCESS;
 	struct wb_ext we;
 
 	if (cnt > MAX_WAIT_OBJECTS)
@@ -2586,7 +2586,7 @@ RtlMoveMemory(void *dst, const void *src, size_t len)
 	memmove(dst, src, len);
 }
 
-static ndis_status
+static int32_t
 RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 {
 	int negative = 0;
@@ -2687,7 +2687,7 @@ RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
 	}
 }
 
-static ndis_status
+static int32_t
 RtlUnicodeStringToInteger(const unicode_string *ustr, uint32_t base,
    uint32_t *value)
 {
@@ -2799,7 +2799,7 @@ IoIsWdmVersionAvailable(uint8_t major, uint8_t minor)
 	return (FALSE);
 }
 
-static ndis_status
+static int32_t
 IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
     void *fileobj, struct device_object *devobj)
 {
@@ -2809,7 +2809,7 @@ IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
 	return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 }
 
-static ndis_status
+static int32_t
 IoGetDeviceProperty(struct device_object *devobj,
     enum device_registry_property regprop,
     uint32_t buflen, void *prop, uint32_t *reslen)
@@ -2845,7 +2845,7 @@ KeInitializeMutex(kmutant *kmutex, uint32_t level)
 	kmutex->km_ownerthread = NULL;
 }
 
-static ndis_status
+static int32_t
 KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
 {
 	int32_t prevstate;
@@ -2995,7 +2995,7 @@ KeReadStateEvent(nt_kevent *kevent)
  * dispatch header by using ObReferenceObjectByHandle() on the
  * handle returned by PsCreateSystemThread().
  */
-static ndis_status
+static int32_t
 ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
     uint8_t accessmode, void **object, void **handleinfo)
 {
@@ -3027,39 +3027,39 @@ ObfDereferenceObject(void *object)
 	free(nr, M_NDIS_NTOSKRNL);
 }
 
-static ndis_status
+static int32_t
 ZwClose(ndis_handle handle)
 {
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 WmiQueryTraceInformation(uint32_t traceclass, void *traceinfo,
     uint32_t infolen, uint32_t reqlen, void *buf)
 {
 	return (NDIS_STATUS_NOT_FOUND);
 }
 
-static ndis_status
+static int32_t
 WmiTraceMessage(uint64_t loghandle, uint32_t messageflags,
     void *guid, uint16_t messagenum, ...)
 {
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
+static int32_t
 IoWMIRegistrationControl(struct device_object *dobj, uint32_t action)
 {
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
 }
 
-static ndis_status
+static int32_t
 IoWMIQueryAllData(void *data_block_object, uint32_t *buf_size, void *buf)
 {
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
 }
 
-static ndis_status
+static int32_t
 IoWMIOpenBlock(void *data_block_guid, uint32_t access, void **data_block_object)
 {
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
@@ -3087,7 +3087,7 @@ ntoskrnl_thrfunc(void *arg)
 	/* notreached */
 }
 
-static ndis_status
+static int32_t
 PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
     ndis_handle phandle, void *clientid, void *thrfunc, void *thrctx)
 {
@@ -3112,8 +3112,8 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 	return (NDIS_STATUS_SUCCESS);
 }
 
-static ndis_status
-PsTerminateSystemThread(ndis_status status)
+static int32_t
+PsTerminateSystemThread(int32_t status)
 {
 
 	ntoskrnl_kth--;
@@ -3123,7 +3123,7 @@ PsTerminateSystemThread(ndis_status status)
 	return (0);	/* notreached */
 }
 
-static ndis_status
+static int32_t
 DbgPrint(const char *fmt, ...)
 {
 	va_list ap;
@@ -3603,7 +3603,7 @@ KeReadStateTimer(ktimer *timer)
 	return (timer->k_header.dh_sigstate);
 }
 
-static ndis_status
+static int32_t
 KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 {
 	ktimer timer;

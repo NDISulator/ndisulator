@@ -41,7 +41,6 @@ struct ndis_mdriver_block;
 struct ndis_softc;
 
 /* Base types */
-typedef int32_t ndis_status;
 typedef void *ndis_handle;
 typedef register_t ndis_kspin_lock;
 typedef uint8_t ndis_kirql;
@@ -1174,7 +1173,7 @@ struct ndis_packet_oob {
 	uint32_t	npo_hdrlen;
 	uint32_t	npo_mediaspecific_len;
 	void		*npo_mediaspecific;
-	ndis_status	npo_status;
+	int32_t		npo_status;
 };
 
 /*
@@ -1414,7 +1413,7 @@ struct ndis_miniport_block {
 	uint32_t			check_for_hang_secs;
 	uint16_t			check_for_hang_ticks;
 	uint16_t			check_for_hang_current_tick;
-	ndis_status			reset_status;
+	int32_t				reset_status;
 	ndis_handle			reset_open;
 	struct ndis_filter_dbs		filter_dbs;
 	void				*pkt_indicate_func;
@@ -1434,7 +1433,7 @@ struct ndis_miniport_block {
 	void				*set_infobuf;
 	uint16_t			set_infobuflen;
 	uint16_t			max_send_pkts;
-	ndis_status			fake_status;
+	int32_t				fake_status;
 	void				*lock_handler;
 	unicode_string			*adapter_instance_name;
 	void				*timer_queue;
@@ -1470,11 +1469,11 @@ struct ndis_miniport_block {
 	 */
 	list_entry			parmlist;
 	struct cm_partial_resource_list	*rlist;
-	ndis_status			getstat;
+	int32_t				getstat;
 	nt_kevent			getevent;
-	ndis_status			setstat;
+	int32_t				setstat;
 	nt_kevent			setevent;
-	ndis_status			resetstat;
+	int32_t				resetstat;
 	nt_kevent			resetevent;
 	io_workitem			*returnitem;
 	ndis_handle			rxpool;
@@ -1485,24 +1484,23 @@ struct ndis_miniport_block {
 
 TAILQ_HEAD(nd_head, ndis_miniport_block);
 
-typedef ndis_status (*driver_entry)(void *, unicode_string *);
+typedef int32_t (*driver_entry)(void *, unicode_string *);
 typedef uint8_t (*ndis_checkforhang_func)(ndis_handle);
 typedef void (*ndis_disable_interrupts_func)(ndis_handle);
 typedef void (*ndis_enable_interrupts_func)(ndis_handle);
 typedef void (*ndis_halt_func)(ndis_handle);
 typedef void (*ndis_interrupt_func)(ndis_handle);
-typedef ndis_status (*ndis_init_func)(ndis_status *, uint32_t *,
-    enum ndis_medium *, uint32_t, ndis_handle, ndis_handle);
+typedef int32_t (*ndis_init_func)(int32_t *, uint32_t *, enum ndis_medium *,
+    uint32_t, ndis_handle, ndis_handle);
 typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, ndis_handle);
-typedef ndis_status (*ndis_query_info_func)(ndis_handle, uint32_t, void *,
+typedef int32_t (*ndis_query_info_func)(ndis_handle, uint32_t, void *,
     uint32_t, uint32_t *, uint32_t *);
 typedef int (*ndis_reset_func)(uint8_t *, ndis_handle);
-typedef ndis_status (*ndis_send_func)(ndis_handle, struct ndis_packet *,
-    uint32_t);
-typedef ndis_status (*ndis_set_info_func)(ndis_handle, uint32_t, void *,
+typedef int32_t (*ndis_send_func)(ndis_handle, struct ndis_packet *, uint32_t);
+typedef int32_t (*ndis_set_info_func)(ndis_handle, uint32_t, void *,
     uint32_t, uint32_t *, uint32_t *);
-typedef ndis_status (*ndis_transfer_data_func)(ndis_handle,
-    struct ndis_packet *, uint32_t *, uint32_t);
+typedef int32_t (*ndis_transfer_data_func)(ndis_handle, struct ndis_packet *,
+    uint32_t *, uint32_t);
 typedef void (*ndis_return_func)(ndis_handle, struct ndis_packet *);
 typedef void (*ndis_send_packets_func)(ndis_handle, struct ndis_packet **,
     uint32_t);
@@ -1543,13 +1541,12 @@ int	ndis_init_dma(struct ndis_softc *);
 void	ndis_destroy_dma(struct ndis_softc *);
 int	ndis_add_sysctl(struct ndis_softc *, char *, char *, char *, int);
 int32_t	NdisAddDevice(struct driver_object *, struct device_object *);
-void	NdisAllocatePacketPool(ndis_status *, ndis_handle *, uint32_t,
+void	NdisAllocatePacketPool(int32_t *, ndis_handle *, uint32_t, uint32_t);
+void	NdisAllocatePacketPoolEx(int32_t *, ndis_handle *, uint32_t, uint32_t,
 	    uint32_t);
-void	NdisAllocatePacketPoolEx(ndis_status *, ndis_handle *, uint32_t,
-	    uint32_t, uint32_t);
 uint32_t	NdisPacketPoolUsage(ndis_handle);
 void	NdisFreePacketPool(ndis_handle);
-void	NdisAllocatePacket(ndis_status *, struct ndis_packet **, ndis_handle);
+void	NdisAllocatePacket(int32_t *, struct ndis_packet **, ndis_handle);
 void	NdisFreePacket(struct ndis_packet *);
 
 #endif /* _NDIS_VAR_H_ */
