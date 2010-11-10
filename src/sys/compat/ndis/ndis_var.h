@@ -44,7 +44,6 @@ struct ndis_softc;
 typedef int32_t ndis_status;
 typedef void *ndis_handle;
 typedef uint32_t ndis_oid;
-typedef uint32_t ndis_error_code;
 typedef register_t ndis_kspin_lock;
 typedef uint8_t ndis_kirql;
 

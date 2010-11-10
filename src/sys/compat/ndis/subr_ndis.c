@@ -150,7 +150,7 @@ static uint32_t NdisReadPciSlotInformation(ndis_handle, uint32_t, uint32_t,
     void *, uint32_t);
 static uint32_t NdisWritePciSlotInformation(ndis_handle, uint32_t, uint32_t,
     void *, uint32_t);
-static void NdisWriteErrorLogEntry(ndis_handle, ndis_error_code, uint32_t, ...);
+static void NdisWriteErrorLogEntry(ndis_handle, uint32_t, uint32_t, ...);
 static bus_addr_t ndis_dmasize(uint8_t dmasize);
 static void ndis_map_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMStartBufferPhysicalMapping(ndis_handle, ndis_buffer *,
@@ -773,7 +773,7 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
 }
 
 static void
-NdisWriteErrorLogEntry(ndis_handle adapter, ndis_error_code code,
+NdisWriteErrorLogEntry(ndis_handle adapter, uint32_t code,
     uint32_t numerrors, ...)
 {
 	struct ndis_miniport_block *block = adapter;
