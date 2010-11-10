@@ -2576,7 +2576,7 @@ ndis_stop(struct ndis_softc *sc)
 int
 ndis_shutdown(device_t dev)
 {
-	ndis_shutdown_nic(device_get_softc(dev));
+	ndis_stop(device_get_softc(dev));
 	return (0);
 }
 
