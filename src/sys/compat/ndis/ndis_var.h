@@ -600,8 +600,6 @@ enum ndis_80211_encryption_status {
 	NDIS_802_11_WEPSTAT_ENC3KEYABSENT
 };
 
-#define	NDIS_802_11_RELOADDEFAULT_WEP		0x00000000
-
 enum ndis_80211_status_type {
 	NDIS_802_11_STATUS_TYPE_AUTHENTICATION,
 	NDIS_802_11_STATUS_TYPE_MEDIA_STREAM_MODE,
@@ -1038,10 +1036,7 @@ enum ndis_interrupt_mode {
 	NIM_LATCHED
 };
 
-#define	NUMBER_OF_SINGLE_WORK_ITEMS 6
-
 struct ndis_work_item;
-
 typedef void (*ndis_proc)(struct ndis_work_item *, void *);
 
 struct ndis_work_item {
@@ -1237,9 +1232,6 @@ struct ndis_packet_pool {
 	void		*pktmem;
 };
 
-/* mbuf ext type for NDIS */
-#define	EXT_NDIS EXT_NET_DRV
-
 struct ndis_filter_dbs {
 	union {
 		void	*ethdb;
@@ -1249,8 +1241,6 @@ struct ndis_filter_dbs {
 	void	*fddidb;
 	void	*arcdb;
 };
-
-#define	ethdb u.ethdb
 
 enum ndis_medium {
     NDIS_MEDIUM_802_3,

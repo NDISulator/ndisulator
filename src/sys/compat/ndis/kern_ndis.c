@@ -488,7 +488,7 @@ ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 		m->m_len = MmGetMdlByteCount(buf);
 		m->m_data = MmGetMdlVirtualAddress(buf);
 		MEXTADD(m, m->m_data, m->m_len, ndis_return_packet,
-		    m->m_data, p, 0, EXT_NDIS);
+		    m->m_data, p, 0, EXT_NET_DRV);
 		p->refcnt++;
 
 		totlen += m->m_len;
@@ -964,7 +964,7 @@ NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
 		return (status);
 
 	block = fdo->devext;
-	block->filter_dbs.ethdb = block;
+	block->filter_dbs.u.ethdb = block;
 	block->deviceobj = fdo;
 	block->physdeviceobj = pdo;
 	block->nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
