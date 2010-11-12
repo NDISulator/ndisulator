@@ -173,14 +173,15 @@ static uint32_t InterlockedDecrement(volatile uint32_t *);
 static void ExInterlockedAddLargeStatistic(uint64_t *, uint32_t);
 static void *MmAllocateContiguousMemory(uint32_t, uint64_t);
 static void *MmAllocateContiguousMemorySpecifyCache(uint32_t, uint64_t,
-    uint64_t, uint64_t, uint32_t);
+    uint64_t, uint64_t, enum memory_caching_type);
 static void MmFreeContiguousMemory(void *);
-static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t, uint32_t);
+static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t,
+    enum memory_caching_type);
 static uint8_t MmIsAddressValid(void *);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(mdl *, uint8_t);
-static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t, uint32_t, void *,
-    uint32_t, uint32_t);
+static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t,
+    enum memory_caching_type, void *, uint32_t, uint32_t);
 static void MmUnmapLockedPages(void *, mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
 static void RtlZeroMemory(void *, size_t);
@@ -546,7 +547,7 @@ ExAllocatePool(size_t len)
 }
 
 static void *
-ExAllocatePoolWithTag(uint32_t pooltype, size_t len, uint32_t tag)
+ExAllocatePoolWithTag(enum pool_type pooltype, size_t len, uint32_t tag)
 {
 	return (ExAllocatePool(len));
 }
@@ -2127,7 +2128,7 @@ MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 
 static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
-    uint64_t highest, uint64_t boundary, uint32_t cachetype)
+    uint64_t highest, uint64_t boundary, enum memory_caching_type cachetype)
 {
 	return (contigmalloc(size, M_NDIS_NTOSKRNL, M_ZERO|M_NOWAIT, lowest,
 	    highest, PAGE_SIZE, boundary));
@@ -2141,7 +2142,7 @@ MmFreeContiguousMemory(void *base)
 
 static void
 MmFreeContiguousMemorySpecifyCache(void *base, uint32_t size,
-     uint32_t cachetype)
+     enum memory_caching_type cachetype)
 {
 	contigfree(base, size, M_NDIS_NTOSKRNL);
 }
@@ -2193,7 +2194,8 @@ MmMapLockedPages(mdl *buf, uint8_t accessmode)
 }
 
 static void *
-MmMapLockedPagesSpecifyCache(mdl *buf, uint8_t accessmode, uint32_t cachetype,
+MmMapLockedPagesSpecifyCache(mdl *buf, uint8_t accessmode,
+    enum memory_caching_type cachetype,
     void *vaddr, uint32_t bugcheck, uint32_t prio)
 {
 	return (MmMapLockedPages(buf, accessmode));
@@ -2223,7 +2225,7 @@ MmIsAddressValid(void *vaddr)
 }
 
 void *
-MmMapIoSpace(uint64_t paddr, uint32_t len, uint32_t cachetype)
+MmMapIoSpace(uint64_t paddr, uint32_t len, enum memory_caching_type cachetype)
 {
 	devclass_t nexus_class;
 	device_t *nexus_devs, devp;

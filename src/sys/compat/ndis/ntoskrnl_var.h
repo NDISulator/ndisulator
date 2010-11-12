@@ -406,6 +406,15 @@ enum pool_type {
 	NON_PAGED_POOL_CACHE_ALIGNED_MUST_S
 };
 
+enum memory_caching_type {
+	MM_NON_CACHED = 0,
+	MM_CACHED,
+	MM_WRITE_COMBINED,
+	MM_HARDWARE_COHERENT_CACHED,
+	MM_NON_CACHED_UNORDERED,
+	MM_USWC_CACHED
+};
+
 #define	LOOKASIDE_DEPTH 256
 
 struct general_lookaside {
@@ -1328,7 +1337,7 @@ uint8_t	KeSynchronizeExecution(kinterrupt *, void *, void *);
 uintptr_t	InterlockedExchange(volatile uint32_t *, uintptr_t);
 void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
-void	*MmMapIoSpace(uint64_t, uint32_t, uint32_t);
+void	*MmMapIoSpace(uint64_t, uint32_t, enum memory_caching_type);
 void	MmUnmapIoSpace(void *, size_t);
 void	MmBuildMdlForNonPagedPool(mdl *);
 void	IoDisconnectInterrupt(kinterrupt *);
