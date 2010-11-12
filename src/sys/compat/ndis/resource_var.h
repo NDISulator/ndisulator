@@ -35,14 +35,6 @@
 #ifndef _RESOURCE_VAR_H_
 #define	_RESOURCE_VAR_H_
 
-struct physaddr {
-	uint64_t	quad;
-#ifdef notdef
-	uint32_t	low;
-	uint32_t	high;
-#endif
-};
-
 enum ndis_interface_type {
 	InterfaceTypeUndefined = -1,
 	Internal,
@@ -123,11 +115,11 @@ struct cm_partial_resource_desc {
 	uint16_t	flags;
 	union {
 		struct {
-			struct physaddr	start;
+			uint64_t	start;
 			uint32_t	len;
 		} generic;
 		struct {
-			struct physaddr	start;
+			uint64_t	start;
 			uint32_t	len;
 		} port;
 		struct {
@@ -136,7 +128,7 @@ struct cm_partial_resource_desc {
 			uint32_t	affinity;
 		} intr;
 		struct {
-			struct physaddr	start;
+			uint64_t	start;
 			uint32_t	len;
 		} mem;
 		struct {

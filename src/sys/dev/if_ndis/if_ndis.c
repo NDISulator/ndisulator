@@ -1668,7 +1668,7 @@ ndis_map_sclist(void *arg, bus_dma_segment_t *segs, int nseg,
 
 	sclist->frags = nseg;
 	for (i = 0; i < nseg; i++) {
-		sclist->elements[i].addr.quad = segs[i].ds_addr;
+		sclist->elements[i].addr = segs[i].ds_addr;
 		sclist->elements[i].len = segs[i].ds_len;
 	}
 }

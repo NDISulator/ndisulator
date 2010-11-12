@@ -411,7 +411,7 @@ ndis_convert_res(struct ndis_softc *sc)
 				prd->flags = CM_RESOURCE_PORT_IO;
 				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.port.start.quad = brle->start;
+				prd->u.port.start = brle->start;
 				prd->u.port.len = brle->count;
 				break;
 			case SYS_RES_MEMORY:
@@ -419,7 +419,7 @@ ndis_convert_res(struct ndis_softc *sc)
 				prd->flags = CM_RESOURCE_MEMORY_READ_WRITE;
 				prd->sharedisp =
 				    CM_RESOURCE_SHARE_DEVICE_EXCLUSIVE;
-				prd->u.mem.start.quad = brle->start;
+				prd->u.mem.start = brle->start;
 				prd->u.mem.len = brle->count;
 				break;
 			case SYS_RES_IRQ:

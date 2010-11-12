@@ -74,7 +74,7 @@ struct ndis_shmem {
 	bus_dma_tag_t	ndis_stag;
 	bus_dmamap_t	ndis_smap;
 	void		*ndis_saddr;
-	struct physaddr	ndis_paddr;
+	uint64_t	ndis_paddr;
 };
 
 struct ndis_cfglist {

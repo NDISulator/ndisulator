@@ -1046,7 +1046,7 @@ struct ndis_work_item {
 };
 
 struct ndis_sc_element {
-	struct physaddr	addr;
+	uint64_t	addr;
 	uint32_t	len;
 	uint32_t	*reserved;
 };
@@ -1261,7 +1261,7 @@ enum ndis_medium {
 };
 
 struct ndis_paddr_unit {
-	struct physaddr	physaddr;
+	uint64_t	physaddr;
 	uint32_t	len;
 };
 
@@ -1495,7 +1495,7 @@ typedef void (*ndis_return_func)(ndis_handle, struct ndis_packet *);
 typedef void (*ndis_send_packets_func)(ndis_handle, struct ndis_packet **,
     uint32_t);
 typedef void (*ndis_allocate_complete_func)(ndis_handle, void *,
-    struct physaddr *, uint32_t, void *);
+    uint64_t *, uint32_t, void *);
 typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
 typedef void (*ndis_shutdown_func)(void *);
 extern struct image_patch_table ndis_functbl[];

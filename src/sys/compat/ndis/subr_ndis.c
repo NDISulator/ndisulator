@@ -114,8 +114,7 @@ static void NdisInitializeWrapper(ndis_handle *, struct driver_object *,
 static int32_t NdisMRegisterMiniport(ndis_handle,
     struct ndis_miniport_driver_characteristics *, uint32_t);
 static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
-static int32_t NdisAllocateMemory(void **, uint32_t, uint32_t,
-    struct physaddr);
+static int32_t NdisAllocateMemory(void **, uint32_t, uint32_t, uint64_t);
 static void NdisFreeMemory(void *, uint32_t, uint32_t);
 static int32_t NdisMSetAttributesEx(ndis_handle, ndis_handle,
     uint32_t, uint32_t, enum ndis_interface_type);
@@ -181,14 +180,13 @@ static int32_t NdisMAllocateMapRegisters(ndis_handle, uint32_t, uint8_t,
 static void NdisMFreeMapRegisters(ndis_handle);
 static void ndis_mapshared_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMAllocateSharedMemory(ndis_handle, uint32_t, uint8_t, void **,
-    struct physaddr *);
+    uint64_t *);
 static void ndis_asyncmem_complete(struct device_object *, void *);
 static int32_t NdisMAllocateSharedMemoryAsync(ndis_handle, uint32_t,
     uint8_t, void *);
 static void NdisMFreeSharedMemory(ndis_handle, uint32_t, uint8_t, void *,
-    struct physaddr);
-static int32_t NdisMMapIoSpace(void **, ndis_handle, struct physaddr,
-    uint32_t);
+    uint64_t);
+static int32_t NdisMMapIoSpace(void **, ndis_handle, uint64_t, uint32_t);
 static void NdisMUnmapIoSpace(ndis_handle, void *, uint32_t);
 static uint32_t NdisGetCacheFillSize(void);
 static uint32_t NdisMGetDmaAlignment(ndis_handle);
@@ -258,7 +256,7 @@ static void NdisGetFirstBufferFromPacketSafe(struct ndis_packet *,
     ndis_buffer **, void **, uint32_t *, uint32_t *, uint32_t);
 static int ndis_find_sym(linker_file_t, char *, char *, caddr_t *);
 static void NdisOpenFile(int32_t *, ndis_handle *, uint32_t *,
-    unicode_string *, struct physaddr);
+    unicode_string *, uint64_t);
 static void NdisMapFile(int32_t *, void **, ndis_handle);
 static void NdisUnmapFile(ndis_handle);
 static void NdisCloseFile(ndis_handle);
@@ -384,7 +382,7 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 
 static int32_t
 NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags,
-    struct physaddr highaddr)
+    uint64_t highaddr)
 {
 	return (NdisAllocateMemoryWithTag(vaddr, len, 0));
 }
@@ -832,7 +830,7 @@ ndis_map_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
 	ctx = arg;
 
 	for (i = 0; i < nseg; i++) {
-		ctx->fraglist[i].physaddr.quad = segs[i].ds_addr;
+		ctx->fraglist[i].physaddr = segs[i].ds_addr;
 		ctx->fraglist[i].len = segs[i].ds_len;
 	}
 
@@ -1149,13 +1147,13 @@ NdisMFreeMapRegisters(ndis_handle adapter)
 static void
 ndis_mapshared_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
 {
-	struct physaddr *p;
+	uint64_t *paddr;
 
 	if (error || nseg > 1)
 		return;
 
-	p = arg;
-	p->quad = segs[0].ds_addr;
+	paddr = arg;
+	*paddr = segs[0].ds_addr;
 }
 
 /*
@@ -1163,7 +1161,7 @@ ndis_mapshared_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
  */
 static void
 NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
-    void **vaddr, struct physaddr *paddr)
+    void **vaddr, uint64_t *paddr)
 {
 	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
@@ -1202,7 +1200,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	}
 
 	if (bus_dmamap_load(sh->ndis_stag, sh->ndis_smap, *vaddr,
-	    len, ndis_mapshared_cb, (void *)paddr, BUS_DMA_NOWAIT) != 0) {
+	    len, ndis_mapshared_cb, paddr, BUS_DMA_NOWAIT) != 0) {
 		bus_dmamem_free(sh->ndis_stag, *vaddr, sh->ndis_smap);
 		bus_dma_tag_destroy(sh->ndis_stag);
 		free(sh, M_NDIS_SUBR);
@@ -1218,7 +1216,7 @@ NdisMAllocateSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	 * searching based on the virtual address fails.
 	 */
 	NDIS_LOCK(sc);
-	sh->ndis_paddr.quad = paddr->quad;
+	sh->ndis_paddr = *paddr;
 	sh->ndis_saddr = *vaddr;
 	InsertHeadList((&sc->ndis_shlist), (&sh->ndis_list));
 	NDIS_UNLOCK(sc);
@@ -1237,7 +1235,7 @@ ndis_asyncmem_complete(struct device_object *dobj, void *arg)
 	struct ndis_miniport_block *block;
 	struct ndis_softc *sc;
 	struct ndis_allocwork *w;
-	struct physaddr paddr;
+	uint64_t paddr;
 	void *vaddr;
 
 	w = arg;
@@ -1245,7 +1243,7 @@ ndis_asyncmem_complete(struct device_object *dobj, void *arg)
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	vaddr = NULL;
-	paddr.quad = 0;
+	paddr = 0;
 
 	NdisMAllocateSharedMemory(block, w->na_len,
 	    w->na_cached, &vaddr, &paddr);
@@ -1293,7 +1291,7 @@ NdisMAllocateSharedMemoryAsync(ndis_handle adapter, uint32_t len,
 
 static void
 NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
-    void *vaddr, struct physaddr paddr)
+    void *vaddr, uint64_t paddr)
 {
 	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
@@ -1317,7 +1315,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 		 * Check the physaddr too, just in case the driver lied
 		 * about the virtual address.
 		 */
-		if (sh->ndis_paddr.quad == paddr.quad)
+		if (sh->ndis_paddr == paddr)
 			break;
 		l = l->nle_flink;
 	}
@@ -1326,7 +1324,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 		NDIS_UNLOCK(sc);
 		printf("NDIS: buggy driver tried to free "
 		    "invalid shared memory: vaddr: %p paddr: 0x%jx\n",
-		    vaddr, (uintmax_t)paddr.quad);
+		    vaddr, (uintmax_t)paddr);
 		return;
 	}
 
@@ -1342,11 +1340,11 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 }
 
 static int32_t
-NdisMMapIoSpace(void **vaddr, ndis_handle adapter, struct physaddr paddr,
+NdisMMapIoSpace(void **vaddr, ndis_handle adapter, uint64_t paddr,
     uint32_t len)
 {
 
-	*vaddr = MmMapIoSpace(paddr.quad, len, 0);
+	*vaddr = MmMapIoSpace(paddr, len, 0);
 	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
 
@@ -2236,7 +2234,7 @@ NdisCheckModule(linker_file_t lf, void *context)
 
 static void
 NdisOpenFile(int32_t *status, ndis_handle *filehandle, uint32_t *filelength,
-    unicode_string *filename, struct physaddr highestaddr)
+    unicode_string *filename, uint64_t highestaddr)
 {
 	ansi_string as;
 	char *afilename = NULL, *path;
