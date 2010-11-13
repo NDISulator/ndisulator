@@ -1415,9 +1415,9 @@ ndis_rxeof(ndis_handle adapter, struct ndis_packet **packets, uint32_t pktcnt)
 
 			/* Deal with checksum offload. */
 			if (ifp->if_capenable & IFCAP_RXCSUM &&
-			    p->ext.info[NDIS_TCPIPCSUM_INFO] != NULL) {
+			    p->ext.info[TCP_IP_CHECKSUM_PACKET_INFO] != NULL) {
 				s = (uintptr_t)
-				    p->ext.info[NDIS_TCPIPCSUM_INFO];
+				    p->ext.info[TCP_IP_CHECKSUM_PACKET_INFO];
 				csum = (struct ndis_tcpip_csum *)&s;
 				if (csum->u.rxflags & NDIS_RXCSUM_IP_PASSED)
 					m0->m_pkthdr.csum_flags |=
@@ -1768,14 +1768,14 @@ ndis_start(struct ifnet *ifp)
 			bus_dmamap_sync(sc->ndis_ttag,
 			    sc->ndis_tmaps[sc->ndis_txidx],
 			    BUS_DMASYNC_PREREAD);
-			p->ext.info[NDIS_SCLIST_INFO] = &p->sclist;
+			p->ext.info[SCATTER_GATHER_LIST_PACKET_INFO] = &p->sclist;
 		}
 
 		/* Handle checksum offload. */
 		if (ifp->if_capenable & IFCAP_TXCSUM &&
 		    m->m_pkthdr.csum_flags) {
 			csum = (struct ndis_tcpip_csum *)
-				&p->ext.info[NDIS_TCPIPCSUM_INFO];
+				&p->ext.info[TCP_IP_CHECKSUM_PACKET_INFO];
 			csum->u.txflags = NDIS_TXCSUM_DO_IPV4;
 			if (m->m_pkthdr.csum_flags & CSUM_IP)
 				csum->u.txflags |= NDIS_TXCSUM_DO_IP;
