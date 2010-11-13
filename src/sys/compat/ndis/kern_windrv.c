@@ -210,7 +210,7 @@ windrv_unload(module_t mod, vm_offset_t img)
 	struct driver_object *drv;
 	struct device_object *pdo;
 	device_t dev;
-	list_entry *e;
+	struct list_entry *e;
 
 	drv = windrv_lookup(img, NULL);
 

@@ -1252,7 +1252,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_packet *p;
-	list_entry *l;
+	struct list_entry *l;
 	int32_t status;
 	struct ndis_ethpriv *priv;
 	struct ifnet *ifp;

@@ -231,12 +231,12 @@ static uint32_t NdisReadPcmciaAttributeMemory(ndis_handle, uint32_t, void *,
     uint32_t);
 static uint32_t NdisWritePcmciaAttributeMemory(ndis_handle, uint32_t, void *,
     uint32_t);
-static list_entry *NdisInterlockedInsertHeadList(list_entry *, list_entry *,
+static struct list_entry *NdisInterlockedInsertHeadList(struct list_entry *,
+    struct list_entry *, struct ndis_spin_lock *);
+static struct list_entry *NdisInterlockedRemoveHeadList(struct list_entry *,
     struct ndis_spin_lock *);
-static list_entry *NdisInterlockedRemoveHeadList(list_entry *,
-    struct ndis_spin_lock *);
-static list_entry *NdisInterlockedInsertTailList(list_entry *, list_entry *,
-    struct ndis_spin_lock *);
+static struct list_entry *NdisInterlockedInsertTailList(struct list_entry *,
+    struct list_entry *, struct ndis_spin_lock *);
 static uint8_t NdisMSynchronizeWithInterrupt(struct ndis_miniport_interrupt *,
     void *, void *);
 static void NdisGetCurrentSystemTime(int64_t *);
@@ -263,7 +263,7 @@ static void NdisCloseFile(ndis_handle);
 static uint8_t NdisSystemProcessorCount(void);
 static void NdisMIndicateStatusComplete(ndis_handle);
 static void NdisMIndicateStatus(ndis_handle, int32_t, void *, uint32_t);
-static uint8_t ndis_interrupt_nic(kinterrupt *, struct ndis_softc *);
+static uint8_t ndis_interrupt_nic(struct kinterrupt *, struct ndis_softc *);
 static void ndis_intrhand(kdpc *, struct ndis_miniport_interrupt *, void *,
     void *);
 static void NdisCopyFromPacketToPacket(struct ndis_packet *, uint32_t, uint32_t,
@@ -629,7 +629,7 @@ NdisCloseConfiguration(ndis_handle cfg)
 	struct ndis_miniport_block *block = cfg;
 	struct ndis_parmlist_entry *pe;
 	struct ndis_configuration_parameter *p;
-	list_entry *e;
+	struct list_entry *e;
 
 	while (!IsListEmpty(&block->parmlist)) {
 		e = RemoveHeadList(&block->parmlist);
@@ -1296,7 +1296,7 @@ NdisMFreeSharedMemory(ndis_handle adapter, uint32_t len, uint8_t cached,
 	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_shmem *sh = NULL;
-	list_entry *l;
+	struct list_entry *l;
 
 	KASSERT(adapter != NULL, ("no adapter"));
 	sc = device_get_softc(block->physdeviceobj->devext);
@@ -1559,7 +1559,7 @@ NdisFreePacket(struct ndis_packet *packet)
 #ifdef NDIS_DEBUG_PACKETS
 	KeAcquireSpinLock(&p->lock, &irql);
 #endif
-	InterlockedPushEntrySList(&p->head, (slist_entry *)packet);
+	InterlockedPushEntrySList(&p->head, (struct slist_entry *)packet);
 
 #ifdef NDIS_DEBUG_PACKETS
 	if (p->dead) {
@@ -1806,7 +1806,7 @@ NdisMPciAssignResources(ndis_handle adapter, uint32_t slot,
 }
 
 static uint8_t
-ndis_interrupt_nic(kinterrupt *iobj, struct ndis_softc *sc)
+ndis_interrupt_nic(struct kinterrupt *iobj, struct ndis_softc *sc)
 {
 	uint8_t is_our_intr = FALSE;
 	int call_isr = 0;
@@ -2020,11 +2020,11 @@ NdisWritePcmciaAttributeMemory(ndis_handle adapter, uint32_t offset,
 	return (i);
 }
 
-static list_entry *
-NdisInterlockedInsertHeadList(list_entry *head, list_entry *entry,
+static struct list_entry *
+NdisInterlockedInsertHeadList(struct list_entry *head, struct list_entry *entry,
     struct ndis_spin_lock *lock)
 {
-	list_entry *flink;
+	struct list_entry *flink;
 
 	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
 	flink = head->nle_flink;
@@ -2037,11 +2037,12 @@ NdisInterlockedInsertHeadList(list_entry *head, list_entry *entry,
 	return (flink);
 }
 
-static list_entry *
-NdisInterlockedRemoveHeadList(list_entry *head, struct ndis_spin_lock *lock)
+static struct list_entry *
+NdisInterlockedRemoveHeadList(struct list_entry *head,
+    struct ndis_spin_lock *lock)
 {
-	list_entry *flink;
-	list_entry *entry;
+	struct list_entry *flink;
+	struct list_entry *entry;
 
 	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
 	entry = head->nle_flink;
@@ -2053,11 +2054,11 @@ NdisInterlockedRemoveHeadList(list_entry *head, struct ndis_spin_lock *lock)
 	return (entry);
 }
 
-static list_entry *
-NdisInterlockedInsertTailList(list_entry *head, list_entry *entry,
+static struct list_entry *
+NdisInterlockedInsertTailList(struct list_entry *head, struct list_entry *entry,
     struct ndis_spin_lock *lock)
 {
-	list_entry *blink;
+	struct list_entry *blink;
 
 	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
 	blink = head->nle_blink;

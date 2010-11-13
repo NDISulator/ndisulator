@@ -321,7 +321,7 @@ ndis_return_packet_nic(struct device_object *dobj, void *arg)
 	struct ndis_miniport_driver_characteristics *ch;
 	struct ndis_packet *p;
 	uint8_t irql;
-	list_entry *l;
+	struct list_entry *l;
 
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->miniport_adapter_ctx != NULL, ("no adapter"));

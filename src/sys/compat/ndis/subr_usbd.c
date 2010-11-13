@@ -1090,7 +1090,7 @@ usbd_xfertask(struct device_object *dobj, struct ndis_softc *sc)
 {
 	irp *ip;
 	device_t dev;
-	list_entry *l;
+	struct list_entry *l;
 	struct ndisusb_xferdone *nd;
 	struct ndisusb_xfer *nq;
 	struct usbd_urb_bulk_or_intr_transfer *ubi;
@@ -1194,7 +1194,7 @@ static void
 usbd_task(struct device_object *dobj, struct ndis_softc *sc)
 {
 	irp *ip;
-	list_entry *l;
+	struct list_entry *l;
 	struct ndisusb_ep *ne;
 	struct ndisusb_task *nt;
 	union usbd_urb *urb;

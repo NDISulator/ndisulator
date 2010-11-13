@@ -70,11 +70,11 @@ struct ndis_usb_type {
 };
 
 struct ndis_shmem {
-	list_entry	ndis_list;
-	bus_dma_tag_t	ndis_stag;
-	bus_dmamap_t	ndis_smap;
-	void		*ndis_saddr;
-	uint64_t	ndis_paddr;
+	struct list_entry	ndis_list;
+	bus_dma_tag_t		ndis_stag;
+	bus_dmamap_t		ndis_smap;
+	void			*ndis_saddr;
+	uint64_t		ndis_paddr;
 };
 
 struct ndis_cfglist {
@@ -117,8 +117,8 @@ struct ndis_vap {
 
 struct ndisusb_ep {
 	struct usb_xfer		*ne_xfer[1];
-	list_entry		ne_active;
-	list_entry		ne_pending;
+	struct list_entry	ne_active;
+	struct list_entry	ne_pending;
 	kspin_lock		ne_lock;
 	uint8_t			ne_dirin;
 };
@@ -130,13 +130,13 @@ struct ndisusb_xfer {
 	uint32_t		nx_urbactlen;
 	uint32_t		nx_urblen;
 	uint8_t			nx_shortxfer;
-	list_entry		nx_next;
+	struct list_entry	nx_next;
 };
 
 struct ndisusb_xferdone {
 	struct ndisusb_xfer	*nd_xfer;
 	usb_error_t		nd_status;
-	list_entry		nd_donelist;
+	struct list_entry	nd_donelist;
 };
 
 struct ndisusb_task {
@@ -145,7 +145,7 @@ struct ndisusb_task {
 #define	NDISUSB_TASK_IRPCANCEL	1
 #define	NDISUSB_TASK_VENDOR	2
 	void			*nt_ctx;
-	list_entry		nt_tasklist;
+	struct list_entry	nt_tasklist;
 };
 
 struct ndis_softc {
@@ -194,7 +194,7 @@ struct ndis_softc {
 	io_workitem			*ndis_inputitem;
 	kdpc				ndis_rxdpc;
 	bus_dma_tag_t			ndis_parent_tag;
-	list_entry			ndis_shlist;
+	struct list_entry		ndis_shlist;
 	bus_dma_tag_t			ndis_mtag;
 	bus_dma_tag_t			ndis_ttag;
 	bus_dmamap_t			*ndis_mmaps;
@@ -220,10 +220,10 @@ struct ndis_softc {
 #define	NDISUSB_ENDPT_MAX	((UE_ADDR + 1) * 2)
 	struct ndisusb_ep		ndisusb_ep[NDISUSB_ENDPT_MAX];
 	io_workitem			*ndisusb_xferdoneitem;
-	list_entry			ndisusb_xferdonelist;
+	struct list_entry		ndisusb_xferdonelist;
 	kspin_lock			ndisusb_xferdonelock;
 	io_workitem			*ndisusb_taskitem;
-	list_entry			ndisusb_tasklist;
+	struct list_entry		ndisusb_tasklist;
 	kspin_lock			ndisusb_tasklock;
 	int				ndisusb_status;
 #define	NDISUSB_STATUS_DETACH	0x1

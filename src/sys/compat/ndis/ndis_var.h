@@ -911,7 +911,7 @@ struct ndis_configuration_parameter {
  * list of ndis_config_parm structures that we've allocated.
  */
 struct ndis_parmlist_entry {
-	list_entry				list;
+	struct list_entry			list;
 	struct ndis_configuration_parameter	parm;
 };
 
@@ -925,7 +925,7 @@ struct ndis_bind_paths {
 struct ndis_ktimer {
 	struct dispatch_header	nk_header;
 	uint64_t		nk_duetime;
-	list_entry		nk_timerlistentry;
+	struct list_entry	nk_timerlistentry;
 	void			*nk_dpc;
 	uint32_t		nk_period;
 };
@@ -943,15 +943,15 @@ struct ndis_kdpc;
 typedef void (*ndis_kdpc_func)(struct ndis_kdpc *, void *, void *, void *);
 
 struct ndis_kdpc {
-	uint16_t	nk_type;
-	uint8_t		nk_num;
-	uint8_t		nk_importance;
-	list_entry	nk_dpclistentry;
-	ndis_kdpc_func	nk_deferedfunc;
-	void		*nk_deferredctx;
-	void		*nk_sysarg1;
-	void		*nk_sysarg2;
-	uint32_t	*nk_lock;
+	uint16_t		nk_type;
+	uint8_t			nk_num;
+	uint8_t			nk_importance;
+	struct list_entry	nk_dpclistentry;
+	ndis_kdpc_func		nk_deferedfunc;
+	void			*nk_deferredctx;
+	void			*nk_sysarg1;
+	void			*nk_sysarg2;
+	uint32_t		*nk_lock;
 };
 
 struct ndis_timer {
@@ -1017,7 +1017,7 @@ struct ndis_request {
 };
 
 struct ndis_miniport_interrupt {
-	kinterrupt			*interrupt_object;
+	struct kinterrupt		*interrupt_object;
 	ndis_kspin_lock			dpc_count_lock;
 	void				*rsvd;
 	void				*isr_func;
@@ -1217,7 +1217,7 @@ struct ndis_packet {
 	void			*softc;
 	void			*m0;
 	int			txidx;
-	list_entry		list;
+	struct list_entry	list;
 };
 
 struct ndis_packet_pool {
@@ -1387,7 +1387,7 @@ struct ndis_miniport_block {
 	struct ndis_miniport_interrupt	*interrupt;
 	uint32_t			flags;
 	uint32_t			pnp_flags;
-	list_entry			packet_list;
+	struct list_entry		packet_list;
 	struct ndis_packet		*first_pending_tx_packet;
 	struct ndis_packet		*return_packet_queue;
 	uint32_t			request_buffer;
@@ -1457,7 +1457,7 @@ struct ndis_miniport_block {
 	 * End of windows-specific portion of miniport block.
 	 * Everything below is BSD-specific.
 	 */
-	list_entry			parmlist;
+	struct list_entry		parmlist;
 	struct cm_partial_resource_list	*rlist;
 	int32_t				getstat;
 	nt_kevent			getevent;
@@ -1467,7 +1467,7 @@ struct ndis_miniport_block {
 	nt_kevent			resetevent;
 	io_workitem			*returnitem;
 	ndis_handle			rxpool;
-	list_entry			returnlist;
+	struct list_entry		returnlist;
 	kspin_lock			returnlock;
 	TAILQ_ENTRY(ndis_miniport_block)	link;
 };

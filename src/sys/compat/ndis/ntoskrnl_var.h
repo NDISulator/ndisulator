@@ -176,7 +176,6 @@ typedef register_t kspin_lock;
 struct slist_entry {
 	struct slist_entry *sl_next;
 };
-typedef struct slist_entry slist_entry;
 
 union slist_header {  /* FIXME: amd64 */
 	uint64_t	slh_align;
@@ -192,15 +191,14 @@ struct list_entry {
 	struct list_entry	*nle_flink;
 	struct list_entry	*nle_blink;
 };
-typedef struct list_entry list_entry;
 
 #define	InitializeListHead(l) (l)->nle_flink = (l)->nle_blink = (l)
 #define	IsListEmpty(h) ((h)->nle_flink == (h))
 
 #define	RemoveEntryList(e)			\
 	do {					\
-		list_entry *b;			\
-		list_entry *f;			\
+		struct list_entry *b;		\
+		struct list_entry *f;		\
 						\
 		f = (e)->nle_flink;		\
 		b = (e)->nle_blink;		\
@@ -209,11 +207,11 @@ typedef struct list_entry list_entry;
 	} while (0)
 
 /* These two have to be inlined since they return things. */
-static __inline__ list_entry *
-RemoveHeadList(list_entry *l)
+static __inline__ struct list_entry *
+RemoveHeadList(struct list_entry *l)
 {
-	list_entry *f;
-	list_entry *e;
+	struct list_entry *f;
+	struct list_entry *e;
 
 	e = l->nle_flink;
 	f = e->nle_flink;
@@ -223,11 +221,11 @@ RemoveHeadList(list_entry *l)
 	return (e);
 }
 
-static __inline__ list_entry *
-RemoveTailList(list_entry *l)
+static __inline__ struct list_entry *
+RemoveTailList(struct list_entry *l)
 {
-	list_entry *b;
-	list_entry *e;
+	struct list_entry *b;
+	struct list_entry *e;
 
 	e = l->nle_blink;
 	b = e->nle_blink;
@@ -239,7 +237,7 @@ RemoveTailList(list_entry *l)
 
 #define	InsertTailList(l, e)			\
 	do {					\
-		list_entry *b;			\
+		struct list_entry *b;		\
 						\
 		b = l->nle_blink;		\
 		e->nle_flink = l;		\
@@ -250,7 +248,7 @@ RemoveTailList(list_entry *l)
 
 #define	InsertHeadList(l, e)			\
 	do {					\
-		list_entry *f;			\
+		struct list_entry *f;		\
 						\
 		f = l->nle_flink;		\
 		e->nle_flink = f;		\
@@ -263,14 +261,13 @@ RemoveTailList(list_entry *l)
 	((type *)((vm_offset_t)(addr) - (vm_offset_t)(&((type *)0)->field)))
 
 struct nt_dispatch_header {
-	uint8_t		dh_type;
-	uint8_t		dh_abs;
-	uint8_t		dh_size;
-	uint8_t		dh_inserted;
-	int32_t		dh_sigstate;
-	list_entry	dh_waitlisthead;
+	uint8_t			dh_type;
+	uint8_t			dh_abs;
+	uint8_t			dh_size;
+	uint8_t			dh_inserted;
+	int32_t			dh_sigstate;
+	struct list_entry	dh_waitlisthead;
 };
-typedef struct nt_dispatch_header nt_dispatch_header;
 
 /* Dispatcher object types */
 #define	DISP_TYPE_NOTIFICATION_EVENT	0	/* KEVENT */
@@ -310,9 +307,9 @@ typedef struct nt_dispatch_header nt_dispatch_header;
 #define	AT_HIGH_LEVEL(td) ((td)->td_critnest != 0)
 
 struct nt_objref {
-	nt_dispatch_header	no_dh;
-	void			*no_obj;
-	TAILQ_ENTRY(nt_objref)	link;
+	struct nt_dispatch_header	no_dh;
+	void				*no_obj;
+	TAILQ_ENTRY(nt_objref)		link;
 };
 TAILQ_HEAD(nt_objref_head, nt_objref);
 typedef struct nt_objref nt_objref;
@@ -333,14 +330,14 @@ typedef struct nt_objref nt_objref;
  * there.
  */
 struct ktimer {
-	nt_dispatch_header	k_header;
-	uint64_t		k_duetime;
+	struct nt_dispatch_header	k_header;
+	uint64_t			k_duetime;
 	union {
-		list_entry	k_timerlistentry;
-		struct callout	*k_callout;
+		struct list_entry	k_timerlistentry;
+		struct callout		*k_callout;
 	} u;
-	void			*k_dpc;
-	uint32_t 		k_period;
+	void				*k_dpc;
+	uint32_t 			k_period;
 };
 
 #define	k_timerlistentry u.k_timerlistentry
@@ -349,7 +346,7 @@ struct ktimer {
 typedef struct ktimer ktimer;
 
 struct nt_kevent {
-	nt_dispatch_header	k_header;
+	struct nt_dispatch_header	k_header;
 };
 typedef struct nt_kevent nt_kevent;
 
@@ -358,15 +355,15 @@ struct kdpc;
 typedef void (*kdpc_func)(struct kdpc *, void *, void *, void *);
 
 struct kdpc {
-	uint16_t	k_type;
-	uint8_t		k_num;		/* CPU number */
-	uint8_t		k_importance;	/* priority */
-	list_entry	k_dpclistentry;
-	void		*k_deferedfunc;
-	void		*k_deferredctx;
-	void		*k_sysarg1;
-	void		*k_sysarg2;
-	void		*k_lock;
+	uint16_t		k_type;
+	uint8_t			k_num;		/* CPU number */
+	uint8_t			k_importance;	/* priority */
+	struct list_entry	k_dpclistentry;
+	void			*k_deferedfunc;
+	void			*k_deferredctx;
+	void			*k_sysarg1;
+	void			*k_sysarg2;
+	void			*k_lock;
 };
 typedef struct kdpc kdpc;
 
@@ -388,11 +385,11 @@ typedef struct kdpc kdpc;
  * driver code treats the mutex as opaque, we should be ok.
  */
 struct kmutant {
-	nt_dispatch_header	km_header;
-	list_entry		km_listentry;
-	void			*km_ownerthread;
-	uint8_t			km_abandoned;
-	uint8_t			km_apcdisable;
+	struct nt_dispatch_header	km_header;
+	struct list_entry		km_listentry;
+	void				*km_ownerthread;
+	uint8_t				km_abandoned;
+	uint8_t				km_apcdisable;
 };
 typedef struct kmutant kmutant;
 
@@ -418,31 +415,31 @@ enum memory_caching_type {
 #define	LOOKASIDE_DEPTH 256
 
 struct general_lookaside {
-	slist_header	list_head;
-	uint16_t	depth;
-	uint16_t	maximum_depth;
-	uint32_t	total_alocates;
+	slist_header		list_head;
+	uint16_t		depth;
+	uint16_t		maximum_depth;
+	uint32_t		total_alocates;
 	union {
 		uint32_t	allocate_misses;
 		uint32_t	allocate_hits;
 	} u_a;
-	uint32_t	total_frees;
+	uint32_t		total_frees;
 	union {
 		uint32_t	free_misses;
 		uint32_t	free_hits;
 	} u_f;
-	enum pool_type	type;
-	uint32_t	tag;
-	uint32_t	size;
-	void		*allocfunc;
-	void		*freefunc;
-	list_entry	listent;
-	uint32_t	last_total_allocates;
+	enum pool_type		type;
+	uint32_t		tag;
+	uint32_t		size;
+	void			*allocfunc;
+	void			*freefunc;
+	struct list_entry	listent;
+	uint32_t		last_total_allocates;
 	union {
 		uint32_t	last_allocate_misses;
 		uint32_t	last_allocate_hits;
 	} u_l;
-	uint32_t	feature[2];
+	uint32_t		feature[2];
 };
 
 struct npaged_lookaside_list {
@@ -452,26 +449,24 @@ struct npaged_lookaside_list {
 #endif
 };
 
-typedef struct npaged_lookaside_list npaged_lookaside_list;
-
 typedef void * (*lookaside_alloc_func)(uint32_t, size_t, uint32_t);
 typedef void (*lookaside_free_func)(void *);
 
 struct irp;
 
 struct kdevice_qentry {
-	list_entry	kqe_devlistent;
-	uint32_t	kqe_sortkey;
-	uint8_t		kqe_inserted;
+	struct list_entry	kqe_devlistent;
+	uint32_t		kqe_sortkey;
+	uint8_t			kqe_inserted;
 };
 typedef struct kdevice_qentry kdevice_qentry;
 
 struct kdevice_queue {
-	uint16_t	kq_type;
-	uint16_t	kq_size;
-	list_entry	kq_devlisthead;
-	kspin_lock	kq_lock;
-	uint8_t		kq_busy;
+	uint16_t		kq_type;
+	uint16_t		kq_size;
+	struct list_entry	kq_devlisthead;
+	kspin_lock		kq_lock;
+	uint8_t			kq_busy;
 };
 typedef struct kdevice_queue kdevice_queue;
 
@@ -487,18 +482,18 @@ struct wait_ctx_block {
 typedef struct wait_ctx_block wait_ctx_block;
 
 struct wait_block {
-	list_entry		wb_waitlist;
-	void			*wb_kthread;
-	nt_dispatch_header	*wb_object;
-	struct wait_block	*wb_next;
+	struct list_entry		wb_waitlist;
+	void				*wb_kthread;
+	struct nt_dispatch_header	*wb_object;
+	struct wait_block		*wb_next;
 #ifdef notdef
-	uint16_t		wb_waitkey;
-	uint16_t		wb_waittype;
+	uint16_t			wb_waitkey;
+	uint16_t			wb_waittype;
 #endif
-	uint8_t			wb_waitkey;
-	uint8_t			wb_waittype;
-	uint8_t			wb_awakened;
-	uint8_t			wb_oldpri;
+	uint8_t				wb_waitkey;
+	uint8_t				wb_waittype;
+	uint8_t				wb_awakened;
+	uint8_t				wb_oldpri;
 };
 typedef struct wait_block wait_block;
 
@@ -538,31 +533,29 @@ struct driver_extension {
 	 * to the driver object, but there's no special pointer
 	 * for them. Hang them off here for now.
 	 */
-	list_entry 		usrext;
+	struct list_entry 	usrext;
 };
 
 struct custom_extension {
-	list_entry	ce_list;
-	void		*ce_clid;
+	struct list_entry	ce_list;
+	void			*ce_clid;
 };
-typedef struct custom_extension custom_extension;
 
 /*
  * The KINTERRUPT structure in Windows is opaque to drivers.
  * We define our own custom version with things we need.
  */
 struct kinterrupt {
-	list_entry	ki_list;
-	device_t	ki_dev;
-	int		ki_rid;
-	void		*ki_cookie;
-	struct		resource *ki_irq;
-	kspin_lock	ki_lock_priv;
-	kspin_lock	*ki_lock;
-	void		*ki_svcfunc;
-	void		*ki_svcctx;
+	struct list_entry	ki_list;
+	device_t		ki_dev;
+	int			ki_rid;
+	void			*ki_cookie;
+	struct			resource *ki_irq;
+	kspin_lock		ki_lock_priv;
+	kspin_lock		*ki_lock;
+	void			*ki_svcfunc;
+	void			*ki_svcctx;
 };
-typedef struct kinterrupt kinterrupt;
 
 struct ksystem_time {
 	uint32_t	low_part;
@@ -653,8 +646,8 @@ struct device_object {
 	void			*devext;
 	uint8_t			stacksize;
 	union {
-		list_entry	listent;
-		wait_ctx_block	wcb;
+		struct list_entry	listent;
+		wait_ctx_block		wcb;
 	} queue;
 	uint32_t		alignreq;
 	kdevice_queue		devqueue;
@@ -867,20 +860,20 @@ struct io_status_block {
 };
 
 struct kapc {
-	uint16_t	apc_type;
-	uint16_t	apc_size;
-	uint32_t	apc_spare0;
-	void		*apc_thread;
-	list_entry	apc_list;
-	void		*apc_kernfunc;
-	void		*apc_rundownfunc;
-	void		*apc_normalfunc;
-	void		*apc_normctx;
-	void		*apc_sysarg1;
-	void		*apc_sysarg2;
-	uint8_t		apc_stateidx;
-	uint8_t		apc_cpumode;
-	uint8_t		apc_inserted;
+	uint16_t		apc_type;
+	uint16_t		apc_size;
+	uint32_t		apc_spare0;
+	void			*apc_thread;
+	struct list_entry	apc_list;
+	void			*apc_kernfunc;
+	void			*apc_rundownfunc;
+	void			*apc_normalfunc;
+	void			*apc_normctx;
+	void			*apc_sysarg1;
+	void			*apc_sysarg2;
+	uint8_t			apc_stateidx;
+	uint8_t			apc_cpumode;
+	uint8_t			apc_inserted;
 };
 typedef struct kapc kapc;
 
@@ -949,7 +942,7 @@ struct irp {
 		uint32_t	irpcnt;
 		void		*sysbuf;
 	} assoc;
-	list_entry		thlist;
+	struct list_entry	thlist;
 	struct io_status_block	iostat;
 	uint8_t			reqmode;
 	uint8_t			pendingreturned;
@@ -983,7 +976,7 @@ struct irp {
 			void	*thread;
 			char	*auxbuf;
 			struct {
-				list_entry list;
+				struct list_entry	list;
 				union {
 					struct io_stack_location	*csl;
 					uint32_t			pkttype;
@@ -1205,7 +1198,7 @@ typedef void (*io_workitem_func)(struct device_object *, void *);
 struct io_workitem {
 	io_workitem_func	iw_func;
 	void			*iw_ctx;
-	list_entry		iw_listentry;
+	struct list_entry	iw_listentry;
 	struct device_object	*iw_dobj;
 	int			iw_idx;
 };
@@ -1229,9 +1222,9 @@ struct work_queue_item;
 typedef void (*work_item_func)(struct work_queue_item *, void *);
 
 struct work_queue_item {
-	list_entry	wqi_entry;
-	work_item_func	wqi_func;
-	void		*wqi_ctx;
+	struct list_entry	wqi_entry;
+	work_item_func		wqi_func;
+	void			*wqi_ctx;
 };
 typedef struct work_queue_item work_queue_item;
 
@@ -1293,8 +1286,8 @@ void	ntoskrnl_libfini(void);
 void	ntoskrnl_intr(void *);
 void	ntoskrnl_time(uint64_t *);
 uint16_t ExQueryDepthSList(slist_header *);
-slist_entry *InterlockedPushEntrySList(slist_header *, slist_entry *);
-slist_entry *InterlockedPopEntrySList(slist_header *);
+struct slist_entry *InterlockedPushEntrySList(slist_header *, struct slist_entry *);
+struct slist_entry *InterlockedPopEntrySList(slist_header *);
 int32_t	RtlUnicodeStringToAnsiString(ansi_string *, const unicode_string *,
 	    uint8_t);
 int32_t	RtlAnsiStringToUnicodeString(unicode_string *, const ansi_string *,
@@ -1331,18 +1324,18 @@ void	KeAcquireSpinLockAtDpcLevel(kspin_lock *);
 void	KeReleaseSpinLockFromDpcLevel(kspin_lock *);
 #endif
 void	KeInitializeSpinLock(kspin_lock *);
-uint8_t	KeAcquireInterruptSpinLock(kinterrupt *);
-void	KeReleaseInterruptSpinLock(kinterrupt *, uint8_t);
-uint8_t	KeSynchronizeExecution(kinterrupt *, void *, void *);
+uint8_t	KeAcquireInterruptSpinLock(struct kinterrupt *);
+void	KeReleaseInterruptSpinLock(struct kinterrupt *, uint8_t);
+uint8_t	KeSynchronizeExecution(struct kinterrupt *, void *, void *);
 uintptr_t	InterlockedExchange(volatile uint32_t *, uintptr_t);
 void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
 void	*MmMapIoSpace(uint64_t, uint32_t, enum memory_caching_type);
 void	MmUnmapIoSpace(void *, size_t);
 void	MmBuildMdlForNonPagedPool(mdl *);
-void	IoDisconnectInterrupt(kinterrupt *);
+void	IoDisconnectInterrupt(struct kinterrupt *);
 void	*IoGetDriverObjectExtension(struct driver_object *, void *);
-int32_t IoConnectInterrupt(kinterrupt **, void *, void *, kspin_lock *,
+int32_t IoConnectInterrupt(struct kinterrupt **, void *, void *, kspin_lock *,
 	    uint32_t, uint8_t, uint8_t, uint8_t, uint8_t, uint32_t, uint8_t);
 int32_t	IoAllocateDriverObjectExtension(struct driver_object *, void *,
 	    uint32_t, void **);
