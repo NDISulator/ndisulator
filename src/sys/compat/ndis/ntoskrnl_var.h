@@ -887,13 +887,13 @@ struct io_stack_location {
 	uint8_t		ctl;
 
 	/*
-	 * There's a big-ass union here in the actual Windows
-	 * definition of the stucture, but it contains stuff
+	 * There's a big union here in the actual Windows
+	 * definition of the structure, but it contains stuff
 	 * that doesn't really apply to BSD, and defining it
 	 * all properly would require duplicating over a dozen
 	 * other structures that we'll never use. Since the
-	 * io_stack_location structure is opaque to drivers
-	 * anyway, I'm not going to bother with the extra crap.
+	 * io_stack_location structure is opaque to drivers anyway,
+	 * there is no reason to bother with the extra stuff.
 	 */
 	union {
 		struct {

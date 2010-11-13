@@ -1664,7 +1664,6 @@ NdisFreeBuffer(ndis_buffer *buf)
 	IoFreeMdl(buf);
 }
 
-/* Aw c'mon. */
 static uint32_t
 NdisBufferLength(ndis_buffer *buf)
 {
@@ -1693,7 +1692,6 @@ NdisQueryBufferSafe(ndis_buffer *buf, void **vaddr, uint32_t *len,
 	*len = MmGetMdlByteCount(buf);
 }
 
-/* Damnit Microsoft!! How many ways can you do the same thing?! */
 static void *
 NdisBufferVirtualAddress(ndis_buffer *buf)
 {
