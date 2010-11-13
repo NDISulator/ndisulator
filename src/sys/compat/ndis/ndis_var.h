@@ -1219,7 +1219,7 @@ struct ndis_packet {
 			uint8_t		mac_rsvd[4 * sizeof(void *)];
 		} macrsvd;
 	} u;
-	uint32_t	*rsvd[2];
+	unsigned long	reserved[2];
 	uint8_t		protocolreserved[PROTOCOL_RESERVED_SIZE_IN_PACKET];
 
 	/*

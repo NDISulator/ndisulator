@@ -759,7 +759,7 @@ ndis_destroy_dma(struct ndis_softc *sc)
 	for (i = 0; i < sc->ndis_maxpkts; i++) {
 		if (sc->ndis_txarray[i] != NULL) {
 			p = sc->ndis_txarray[i];
-			m = (struct mbuf *)p->rsvd[1];
+			m = (struct mbuf *)p->reserved[1];
 			if (m != NULL)
 				m_freem(m);
 			ndis_free_packet(sc->ndis_txarray[i]);
