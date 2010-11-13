@@ -486,16 +486,11 @@ struct wait_block {
 	void				*wb_kthread;
 	struct nt_dispatch_header	*wb_object;
 	struct wait_block		*wb_next;
-#ifdef notdef
-	uint16_t			wb_waitkey;
-	uint16_t			wb_waittype;
-#endif
 	uint8_t				wb_waitkey;
 	uint8_t				wb_waittype;
 	uint8_t				wb_awakened;
 	uint8_t				wb_oldpri;
 };
-typedef struct wait_block wait_block;
 
 #define	wb_ext wb_kthread
 

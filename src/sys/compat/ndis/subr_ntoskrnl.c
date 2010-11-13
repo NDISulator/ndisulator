@@ -125,10 +125,10 @@ static void IoFreeIrp(irp *);
 static void IoInitializeIrp(irp *, uint16_t, uint8_t);
 static irp *IoMakeAssociatedIrp(irp *, uint8_t);
 static int32_t KeWaitForMultipleObjects(uint32_t, struct nt_dispatch_header **,
-    uint32_t, uint32_t, uint32_t, uint8_t, int64_t *, wait_block *);
+    uint32_t, uint32_t, uint32_t, uint8_t, int64_t *, struct wait_block *);
 static void ntoskrnl_waittest(struct nt_dispatch_header *, uint32_t);
 static void ntoskrnl_satisfy_wait(struct nt_dispatch_header *, struct thread *);
-static void ntoskrnl_satisfy_multiple_waits(wait_block *);
+static void ntoskrnl_satisfy_multiple_waits(struct wait_block *);
 static int ntoskrnl_is_signalled(struct nt_dispatch_header *, struct thread *);
 static void ntoskrnl_insert_timer(ktimer *, int);
 static void ntoskrnl_remove_timer(ktimer *);
@@ -1274,9 +1274,9 @@ ntoskrnl_satisfy_wait(struct nt_dispatch_header *obj, struct thread *td)
 }
 
 static void
-ntoskrnl_satisfy_multiple_waits(wait_block *wb)
+ntoskrnl_satisfy_multiple_waits(struct wait_block *wb)
 {
-	wait_block *cur = wb;
+	struct wait_block *cur = wb;
 	struct thread *td;
 
 	td = wb->wb_kthread;
@@ -1294,7 +1294,7 @@ ntoskrnl_satisfy_multiple_waits(wait_block *wb)
 static void
 ntoskrnl_waittest(struct nt_dispatch_header *obj, uint32_t increment)
 {
-	wait_block *w, *next;
+	struct wait_block *w, *next;
 	struct list_entry *e;
 	struct thread *td;
 	struct wb_ext *we;
@@ -1326,7 +1326,7 @@ ntoskrnl_waittest(struct nt_dispatch_header *obj, uint32_t increment)
 
 	e = obj->dh_waitlisthead.nle_flink;
 	while (e != &obj->dh_waitlisthead && obj->dh_sigstate > 0) {
-		w = CONTAINING_RECORD(e, wait_block, wb_waitlist);
+		w = CONTAINING_RECORD(e, struct wait_block, wb_waitlist);
 		we = w->wb_ext;
 		td = we->we_td;
 		satisfied = FALSE;
@@ -1453,7 +1453,7 @@ int32_t
 KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
     uint8_t alertable, int64_t *duetime)
 {
-	wait_block w;
+	struct wait_block w;
 	struct thread *td = curthread;
 	struct timeval tv;
 	struct wb_ext we;
@@ -1492,7 +1492,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 		}
 	}
 
-	bzero((char *)&w, sizeof(wait_block));
+	bzero((char *)&w, sizeof(struct wait_block));
 	w.wb_object = obj;
 	w.wb_ext = &we;
 	w.wb_waittype = WAITTYPE_ANY;
@@ -1555,11 +1555,10 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 static int32_t
 KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
     uint32_t wtype, uint32_t reason, uint32_t mode, uint8_t alertable,
-    int64_t *duetime, wait_block *wb_array)
+    int64_t *duetime, struct wait_block *wb_array)
 {
 	struct thread *td = curthread;
-	wait_block *whead, *w;
-	wait_block _wb_array[MAX_WAIT_OBJECTS];
+	struct wait_block *whead, *w, _wb_array[MAX_WAIT_OBJECTS];
 	struct nt_dispatch_header *cur;
 	struct timeval tv;
 	int i, wcnt = 0, error = 0;
@@ -1568,9 +1567,8 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 	int32_t status = NDIS_STATUS_SUCCESS;
 	struct wb_ext we;
 
-	if (cnt > MAX_WAIT_OBJECTS)
-		return (NDIS_STATUS_INVALID_PARAMETER);
-	if (cnt > THREAD_WAIT_OBJECTS && wb_array == NULL)
+	if (cnt > MAX_WAIT_OBJECTS ||
+	    cnt > THREAD_WAIT_OBJECTS && wb_array == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	mtx_lock(&ntoskrnl_dispatchlock);
@@ -1583,7 +1581,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 	else
 		whead = wb_array;
 
-	bzero((char *)whead, sizeof(wait_block) * cnt);
+	bzero((char *)whead, sizeof(struct wait_block) * cnt);
 
 	/* First pass: see if we can satisfy any waits immediately. */
 	wcnt = 0;
@@ -2858,7 +2856,7 @@ int32_t
 KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 {
 	int32_t prevstate;
-	wait_block *w;
+	struct wait_block *w;
 	struct nt_dispatch_header *dh;
 	struct thread *td;
 	struct wb_ext *we;
@@ -2884,7 +2882,7 @@ KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		 * the full wait satisfaction process.
 		 */
 		w = CONTAINING_RECORD(dh->dh_waitlisthead.nle_flink,
-		    wait_block, wb_waitlist);
+		    struct wait_block, wb_waitlist);
 		we = w->wb_ext;
 		td = we->we_td;
 		if (kevent->k_header.dh_type == DISP_TYPE_NOTIFICATION_EVENT ||
