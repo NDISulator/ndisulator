@@ -176,7 +176,7 @@ pe_validate_header(vm_offset_t imgbase)
 }
 
 /*
- * Return the number of sections in this executable, or 0 on error.
+ * Return the number of sections in this executable.
  */
 int
 pe_numsections(vm_offset_t imgbase)
