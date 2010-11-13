@@ -154,7 +154,8 @@ static void	ndis_media_status(struct ifnet *, struct ifmediareq *);
 static int	ndis_nettype_chan(uint32_t);
 static int	ndis_nettype_mode(uint32_t);
 static int	ndis_newstate(struct ieee80211vap *, enum ieee80211_state, int);
-static int	ndis_get_physical_medium(struct ndis_softc *, uint32_t *);
+static int	ndis_get_physical_medium(struct ndis_softc *,
+		    enum ndis_physical_medium *);
 static int	ndis_probe_task_offload(struct ndis_softc *);
 static int	ndis_raw_xmit(struct ieee80211_node *, struct mbuf *,
 		    const struct ieee80211_bpf_params *);
@@ -279,9 +280,9 @@ ndis_get_oids(struct ndis_softc *sc, uint32_t **oids, uint32_t *oidcnt)
 }
 
 static int
-ndis_get_physical_medium(struct ndis_softc *sc, uint32_t *medium)
+ndis_get_physical_medium(struct ndis_softc *sc, enum ndis_physical_medium *m)
 {
-	return (ndis_get_int(sc, OID_GEN_PHYSICAL_MEDIUM, medium));
+	return (ndis_get_int(sc, OID_GEN_PHYSICAL_MEDIUM, m));
 }
 
 static int
@@ -743,13 +744,7 @@ ndis_attach(device_t dev)
 		}
 	}
 
-	rval = ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
-	if (rval) {
-		device_printf(dev, "failed to get physical medium; "
-		    "status: 0x%08X", rval);
-		goto fail;
-	}
-
+	ndis_get_physical_medium(sc, &sc->ndis_physical_medium);
 	if (NDIS_80211(sc))
 		ifp = if_alloc(IFT_IEEE80211);
 	else
