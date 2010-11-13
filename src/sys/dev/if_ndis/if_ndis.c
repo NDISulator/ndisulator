@@ -1208,7 +1208,7 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 	p->private.totlen = m->m_pkthdr.len;
 
 	/* Save the packet RX context somewhere. */
-	priv = (struct ndis_ethpriv *)&p->protocolreserved;
+	priv = (struct ndis_ethpriv *)&p->protocol_reserved;
 	priv->ctx = ctx;
 
 	if (!NDIS_SERIALIZED(block))
@@ -1266,7 +1266,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 		p = CONTAINING_RECORD(l, struct ndis_packet, list);
 		InitializeListHead((&p->list));
 
-		priv = (struct ndis_ethpriv *)&p->protocolreserved;
+		priv = (struct ndis_ethpriv *)&p->protocol_reserved;
 		m = p->m0;
 		p->softc = sc;
 		p->m0 = NULL;

@@ -1207,20 +1207,20 @@ struct ndis_packet {
 	union {
 		/* For connectionless miniports. */
 		struct {
-			uint8_t		miniport_rsvd[2 * sizeof(void *)];
-			uint8_t		wrapper_rsvd[2 * sizeof(void *)];
-		} clrsvd;
+			uint8_t	miniport_reserved[2 * sizeof(void *)];
+			uint8_t	wrapper_reserved[2 * sizeof(void *)];
+		} cl_reserved;
 		/* For de-serialized miniports */
 		struct {
-			uint8_t		miniport_rsvdex[3 * sizeof(void *)];
-			uint8_t		wrapper_rsvdex[sizeof(void *)];
-		} dsrsvd;
+			uint8_t	miniport_reserved_ex[3 * sizeof(void *)];
+			uint8_t	wrapper_reserved_ex[sizeof(void *)];
+		} deserialized_reserved;
 		struct {
-			uint8_t		mac_rsvd[4 * sizeof(void *)];
-		} macrsvd;
+			uint8_t	mac_reserved[4 * sizeof(void *)];
+		} mac_reserved;
 	} u;
 	unsigned long	reserved[2];
-	uint8_t		protocolreserved[PROTOCOL_RESERVED_SIZE_IN_PACKET];
+	uint8_t		protocol_reserved[PROTOCOL_RESERVED_SIZE_IN_PACKET];
 
 	/*
 	 * This next part is probably wrong, but we need some place
