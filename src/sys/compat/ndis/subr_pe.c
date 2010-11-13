@@ -77,7 +77,7 @@ static int	pe_get_import_descriptor(vm_offset_t,
 static int	pe_get_messagetable(vm_offset_t,
 		    struct message_resource_data **);
 static vm_offset_t pe_imagebase(vm_offset_t);
-static vm_offset_t pe_directory_offset(vm_offset_t, uint32_t);
+static vm_offset_t pe_directory_offset(vm_offset_t, enum image_directory_entry);
 static vm_offset_t pe_functbl_match(struct image_patch_table *, const char *);
 
 /*
@@ -207,7 +207,7 @@ pe_imagebase(vm_offset_t imgbase)
  * image. Directories reside within sections.
  */
 static vm_offset_t
-pe_directory_offset(vm_offset_t imgbase, uint32_t diridx)
+pe_directory_offset(vm_offset_t imgbase, enum image_directory_entry diridx)
 {
 	struct image_optional_header *opt_hdr;
 	vm_offset_t dir;
