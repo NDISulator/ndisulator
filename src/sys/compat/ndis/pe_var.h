@@ -300,9 +300,7 @@ struct image_resource_directory {
 	uint16_t	minor_version;
 	uint16_t	number_of_named_entries;
 	uint16_t	number_of_id_entries;
-#ifdef notdef
-	struct image_resource_directory_entry	directory_entries[1];
-#endif
+	/* struct image_resource_directory_entry	directory_entries[1]; */
 };
 
 struct image_resource_directory_string {
@@ -319,9 +317,7 @@ struct image_resource_data_entry {
 
 struct message_resource_data {
 	uint32_t			numblocks;
-#ifdef notdef
-	struct message_resource_block	blocks[1];
-#endif
+	/* struct message_resource_block	blocks[1]; */
 };
 
 struct message_resource_block {

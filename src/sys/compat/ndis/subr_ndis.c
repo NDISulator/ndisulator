@@ -661,11 +661,9 @@ NdisAllocateSpinLock(struct ndis_spin_lock *lock)
  */
 static void
 NdisFreeSpinLock(struct ndis_spin_lock *lock)
-{
-#ifdef notdef
+{/*
 	KeInitializeSpinLock(&lock->nsl_spinlock);
-	lock->nsl_kirql = 0;
-#endif
+	lock->nsl_kirql = 0; */
 }
 
 /*
