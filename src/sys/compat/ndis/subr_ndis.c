@@ -261,6 +261,7 @@ static void NdisMapFile(int32_t *, void **, ndis_handle);
 static void NdisUnmapFile(ndis_handle);
 static void NdisCloseFile(ndis_handle);
 static uint8_t NdisSystemProcessorCount(void);
+static void NdisGetCurrentProcessorCounts(uint32_t *, uint32_t *, uint32_t *);
 static void NdisMIndicateStatusComplete(ndis_handle);
 static void NdisMIndicateStatus(ndis_handle, int32_t, void *, uint32_t);
 static uint8_t ndis_interrupt_nic(struct kinterrupt *, struct ndis_softc *);
@@ -2444,6 +2445,18 @@ NdisSystemProcessorCount(void)
 	return (mp_ncpus);
 }
 
+static void
+NdisGetCurrentProcessorCounts(uint32_t *idle_count, uint32_t *kernel_and_user,
+    uint32_t *index)
+{
+	struct pcpu *pcpu;
+
+	pcpu = pcpu_find(curthread->td_oncpu);
+	*index = pcpu->pc_cpuid;
+	*idle_count = pcpu->pc_cp_time[CP_IDLE];
+	*kernel_and_user = pcpu->pc_cp_time[CP_INTR];
+}
+
 typedef void (*ndis_status_func)(ndis_handle, int32_t, void *, uint32_t);
 typedef void (*ndis_status_done_func)(ndis_handle);
 
@@ -2667,6 +2680,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisMIndicateStatusComplete, 1),
 	IMPORT_SFUNC(NdisMIndicateStatus, 4),
 	IMPORT_SFUNC(NdisSystemProcessorCount, 0),
+	IMPORT_SFUNC(NdisGetCurrentProcessorCounts, 3),
 	IMPORT_SFUNC(NdisUnchainBufferAtBack, 2),
 	IMPORT_SFUNC(NdisGetFirstBufferFromPacket, 5),
 	IMPORT_SFUNC(NdisGetFirstBufferFromPacketSafe, 6),
