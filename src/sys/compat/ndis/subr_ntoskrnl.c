@@ -180,6 +180,7 @@ static void *MmAllocateContiguousMemorySpecifyCache(uint32_t, uint64_t,
 static void MmFreeContiguousMemory(void *);
 static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t,
     enum memory_caching_type);
+static uint64_t MmGetPhysicalAddress(void *);
 static uint8_t MmIsAddressValid(void *);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(mdl *, uint8_t);
@@ -2229,14 +2230,12 @@ MmUnmapLockedPages(void *vaddr, mdl *buf)
 	buf->mdl_flags &= ~MDL_MAPPED_TO_SYSTEM_VA;
 }
 
-/*
- * This function has a problem in that it will break if you
- * compile this module without PAE and try to use it on a PAE
- * kernel. Unfortunately, there's no way around this at the
- * moment. It's slightly less broken that using pmap_kextract().
- * You'd think the virtual memory subsystem would help us out
- * here, but it doesn't.
- */
+static uint64_t
+MmGetPhysicalAddress(void *base)
+{
+	return (pmap_extract(kernel_map->pmap, (vm_offset_t)base));
+}
+
 static uint8_t
 MmIsAddressValid(void *vaddr)
 {
@@ -3888,6 +3887,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(MmBuildMdlForNonPagedPool, 1),
 	IMPORT_SFUNC(MmFreeContiguousMemory, 1),
 	IMPORT_SFUNC(MmFreeContiguousMemorySpecifyCache, 3),
+	IMPORT_SFUNC(MmGetPhysicalAddress, 1),
 	IMPORT_SFUNC(MmIsAddressValid, 1),
 	IMPORT_SFUNC(MmMapIoSpace, 3 + 1),
 	IMPORT_SFUNC(MmMapLockedPages, 2),
@@ -3901,7 +3901,6 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(WmiQueryTraceInformation, 5),
 	IMPORT_SFUNC(ZwClose, 1),
 	IMPORT_SFUNC_MAP(KeReleaseSpinLock, KfReleaseSpinLock, 1),
-	IMPORT_SFUNC_MAP(MmGetPhysicalAddress, pmap_kextract, 1),
 	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
 	{ NULL, NULL, NULL }
 };
