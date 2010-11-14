@@ -1429,11 +1429,11 @@ dummy(void)
 struct image_patch_table usbd_functbl[] = {
 	IMPORT_SFUNC(USBD_CreateConfigurationRequest, 2),
 	IMPORT_SFUNC(USBD_CreateConfigurationRequestEx, 2),
-	IMPORT_SFUNC_MAP(_USBD_CreateConfigurationRequestEx@8,
-	    USBD_CreateConfigurationRequestEx, 2),
 	IMPORT_SFUNC(USBD_GetUSBDIVersion, 1),
 	IMPORT_SFUNC(USBD_ParseConfigurationDescriptor, 3),
 	IMPORT_SFUNC(USBD_ParseConfigurationDescriptorEx, 7),
+	IMPORT_SFUNC_MAP(_USBD_CreateConfigurationRequestEx@8,
+	    USBD_CreateConfigurationRequestEx, 2),
 	IMPORT_SFUNC_MAP(_USBD_ParseConfigurationDescriptorEx@28,
 	    USBD_ParseConfigurationDescriptorEx, 7),
 	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
