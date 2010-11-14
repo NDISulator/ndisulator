@@ -3731,6 +3731,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC_MAP(strncat, ntoskrnl_strncat, 0),
 	IMPORT_CFUNC_MAP(strchr, index, 0),
 	IMPORT_CFUNC_MAP(strrchr, rindex, 0),
+	IMPORT_CFUNC(memcmp, 0),
 	IMPORT_CFUNC(memcpy, 0),
 	IMPORT_CFUNC(memmove, 0),
 	IMPORT_CFUNC(memset, 0),
