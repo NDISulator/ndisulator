@@ -63,6 +63,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/rman.h>
 
 #include <vm/vm.h>
+#include <vm/vm_extern.h>
 #include <vm/vm_param.h>
 #include <vm/pmap.h>
 #include <vm/uma.h>
@@ -2125,12 +2126,28 @@ MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 	return (ExAllocatePool(roundup(size, PAGE_SIZE)));
 }
 
+static vm_memattr_t
+cnvmct(uint32_t cachetype)
+{
+	switch (cachetype) {
+	case MM_WRITE_COMBINED:		return (VM_MEMATTR_WRITE_COMBINING);
+	case MM_NON_CACHED:
+	case MM_NON_CACHED_UNORDERED:	return (VM_MEMATTR_UNCACHEABLE);
+	}
+	return (VM_MEMATTR_DEFAULT);
+}
+
 static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
     uint64_t highest, uint64_t boundary, enum memory_caching_type cachetype)
 {
-	return (contigmalloc(size, M_NDIS_NTOSKRNL, M_ZERO|M_NOWAIT, lowest,
-	    highest, PAGE_SIZE, boundary));
+	void *ret;
+
+	ret = (void *)kmem_alloc_contig(kernel_map, size, M_ZERO|M_NOWAIT,
+	    lowest, highest, PAGE_SIZE, boundary, cnvmct(cachetype));
+	if (ret != NULL)
+		malloc_type_allocated(M_NDIS_NTOSKRNL, round_page(size));
+	return (ret);
 }
 
 static void
@@ -2143,7 +2160,10 @@ static void
 MmFreeContiguousMemorySpecifyCache(void *base, uint32_t size,
      enum memory_caching_type cachetype)
 {
-	contigfree(base, size, M_NDIS_NTOSKRNL);
+	if (base == NULL)
+		return;
+	kmem_free(kernel_map, (vm_offset_t)base, size);
+	malloc_type_freed(M_NDIS_NTOSKRNL, round_page(size));
 }
 
 static uint32_t

@@ -404,7 +404,7 @@ enum pool_type {
 };
 
 enum memory_caching_type {
-	MM_NON_CACHED = 0,
+	MM_NON_CACHED,
 	MM_CACHED,
 	MM_WRITE_COMBINED,
 	MM_HARDWARE_COHERENT_CACHED,
