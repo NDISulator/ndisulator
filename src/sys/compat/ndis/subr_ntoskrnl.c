@@ -108,6 +108,8 @@ static kspin_lock ntoskrnl_intlock;
 struct kuser_shared_data kuser_shared_data;
 #endif
 
+static uint8_t RtlEqualString(const ansi_string *,
+    const ansi_string *, uint8_t);
 static uint8_t RtlEqualUnicodeString(const unicode_string *,
     const unicode_string *, uint8_t);
 static void RtlCopyUnicodeString(unicode_string *, const unicode_string *);
@@ -191,6 +193,10 @@ static void RtlMoveMemory(void *, const void *, size_t);
 static int32_t RtlCharToInteger(const char *, uint32_t, uint32_t *);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
+static int32_t RtlCompareString(const ansi_string *,
+    const ansi_string *, uint8_t);
+static int32_t RtlCompareUnicodeString(const unicode_string *,
+    const unicode_string *, uint8_t);
 static int32_t RtlUnicodeStringToInteger(const unicode_string *, uint32_t,
     uint32_t *);
 static int atoi(const char *);
@@ -428,26 +434,21 @@ ntoskrnl_tolower(int c)
 }
 
 static uint8_t
-RtlEqualUnicodeString(const unicode_string *str1, const unicode_string *str2,
-    uint8_t caseinsensitive)
+RtlEqualString(const struct ansi_string *str1, const struct ansi_string *str2,
+    uint8_t case_in_sensitive)
 {
-	int i;
+	if (str1->as_len != str2->as_len)
+		return (FALSE);
+	return (!RtlCompareString(str1, str2, case_in_sensitive));
+}
 
+static uint8_t
+RtlEqualUnicodeString(const unicode_string *str1, const unicode_string *str2,
+    uint8_t case_in_sensitive)
+{
 	if (str1->us_len != str2->us_len)
 		return (FALSE);
-
-	for (i = 0; i < str1->us_len; i++) {
-		if (caseinsensitive == TRUE) {
-			if (toupper((char)(str1->us_buf[i] & 0xFF)) !=
-			    toupper((char)(str2->us_buf[i] & 0xFF)))
-				return (FALSE);
-		} else {
-			if (str1->us_buf[i] != str2->us_buf[i])
-				return (FALSE);
-		}
-	}
-
-	return (TRUE);
+	return (!RtlCompareUnicodeString(str1, str2, case_in_sensitive));
 }
 
 static void
@@ -1568,7 +1569,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 	struct wb_ext we;
 
 	if (cnt > MAX_WAIT_OBJECTS ||
-	    cnt > THREAD_WAIT_OBJECTS && wb_array == NULL)
+	    (cnt > THREAD_WAIT_OBJECTS && wb_array == NULL))
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	mtx_lock(&ntoskrnl_dispatchlock);
@@ -2602,44 +2603,93 @@ static size_t
 RtlCompareMemory(const void *s1, const void *s2, size_t len)
 {
 	size_t i;
-	uint8_t *m1, *m2;
+	char *m1, *m2;
 
-	m1 = __DECONST(char *, s1);
-	m2 = __DECONST(char *, s2);
+	m1 = (char *)s1;
+	m2 = (char *)s2;
 
 	for (i = 0; i < len && m1[i] == m2[i]; i++)
 		;
 	return (i);
 }
 
+static int32_t
+RtlCompareString(const ansi_string *str1, const ansi_string *str2,
+    uint8_t case_in_sensitive)
+{
+	int32_t ret = 0;
+	uint16_t len;
+	const char *p1, *p2;
+
+	len = min(str1->as_len, str2->as_len) / sizeof(char);
+	p1 = str1->as_buf;
+	p2 = str2->as_buf;
+	if (case_in_sensitive)
+		while (!ret && len--)
+			ret = toupper(*p1++) - toupper(*p2++);
+	else
+		while (!ret && len--)
+			ret = *p1++ - *p2++;
+	if (!ret)
+		ret = str1->as_len - str2->as_len;
+	return (ret);
+}
+
+static int32_t
+RtlCompareUnicodeString(const unicode_string *str1, const unicode_string *str2,
+    uint8_t case_in_sensitive)
+{
+	int32_t ret = 0;
+	uint16_t len;
+	const uint16_t *p1, *p2;
+
+	len = min(str1->us_len, str2->us_len) / sizeof(uint16_t);
+	p1 = str1->us_buf;
+	p2 = str2->us_buf;
+	if (case_in_sensitive)
+		while (!ret && len--)
+			ret = toupper(*p1++) - toupper(*p2++);
+	else
+		while (!ret && len--)
+			ret = *p1++ - *p2++;
+	if (!ret)
+		ret = str1->us_len - str2->us_len;
+	return (ret);
+}
+
 void
 RtlInitAnsiString(ansi_string *dst, const char *src)
 {
+	if (dst == NULL)
+		return;
 	if (src == NULL) {
 		dst->as_len = dst->as_maxlen = 0;
 		dst->as_buf = NULL;
 	} else {
+		int i;
+		for (i = 0; src[i]; i++)
+			;
 		dst->as_buf = (char *)src;
-		dst->as_len = dst->as_maxlen = strlen(src);
+		dst->as_len = i;
+		dst->as_maxlen = i + 1;
 	}
 }
 
 void
 RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
 {
-	int i;
-
 	if (dst == NULL)
 		return;
 	if (src == NULL) {
 		dst->us_len = dst->us_maxlen = 0;
 		dst->us_buf = NULL;
 	} else {
-		i = 0;
-		while (src[i] != 0)
-			i++;
+		int i;
+		for (i = 0; src[i]; i++)
+			;
 		dst->us_buf = (uint16_t *)src;
-		dst->us_len = dst->us_maxlen = i * 2;
+		dst->us_len = i * sizeof(dst->us_buf[0]);
+		dst->us_maxlen = (i + 1) * sizeof(dst->us_buf[0]);
 	}
 }
 
@@ -3629,6 +3679,9 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlCharToInteger, 3),
 	IMPORT_SFUNC(RtlCopyMemory, 3),
 	IMPORT_SFUNC(RtlCompareMemory, 3),
+	IMPORT_SFUNC(RtlCompareString, 3),
+	IMPORT_SFUNC(RtlCompareUnicodeString, 3),
+	IMPORT_SFUNC(RtlEqualString, 3),
 	IMPORT_SFUNC(RtlEqualUnicodeString, 3),
 	IMPORT_SFUNC(RtlCopyUnicodeString, 2),
 	IMPORT_SFUNC(RtlUnicodeStringToAnsiString, 3),
