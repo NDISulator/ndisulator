@@ -204,6 +204,7 @@ static int atoi(const char *);
 static long atol(const char *);
 static int rand(void);
 static void srand(unsigned int);
+static unsigned long KeQueryActiveProcessors(void);
 static uint64_t KeQueryInterruptTime(void);
 static void KeQuerySystemTime(int64_t *);
 static uint32_t KeTickCount(void);
@@ -3649,6 +3650,12 @@ KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 	return (NDIS_STATUS_SUCCESS);
 }
 
+static unsigned long
+KeQueryActiveProcessors(void)
+{
+	return (1);
+}
+
 static uint64_t
 KeQueryInterruptTime(void)
 {
@@ -3861,6 +3868,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(KeInitializeTimer, 1),
 	IMPORT_SFUNC(KeInitializeTimerEx, 2),
 	IMPORT_SFUNC(KeInsertQueueDpc, 3),
+	IMPORT_SFUNC(KeQueryActiveProcessors, 0),
 	IMPORT_SFUNC(KeQueryInterruptTime, 0),
 	IMPORT_SFUNC(KeQuerySystemTime, 1),
 	IMPORT_SFUNC(KeReadStateEvent, 1),
