@@ -235,6 +235,7 @@ static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(void *);
 static int32_t DbgPrint(const char *, ...);
 static void DbgBreakPoint(void);
+static void KeBugCheck(uint32_t);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
@@ -3166,10 +3167,17 @@ DbgBreakPoint(void)
 }
 
 static void
-KeBugCheckEx(uint32_t code, unsigned long param1, unsigned long param2,
-    unsigned long param3, unsigned long param4)
+KeBugCheck(uint32_t code)
 {
-	panic("KeBugCheckEx: STOP 0x%X", code);
+	panic("%s: STOP 0x%X", __func__, code);
+}
+
+static void
+KeBugCheckEx(uint32_t code, unsigned long prm1, unsigned long prm2,
+    unsigned long prm3, unsigned long prm4)
+{
+	panic("%s: STOP 0x%X, prm1 0x%lX, prm2 0x%lX, prm3 0x%lX, prm4 0x%lX",
+	    __func__, code, prm1, prm2, prm3, prm4);
 }
 
 static void
@@ -3718,6 +3726,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC_MAP(_vsnprintf, vsnprintf, 0),
 	IMPORT_CFUNC(DbgPrint, 0),
 	IMPORT_SFUNC(DbgBreakPoint, 0),
+	IMPORT_SFUNC(KeBugCheck, 1),
 	IMPORT_SFUNC(KeBugCheckEx, 5),
 	IMPORT_CFUNC(strncmp, 0),
 	IMPORT_CFUNC(strcmp, 0),
