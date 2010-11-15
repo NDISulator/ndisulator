@@ -103,6 +103,48 @@ struct ndis_object_header {
 #define	NDIS_OBJECT_TYPE_SHARED_MEMORY_PROVIDER_CHARACTERISTICS		0xB0
 #define	NDIS_OBJECT_TYPE_RSS_PROCESSOR_INFO				0xB1
 
+union net_luid {
+	uint64_t	value;
+	struct {
+		uint64_t	reserved:24;
+		uint64_t	net_luid_index:24;
+		uint64_t	iftype:16;
+	} info;
+};
+
+enum ndis_port_control_state {
+	NDIS_PORT_CONTROL_STATE_UNKNOWN,
+	NDIS_PORT_CONTROL_STATE_CONTROLLED,
+	NDIS_PORT_CONTROL_STATE_UNCONTROLLED
+};
+
+enum ndis_port_authorization_state {
+	NDIS_PORT_AUTHORIZATION_UNKNOWN,
+	NDIS_PORT_AUTHORIZED,
+	NDIS_PORT_UNAUTHORIZED,
+	NDIS_PORT_REAUTHORIZING
+};
+
+struct ndis_port_authentication_parameters {
+	struct ndis_object_header		header;
+	enum ndis_port_control_state		send_control_state;
+	enum ndis_port_control_state		rcv_control_state;
+	enum ndis_port_authorization_state	send_authorization_state;
+	enum ndis_port_authorization_state	rcv_authorization_state;
+};
+
+struct ndis_miniport_init_parameters {
+	struct ndis_object_header		header;
+	uint32_t				flags;
+	struct cm_partial_resource_list		*allocated_resources;
+	void					*im_device_instance_context;
+	void					*miniport_add_device_context;
+	uint32_t				if_index;
+	union net_luid				net_luid;
+	struct ndis_port_authentication_parameters *default_port_auth_states;
+	struct ndis_pci_device_custom_properties *pci_device_custom_properties;
+};
+
 /*
  * NDIS status codes (there are lots of them). The ones that
  * don't seem to fit the pattern are actually mapped to generic
