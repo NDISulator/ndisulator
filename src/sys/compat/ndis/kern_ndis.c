@@ -318,7 +318,7 @@ static void
 ndis_return_packet_nic(struct device_object *dobj, void *arg)
 {
 	struct ndis_miniport_block *block = arg;
-	struct ndis_miniport_driver_characteristics *ch;
+	struct ndis_miniport_characteristics *ch;
 	struct ndis_packet *p;
 	uint8_t irql;
 	struct list_entry *l;

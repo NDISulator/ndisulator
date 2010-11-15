@@ -173,7 +173,7 @@ struct ndis_softc {
 	struct mtx			ndis_mtx;
 	device_t			ndis_dev;
 	struct ndis_miniport_block	*ndis_block;
-	struct ndis_miniport_driver_characteristics *ndis_chars;
+	struct ndis_miniport_characteristics *ndis_chars;
 	struct callout			ndis_scan_callout;
 	struct callout			ndis_stat_callout;
 	uint32_t			ndis_maxpkts;

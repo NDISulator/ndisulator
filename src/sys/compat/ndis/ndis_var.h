@@ -1275,7 +1275,7 @@ struct ndis_map_arg {
  * Miniport characteristics were originally defined in the NDIS 3.0
  * spec and then extended twice, in NDIS 4.0 and 5.0.
  */
-struct ndis_miniport_driver_characteristics {
+struct ndis_miniport_characteristics {
 	/* NDIS 3.0 */
 	uint8_t		version_major;
 	uint8_t		version_minor;

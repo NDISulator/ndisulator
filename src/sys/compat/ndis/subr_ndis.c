@@ -112,7 +112,7 @@ SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
 static void NdisInitializeWrapper(void **, struct driver_object *, void *,
     void *);
 static int32_t NdisMRegisterMiniport(struct driver_object *,
-    struct ndis_miniport_driver_characteristics *, uint32_t);
+    struct ndis_miniport_characteristics *, uint32_t);
 static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
 static int32_t NdisAllocateMemory(void **, uint32_t, uint32_t, uint64_t);
 static void NdisFreeMemory(void *, uint32_t, uint32_t);
@@ -347,9 +347,9 @@ NdisTerminateWrapper(struct driver_object *drv, void *syspec)
 
 static int32_t
 NdisMRegisterMiniport(struct driver_object *drv,
-    struct ndis_miniport_driver_characteristics *characteristics, uint32_t len)
+    struct ndis_miniport_characteristics *characteristics, uint32_t len)
 {
-	struct ndis_miniport_driver_characteristics *ch = NULL;
+	struct ndis_miniport_characteristics *ch = NULL;
 
 	if (characteristics->version_major < 4)
 		return (NDIS_STATUS_BAD_VERSION);
@@ -1831,7 +1831,7 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
     struct ndis_miniport_block *block, uint32_t ivec, uint32_t ilevel,
     uint8_t reqisr, uint8_t shared, enum ndis_interrupt_mode imode)
 {
-	struct ndis_miniport_driver_characteristics *ch;
+	struct ndis_miniport_characteristics *ch;
 	struct ndis_softc *sc;
 
 	KASSERT(block != NULL, ("no block"));
