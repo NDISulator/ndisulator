@@ -1324,6 +1324,33 @@ struct ndis_miniport_characteristics {
 	void *		reserved3;
 };
 
+/* NDIS 6.20 */
+struct ndis_miniport_driver_characteristics {
+	struct ndis_object_header	header;
+	uint8_t				major_ndis_version;
+	uint8_t				minor_ndis_version;
+	uint8_t				major_driver_version;
+	uint8_t				minor_driver_version;
+	uint32_t			flags;
+	void *				set_options_func;
+	void *				initialize_func;
+	void *				halt_func;
+	void *				unload_func;
+	void *				pause_func;
+	void *				restart_func;
+	void *				oid_request_func;
+	void *				send_net_buffer_list_func;
+	void *				return_net_buffer_list_func;
+	void *				cancel_send_func;
+	void *				check_for_hang_func;
+	void *				reset_func;
+	void *				device_pnp_event_notify_func;
+	void *				shutdown_func;
+	void *				cancel_oid_request_func;
+	void *				direct_oid_request_func;
+	void *				cancel_direct_oid_request_func;
+};
+
 struct ndis_reference {
 	ndis_kspin_lock	spinlock;
 	uint16_t	refcnt;
