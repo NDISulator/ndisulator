@@ -259,11 +259,11 @@ static void NdisGetFirstBufferFromPacket(struct ndis_packet *, ndis_buffer **,
 static void NdisGetFirstBufferFromPacketSafe(struct ndis_packet *,
     ndis_buffer **, void **, uint32_t *, uint32_t *, uint32_t);
 static int ndis_find_sym(linker_file_t, char *, char *, caddr_t *);
-static void NdisOpenFile(int32_t *, struct ndis_fh **, uint32_t *,
+static void NdisOpenFile(int32_t *, struct ndis_file_handle **, uint32_t *,
     unicode_string *, uint64_t);
-static void NdisMapFile(int32_t *, void **, struct ndis_fh *);
-static void NdisUnmapFile(struct ndis_fh *);
-static void NdisCloseFile(struct ndis_fh *);
+static void NdisMapFile(int32_t *, void **, struct ndis_file_handle *);
+static void NdisUnmapFile(struct ndis_file_handle *);
+static void NdisCloseFile(struct ndis_file_handle *);
 static uint8_t NdisSystemProcessorCount(void);
 static void NdisGetCurrentProcessorCounts(uint32_t *, uint32_t *, uint32_t *);
 static void NdisMIndicateStatusComplete(struct ndis_miniport_block *);
@@ -2171,8 +2171,8 @@ ndis_find_sym(linker_file_t lf, char *filename, char *suffix, caddr_t *sym)
 }
 
 struct ndis_checkmodule {
-	char		*afilename;
-	struct ndis_fh	*fh;
+	char				*afilename;
+	struct ndis_file_handle		*fh;
 };
 
 /*
@@ -2191,14 +2191,14 @@ NdisCheckModule(linker_file_t lf, void *context)
 		return (0);
 	nc->fh->vp = lf;
 	nc->fh->map = NULL;
-	nc->fh->type = NDIS_FH_TYPE_MODULE;
+	nc->fh->type = NDIS_FILE_HANDLE_TYPE_MODULE;
 	nc->fh->maplen = (kldend - kldstart) & 0xFFFFFFFF;
 	return (1);
 }
 
 static void
-NdisOpenFile(int32_t *status, struct ndis_fh **filehandle, uint32_t *filelength,
-    unicode_string *filename, uint64_t highestaddr)
+NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
+    uint32_t *filelength, unicode_string *filename, uint64_t highestaddr)
 {
 	ansi_string as;
 	char *afilename = NULL, *path;
@@ -2206,7 +2206,7 @@ NdisOpenFile(int32_t *status, struct ndis_fh **filehandle, uint32_t *filelength,
 	struct nameidata nd;
 	struct ndis_checkmodule nc;
 	struct vattr vat, *vap = &vat;
-	struct ndis_fh *fh;
+	struct ndis_file_handle *fh;
 	int flags, vfslocked;
 
 	if (RtlUnicodeStringToAnsiString(&as, filename, TRUE)) {
@@ -2216,7 +2216,7 @@ NdisOpenFile(int32_t *status, struct ndis_fh **filehandle, uint32_t *filelength,
 	afilename = strdup(as.as_buf, M_NDIS_SUBR);
 	RtlFreeAnsiString(&as);
 
-	fh = malloc(sizeof(struct ndis_fh), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
+	fh = malloc(sizeof(struct ndis_file_handle), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (fh == NULL) {
 		free(afilename, M_NDIS_SUBR);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
@@ -2302,14 +2302,14 @@ NdisOpenFile(int32_t *status, struct ndis_fh **filehandle, uint32_t *filelength,
 
 	fh->vp = nd.ni_vp;
 	fh->map = NULL;
-	fh->type = NDIS_FH_TYPE_VFS;
+	fh->type = NDIS_FILE_HANDLE_TYPE_VFS;
 	*filehandle = fh;
 	*filelength = fh->maplen = vap->va_size & 0xFFFFFFFF;
 	*status = NDIS_STATUS_SUCCESS;
 }
 
 static void
-NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_fh *file)
+NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_file_handle *file)
 {
 	struct vnode *vp;
 	struct thread *td = curthread;
@@ -2329,7 +2329,7 @@ NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_fh *file)
 		*status = NDIS_STATUS_ALREADY_MAPPED;
 		return;
 	}
-	if (file->type == NDIS_FH_TYPE_MODULE) {
+	if (file->type == NDIS_FILE_HANDLE_TYPE_MODULE) {
 		lf = file->vp;
 		if (ndis_find_sym(lf, file->name, "_start", &kldstart)) {
 			*status = NDIS_STATUS_FAILURE;
@@ -2361,17 +2361,17 @@ NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_fh *file)
 }
 
 static void
-NdisUnmapFile(struct ndis_fh *file)
+NdisUnmapFile(struct ndis_file_handle *file)
 {
 	if (file->map == NULL)
 		return;
-	if (file->type == NDIS_FH_TYPE_VFS)
+	if (file->type == NDIS_FILE_HANDLE_TYPE_VFS)
 		free(file->map, M_NDIS_SUBR);
 	file->map = NULL;
 }
 
 static void
-NdisCloseFile(struct ndis_fh *file)
+NdisCloseFile(struct ndis_file_handle *file)
 {
 	struct vnode *vp;
 	struct thread *td = curthread;
@@ -2380,13 +2380,13 @@ NdisCloseFile(struct ndis_fh *file)
 	if (file == NULL)
 		return;
 	if (file->map != NULL) {
-		if (file->type == NDIS_FH_TYPE_VFS)
+		if (file->type == NDIS_FILE_HANDLE_TYPE_VFS)
 			free(file->map, M_NDIS_SUBR);
 		file->map = NULL;
 	}
 	if (file->vp == NULL)
 		return;
-	if (file->type == NDIS_FH_TYPE_VFS) {
+	if (file->type == NDIS_FILE_HANDLE_TYPE_VFS) {
 		vp = file->vp;
 		vfslocked = VFS_LOCK_GIANT(vp->v_mount);
 		vn_close(vp, FREAD, td->td_ucred, td);

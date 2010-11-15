@@ -1332,11 +1332,11 @@ struct ndis_timer_entry {
 
 TAILQ_HEAD(nte_head, ndis_timer_entry);
 
-#define	NDIS_FH_TYPE_VFS 0
-#define	NDIS_FH_TYPE_MODULE 1
+#define	NDIS_FILE_HANDLE_TYPE_VFS 0
+#define	NDIS_FILE_HANDLE_TYPE_MODULE 1
 
-struct ndis_fh {
-	int		type;
+struct ndis_file_handle {
+	uint8_t		type;
 	char		*name;
 	void		*vp;
 	void		*map;
