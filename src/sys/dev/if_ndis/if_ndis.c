@@ -653,7 +653,7 @@ ndis_attach(device_t dev)
 
 	/* Install our RX and TX interrupt handlers. */
 	sc->ndis_block->send_done_func = ndis_txeof_wrap;
-	sc->ndis_block->pkt_indicate_func = ndis_rxeof_wrap;
+	sc->ndis_block->packet_indicate_func = ndis_rxeof_wrap;
 	sc->ndis_block->ethrx_indicate_func = ndis_rxeof_eth_wrap;
 	sc->ndis_block->ethrx_done_func = ndis_rxeof_done_wrap;
 	sc->ndis_block->tdcond_func = ndis_rxeof_xfr_done_wrap;
