@@ -45,6 +45,12 @@ typedef void *ndis_handle;
 typedef register_t ndis_kspin_lock;
 typedef uint8_t ndis_kirql;
 
+struct ndis_object_header {
+	uint8_t		type;
+	uint8_t		revision;
+	uint16_t	size;
+};
+
 /*
  * NDIS status codes (there are lots of them). The ones that
  * don't seem to fit the pattern are actually mapped to generic
