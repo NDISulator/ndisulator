@@ -737,15 +737,13 @@ NdisReadPciSlotInformation(ndis_handle adapter, uint32_t slot,
     uint32_t offset, void *buf, uint32_t len)
 {
 	struct ndis_miniport_block *block = adapter;
-	device_t dev;
 	int i;
 	char *dest = buf;
 
 	KASSERT(adapter != NULL, ("no adapter"));
-	dev = block->physdeviceobj->devext;
 	for (i = 0; i < len; i++)
-		dest[i] = pci_read_config(dev, i + offset, 1);
-
+		dest[i] = pci_read_config(block->physdeviceobj->devext,
+		    i + offset, 1);
 	return (len);
 }
 
@@ -754,15 +752,13 @@ NdisWritePciSlotInformation(ndis_handle adapter, uint32_t slot,
     uint32_t offset, void *buf, uint32_t len)
 {
 	struct ndis_miniport_block *block = adapter;
-	device_t dev;
 	int i;
 	char *dest = buf;
 
 	KASSERT(adapter != NULL, ("no adapter"));
-	dev = block->physdeviceobj->devext;
 	for (i = 0; i < len; i++)
-		pci_write_config(dev, i + offset, dest[i], 1);
-
+		pci_write_config(block->physdeviceobj->devext,
+		    i + offset, dest[i], 1);
 	return (len);
 }
 
@@ -2641,15 +2637,12 @@ static int32_t
 NdisMQueryAdapterInstanceName(unicode_string *name, ndis_handle adapter)
 {
 	struct ndis_miniport_block *block = adapter;
-	device_t dev;
 	ansi_string as;
 
-	dev = block->physdeviceobj->devext;
-
-	RtlInitAnsiString(&as, __DECONST(char *, device_get_nameunit(dev)));
+	KASSERT(adapter != NULL, ("no adapter"));
+	RtlInitAnsiString(&as, device_get_nameunit(block->physdeviceobj->devext));
 	if (RtlAnsiStringToUnicodeString(name, &as, TRUE))
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-
 	return (NDIS_STATUS_SUCCESS);
 }
 
