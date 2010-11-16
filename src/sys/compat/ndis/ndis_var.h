@@ -685,19 +685,19 @@ struct ndis_port_authentication_parameters {
 };
 
 struct ndis_pci_device_custom_properties {
-	struct ndis_object_header		header;
-	uint32_t				device_type;
-	uint32_t				current_speed_and_mode;
-	uint32_t				current_payload_size;
-	uint32_t				max_payload_size;
-	uint32_t				max_read_request_size;
-	uint32_t				current_link_speed;
-	uint32_t				current_link_width;
-	uint32_t				max_link_speed;
-	uint32_t				max_link_width;
-	uint32_t				pci_express_version;
-	uint32_t				interrupt_type;
-	uint32_t				max_interrupt_messages;
+	struct ndis_object_header	header;
+	uint32_t			device_type;
+	uint32_t			current_speed_and_mode;
+	uint32_t			current_payload_size;
+	uint32_t			max_payload_size;
+	uint32_t			max_read_request_size;
+	uint32_t			current_link_speed;
+	uint32_t			current_link_width;
+	uint32_t			max_link_speed;
+	uint32_t			max_link_width;
+	uint32_t			pci_express_version;
+	uint32_t			interrupt_type;
+	uint32_t			max_interrupt_messages;
 };
 
 struct ndis_miniport_init_parameters {
@@ -713,9 +713,9 @@ struct ndis_miniport_init_parameters {
 };
 
 struct ndis_miniport_add_device_registration_attributes {
-	struct ndis_object_header		header;
-	void					*miniport_add_device_context;
-	uint32_t				flags;
+	struct ndis_object_header	header;
+	void				*miniport_add_device_context;
+	uint32_t			flags;
 };
 
 #define NDIS_MINIPORT_ATTRIBUTES_HARDWARE_DEVICE	0x00000001
@@ -728,34 +728,34 @@ struct ndis_miniport_add_device_registration_attributes {
 #define NDIS_MINIPORT_ATTRIBUTES_CONTROLS_DEFAULT_PORT	0x00000080
 
 struct ndis_miniport_adapter_registration_attributes {
-	struct ndis_object_header		header;
-	void					*miniport_adapter_context;
-	uint32_t				attribute_flags;
-	uint32_t				check_for_hangsec;
-	enum ndis_bus_type			bus_type;
+	struct ndis_object_header	header;
+	void				*miniport_adapter_context;
+	uint32_t			attribute_flags;
+	uint32_t			check_for_hangsec;
+	enum ndis_bus_type		bus_type;
 };
 
 struct ndis_receive_scale_capabilities {
-	struct ndis_object_header		header;
-	uint32_t				flags;
-	uint32_t				number_of_interrupt_messages;
-	uint32_t				number_of_receive_queues;
+	struct ndis_object_header	header;
+	uint32_t			flags;
+	uint32_t			number_of_interrupt_messages;
+	uint32_t			number_of_receive_queues;
 };
 
 struct ndis_pm_capabilities {
-	struct ndis_object_header		header;
-	uint32_t				flags;
-	uint32_t				supported_wol_packet_patterns;
-	uint32_t				num_total_wol_patterns;
-	uint32_t				max_wol_pattern_size;
-	uint32_t				max_wol_pattern_offset;
-	uint32_t				max_wol_packet_save_buffer;
-	uint32_t				supported_protocol_offloads;
-	uint32_t				num_arp_offload_ipv4_addresses;
-	uint32_t				num_ns_offload_ipv6_addresses;
-	enum ndis_device_power_state		min_magic_packet_wake_up;
-	enum ndis_device_power_state		min_pattern_wake_up;
-	enum ndis_device_power_state		min_link_change_wake_up;
+	struct ndis_object_header	header;
+	uint32_t			flags;
+	uint32_t			supported_wol_packet_patterns;
+	uint32_t			num_total_wol_patterns;
+	uint32_t			max_wol_pattern_size;
+	uint32_t			max_wol_pattern_offset;
+	uint32_t			max_wol_packet_save_buffer;
+	uint32_t			supported_protocol_offloads;
+	uint32_t			num_arp_offload_ipv4_addresses;
+	uint32_t			num_ns_offload_ipv6_addresses;
+	enum ndis_device_power_state	min_magic_packet_wake_up;
+	enum ndis_device_power_state	min_pattern_wake_up;
+	enum ndis_device_power_state	min_link_change_wake_up;
 };
 
 struct ndis_miniport_adapter_general_attributes {
@@ -792,6 +792,141 @@ struct ndis_miniport_adapter_general_attributes {
 	uint32_t				supported_oid_list_length;
 	uint32_t				auto_negotiation_flags;
 	struct ndis_pm_capabilities		*power_management_capabilities_ex;
+};
+
+struct ndis_tcp_ip_checksum_offload {
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	ip_options_supported:2;
+		uint32_t	tcp_options_supported:2;
+		uint32_t	tcp_checksum:2;
+		uint32_t	udp_checksum:2;
+		uint32_t	ip_checksum:2;
+	} ipv4transmit;
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	ip_options_supported:2;
+		uint32_t	tcp_options_supported:2;
+		uint32_t	tcp_checksum:2;
+		uint32_t	udp_checksum:2;
+		uint32_t	ip_checksum:2;
+	} ipv4receive;
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	ip_extension_headers_supported:2;
+		uint32_t	tcp_options_supported:2;
+		uint32_t	tcp_checksum:2;
+		uint32_t	udp_checksum:2;
+	} ipv6transmit;
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	ip_extension_headers_supported:2;
+		uint32_t	tcp_options_supported:2;
+		uint32_t	tcp_checksum:2;
+		uint32_t	udp_checksum:2;
+	} ipv6receive;
+};
+
+struct ndis_tcp_large_send_offload_v1 {
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	max_off_load_size;
+		uint32_t	min_segment_count;
+		uint32_t	tcp_options:2;
+		uint32_t	ip_options:2;
+	} ipv4;
+};
+
+struct ndis_ipsec_offload_v1 {
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	ah_esp_combined;
+		uint32_t	transport_tunnel_combined;
+		uint32_t	ipv4_options;
+		uint32_t	flags;
+	} supported;
+	struct {
+		uint32_t	md5:2;
+		uint32_t	sha_1:2;
+		uint32_t	transport:2;
+		uint32_t	tunnel:2;
+		uint32_t	send:2;
+		uint32_t	receive:2;
+	} ipv4ah;
+	struct {
+		uint32_t	des:2;
+		uint32_t	reserved:2;
+		uint32_t	triple_des:2;
+		uint32_t	null_esp:2;
+		uint32_t	transport:2;
+		uint32_t	tunnel:2;
+		uint32_t	send:2;
+		uint32_t	receive:2;
+	} ipv4esp;
+};
+
+struct ndis_tcp_large_send_offload_v2 {
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	max_off_load_size;
+		uint32_t	min_segment_count;
+	} ipv4;
+	struct {
+		uint32_t	encapsulation;
+		uint32_t	max_off_load_size;
+		uint32_t	min_segment_count;
+		uint32_t	ip_extension_headers_supported:2;
+		uint32_t	tcp_options_supported:2;
+	} ipv6;
+};
+
+struct ndis_ipsec_offload_v2 {
+	uint32_t	encapsulation;
+	uint8_t		ipv6_supported;
+	uint8_t		ipv4_options;
+	uint8_t		ipv6_non_ipsec_extension_headers;
+	uint8_t		ah;
+	uint8_t		esp;
+	uint8_t		ah_esp_combined;
+	uint8_t		transport;
+	uint8_t		tunnel;
+	uint8_t		transport_tunnel_combined;
+	uint8_t		lso_supported;
+	uint8_t		extended_sequence_numbers;
+	uint32_t	udp_esp;
+	uint32_t	authentication_algorithms;
+	uint32_t	encryption_algorithms;
+	uint32_t	sa_offload_capacity;
+};
+
+struct ndis_offload {
+	struct ndis_object_header		header;
+	struct ndis_tcp_ip_checksum_offload	checksum;
+	struct ndis_tcp_large_send_offload_v1	lsov1;
+	struct ndis_ipsec_offload_v1		ipsecv1;
+	struct ndis_tcp_large_send_offload_v2	lsov2;
+	uint32_t				flags;
+	struct ndis_ipsec_offload_v2		ipsecv2;
+};
+
+struct ndis_tcp_connection_offload {
+	struct ndis_object_header	header;
+	uint32_t			encapsulation;
+	uint32_t			support_ipv4:2;
+	uint32_t			support_ipv6:2;
+	uint32_t			support_ipv6_extension_headers:2;
+	uint32_t			support_sack:2;
+	uint32_t			congestion_algorithm:4;
+	uint32_t			tcp_connection_offload_capacity;
+	uint32_t			flags;
+};
+
+struct ndis_miniport_adapter_offload_attributes {
+	struct ndis_object_header		header;
+	struct ndis_offload			*def_off_conf;
+	struct ndis_offload			*hw_off_cap;
+	struct ndis_tcp_connection_offload	*def_tcp_conn_off_conf;
+	struct ndis_tcp_connection_offload	*tcp_conn_off_hw_cap;
 };
 
 struct ndis_80211_network_type_list {
