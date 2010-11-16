@@ -459,9 +459,43 @@ enum ndis_bus_type {
 	NDIS_PNPBUS
 };
 
+enum ndis_net_if_access_type {
+	NDIS_NET_IF_ACCESS_LOOPBACK = 1,
+	NDIS_NET_IF_ACCESS_BROADCAST,
+	NDIS_NET_IF_ACCESS_POINT_TO_POINT,
+	NDIS_NET_IF_ACCESS_POINT_TO_MULTI_POINT,
+	NDIS_NET_IF_ACCESS_MAXIMUM
+};
+
+enum ndis_net_if_direction_type {
+	NDIS_NET_IF_DIRECTION_SENDRECEIVE,
+	NDIS_NET_IF_DIRECTION_SENDONLY,
+	NDIS_NET_IF_DIRECTION_RECEIVEONLY,
+	NDIS_NET_IF_DIRECTION_MAXIMUM
+};
+
+enum ndis_net_if_connection_type {
+	NDIS_NET_IF_CONNECTION_DEDICATED = 1,
+	NDIS_NET_IF_CONNECTION_PASSIVE,
+	NDIS_NET_IF_CONNECTION_DEMAND,
+	NDIS_NET_IF_CONNECTION_MAXIMUM
+};
+
 enum ndis_interrupt_mode {
 	NIM_LEVEL,
 	NIM_LATCHED
+};
+
+enum ndis_media_connect_state {
+	NDIS_MEDIA_CONNECT_STATE_UNKNOWN,
+	NDIS_MEDIA_CONNECT_STATE_CONNECTED,
+	NDIS_MEDIA_CONNECT_STATE_DISCONNECTED
+};
+
+enum ndis_media_duplex_state {
+	NDIS_MEDIA_DUPLEX_STATE_UNKNOWN,
+	NDIS_MEDIA_DUPLEX_STATE_HALF,
+	NDIS_MEDIA_DUPLEX_STATE_FULL
 };
 
 enum ndis_media_state {
@@ -678,6 +712,12 @@ struct ndis_miniport_init_parameters {
 	struct ndis_pci_device_custom_properties *pci_device_custom_properties;
 };
 
+struct ndis_miniport_add_device_registration_attributes {
+	struct ndis_object_header		header;
+	void					*miniport_add_device_context;
+	uint32_t				flags;
+};
+
 #define NDIS_MINIPORT_ATTRIBUTES_HARDWARE_DEVICE	0x00000001
 #define NDIS_MINIPORT_ATTRIBUTES_NDIS_WDM		0x00000002
 #define NDIS_MINIPORT_ATTRIBUTES_SURPRISE_REMOVE_OK	0x00000004
@@ -693,6 +733,65 @@ struct ndis_miniport_adapter_registration_attributes {
 	uint32_t				attribute_flags;
 	uint32_t				check_for_hangsec;
 	enum ndis_bus_type			bus_type;
+};
+
+struct ndis_receive_scale_capabilities {
+	struct ndis_object_header		header;
+	uint32_t				flags;
+	uint32_t				number_of_interrupt_messages;
+	uint32_t				number_of_receive_queues;
+};
+
+struct ndis_pm_capabilities {
+	struct ndis_object_header		header;
+	uint32_t				flags;
+	uint32_t				supported_wol_packet_patterns;
+	uint32_t				num_total_wol_patterns;
+	uint32_t				max_wol_pattern_size;
+	uint32_t				max_wol_pattern_offset;
+	uint32_t				max_wol_packet_save_buffer;
+	uint32_t				supported_protocol_offloads;
+	uint32_t				num_arp_offload_ipv4_addresses;
+	uint32_t				num_ns_offload_ipv6_addresses;
+	enum ndis_device_power_state		min_magic_packet_wake_up;
+	enum ndis_device_power_state		min_pattern_wake_up;
+	enum ndis_device_power_state		min_link_change_wake_up;
+};
+
+struct ndis_miniport_adapter_general_attributes {
+	struct ndis_object_header		header;
+	uint32_t				flags;
+	enum ndis_medium			media_type;
+	enum ndis_physical_medium		physical_medium_type;
+	uint32_t				mtu_size;
+	uint64_t				max_xmit_link_speed;
+	uint64_t				xmit_link_speed;
+	uint64_t				max_rcv_link_speed;
+	uint64_t				rcv_link_speed;
+	enum ndis_media_connect_state		media_connect_state;
+	enum ndis_media_duplex_state		media_duplex_state;
+	uint32_t				lookahead_size;
+	struct ndis_pnp_capabilities		*power_management_capabilities;
+	uint32_t				mac_options;
+	uint32_t				supported_packet_filters;
+	uint32_t				max_multicast_list_size;
+	uint16_t				mac_address_length;
+	uint8_t					permanent_mac_address[32];
+	uint8_t					current_mac_address[32];
+	struct ndis_receive_scale_capabilities	*recv_scale_capabilities;
+	enum ndis_net_if_access_type		access_type;
+	enum ndis_net_if_direction_type		direction_type;
+	enum ndis_net_if_connection_type	connection_type;
+	uint16_t				iftype;
+	uint8_t					if_connector_present;
+	uint32_t				supported_statistics;
+	uint32_t				supported_pause_functions;
+	uint32_t				data_back_fill_size;
+	uint32_t				context_back_fill_size;
+	uint32_t				*supported_oid_list;
+	uint32_t				supported_oid_list_length;
+	uint32_t				auto_negotiation_flags;
+	struct ndis_pm_capabilities		*power_management_capabilities_ex;
 };
 
 struct ndis_80211_network_type_list {
