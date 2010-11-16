@@ -245,6 +245,7 @@ static uint8_t NdisMSynchronizeWithInterrupt(struct ndis_miniport_interrupt *,
     void *, void *);
 static void NdisGetCurrentSystemTime(int64_t *);
 static void NdisGetSystemUpTime(uint32_t *);
+static void NdisGetSystemUpTimeEx(int64_t *);
 static uint32_t NdisGetVersion(void);
 static void NdisInitializeString(unicode_string *, char *);
 static void NdisInitAnsiString(ansi_string *, char *);
@@ -2063,6 +2064,15 @@ NdisGetSystemUpTime(uint32_t *tval)
 	*tval = ts.tv_nsec / 1000000 + ts.tv_sec * 1000;
 }
 
+static void
+NdisGetSystemUpTimeEx(int64_t *tval)
+{
+	struct timespec ts;
+
+	nanouptime(&ts);
+	*tval = ts.tv_nsec / 1000000 + ts.tv_sec * 1000;
+}
+
 static uint32_t
 NdisGetVersion(void)
 {
@@ -2670,6 +2680,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisGetFirstBufferFromPacket, 5),
 	IMPORT_SFUNC(NdisGetFirstBufferFromPacketSafe, 6),
 	IMPORT_SFUNC(NdisGetSystemUpTime, 1),
+	IMPORT_SFUNC(NdisGetSystemUpTimeEx, 1),
 	IMPORT_SFUNC(NdisGetVersion, 0),
 	IMPORT_SFUNC(NdisIMCopySendPerPacketInfo, 2),
 	IMPORT_SFUNC(NdisInitAnsiString, 2),
