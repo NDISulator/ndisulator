@@ -2204,14 +2204,14 @@ NdisCheckModule(linker_file_t lf, void *context)
 
 	nc = (struct ndis_checkmodule *)context;
 	if (ndis_find_sym(lf, nc->afilename, "_start", &kldstart))
-		return (0);
+		return (FALSE);
 	if (ndis_find_sym(lf, nc->afilename, "_end", &kldend))
-		return (0);
+		return (FALSE);
 	nc->fh->vp = lf;
 	nc->fh->map = NULL;
 	nc->fh->type = NDIS_FILE_HANDLE_TYPE_MODULE;
 	nc->fh->maplen = (kldend - kldstart) & 0xFFFFFFFF;
-	return (1);
+	return (TRUE);
 }
 
 static void
