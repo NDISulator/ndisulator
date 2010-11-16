@@ -133,6 +133,22 @@ struct ndis_port_authentication_parameters {
 	enum ndis_port_authorization_state	rcv_authorization_state;
 };
 
+struct ndis_pci_device_custom_properties {
+	struct ndis_object_header		header;
+	uint32_t				device_type;
+	uint32_t				current_speed_and_mode;
+	uint32_t				current_payload_size;
+	uint32_t				max_payload_size;
+	uint32_t				max_read_request_size;
+	uint32_t				current_link_speed;
+	uint32_t				current_link_width;
+	uint32_t				max_link_speed;
+	uint32_t				max_link_width;
+	uint32_t				pci_express_version;
+	uint32_t				interrupt_type;
+	uint32_t				max_interrupt_messages;
+};
+
 struct ndis_miniport_init_parameters {
 	struct ndis_object_header		header;
 	uint32_t				flags;
