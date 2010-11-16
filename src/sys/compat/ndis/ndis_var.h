@@ -45,122 +45,6 @@ typedef void *ndis_handle;
 typedef register_t ndis_kspin_lock;
 typedef uint8_t ndis_kirql;
 
-struct ndis_object_header {
-	uint8_t		type;
-	uint8_t		revision;
-	uint16_t	size;
-};
-
-/* NDIS object header types */
-#define	NDIS_OBJECT_TYPE_DEFAULT					0x80
-#define	NDIS_OBJECT_TYPE_MINIPORT_INIT_PARAMETERS			0x81
-#define	NDIS_OBJECT_TYPE_SG_DMA_DESCRIPTION				0x83
-#define	NDIS_OBJECT_TYPE_MINIPORT_INTERRUPT				0x84
-#define	NDIS_OBJECT_TYPE_DEVICE_OBJECT_ATTRIBUTES			0x85
-#define	NDIS_OBJECT_TYPE_BIND_PARAMETERS				0x86
-#define	NDIS_OBJECT_TYPE_OPEN_PARAMETERS				0x87
-#define	NDIS_OBJECT_TYPE_RSS_CAPABILITIES				0x88
-#define	NDIS_OBJECT_TYPE_RSS_PARAMETERS					0x89
-#define	NDIS_OBJECT_TYPE_MINIPORT_DRIVER_CHARACTERISTICS		0x8A
-#define	NDIS_OBJECT_TYPE_FILTER_DRIVER_CHARACTERISTICS			0x8B
-#define	NDIS_OBJECT_TYPE_FILTER_PARTIAL_CHARACTERISTICS			0x8C
-#define	NDIS_OBJECT_TYPE_FILTER_ATTRIBUTES				0x8D
-#define	NDIS_OBJECT_TYPE_CLIENT_CHIMNEY_OFFLOAD_GENERIC_CHARACTERISTICS	0x8E
-#define	NDIS_OBJECT_TYPE_PROVIDER_CHIMNEY_OFFLOAD_GENERIC_CHARACTERISTICS 0x8F
-#define	NDIS_OBJECT_TYPE_CO_PROTOCOL_CHARACTERISTICS			0x90
-#define	NDIS_OBJECT_TYPE_CO_MINIPORT_CHARACTERISTICS			0x91
-#define	NDIS_OBJECT_TYPE_MINIPORT_PNP_CHARACTERISTICS			0x92
-#define	NDIS_OBJECT_TYPE_CLIENT_CHIMNEY_OFFLOAD_CHARACTERISTICS		0x93
-#define	NDIS_OBJECT_TYPE_PROVIDER_CHIMENY_OFFLOAD_CHARACTERISTICS	0x94
-#define	NDIS_OBJECT_TYPE_PROTOCOL_DRIVER_CHARACTERISTICS		0x95
-#define	NDIS_OBJECT_TYPE_REQUEST_EX					0x96
-#define	NDIS_OBJECT_TYPE_OID_REQUEST					0x96
-#define	NDIS_OBJECT_TYPE_TIMER_CHARACTERISTICS				0x97
-#define	NDIS_OBJECT_TYPE_STATUS_INDICATION				0x98
-#define	NDIS_OBJECT_TYPE_FILTER_ATTACH_PARAMETERS			0x99
-#define	NDIS_OBJECT_TYPE_FILTER_PAUSE_PARAMETERS			0x9A
-#define	NDIS_OBJECT_TYPE_FILTER_RESTART_PARAMETERS			0x9B
-#define	NDIS_OBJECT_TYPE_PORT_CHARACTERISTICS				0x9C
-#define	NDIS_OBJECT_TYPE_PORT_STATE					0x9D
-#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_REGISTRATION_ATTRIBUTES	0x9E
-#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES		0x9F
-#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_OFFLOAD_ATTRIBUTES		0xA0
-#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_NATIVE_802_11_ATTRIBUTES	0xA1
-#define	NDIS_OBJECT_TYPE_RESTART_GENERAL_ATTRIBUTES			0xA2
-#define	NDIS_OBJECT_TYPE_PROTOCOL_RESTART_PARAMETERS			0xA3
-#define	NDIS_OBJECT_TYPE_MINIPORT_ADD_DEVICE_REGISTRATION_ATTRIBUTES	0xA4
-#define	NDIS_OBJECT_TYPE_CO_CALL_MANAGER_OPTIONAL_HANDLERS		0xA5
-#define	NDIS_OBJECT_TYPE_CO_CLIENT_OPTIONAL_HANDLERS			0xA6
-#define	NDIS_OBJECT_TYPE_OFFLOAD					0xA7
-#define	NDIS_OBJECT_TYPE_OFFLOAD_ENCAPSULATION				0xA8
-#define	NDIS_OBJECT_TYPE_CONFIGURATION_OBJECT				0xA9
-#define	NDIS_OBJECT_TYPE_DRIVER_WRAPPER_OBJECT				0xAA
-#define	NDIS_OBJECT_TYPE_HD_SPLIT_ATTRIBUTES				0xAB
-#define	NDIS_OBJECT_TYPE_NSI_NETWORK_RW_STRUCT				0xAC
-#define	NDIS_OBJECT_TYPE_NSI_COMPARTMENT_RW_STRUCT			0xAD
-#define	NDIS_OBJECT_TYPE_NSI_INTERFACE_PERSIST_RW_STRUCT		0xAE
-#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_HARDWARE_ASSIST_ATTRIBUTES	0xAF
-#define	NDIS_OBJECT_TYPE_SHARED_MEMORY_PROVIDER_CHARACTERISTICS		0xB0
-#define	NDIS_OBJECT_TYPE_RSS_PROCESSOR_INFO				0xB1
-
-union net_luid {
-	uint64_t	value;
-	struct {
-		uint64_t	reserved:24;
-		uint64_t	net_luid_index:24;
-		uint64_t	iftype:16;
-	} info;
-};
-
-enum ndis_port_control_state {
-	NDIS_PORT_CONTROL_STATE_UNKNOWN,
-	NDIS_PORT_CONTROL_STATE_CONTROLLED,
-	NDIS_PORT_CONTROL_STATE_UNCONTROLLED
-};
-
-enum ndis_port_authorization_state {
-	NDIS_PORT_AUTHORIZATION_UNKNOWN,
-	NDIS_PORT_AUTHORIZED,
-	NDIS_PORT_UNAUTHORIZED,
-	NDIS_PORT_REAUTHORIZING
-};
-
-struct ndis_port_authentication_parameters {
-	struct ndis_object_header		header;
-	enum ndis_port_control_state		send_control_state;
-	enum ndis_port_control_state		rcv_control_state;
-	enum ndis_port_authorization_state	send_authorization_state;
-	enum ndis_port_authorization_state	rcv_authorization_state;
-};
-
-struct ndis_pci_device_custom_properties {
-	struct ndis_object_header		header;
-	uint32_t				device_type;
-	uint32_t				current_speed_and_mode;
-	uint32_t				current_payload_size;
-	uint32_t				max_payload_size;
-	uint32_t				max_read_request_size;
-	uint32_t				current_link_speed;
-	uint32_t				current_link_width;
-	uint32_t				max_link_speed;
-	uint32_t				max_link_width;
-	uint32_t				pci_express_version;
-	uint32_t				interrupt_type;
-	uint32_t				max_interrupt_messages;
-};
-
-struct ndis_miniport_init_parameters {
-	struct ndis_object_header		header;
-	uint32_t				flags;
-	struct cm_partial_resource_list		*allocated_resources;
-	void					*im_device_instance_context;
-	void					*miniport_add_device_context;
-	uint32_t				if_index;
-	union net_luid				net_luid;
-	struct ndis_port_authentication_parameters *default_port_auth_states;
-	struct ndis_pci_device_custom_properties *pci_device_custom_properties;
-};
-
 /*
  * NDIS status codes (there are lots of them). The ones that
  * don't seem to fit the pattern are actually mapped to generic
@@ -676,6 +560,130 @@ enum ndis_request_type {
 	NDIS_REQUEST_GENERIC_2,
 	NDIS_REQUEST_GENERIC_3,
 	NDIS_REQUEST_GENERIC_4
+};
+
+struct ndis_object_header {
+	uint8_t		type;
+	uint8_t		revision;
+	uint16_t	size;
+};
+
+/* NDIS object header types */
+#define	NDIS_OBJECT_TYPE_DEFAULT					0x80
+#define	NDIS_OBJECT_TYPE_MINIPORT_INIT_PARAMETERS			0x81
+#define	NDIS_OBJECT_TYPE_SG_DMA_DESCRIPTION				0x83
+#define	NDIS_OBJECT_TYPE_MINIPORT_INTERRUPT				0x84
+#define	NDIS_OBJECT_TYPE_DEVICE_OBJECT_ATTRIBUTES			0x85
+#define	NDIS_OBJECT_TYPE_BIND_PARAMETERS				0x86
+#define	NDIS_OBJECT_TYPE_OPEN_PARAMETERS				0x87
+#define	NDIS_OBJECT_TYPE_RSS_CAPABILITIES				0x88
+#define	NDIS_OBJECT_TYPE_RSS_PARAMETERS					0x89
+#define	NDIS_OBJECT_TYPE_MINIPORT_DRIVER_CHARACTERISTICS		0x8A
+#define	NDIS_OBJECT_TYPE_FILTER_DRIVER_CHARACTERISTICS			0x8B
+#define	NDIS_OBJECT_TYPE_FILTER_PARTIAL_CHARACTERISTICS			0x8C
+#define	NDIS_OBJECT_TYPE_FILTER_ATTRIBUTES				0x8D
+#define	NDIS_OBJECT_TYPE_CLIENT_CHIMNEY_OFFLOAD_GENERIC_CHARACTERISTICS	0x8E
+#define	NDIS_OBJECT_TYPE_PROVIDER_CHIMNEY_OFFLOAD_GENERIC_CHARACTERISTICS 0x8F
+#define	NDIS_OBJECT_TYPE_CO_PROTOCOL_CHARACTERISTICS			0x90
+#define	NDIS_OBJECT_TYPE_CO_MINIPORT_CHARACTERISTICS			0x91
+#define	NDIS_OBJECT_TYPE_MINIPORT_PNP_CHARACTERISTICS			0x92
+#define	NDIS_OBJECT_TYPE_CLIENT_CHIMNEY_OFFLOAD_CHARACTERISTICS		0x93
+#define	NDIS_OBJECT_TYPE_PROVIDER_CHIMENY_OFFLOAD_CHARACTERISTICS	0x94
+#define	NDIS_OBJECT_TYPE_PROTOCOL_DRIVER_CHARACTERISTICS		0x95
+#define	NDIS_OBJECT_TYPE_REQUEST_EX					0x96
+#define	NDIS_OBJECT_TYPE_OID_REQUEST					0x96
+#define	NDIS_OBJECT_TYPE_TIMER_CHARACTERISTICS				0x97
+#define	NDIS_OBJECT_TYPE_STATUS_INDICATION				0x98
+#define	NDIS_OBJECT_TYPE_FILTER_ATTACH_PARAMETERS			0x99
+#define	NDIS_OBJECT_TYPE_FILTER_PAUSE_PARAMETERS			0x9A
+#define	NDIS_OBJECT_TYPE_FILTER_RESTART_PARAMETERS			0x9B
+#define	NDIS_OBJECT_TYPE_PORT_CHARACTERISTICS				0x9C
+#define	NDIS_OBJECT_TYPE_PORT_STATE					0x9D
+#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_REGISTRATION_ATTRIBUTES	0x9E
+#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES		0x9F
+#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_OFFLOAD_ATTRIBUTES		0xA0
+#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_NATIVE_802_11_ATTRIBUTES	0xA1
+#define	NDIS_OBJECT_TYPE_RESTART_GENERAL_ATTRIBUTES			0xA2
+#define	NDIS_OBJECT_TYPE_PROTOCOL_RESTART_PARAMETERS			0xA3
+#define	NDIS_OBJECT_TYPE_MINIPORT_ADD_DEVICE_REGISTRATION_ATTRIBUTES	0xA4
+#define	NDIS_OBJECT_TYPE_CO_CALL_MANAGER_OPTIONAL_HANDLERS		0xA5
+#define	NDIS_OBJECT_TYPE_CO_CLIENT_OPTIONAL_HANDLERS			0xA6
+#define	NDIS_OBJECT_TYPE_OFFLOAD					0xA7
+#define	NDIS_OBJECT_TYPE_OFFLOAD_ENCAPSULATION				0xA8
+#define	NDIS_OBJECT_TYPE_CONFIGURATION_OBJECT				0xA9
+#define	NDIS_OBJECT_TYPE_DRIVER_WRAPPER_OBJECT				0xAA
+#define	NDIS_OBJECT_TYPE_HD_SPLIT_ATTRIBUTES				0xAB
+#define	NDIS_OBJECT_TYPE_NSI_NETWORK_RW_STRUCT				0xAC
+#define	NDIS_OBJECT_TYPE_NSI_COMPARTMENT_RW_STRUCT			0xAD
+#define	NDIS_OBJECT_TYPE_NSI_INTERFACE_PERSIST_RW_STRUCT		0xAE
+#define	NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_HARDWARE_ASSIST_ATTRIBUTES	0xAF
+#define	NDIS_OBJECT_TYPE_SHARED_MEMORY_PROVIDER_CHARACTERISTICS		0xB0
+#define	NDIS_OBJECT_TYPE_RSS_PROCESSOR_INFO				0xB1
+
+union net_luid {
+	uint64_t	value;
+	struct {
+		uint64_t	reserved:24;
+		uint64_t	net_luid_index:24;
+		uint64_t	iftype:16;
+	} info;
+};
+
+enum ndis_port_control_state {
+	NDIS_PORT_CONTROL_STATE_UNKNOWN,
+	NDIS_PORT_CONTROL_STATE_CONTROLLED,
+	NDIS_PORT_CONTROL_STATE_UNCONTROLLED
+};
+
+enum ndis_port_authorization_state {
+	NDIS_PORT_AUTHORIZATION_UNKNOWN,
+	NDIS_PORT_AUTHORIZED,
+	NDIS_PORT_UNAUTHORIZED,
+	NDIS_PORT_REAUTHORIZING
+};
+
+struct ndis_port_authentication_parameters {
+	struct ndis_object_header		header;
+	enum ndis_port_control_state		send_control_state;
+	enum ndis_port_control_state		rcv_control_state;
+	enum ndis_port_authorization_state	send_authorization_state;
+	enum ndis_port_authorization_state	rcv_authorization_state;
+};
+
+struct ndis_pci_device_custom_properties {
+	struct ndis_object_header		header;
+	uint32_t				device_type;
+	uint32_t				current_speed_and_mode;
+	uint32_t				current_payload_size;
+	uint32_t				max_payload_size;
+	uint32_t				max_read_request_size;
+	uint32_t				current_link_speed;
+	uint32_t				current_link_width;
+	uint32_t				max_link_speed;
+	uint32_t				max_link_width;
+	uint32_t				pci_express_version;
+	uint32_t				interrupt_type;
+	uint32_t				max_interrupt_messages;
+};
+
+struct ndis_miniport_init_parameters {
+	struct ndis_object_header		header;
+	uint32_t				flags;
+	struct cm_partial_resource_list		*allocated_resources;
+	void					*im_device_instance_context;
+	void					*miniport_add_device_context;
+	uint32_t				if_index;
+	union net_luid				net_luid;
+	struct ndis_port_authentication_parameters *default_port_auth_states;
+	struct ndis_pci_device_custom_properties *pci_device_custom_properties;
+};
+
+struct ndis_miniport_adapter_registration_attributes {
+	struct ndis_object_header		header;
+	void					*miniport_adapter_context;
+	uint32_t				attribute_flags;
+	uint32_t				check_for_hangsec;
+	enum ndis_bus_type			bus_type;
 };
 
 struct ndis_80211_network_type_list {
