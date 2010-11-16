@@ -396,7 +396,7 @@ NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 
 static int32_t
 NdisMSetAttributesEx(struct ndis_miniport_block *block, void *adapter_ctx,
-    uint32_t hangsecs, uint32_t flags, enum ndis_interface_type iftype)
+    uint32_t hangsecs, uint32_t flags, enum ndis_interface_type adapter_type)
 {
 	/*
 	 * Save the adapter context, we need it for calling
@@ -404,6 +404,7 @@ NdisMSetAttributesEx(struct ndis_miniport_block *block, void *adapter_ctx,
 	 */
 	block->miniport_adapter_ctx = adapter_ctx;
 	block->check_for_hang_secs = hangsecs;
+	block->adapter_type = adapter_type;
 	block->flags = flags;
 
 	return (NDIS_STATUS_SUCCESS);
