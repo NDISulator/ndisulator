@@ -117,7 +117,7 @@ static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
 static int32_t NdisAllocateMemory(void **, uint32_t, uint32_t, uint64_t);
 static void NdisFreeMemory(void *, uint32_t, uint32_t);
 static int32_t NdisMSetAttributesEx(struct ndis_miniport_block *, void *,
-    uint32_t, uint32_t, enum ndis_interface_type);
+    uint32_t, uint32_t, enum ndis_bus_type);
 static void NdisOpenConfiguration(int32_t *, struct ndis_miniport_block **,
     struct ndis_miniport_block *);
 static void NdisOpenConfigurationKeyByIndex(int32_t *, void *,
@@ -396,7 +396,7 @@ NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 
 static int32_t
 NdisMSetAttributesEx(struct ndis_miniport_block *block, void *adapter_ctx,
-    uint32_t hangsecs, uint32_t flags, enum ndis_interface_type adapter_type)
+    uint32_t hangsecs, uint32_t flags, enum ndis_bus_type bus_type)
 {
 	/*
 	 * Save the adapter context, we need it for calling
@@ -404,7 +404,7 @@ NdisMSetAttributesEx(struct ndis_miniport_block *block, void *adapter_ctx,
 	 */
 	block->miniport_adapter_ctx = adapter_ctx;
 	block->check_for_hang_secs = hangsecs;
-	block->adapter_type = adapter_type;
+	block->bus_type = bus_type;
 	block->flags = flags;
 
 	return (NDIS_STATUS_SUCCESS);

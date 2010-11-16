@@ -186,7 +186,7 @@ struct ndis_softc {
 	struct nch			ndis_cfglist_head;
 	enum ndis_physical_medium	ndis_physical_medium;
 	uint32_t			ndis_devidx;
-	enum ndis_interface_type	ndis_iftype;
+	enum ndis_bus_type		ndis_bus_type;
 	struct driver_object		*ndis_dobj;
 	io_workitem			*ndis_tickitem;
 	io_workitem			*ndis_startitem;

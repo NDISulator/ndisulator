@@ -254,7 +254,7 @@ ndis_create_sysctls(struct ndis_softc *sc)
 	ndis_add_sysctl(sc, "NdisVersion",
 	    "NDIS API Version", "0x00050001", CTLFLAG_RD);
 	/* Bus type (PCI, PCMCIA, etc...) */
-	sprintf(buf, "%d", sc->ndis_iftype);
+	sprintf(buf, "%d", sc->ndis_bus_type);
 	ndis_add_sysctl(sc, "BusType", "Bus Type", buf, CTLFLAG_RD);
 	if (sc->ndis_res_io != NULL) {
 		sprintf(buf, "0x%lx", rman_get_start(sc->ndis_res_io));
@@ -947,7 +947,8 @@ NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
 
 	sc = device_get_softc(pdo->devext);
 	ndis_create_sysctls(sc);
-	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus) {
+	if (sc->ndis_bus_type == NDIS_PCMCIABUS ||
+	    sc->ndis_bus_type == NDIS_PCIBUS) {
 		status = bus_setup_intr(sc->ndis_dev, sc->ndis_irq,
 		    INTR_TYPE_NET|INTR_MPSAFE, NULL, ntoskrnl_intr, NULL,
 		    &sc->ndis_intrhand);

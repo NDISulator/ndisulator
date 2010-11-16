@@ -65,7 +65,7 @@ MODULE_DEPEND(ndis, usb, 1, 1, 1);
 
 static int	ndis_attach_usb(device_t);
 static int	ndis_detach_usb(device_t);
-static int	ndis_devcompare_usb(enum ndis_interface_type,
+static int	ndis_devcompare_usb(enum ndis_bus_type,
 		    struct ndis_usb_type *, device_t);
 static int	ndis_probe_usb(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
@@ -92,12 +92,12 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, uhub, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare_usb(enum ndis_interface_type bustype,
+ndis_devcompare_usb(enum ndis_bus_type bustype,
     struct ndis_usb_type *t, device_t dev)
 {
 	struct usb_attach_arg *uaa;
 
-	if (bustype != PNPBus)
+	if (bustype != NDIS_PNPBUS)
 		return (FALSE);
 
 	uaa = device_get_ivars(dev);
@@ -157,7 +157,7 @@ ndis_attach_usb(device_t dev)
 	mtx_init(&sc->ndisusb_mtx, "NDIS USB", MTX_NETWORK_LOCK, MTX_DEF);
 	sc->ndis_dobj = db->windrv_object;
 	sc->ndis_regvals = db->windrv_regvals;
-	sc->ndis_iftype = PNPBus;
+	sc->ndis_bus_type = NDIS_PNPBUS;
 	sc->ndisusb_dev = uaa->device;
 
 	drv = windrv_lookup(0, "USB Bus");

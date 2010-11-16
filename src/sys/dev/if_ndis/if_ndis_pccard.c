@@ -64,7 +64,7 @@ MODULE_DEPEND(ndis, pccard, 1, 1, 1);
 
 static int	ndis_alloc_amem(struct ndis_softc *);
 static int	ndis_attach_pccard(device_t);
-static int	ndis_devcompare_pccard(enum ndis_interface_type,
+static int	ndis_devcompare_pccard(enum ndis_bus_type,
 		    struct ndis_pccard_type *, device_t);
 static int	ndis_probe_pccard(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
@@ -95,12 +95,12 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, pccard, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare_pccard(enum ndis_interface_type bustype,
+ndis_devcompare_pccard(enum ndis_bus_type bustype,
     struct ndis_pccard_type *t, device_t dev)
 {
 	const char *prodstr, *vendstr;
 
-	if (bustype != PCMCIABus)
+	if (bustype != NDIS_PCMCIABUS)
 		return (FALSE);
 	if (pccard_get_product_str(dev, &prodstr))
 		return (FALSE);
@@ -178,7 +178,7 @@ ndis_attach_pccard(device_t dev)
 	sc->ndis_rescnt++;
 	resource_list_add(&sc->ndis_rl, SYS_RES_IRQ, rid,
 	    rman_get_start(sc->ndis_irq), rman_get_start(sc->ndis_irq), 1);
-	sc->ndis_iftype = PCMCIABus;
+	sc->ndis_bus_type = NDIS_PCMCIABUS;
 
 	/* Figure out exactly which device we matched. */
 	t = db->windrv_devlist;

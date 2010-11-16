@@ -35,27 +35,6 @@
 #ifndef _RESOURCE_VAR_H_
 #define	_RESOURCE_VAR_H_
 
-enum ndis_interface_type {
-	InterfaceTypeUndefined = -1,
-	Internal,
-	Isa,
-	Eisa,
-	MicroChannel,
-	TurboChannel,
-	PCIBus,
-	VMEBus,
-	NuBus,
-	PCMCIABus,
-	CBus,
-	MPIBus,
-	MPSABus,
-	ProcessorInternal,
-	InternalPowerBus,
-	PNPISABus,
-	PNPBus,
-	MaximumInterfaceType
-};
-
 #define	CmResourceTypeNull		0
 #define	CmResourceTypePort		1
 #define	CmResourceTypeInterrupt		2
@@ -155,7 +134,7 @@ struct cm_partial_resource_list {
 };
 
 struct cm_full_resource_list {
-	enum ndis_interface_type		type;
+	uint32_t				type;
 	uint32_t				busnum;
 	struct cm_partial_resource_desc		partiallist;
 };

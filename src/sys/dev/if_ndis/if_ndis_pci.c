@@ -62,7 +62,7 @@ __FBSDID("$FreeBSD$");
 MODULE_DEPEND(ndis, pci, 1, 1, 1);
 
 static int	ndis_attach_pci(device_t);
-static int	ndis_devcompare_pci(enum ndis_interface_type,
+static int	ndis_devcompare_pci(enum ndis_bus_type,
 		    struct ndis_pci_type *, device_t);
 static int	ndis_probe_pci(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
@@ -89,11 +89,11 @@ static devclass_t ndis_devclass;
 DRIVER_MODULE(ndis, pci, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
-ndis_devcompare_pci(enum ndis_interface_type bustype,
+ndis_devcompare_pci(enum ndis_bus_type bustype,
     struct ndis_pci_type *t, device_t dev)
 {
 
-	if (bustype != PCIBus)
+	if (bustype != NDIS_PCIBUS)
 		return (FALSE);
 
 	while (t->ndis_name != NULL) {
@@ -251,7 +251,7 @@ ndis_attach_pci(device_t dev)
 	if (error)
 		goto fail;
 
-	sc->ndis_iftype = PCIBus;
+	sc->ndis_bus_type = NDIS_PCIBUS;
 
 	/* Figure out exactly which device we matched. */
 	t = db->windrv_devlist;

@@ -1250,7 +1250,7 @@ struct drvdb_ent {
 	struct driver_object		*windrv_object;
 	void				*windrv_devlist;
 	struct ndis_cfg			*windrv_regvals;
-	enum ndis_interface_type	windrv_bustype;
+	uint32_t			windrv_bustype;
 	STAILQ_ENTRY(drvdb_ent)	link;
 };
 
@@ -1259,13 +1259,12 @@ extern struct image_patch_table ntoskrnl_functbl[];
 extern struct kuser_shared_data kuser_shared_data;
 #endif
 typedef void (*funcptr)(void);
-typedef int (*matchfuncptr)(enum ndis_interface_type, void *, void *);
+typedef int (*matchfuncptr)(uint32_t, void *, void *);
 
 void	windrv_libinit(void);
 void	windrv_libfini(void);
 struct drvdb_ent	*windrv_match(matchfuncptr, void *);
-int	windrv_load(module_t, vm_offset_t, size_t, enum ndis_interface_type,
-	    void *, void *);
+int	windrv_load(module_t, vm_offset_t, size_t, uint32_t, void *, void *);
 int	windrv_unload(module_t, vm_offset_t);
 int32_t	windrv_create_pdo(struct driver_object *, device_t);
 void	windrv_destroy_pdo(struct driver_object *, device_t);

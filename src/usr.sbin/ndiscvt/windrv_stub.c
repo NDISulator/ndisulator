@@ -47,6 +47,7 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/cfg_var.h>
 #include <compat/ndis/resource_var.h>
 #include <compat/ndis/ntoskrnl_var.h>
+#include <compat/ndis/ndis_var.h>
 #include "windrv.h"
 
 struct ndis_pci_type {
@@ -171,15 +172,15 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 			break;
 		windrv_loaded = 1;
 #ifdef NDIS_PCI_DEV_TABLE
-		windrv_load(mod, drv_data_start, drv_data_len, PCIBus,
+		windrv_load(mod, drv_data_start, drv_data_len, NDIS_PCIBUS,
 		    ndis_devs_pci, &ndis_regvals);
 #endif
 #ifdef NDIS_PCMCIA_DEV_TABLE
-		windrv_load(mod, drv_data_start, drv_data_len, PCMCIABus,
+		windrv_load(mod, drv_data_start, drv_data_len, NDIS_PCMCIABUS,
 		    ndis_devs_pccard, &ndis_regvals);
 #endif
 #ifdef NDIS_USB_DEV_TABLE
-		windrv_load(mod, drv_data_start, drv_data_len, PNPBus,
+		windrv_load(mod, drv_data_start, drv_data_len, NDIS_PNPBUS,
 		   ndis_devs_usb, &ndis_regvals);
 #endif
 		break;

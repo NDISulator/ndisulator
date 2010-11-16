@@ -540,6 +540,25 @@ enum ndis_hardware_status {
 	NDIS_HARDWARE_STATUS_NOT_READY
 };
 
+enum ndis_bus_type {
+	NDIS_INTERNAL,
+	NDIS_ISA,
+	NDIS_EISA,
+	NDIS_MCA,
+	NDIS_TURBO_CHANNEL,
+	NDIS_PCIBUS,
+	NDIS_VMEBUS,
+	NDIS_NUBUS,
+	NDIS_PCMCIABUS,
+	NDIS_CBUS,
+	NDIS_MPIBUS,
+	NDIS_MPSABUS,
+	NDIS_PROCESSOR_INTERNAL,
+	NDIS_INTERNAL_POWERBUS,
+	NDIS_PNPISABUS,
+	NDIS_PNPBUS
+};
+
 enum ndis_interrupt_mode {
 	NIM_LEVEL,
 	NIM_LATCHED
@@ -1539,7 +1558,7 @@ struct ndis_miniport_block {
 	void				*reset_done_func;
 	enum ndis_medium		media_type;
 	uint32_t			bus_number;
-	uint32_t			bus_type;
+	enum ndis_bus_type		bus_type;
 	uint32_t			adapter_type;
 	struct device_object		*deviceobj; /* Functional device */
 	struct device_object		*physdeviceobj; /* Physical device */

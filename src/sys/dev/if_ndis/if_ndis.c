@@ -616,11 +616,11 @@ ndis_attach(device_t dev)
 	callout_init(&sc->ndis_stat_callout, CALLOUT_MPSAFE);
 
 	/* Find the PDO for this device instance. */
-	if (sc->ndis_iftype == PCIBus)
+	if (sc->ndis_bus_type == NDIS_PCIBUS)
 		pdrv = windrv_lookup(0, "PCI Bus");
-	else if (sc->ndis_iftype == PCMCIABus)
+	else if (sc->ndis_bus_type == NDIS_PCMCIABUS)
 		pdrv = windrv_lookup(0, "PCCARD Bus");
-	else if (sc->ndis_iftype == PNPBus)
+	else if (sc->ndis_bus_type == NDIS_PNPBUS)
 		pdrv = windrv_lookup(0, "USB Bus");
 	else {
 		device_printf(dev, "unsupported interface type\n");
@@ -646,7 +646,8 @@ ndis_attach(device_t dev)
 	}
 
 	/* Do resource conversion. */
-	if (sc->ndis_iftype == PCMCIABus || sc->ndis_iftype == PCIBus)
+	if (sc->ndis_bus_type == NDIS_PCMCIABUS ||
+	    sc->ndis_bus_type == NDIS_PCIBUS)
 		ndis_convert_res(sc);
 	else
 		sc->ndis_block->rlist = NULL;
@@ -1113,7 +1114,7 @@ ndis_detach(device_t dev)
 		    sc->ndis_altmem_rid, sc->ndis_res_altmem);
 	if (sc->ndis_ifp != NULL)
 		if_free(sc->ndis_ifp);
-	if (sc->ndis_iftype == PCMCIABus)
+	if (sc->ndis_bus_type == NDIS_PCMCIABUS)
 		ndis_free_amem(sc);
 	if (sc->ndis_sc)
 		ndis_destroy_dma(sc);
@@ -1123,12 +1124,12 @@ ndis_detach(device_t dev)
 		ifmedia_removeall(&sc->ifmedia);
 	if (sc->ndis_txpool != NULL)
 		NdisFreePacketPool(sc->ndis_txpool);
-	if (sc->ndis_iftype == PCIBus) {
+	if (sc->ndis_bus_type == NDIS_PCIBUS) {
 		windrv_destroy_pdo(windrv_lookup(0, "PCI Bus"), dev);
 		bus_dma_tag_destroy(sc->ndis_parent_tag);
-	} else if (sc->ndis_iftype == PCMCIABus) {
+	} else if (sc->ndis_bus_type == NDIS_PCMCIABUS) {
 		windrv_destroy_pdo(windrv_lookup(0, "PCCARD Bus"), dev);
-	} else if (sc->ndis_iftype == PNPBus) {
+	} else if (sc->ndis_bus_type == NDIS_PNPBUS) {
 		windrv_destroy_pdo(windrv_lookup(0, "USB Bus"), dev);
 	}
 	mtx_destroy(&sc->ndis_mtx);
