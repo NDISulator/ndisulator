@@ -245,7 +245,7 @@ ndis_attach_pci(device_t dev)
 			NULL, NULL,		/* filter, filterarg */
 			MAXBSIZE, NDIS_NSEG_NEW,/* maxsize, nsegments */
 			BUS_SPACE_MAXSIZE_32BIT,/* maxsegsize */
-			BUS_DMA_ALLOCNOW,	/* flags */
+			0,			/* flags */
 			NULL, NULL,		/* lockfunc, lockarg */
 			&sc->ndis_parent_tag);
 	if (error)
