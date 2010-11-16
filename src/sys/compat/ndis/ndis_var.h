@@ -678,6 +678,15 @@ struct ndis_miniport_init_parameters {
 	struct ndis_pci_device_custom_properties *pci_device_custom_properties;
 };
 
+#define NDIS_MINIPORT_ATTRIBUTES_HARDWARE_DEVICE	0x00000001
+#define NDIS_MINIPORT_ATTRIBUTES_NDIS_WDM		0x00000002
+#define NDIS_MINIPORT_ATTRIBUTES_SURPRISE_REMOVE_OK	0x00000004
+#define NDIS_MINIPORT_ATTRIBUTES_NOT_CO_NDIS		0x00000008
+#define NDIS_MINIPORT_ATTRIBUTES_DO_NOT_BIND_TO_ALL_CO	0x00000010
+#define NDIS_MINIPORT_ATTRIBUTES_NO_HALT_ON_SUSPEND	0x00000020
+#define NDIS_MINIPORT_ATTRIBUTES_BUS_MASTER		0x00000040
+#define NDIS_MINIPORT_ATTRIBUTES_CONTROLS_DEFAULT_PORT	0x00000080
+
 struct ndis_miniport_adapter_registration_attributes {
 	struct ndis_object_header		header;
 	void					*miniport_adapter_context;
