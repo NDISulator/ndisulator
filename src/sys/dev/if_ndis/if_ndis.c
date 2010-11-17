@@ -1913,6 +1913,8 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 	ndis_get_int(sc, OID_GEN_MEDIA_CONNECT_STATUS, &linkstate);
 	if (linkstate == NDIS_MEDIA_STATE_CONNECTED)
 		ifmr->ifm_status |= IFM_ACTIVE;
+	else
+		return;
 
 	ndis_get_int(sc, OID_GEN_LINK_SPEED, &media_info);
 
