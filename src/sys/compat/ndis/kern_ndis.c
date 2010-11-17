@@ -752,18 +752,11 @@ ndis_init_dma(struct ndis_softc *sc)
 void
 ndis_destroy_dma(struct ndis_softc *sc)
 {
-	struct mbuf *m;
-	struct ndis_packet *p = NULL;
 	int i;
 
 	for (i = 0; i < sc->ndis_maxpkts; i++) {
-		if (sc->ndis_txarray[i] != NULL) {
-			p = sc->ndis_txarray[i];
-			m = (struct mbuf *)p->reserved[1];
-			if (m != NULL)
-				m_freem(m);
+		if (sc->ndis_txarray[i] != NULL)
 			ndis_free_packet(sc->ndis_txarray[i]);
-		}
 		bus_dmamap_destroy(sc->ndis_ttag, sc->ndis_tmaps[i]);
 	}
 	free(sc->ndis_tmaps, M_NDIS_KERN);
