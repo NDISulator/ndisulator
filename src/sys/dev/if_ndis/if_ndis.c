@@ -275,7 +275,7 @@ ndis_get_oids(struct ndis_softc *sc, uint32_t **oids, uint32_t *oidcnt)
 		free(*oids, M_NDIS_DEV);
 		return (rval);
 	}
-	*oidcnt = len / 4;
+	*oidcnt = len / sizeof(uint32_t);
 	return (0);
 }
 
