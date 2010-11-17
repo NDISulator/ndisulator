@@ -699,9 +699,15 @@ ndis_attach(device_t dev)
 
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
 	if (rval) {
-		device_printf(dev, "get current address failed; "
-		     "status: 0x%08X\n", rval);
-		goto fail;
+		DPRINTF("get current address failed; "
+		    "status: 0x%08X\n", rval);
+		rval = ndis_get(sc, OID_802_3_PERMANENT_ADDRESS,
+		    &eaddr, sizeof(eaddr));
+		if (rval) {
+			device_printf(dev, "get permanent address failed; "
+			    "status: 0x%08X\n", rval);
+			goto fail;
+		}
 	}
 
 	rval = ndis_get_int(sc,
