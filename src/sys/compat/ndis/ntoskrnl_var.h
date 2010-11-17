@@ -108,17 +108,6 @@ typedef struct mdl mdl, ndis_buffer;
 #define	MDL_ZONE_SIZE (sizeof(mdl) + (sizeof(vm_offset_t) * MDL_ZONE_PAGES))
 
 /* Note: assumes x86 page size of 4K. */
-
-#ifndef PAGE_SHIFT
-#if PAGE_SIZE == 4096
-#define	PAGE_SHIFT 12
-#elif PAGE_SIZE == 8192
-#define	PAGE_SHIFT 13
-#else
-#error PAGE_SHIFT undefined!
-#endif
-#endif
-
 #define	SPAN_PAGES(ptr, len)					\
 	((uint32_t)((((uintptr_t)(ptr) & (PAGE_SIZE - 1)) +	\
 	(len) + (PAGE_SIZE - 1)) >> PAGE_SHIFT))
