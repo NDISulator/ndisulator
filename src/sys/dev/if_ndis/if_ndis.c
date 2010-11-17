@@ -1843,6 +1843,8 @@ ndis_init(void *xsc)
 	struct ifnet *ifp = sc->ndis_ifp;
 	struct ieee80211com *ic = ifp->if_l2com;
 
+	ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D0);
+
 	/* Program the packet filter */
 	if (ndis_set_filter(sc) != 0)
 		DPRINTF("set filter failed\n");
@@ -1872,8 +1874,6 @@ ndis_init(void *xsc)
 	sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 	NDIS_UNLOCK(sc);
-
-	ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D0);
 
 	if (NDIS_80211(sc))
 		ieee80211_start_all(ic);	/* start all vap's */
