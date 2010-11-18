@@ -2184,17 +2184,19 @@ static void
 ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
-	struct ieee80211_node *ni = vap->iv_bss;
+	struct ieee80211_node *ni;
 	struct ndis_80211_config config;
 	struct ndis_80211_ssid ssid;
 	int chanflag = 0, i = 0;
 	uint32_t arg;
 
+	ni = ieee80211_ref_node(vap->iv_bss);
 	if (ndis_get(sc, OID_802_11_BSSID, ni->ni_bssid, IEEE80211_ADDR_LEN))
 		DPRINTF("get bssid failed\n");
 
 	if (ndis_get(sc, OID_802_11_SSID, &ssid, sizeof(ssid))) {
 		DPRINTF("get ssid failed\n");
+		ieee80211_free_node(ni);
 		return;
 	}
 	memcpy(ni->ni_essid, ssid.ssid, ssid.len);
@@ -2254,6 +2256,7 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 		ni->ni_chan = ic->ic_bsschan = ic->ic_curchan;
 		ni->ni_intval = config.beaconperiod;
 	}
+	ieee80211_free_node(ni);
 }
 
 static int
