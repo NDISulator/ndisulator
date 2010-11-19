@@ -534,7 +534,7 @@ struct kinterrupt {
 	device_t		ki_dev;
 	int			ki_rid;
 	void			*ki_cookie;
-	struct			resource *ki_irq;
+	struct resource 	*ki_irq;
 	kspin_lock		ki_lock_priv;
 	kspin_lock		*ki_lock;
 	void			*ki_svcfunc;

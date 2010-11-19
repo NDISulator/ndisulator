@@ -1093,7 +1093,7 @@ KeAcquireInterruptSpinLock(struct kinterrupt *iobj)
 {
 	uint8_t irql;
 
-	KeAcquireSpinLock(&ntoskrnl_intlock, &irql);
+	KeAcquireSpinLock(iobj->ki_lock, &irql);
 
 	return (irql);
 }
@@ -1101,7 +1101,7 @@ KeAcquireInterruptSpinLock(struct kinterrupt *iobj)
 void
 KeReleaseInterruptSpinLock(struct kinterrupt *iobj, uint8_t irql)
 {
-	KeReleaseSpinLock(&ntoskrnl_intlock, irql);
+	KeReleaseSpinLock(iobj->ki_lock, irql);
 }
 
 uint8_t
@@ -1110,11 +1110,12 @@ KeSynchronizeExecution(struct kinterrupt *iobj, void *syncfunc, void *syncctx)
 	uint8_t irql, rval;
 
 	KASSERT(iobj != NULL, ("no iobj"));
+	KASSERT(iobj->ki_lock != NULL, ("no lock"));
 	KASSERT(syncfunc != NULL, ("no syncfunc"));
 	KASSERT(syncctx != NULL, ("no syncctx"));
-	KeAcquireSpinLock(&ntoskrnl_intlock, &irql);
+	KeAcquireSpinLock(iobj->ki_lock, &irql);
 	rval = MSCALL1(syncfunc, syncctx);
-	KeReleaseSpinLock(&ntoskrnl_intlock, irql);
+	KeReleaseSpinLock(iobj->ki_lock, irql);
 
 	return (rval);
 }
