@@ -929,6 +929,188 @@ struct ndis_miniport_adapter_offload_attributes {
 	struct ndis_tcp_connection_offload	*tcp_conn_off_hw_cap;
 };
 
+enum dot11_phy_type {
+	DOT11_PHY_TYPE_UNKNOWN = 0,
+	DOT11_PHY_TYPE_ANY = DOT11_PHY_TYPE_UNKNOWN,
+	DOT11_PHY_TYPE_FHSS = 1,
+	DOT11_PHY_TYPE_DSSS = 2,
+	DOT11_PHY_TYPE_IRBASEBAND = 3,
+	DOT11_PHY_TYPE_OFDM = 4,
+	DOT11_PHY_TYPE_HRDSSS = 5,
+	DOT11_PHY_TYPE_ERP = 6,
+	DOT11_PHY_TYPE_HT = 7,
+	DOT11_PHY_TYPE_IHV_START = 0x80000000,
+	DOT11_PHY_TYPE_IHV_END = 0xffffffff
+};
+
+enum dot11_temp_type {
+	DOT11_TEMP_TYPE_UNKNOWN,
+	DOT11_TEMP_TYPE_1,
+	DOT11_TEMP_TYPE_2
+};
+
+enum dot11_diversity_support {
+	DOT11_DIVERSITY_SUPPORT_UNKNOWN,
+	DOT11_DIVERSITY_SUPPORT_FIXEDLIST,
+	DOT11_DIVERSITY_SUPPORT_NOTSUPPORTED,
+	DOT11_DIVERSITY_SUPPORT_DYNAMIC
+};
+
+struct dot11_hrdsss_phy_attributes {
+	uint8_t		short_preamble_option_implemented;
+	uint8_t		pbcc_option_implemented;
+	uint8_t		channel_agility_present;
+	uint32_t	hrcca_mode_supported;
+};
+
+struct dot11_ofdm_phy_attributes {
+	uint32_t	frequency_bands_supported;
+};
+
+struct dot11_erp_phy_attributes {
+	struct dot11_hrdsss_phy_attributes	HRDSSS_attributes;
+	uint8_t			erppbcc_option_implemented;
+	uint8_t			dsssofdm_option_implemented;
+	uint8_t			short_slot_time_option_implemented;
+};
+
+struct dot11_data_rate_mapping_entry {
+	uint8_t		data_rate_index;
+	uint8_t		data_rate_flag;
+	uint16_t	data_rate_value;
+};
+
+#define	MAX_NUM_SUPPORTED_RATES_V2	8
+
+struct dot11_supported_data_rates_value_v2 {
+	uint8_t		tx[MAX_NUM_SUPPORTED_RATES_V2];
+	uint8_t		rx[MAX_NUM_SUPPORTED_RATES_V2];
+};
+
+#define	DOT11_RATE_SET_MAX_LENGTH	126
+
+struct dot11_phy_attributes {
+	struct ndis_object_header	header;
+	enum dot11_phy_type		phy_type;
+	uint8_t				hardware_phy_state;
+	uint8_t				software_phy_state;
+	uint8_t				cfpollable;
+	uint32_t			mpdu_max_length;
+	enum dot11_temp_type		temp_type;
+	enum dot11_diversity_support	diversity_support;
+	union {
+	struct dot11_hrdsss_phy_attributes	hrdsss_attributes;
+	struct dot11_ofdm_phy_attributes	ofdm_attributes;
+	struct dot11_erp_phy_attributes		erp_attributes;
+	};
+	uint32_t				num_supported_power_levels;
+	uint32_t				tx_power_levels[8];
+	uint32_t				num_data_rate_mapping_entries;
+	struct dot11_data_rate_mapping_entry	data_rate_mapping_entries[DOT11_RATE_SET_MAX_LENGTH];
+	struct dot11_supported_data_rates_value_v2 supported_data_rates_value;
+};
+
+enum dot11_auth_algorithm {
+	DOT11_AUTH_ALGO_80211_OPEN = 1,
+	DOT11_AUTH_ALGO_80211_SHARED_KEY = 2,
+	DOT11_AUTH_ALGO_WPA = 3,
+	DOT11_AUTH_ALGO_WPA_PSK	= 4,
+	DOT11_AUTH_ALGO_WPA_NONE = 5,
+	DOT11_AUTH_ALGO_RSNA = 6,
+	DOT11_AUTH_ALGO_RSNA_PSK = 7,
+	DOT11_AUTH_ALGO_IHV_START = 0x80000000,
+	DOT11_AUTH_ALGO_IHV_END = 0xffffffff
+};
+
+enum dot11_cipher_algorithm {
+	DOT11_CIPHER_ALGO_NONE = 0x00,
+	DOT11_CIPHER_ALGO_WEP40	= 0x01,
+	DOT11_CIPHER_ALGO_TKIP = 0x02,
+	DOT11_CIPHER_ALGO_CCMP = 0x04,
+	DOT11_CIPHER_ALGO_WEP104 = 0x05,
+	DOT11_CIPHER_ALGO_WPA_USE_GROUP = 0x100,
+	DOT11_CIPHER_ALGO_RSN_USE_GROUP = 0x100,
+	DOT11_CIPHER_ALGO_WEP = 0x101,
+	DOT11_CIPHER_ALGO_IHV_START = 0x80000000,
+	DOT11_CIPHER_ALGO_IHV_END = 0xffffffff
+};
+
+struct dot11_auth_cipher_pair {
+	enum dot11_auth_algorithm	auth_algo_id;
+	enum dot11_cipher_algorithm	cipher_algo_id;
+};
+
+struct dot11_extsta_attributes {
+	struct ndis_object_header	header;
+	uint32_t			ScanSSIDListSize;
+	uint32_t			DesiredBSSIDListSize;
+	uint32_t			DesiredSSIDListSize;
+	uint32_t			ExcludedMacAddressListSize;
+	uint32_t			PrivacyExemptionListSize;
+	uint32_t			KeyMappingTableSize;
+	uint32_t			DefaultKeyTableSize;
+	uint32_t			WEPKeyValueMaxLength;
+	uint32_t			PMKIDCacheSize;
+	uint32_t			MaxNumPerSTADefaultKeyTables;
+	uint8_t				StrictlyOrderedServiceClassImplemented;
+	uint8_t				SupportedQoSProtocolFlags;
+	uint8_t				SafeModeImplemented;
+	uint32_t			NumSupportedCountryOrRegionStrings;
+	uint8_t 			*CountryOrRegionStrings[3];
+	uint32_t			InfraNumSupportedUcastAlgoPairs;
+	struct dot11_auth_cipher_pair	*InfraSupportedUcastAlgoPairs;
+	uint32_t			InfraNumSupportedMcastAlgoPairs;
+	struct dot11_auth_cipher_pair	*InfraSupportedMcastAlgoPairs;
+	uint32_t			AdhocNumSupportedUcastAlgoPairs;
+	struct dot11_auth_cipher_pair	*AdhocSupportedUcastAlgoPairs;
+	uint32_t			AdhocNumSupportedMcastAlgoPairs;
+	struct dot11_auth_cipher_pair	*AdhocSupportedMcastAlgoPairs;
+};
+
+struct dot11_vwifi_combination {
+	struct ndis_object_header	header;
+	uint32_t			NumInfrastructure;
+	uint32_t			NumAdhoc;
+	uint32_t			NumSoftAP;
+	uint32_t			NumVirtualStation;
+};
+
+struct dot11_vwifi_attributes {
+	struct ndis_object_header	header;
+	uint32_t			total_num_of_entries;
+	struct dot11_vwifi_combination	combinations[1];
+};
+
+ struct dot11_extap_attributes {
+	struct ndis_object_header	header;
+	uint32_t			ScanSSIDListSize;
+	uint32_t			DesiredSSIDListSize;
+	uint32_t			PrivacyExemptionListSize;
+	uint32_t			AssociationTableSize;
+	uint32_t			DefaultKeyTableSize;
+	uint32_t			WEPKeyValueMaxLength;
+	uint8_t                         StrictlyOrderedServiceClassImplemented;
+	uint32_t			NumSupportedCountryOrRegionStrings;
+	uint8_t				*CountryOrRegionStrings[3];
+	uint32_t			InfraNumSupportedUcastAlgoPairs;
+	struct dot11_auth_cipher_pair	*InfraSupportedUcastAlgoPairs;
+	uint32_t                        InfraNumSupportedMcastAlgoPairs;
+	struct dot11_auth_cipher_pair	*InfraSupportedMcastAlgoPairs;
+};
+
+struct ndis_miniport_adapter_native_802_11_attributes {
+	struct ndis_object_header	header;
+	uint32_t			op_mode_capability;
+	uint32_t			num_of_tx_buffers;
+	uint32_t			num_of_rx_buffers;
+	uint8_t				multi_domain_capability_implemented;
+	uint32_t			num_supported_phys;
+	struct dot11_phy_attributes	*supported_phy_attributes;
+	struct dot11_extsta_attributes	*extsta_attributes;
+	struct dot11_vwifi_attributes	*vwifi_attributes;
+	struct dot11_extap_attributes	*extap_attributes;
+};
+
 struct ndis_80211_network_type_list {
 	uint32_t			items;
 	enum ndis_80211_network_type	type[1];
