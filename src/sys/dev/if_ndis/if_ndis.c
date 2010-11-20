@@ -425,8 +425,7 @@ ndis_set_task_offload(struct ndis_softc *sc)
 	int error;
 	uint32_t len;
 
-	if (!NDIS_INITIALIZED(sc))
-		return (EINVAL);
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 
 	error = ndis_probe_task_offload(sc);
 	if (error)
@@ -1148,8 +1147,8 @@ ndis_suspend(device_t dev)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
-	if (NDIS_INITIALIZED(sc))
-		ndis_stop(sc);
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
+	ndis_stop(sc);
 	return (0);
 }
 
@@ -1159,8 +1158,8 @@ ndis_resume(device_t dev)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(dev);
-	if (NDIS_INITIALIZED(sc))
-		ndis_init(sc);
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
+	ndis_init(sc);
 	return (0);
 }
 
@@ -1238,8 +1237,7 @@ ndis_rxeof_done(ndis_handle adapter)
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 
 	/* Schedule transfer/RX of queued packets. */
 	KeInsertQueueDpc(&sc->ndis_rxdpc, NULL, NULL);
@@ -1261,8 +1259,7 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	struct mbuf *m;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	ifp = sc->ndis_ifp;
 
 	KeAcquireSpinLockAtDpcLevel(&block->lock);
@@ -1325,8 +1322,7 @@ ndis_rxeof_xfr_done(ndis_handle adapter, struct ndis_packet *packet,
 	struct mbuf *m;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	ifp = sc->ndis_ifp;
 
 	m = packet->m0;
@@ -1377,8 +1373,7 @@ ndis_rxeof(ndis_handle adapter, struct ndis_packet **packets, uint32_t pktcnt)
 	int i;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	ifp = sc->ndis_ifp;
 
 	/*
@@ -1495,8 +1490,7 @@ ndis_txeof(ndis_handle adapter, struct ndis_packet *packet, int32_t status)
 	struct mbuf *m;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	ifp = sc->ndis_ifp;
 
 	m = packet->m0;
@@ -1893,10 +1887,9 @@ ndis_ifmedia_upd(struct ifnet *ifp)
 {
 	struct ndis_softc *sc = ifp->if_softc;
 
-	if (NDIS_INITIALIZED(sc)) {
-		ndis_stop(sc);
-		ndis_init(sc);
-	}
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
+	ndis_stop(sc);
+	ndis_init(sc);
 	return (0);
 }
 
@@ -1913,8 +1906,7 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 	ifmr->ifm_status = IFM_AVALID;
 	ifmr->ifm_active = IFM_ETHER;
 
-	if (!NDIS_INITIALIZED(sc))
-		return;
+	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 
 	ndis_get_int(sc, OID_GEN_MEDIA_CONNECT_STATUS, &linkstate);
 	if (linkstate == NDIS_MEDIA_STATE_CONNECTED)
