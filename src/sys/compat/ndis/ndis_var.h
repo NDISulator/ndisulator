@@ -1819,10 +1819,7 @@ struct ndis_packet_pool {
 };
 
 struct ndis_filter_dbs {
-	union {
-		void	*ethdb;
-		void	*nulldb;
-	} u;
+	void	*ethdb;
 	void	*trdb;
 	void	*fddidb;
 	void	*arcdb;

@@ -958,7 +958,10 @@ NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
 		return (status);
 
 	block = fdo->devext;
-	block->filter_dbs.u.ethdb = block;
+	block->filter_dbs.ethdb = block;
+	block->filter_dbs.trdb = block;
+	block->filter_dbs.fddidb = block;
+	block->filter_dbs.arcdb = block;
 	block->deviceobj = fdo;
 	block->physdeviceobj = pdo;
 	block->nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
