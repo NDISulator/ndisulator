@@ -180,7 +180,7 @@ struct ndis_softc {
 	uint32_t			ndis_txidx;
 	uint32_t			ndis_txpending;
 	struct ndis_packet		**ndis_txarray;
-	ndis_handle			ndis_txpool;
+	struct ndis_packet_pool		*ndis_txpool;
 	uint8_t				ndis_sc;
 	struct ndis_cfg			*ndis_regvals;
 	struct nch			ndis_cfglist_head;

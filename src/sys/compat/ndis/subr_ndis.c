@@ -1389,7 +1389,7 @@ NdisMInitializeScatterGatherDma(struct ndis_miniport_block *block,
 }
 
 void
-NdisAllocatePacketPool(int32_t *status, ndis_handle *pool,
+NdisAllocatePacketPool(int32_t *status, struct ndis_packet_pool **pool,
     uint32_t descnum, uint32_t protrsvdlen)
 {
 	struct ndis_packet_pool *p;
@@ -1430,72 +1430,64 @@ NdisAllocatePacketPool(int32_t *status, ndis_handle *pool,
 }
 
 void
-NdisAllocatePacketPoolEx(int32_t *status, ndis_handle *pool,
+NdisAllocatePacketPoolEx(int32_t *status, struct ndis_packet_pool **pool,
     uint32_t descnum, uint32_t oflowdescnum, uint32_t protrsvdlen)
 {
 	return (NdisAllocatePacketPool(status, pool,
 	    descnum + oflowdescnum, protrsvdlen));
 }
 
-uint32_t
-NdisPacketPoolUsage(ndis_handle pool)
+static uint32_t
+NdisPacketPoolUsage(struct ndis_packet_pool *pool)
 {
-	struct ndis_packet_pool *p;
-
-	p = (struct ndis_packet_pool *)pool;
-
-	return (p->cnt - ExQueryDepthSList(&p->head));
+	return (pool->cnt - ExQueryDepthSList(&pool->head));
 }
 
 void
-NdisFreePacketPool(ndis_handle pool)
+NdisFreePacketPool(struct ndis_packet_pool *pool)
 {
-	struct ndis_packet_pool *p;
 	int usage;
 #ifdef NDIS_DEBUG_PACKETS
 	uint8_t irql;
 #endif
-	p = (struct ndis_packet_pool *)pool;
 #ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&p->lock, &irql);
+	KeAcquireSpinLock(&pool->lock, &irql);
 #endif
 	usage = NdisPacketPoolUsage(pool);
 #ifdef NDIS_DEBUG_PACKETS
 	if (usage) {
-		p->dead = 1;
-		KeResetEvent(&p->event);
-		KeReleaseSpinLock(&p->lock, irql);
-		KeWaitForSingleObject(&p->event, 0, 0, FALSE, NULL);
+		pool->dead = 1;
+		KeResetEvent(&pool->event);
+		KeReleaseSpinLock(&pool->lock, irql);
+		KeWaitForSingleObject(&pool->event, 0, 0, FALSE, NULL);
 	} else
-		KeReleaseSpinLock(&p->lock, irql);
+		KeReleaseSpinLock(&pool->lock, irql);
 #endif
-	free(p->pktmem, M_NDIS_SUBR);
-	free(p, M_NDIS_SUBR);
+	free(pool->pktmem, M_NDIS_SUBR);
+	free(pool, M_NDIS_SUBR);
 }
 
 void
 NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
-    ndis_handle pool)
+    struct ndis_packet_pool *pool)
 {
-	struct ndis_packet_pool *p;
 	struct ndis_packet *pkt;
 #ifdef NDIS_DEBUG_PACKETS
 	uint8_t irql;
 #endif
-	p = (struct ndis_packet_pool *)pool;
 #ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&p->lock, &irql);
-	if (p->dead) {
-		KeReleaseSpinLock(&p->lock, irql);
+	KeAcquireSpinLock(&pool->lock, &irql);
+	if (pool->dead) {
+		KeReleaseSpinLock(&pool->lock, irql);
 		printf("NDIS: tried to allocate packet from dead pool %p\n",
 		    pool);
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
 		return;
 	}
 #endif
-	pkt = (struct ndis_packet *)InterlockedPopEntrySList(&p->head);
+	pkt = (struct ndis_packet *)InterlockedPopEntrySList(&pool->head);
 #ifdef NDIS_DEBUG_PACKETS
-	KeReleaseSpinLock(&p->lock, irql);
+	KeReleaseSpinLock(&pool->lock, irql);
 #endif
 	if (pkt == NULL) {
 		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;

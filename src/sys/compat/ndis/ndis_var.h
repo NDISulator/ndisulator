@@ -2061,7 +2061,7 @@ struct ndis_miniport_block {
 	int32_t				resetstat;
 	nt_kevent			resetevent;
 	io_workitem			*returnitem;
-	ndis_handle			rxpool;
+	struct ndis_packet_pool		*rxpool;
 	struct list_entry		returnlist;
 	kspin_lock			returnlock;
 	TAILQ_ENTRY(ndis_miniport_block)	link;
@@ -2126,12 +2126,13 @@ int	ndis_init_dma(struct ndis_softc *);
 void	ndis_destroy_dma(struct ndis_softc *);
 int	ndis_add_sysctl(struct ndis_softc *, char *, char *, char *, int);
 int32_t	NdisAddDevice(struct driver_object *, struct device_object *);
-void	NdisAllocatePacketPool(int32_t *, ndis_handle *, uint32_t, uint32_t);
-void	NdisAllocatePacketPoolEx(int32_t *, ndis_handle *, uint32_t, uint32_t,
-	    uint32_t);
-uint32_t	NdisPacketPoolUsage(ndis_handle);
-void	NdisFreePacketPool(ndis_handle);
-void	NdisAllocatePacket(int32_t *, struct ndis_packet **, ndis_handle);
+void	NdisAllocatePacketPool(int32_t *, struct ndis_packet_pool **,
+	    uint32_t, uint32_t);
+void	NdisAllocatePacketPoolEx(int32_t *, struct ndis_packet_pool **,
+	    uint32_t, uint32_t, uint32_t);
+void	NdisFreePacketPool(struct ndis_packet_pool *);
+void	NdisAllocatePacket(int32_t *, struct ndis_packet **,
+	    struct ndis_packet_pool *);
 void	NdisFreePacket(struct ndis_packet *);
 
 #endif /* _NDIS_VAR_H_ */
