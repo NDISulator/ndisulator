@@ -2649,7 +2649,7 @@ RtlCompareString(const ansi_string *str1, const ansi_string *str2,
 	p2 = str2->as_buf;
 	if (case_in_sensitive)
 		while (!ret && len--)
-			ret = toupper(*p1++) - toupper(*p2++);
+			ret = ntoskrnl_toupper(*p1++) - ntoskrnl_toupper(*p2++);
 	else
 		while (!ret && len--)
 			ret = *p1++ - *p2++;
@@ -2671,7 +2671,7 @@ RtlCompareUnicodeString(const unicode_string *str1, const unicode_string *str2,
 	p2 = str2->us_buf;
 	if (case_in_sensitive)
 		while (!ret && len--)
-			ret = toupper(*p1++) - toupper(*p2++);
+			ret = ntoskrnl_toupper(*p1++) - ntoskrnl_toupper(*p2++);
 	else
 		while (!ret && len--)
 			ret = *p1++ - *p2++;
