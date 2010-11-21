@@ -99,30 +99,35 @@ MODULE_DEPEND(ndis, wlan, 1, 1, 1);
 MODULE_DEPEND(ndis, ndisapi, 1, 1, 1);
 MODULE_VERSION(ndis, 1);
 
-static void	ndis_txeof(ndis_handle, struct ndis_packet *, int32_t);
-static void	ndis_rxeof(ndis_handle, struct ndis_packet **, uint32_t);
-static void	ndis_rxeof_eth(ndis_handle, ndis_handle, char *, void *,
-			uint32_t, void *, uint32_t, uint32_t);
-static void	ndis_rxeof_done(ndis_handle);
-static void	ndis_rxeof_xfr(kdpc *, ndis_handle, void *, void *);
-static void	ndis_rxeof_xfr_done(ndis_handle, struct ndis_packet *, uint32_t,
-			uint32_t);
-static void	ndis_linksts(ndis_handle, int32_t, void *, uint32_t);
-static void	ndis_linksts_done(ndis_handle);
+static void	NdisMEthIndicateReceive(struct ndis_miniport_block *,
+		    ndis_handle, char *, void *, uint32_t, void *, uint32_t,
+		    uint32_t);
+static void	NdisMEthIndicateReceiveComplete(struct ndis_miniport_block *);
+static void	NdisMIndicateReceivePacket(struct ndis_miniport_block *,
+		    struct ndis_packet **, uint32_t);
+static void	NdisMIndicateStatus(struct ndis_miniport_block *, int32_t,
+		    void *, uint32_t);
+static void	NdisMIndicateStatusComplete(struct ndis_miniport_block *);
+static void	NdisMSendComplete(struct ndis_miniport_block *,
+		    struct ndis_packet *, int32_t);
+static void	NdisMTransferDataComplete(struct ndis_miniport_block *,
+		    struct ndis_packet *, uint32_t, uint32_t);
+static void	ndis_rxeof_xfr(kdpc *, struct ndis_miniport_block *,
+		    void *, void *);
 
 /* We need to wrap these functions for amd64. */
-static funcptr ndis_txeof_wrap;
-static funcptr ndis_rxeof_wrap;
-static funcptr ndis_rxeof_eth_wrap;
-static funcptr ndis_rxeof_done_wrap;
-static funcptr ndis_rxeof_xfr_wrap;
-static funcptr ndis_rxeof_xfr_done_wrap;
-static funcptr ndis_linksts_wrap;
-static funcptr ndis_linksts_done_wrap;
-static funcptr ndis_ticktask_wrap;
-static funcptr ndis_starttask_wrap;
-static funcptr ndis_resettask_wrap;
 static funcptr ndis_inputtask_wrap;
+static funcptr ndis_linksts_done_wrap;
+static funcptr ndis_linksts_wrap;
+static funcptr ndis_resettask_wrap;
+static funcptr ndis_rxeof_done_wrap;
+static funcptr ndis_rxeof_eth_wrap;
+static funcptr ndis_rxeof_wrap;
+static funcptr ndis_rxeof_xfr_done_wrap;
+static funcptr ndis_rxeof_xfr_wrap;
+static funcptr ndis_starttask_wrap;
+static funcptr ndis_ticktask_wrap;
+static funcptr ndis_txeof_wrap;
 
 static struct ieee80211vap *ndis_vap_create(struct ieee80211com *,
 		    const char name[IFNAMSIZ], int unit, int opmode,
@@ -209,21 +214,21 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		if (ndisdrv_loaded == 1)
 			break;
 		ndisdrv_loaded = 1;
-		windrv_wrap((funcptr)ndis_rxeof, &ndis_rxeof_wrap,
-		    3, WINDRV_WRAP_STDCALL);
-		windrv_wrap((funcptr)ndis_rxeof_eth, &ndis_rxeof_eth_wrap,
-		    8, WINDRV_WRAP_STDCALL);
-		windrv_wrap((funcptr)ndis_rxeof_done, &ndis_rxeof_done_wrap,
-		    1, WINDRV_WRAP_STDCALL);
+		windrv_wrap((funcptr)NdisMIndicateReceivePacket,
+		    &ndis_rxeof_wrap, 3, WINDRV_WRAP_STDCALL);
+		windrv_wrap((funcptr)NdisMEthIndicateReceive,
+		    &ndis_rxeof_eth_wrap, 8, WINDRV_WRAP_STDCALL);
+		windrv_wrap((funcptr)NdisMEthIndicateReceiveComplete,
+		    &ndis_rxeof_done_wrap, 1, WINDRV_WRAP_STDCALL);
 		windrv_wrap((funcptr)ndis_rxeof_xfr, &ndis_rxeof_xfr_wrap,
 		    4, WINDRV_WRAP_STDCALL);
-		windrv_wrap((funcptr)ndis_rxeof_xfr_done,
+		windrv_wrap((funcptr)NdisMTransferDataComplete,
 		    &ndis_rxeof_xfr_done_wrap, 4, WINDRV_WRAP_STDCALL);
-		windrv_wrap((funcptr)ndis_txeof, &ndis_txeof_wrap,
-		    3, WINDRV_WRAP_STDCALL);
-		windrv_wrap((funcptr)ndis_linksts, &ndis_linksts_wrap,
-		    4, WINDRV_WRAP_STDCALL);
-		windrv_wrap((funcptr)ndis_linksts_done,
+		windrv_wrap((funcptr)NdisMSendComplete,
+		    &ndis_txeof_wrap, 3, WINDRV_WRAP_STDCALL);
+		windrv_wrap((funcptr)NdisMIndicateStatus,
+		    &ndis_linksts_wrap, 4, WINDRV_WRAP_STDCALL);
+		windrv_wrap((funcptr)NdisMIndicateStatusComplete,
 		    &ndis_linksts_done_wrap, 1, WINDRV_WRAP_STDCALL);
 		windrv_wrap((funcptr)ndis_ticktask, &ndis_ticktask_wrap,
 		    2, WINDRV_WRAP_STDCALL);
@@ -240,18 +245,18 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		ndisdrv_loaded = 0;
 		/* fallthrough */
 	case MOD_SHUTDOWN:
-		windrv_unwrap(ndis_rxeof_wrap);
-		windrv_unwrap(ndis_rxeof_eth_wrap);
-		windrv_unwrap(ndis_rxeof_done_wrap);
-		windrv_unwrap(ndis_rxeof_xfr_wrap);
-		windrv_unwrap(ndis_rxeof_xfr_done_wrap);
-		windrv_unwrap(ndis_txeof_wrap);
-		windrv_unwrap(ndis_linksts_wrap);
-		windrv_unwrap(ndis_linksts_done_wrap);
-		windrv_unwrap(ndis_ticktask_wrap);
-		windrv_unwrap(ndis_starttask_wrap);
-		windrv_unwrap(ndis_resettask_wrap);
 		windrv_unwrap(ndis_inputtask_wrap);
+		windrv_unwrap(ndis_linksts_done_wrap);
+		windrv_unwrap(ndis_linksts_wrap);
+		windrv_unwrap(ndis_resettask_wrap);
+		windrv_unwrap(ndis_rxeof_done_wrap);
+		windrv_unwrap(ndis_rxeof_eth_wrap);
+		windrv_unwrap(ndis_rxeof_wrap);
+		windrv_unwrap(ndis_rxeof_xfr_done_wrap);
+		windrv_unwrap(ndis_rxeof_xfr_wrap);
+		windrv_unwrap(ndis_starttask_wrap);
+		windrv_unwrap(ndis_ticktask_wrap);
+		windrv_unwrap(ndis_txeof_wrap);
 		break;
 	default:
 		return (ENOTSUP);
@@ -652,10 +657,10 @@ ndis_attach(device_t dev)
 		sc->ndis_block->rlist = NULL;
 
 	/* Install our RX and TX interrupt handlers. */
-	sc->ndis_block->send_done_func = ndis_txeof_wrap;
-	sc->ndis_block->packet_indicate_func = ndis_rxeof_wrap;
-	sc->ndis_block->ethrx_indicate_func = ndis_rxeof_eth_wrap;
 	sc->ndis_block->ethrx_done_func = ndis_rxeof_done_wrap;
+	sc->ndis_block->ethrx_indicate_func = ndis_rxeof_eth_wrap;
+	sc->ndis_block->packet_indicate_func = ndis_rxeof_wrap;
+	sc->ndis_block->send_done_func = ndis_txeof_wrap;
 	sc->ndis_block->tdcond_func = ndis_rxeof_xfr_done_wrap;
 
 	/* Override the status handler so we can detect link changes. */
@@ -1163,18 +1168,11 @@ ndis_resume(device_t dev)
 	return (0);
 }
 
-/*
- * The following bunch of routines are here to support drivers that
- * use the NdisMEthIndicateReceive()/MiniportTransferData() mechanism.
- * The NdisMEthIndicateReceive() handler runs at DISPATCH_LEVEL for
- * serialized miniports, or IRQL <= DISPATCH_LEVEL for deserialized
- * miniports.
- */
 static void
-ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
-    uint32_t hdrlen, void *lookahead, uint32_t lookaheadlen, uint32_t pktlen)
+NdisMEthIndicateReceive(struct ndis_miniport_block *block, ndis_handle ctx,
+    char *addr, void *hdr, uint32_t hdrlen, void *lookahead,
+    uint32_t lookaheadlen, uint32_t pktlen)
 {
-	struct ndis_miniport_block *block = adapter;
 	uint8_t irql = 0;
 	uint32_t status;
 	ndis_buffer *b;
@@ -1219,21 +1217,14 @@ ndis_rxeof_eth(ndis_handle adapter, ndis_handle ctx, char *addr, void *hdr,
 
 	if (!NDIS_SERIALIZED(block))
 		KeAcquireSpinLock(&block->lock, &irql);
-
 	InsertTailList((&block->packet_list), (&p->list));
-
 	if (!NDIS_SERIALIZED(block))
 		KeReleaseSpinLock(&block->lock, irql);
 }
 
-/*
- * NdisMEthIndicateReceiveComplete() handler, runs at DISPATCH_LEVEL for
- * serialized miniports, or IRQL <= DISPATCH_LEVEL for deserialized miniports.
- */
 static void
-ndis_rxeof_done(ndis_handle adapter)
+NdisMEthIndicateReceiveComplete(struct ndis_miniport_block *block)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(block->physdeviceobj->devext);
@@ -1247,9 +1238,9 @@ ndis_rxeof_done(ndis_handle adapter)
  * MiniportTransferData() handler, runs at DISPATCH_LEVEL.
  */
 static void
-ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
+ndis_rxeof_xfr(kdpc *dpc, struct ndis_miniport_block *block,
+    void *sysarg1, void *sysarg2)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_packet *p;
 	struct list_entry *l;
@@ -1309,14 +1300,10 @@ ndis_rxeof_xfr(kdpc *dpc, ndis_handle adapter, void *sysarg1, void *sysarg2)
 	KeReleaseSpinLockFromDpcLevel(&block->lock);
 }
 
-/*
- * NdisMTransferDataComplete() handler, runs at DISPATCH_LEVEL.
- */
 static void
-ndis_rxeof_xfr_done(ndis_handle adapter, struct ndis_packet *packet,
-    uint32_t status, uint32_t len)
+NdisMTransferDataComplete(struct ndis_miniport_block *block,
+    struct ndis_packet *packet, uint32_t status, uint32_t len)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ifnet *ifp;
 	struct mbuf *m;
@@ -1361,9 +1348,9 @@ ndis_rxeof_xfr_done(ndis_handle adapter, struct ndis_packet *packet,
  * packet data into local storage and let the driver keep the packet.
  */
 static void
-ndis_rxeof(ndis_handle adapter, struct ndis_packet **packets, uint32_t pktcnt)
+NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
+    struct ndis_packet **packets, uint32_t pktcnt)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ndis_packet *p;
 	uint32_t s;
@@ -1476,14 +1463,10 @@ ndis_inputtask(struct device_object *dobj, void *arg)
 	KeReleaseSpinLock(&sc->ndis_rxlock, irql);
 }
 
-/*
- * A frame was downloaded to the chip. It's safe for us to clean up
- * the list buffers.
- */
 static void
-ndis_txeof(ndis_handle adapter, struct ndis_packet *packet, int32_t status)
+NdisMSendComplete(struct ndis_miniport_block *block, struct ndis_packet *packet,
+    int32_t status)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 	struct ifnet *ifp;
 	int idx;
@@ -1519,9 +1502,9 @@ ndis_txeof(ndis_handle adapter, struct ndis_packet *packet, int32_t status)
 }
 
 static void
-ndis_linksts(ndis_handle adapter, int32_t status, void *buf, uint32_t len)
+NdisMIndicateStatus(struct ndis_miniport_block *block, int32_t status,
+    void *buf, uint32_t len)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_80211_status_indication *nsi;
 	struct ndis_80211_radio_status_indication *rsi;
 	struct ndis_softc *sc;
@@ -1597,9 +1580,8 @@ ndis_linksts(ndis_handle adapter, int32_t status, void *buf, uint32_t len)
 }
 
 static void
-ndis_linksts_done(ndis_handle adapter)
+NdisMIndicateStatusComplete(struct ndis_miniport_block *block)
 {
-	struct ndis_miniport_block *block = adapter;
 	struct ndis_softc *sc;
 
 	sc = device_get_softc(block->physdeviceobj->devext);

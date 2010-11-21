@@ -74,23 +74,28 @@ __FBSDID("$FreeBSD$");
 
 static void	ndis_create_sysctls(struct ndis_softc *);
 static void	ndis_flush_sysctls(struct ndis_softc *);
-static void	ndis_status_func(ndis_handle, int32_t, void *, uint32_t);
-static void	ndis_status_done_func(ndis_handle);
-static void	ndis_set_done_func(ndis_handle, int32_t);
-static void	ndis_get_done_func(ndis_handle, int32_t);
-static void	ndis_reset_done_func(ndis_handle, int32_t, uint8_t);
-static void	ndis_send_rsrcavail_func(ndis_handle);
+static void	NdisMIndicateStatus(struct ndis_miniport_block *, int32_t,
+		    void *, uint32_t);
+static void	NdisMIndicateStatusComplete(struct ndis_miniport_block *);
+static void	NdisMSetInformationComplete(struct ndis_miniport_block *,
+		    int32_t);
+static void	NdisMQueryInformationComplete(struct ndis_miniport_block *,
+		    int32_t);
+static void	NdisMResetComplete(struct ndis_miniport_block *, int32_t,
+		    uint8_t);
+static void	NdisMSendResourcesAvailable(struct ndis_miniport_block *);
 static void	ndis_interrupt_setup(kdpc *, struct device_object *, irp *,
 		    struct ndis_softc *);
-static void	ndis_return_packet_nic(struct device_object *, void *);
+static void	ndis_return_packet_nic(struct device_object *,
+		    struct ndis_miniport_block *);
 
 static struct image_patch_table kernndis_functbl[] = {
-	IMPORT_SFUNC(ndis_status_func, 4),
-	IMPORT_SFUNC(ndis_status_done_func, 1),
-	IMPORT_SFUNC(ndis_set_done_func, 2),
-	IMPORT_SFUNC(ndis_get_done_func, 2),
-	IMPORT_SFUNC(ndis_reset_done_func, 3),
-	IMPORT_SFUNC(ndis_send_rsrcavail_func, 1),
+	IMPORT_SFUNC(NdisMIndicateStatus, 4),
+	IMPORT_SFUNC(NdisMIndicateStatusComplete, 1),
+	IMPORT_SFUNC(NdisMSetInformationComplete, 2),
+	IMPORT_SFUNC(NdisMQueryInformationComplete, 2),
+	IMPORT_SFUNC(NdisMResetComplete, 3),
+	IMPORT_SFUNC(NdisMSendResourcesAvailable, 1),
 	IMPORT_SFUNC(ndis_interrupt_setup, 4),
 	IMPORT_SFUNC(ndis_return_packet_nic, 1),
 	{ NULL, NULL, NULL }
@@ -164,45 +169,39 @@ DEV_MODULE(ndisapi, ndis_modevent, NULL);
 MODULE_VERSION(ndisapi, 1);
 
 static void
-ndis_send_rsrcavail_func(ndis_handle adapter)
+NdisMSendResourcesAvailable(struct ndis_miniport_block *block)
 {
 }
 
 static void
-ndis_status_func(ndis_handle adapter, int32_t status, void *sbuf,
-    uint32_t slen)
+NdisMIndicateStatus(struct ndis_miniport_block *block, int32_t status,
+    void *sbuf, uint32_t slen)
 {
 }
 
 static void
-ndis_status_done_func(ndis_handle adapter)
+NdisMIndicateStatusComplete(struct ndis_miniport_block *block)
 {
 }
 
 static void
-ndis_set_done_func(ndis_handle adapter, int32_t status)
+NdisMSetInformationComplete(struct ndis_miniport_block *block, int32_t status)
 {
-	struct ndis_miniport_block *block = adapter;
-
 	block->setstat = status;
 	KeSetEvent(&block->setevent, IO_NO_INCREMENT, FALSE);
 }
 
 static void
-ndis_get_done_func(ndis_handle adapter, int32_t status)
+NdisMQueryInformationComplete(struct ndis_miniport_block *block, int32_t status)
 {
-	struct ndis_miniport_block *block = adapter;
-
 	block->getstat = status;
 	KeSetEvent(&block->getevent, IO_NO_INCREMENT, FALSE);
 }
 
 static void
-ndis_reset_done_func(ndis_handle adapter, int32_t status,
+NdisMResetComplete(struct ndis_miniport_block *block, int32_t status,
     uint8_t addressingreset)
 {
-	struct ndis_miniport_block *block = adapter;
-
 	block->resetstat = status;
 	KeSetEvent(&block->resetevent, IO_NO_INCREMENT, FALSE);
 }
@@ -315,9 +314,9 @@ ndis_flush_sysctls(struct ndis_softc *sc)
 }
 
 static void
-ndis_return_packet_nic(struct device_object *dobj, void *arg)
+ndis_return_packet_nic(struct device_object *dobj,
+    struct ndis_miniport_block *block)
 {
-	struct ndis_miniport_block *block = arg;
 	struct ndis_miniport_characteristics *ch;
 	struct ndis_packet *p;
 	uint8_t irql;

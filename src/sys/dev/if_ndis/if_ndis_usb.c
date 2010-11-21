@@ -71,13 +71,13 @@ static int	ndis_probe_usb(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
 static device_method_t ndis_methods[] = {
-	DEVMETHOD(device_probe,			ndis_probe_usb),
-	DEVMETHOD(device_attach,		ndis_attach_usb),
-	DEVMETHOD(device_detach,		ndis_detach_usb),
-	DEVMETHOD(device_shutdown,		ndis_shutdown),
-	DEVMETHOD(bus_print_child,		bus_generic_print_child),
-	DEVMETHOD(bus_driver_added,		bus_generic_driver_added),
-	DEVMETHOD(bus_get_resource_list,	ndis_get_resource_list),
+	DEVMETHOD(device_probe,		ndis_probe_usb),
+	DEVMETHOD(device_attach,	ndis_attach_usb),
+	DEVMETHOD(device_detach,	ndis_detach_usb),
+	DEVMETHOD(device_shutdown,	ndis_shutdown),
+	DEVMETHOD(bus_print_child,	bus_generic_print_child),
+	DEVMETHOD(bus_driver_added,	bus_generic_driver_added),
+	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
 	{ 0, 0 }
 };
 
@@ -202,7 +202,7 @@ ndis_detach_usb(device_t dev)
 		usbd_transfer_unsetup(ne->ne_xfer, 1);
 	}
 
-	(void)ndis_detach(dev);
+	ndis_detach(dev);
 
 	mtx_destroy(&sc->ndisusb_mtx);
 	return (0);

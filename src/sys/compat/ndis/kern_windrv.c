@@ -831,18 +831,17 @@ windrv_unwrap(funcptr func)
 void
 windrv_wrap_table(struct image_patch_table *table)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *p;
 
-	for (patch = table; patch->func != NULL; patch++)
-		windrv_wrap(patch->func, &patch->wrap,
-		    patch->argcnt, patch->ftype);
+	for (p = table; p->func != NULL; p++)
+		windrv_wrap(p->func, &p->wrap, p->argcnt, p->ftype);
 }
 
 void
 windrv_unwrap_table(struct image_patch_table *table)
 {
-	struct image_patch_table *patch;
+	struct image_patch_table *p;
 
-	for (patch = table; patch->func != NULL; patch++)
-		windrv_unwrap(patch->wrap);
+	for (p = table; p->func != NULL; p++)
+		windrv_unwrap(p->wrap);
 }
