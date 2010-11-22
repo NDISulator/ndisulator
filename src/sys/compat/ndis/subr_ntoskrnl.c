@@ -113,6 +113,7 @@ static uint8_t RtlEqualString(const ansi_string *,
     const ansi_string *, uint8_t);
 static uint8_t RtlEqualUnicodeString(const unicode_string *,
     const unicode_string *, uint8_t);
+static void RtlCopyString(ansi_string *, const ansi_string *);
 static void RtlCopyUnicodeString(unicode_string *, const unicode_string *);
 static irp *IoBuildSynchronousFsdRequest(uint32_t, struct device_object *,
     void *, uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
@@ -454,6 +455,18 @@ RtlEqualUnicodeString(const unicode_string *str1, const unicode_string *str2,
 	if (str1->us_len != str2->us_len)
 		return (FALSE);
 	return (!RtlCompareUnicodeString(str1, str2, case_in_sensitive));
+}
+
+static void
+RtlCopyString(ansi_string *dst, const ansi_string *src)
+{
+	if (src != NULL && src->as_buf != NULL && dst->as_buf != NULL) {
+		dst->as_len = min(src->as_len, dst->as_maxlen);
+		memcpy(dst->as_buf, src->as_buf, dst->as_len);
+		if (dst->as_len < dst->as_maxlen)
+			dst->as_buf[dst->as_len] = 0;
+	} else
+		dst->as_len = 0;
 }
 
 static void
@@ -3872,6 +3885,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlCompareString, 3),
 	IMPORT_SFUNC(RtlCompareUnicodeString, 3),
 	IMPORT_SFUNC(RtlCopyMemory, 3),
+	IMPORT_SFUNC(RtlCopyString, 2),
 	IMPORT_SFUNC(RtlCopyUnicodeString, 2),
 	IMPORT_SFUNC(RtlEqualString, 3),
 	IMPORT_SFUNC(RtlEqualUnicodeString, 3),
