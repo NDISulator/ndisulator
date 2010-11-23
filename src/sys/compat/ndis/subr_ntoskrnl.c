@@ -192,6 +192,8 @@ static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t,
     enum memory_caching_type, void *, uint32_t, uint32_t);
 static void MmUnmapLockedPages(void *, mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
+static uint32_t RtlxAnsiStringToUnicodeSize(const ansi_string *);
+static uint32_t RtlxUnicodeStringToAnsiSize(const unicode_string *);
 static void RtlZeroMemory(void *, size_t);
 static void RtlSecureZeroMemory(void *, size_t);
 static void RtlFillMemory(void *, size_t, uint8_t);
@@ -2591,6 +2593,26 @@ RtlAppendUnicodeToString(unicode_string *dst, const uint16_t *src)
 	return (NDIS_STATUS_SUCCESS);
 }
 
+static uint32_t
+RtlxAnsiStringToUnicodeSize(const ansi_string *str)
+{
+	int i;
+
+	for (i = 0; i < str->as_maxlen && str->as_buf[i]; i++)
+		;
+	return i * sizeof(uint16_t);
+}
+
+static uint32_t
+RtlxUnicodeStringToAnsiSize(const unicode_string *str)
+{
+	int i;
+
+	for (i = 0; i < str->us_maxlen && str->us_buf[i]; i++)
+		;
+	return i * sizeof(uint8_t);
+}
+
 static void
 RtlZeroMemory(void *dst, size_t len)
 {
@@ -2818,6 +2840,30 @@ RtlUnicodeStringToInteger(const unicode_string *ustr, uint32_t base,
 	ntoskrnl_unicode_to_ascii(uchr, astr, len);
 	*value = strtoul(abuf, NULL, base);
 
+	return (NDIS_STATUS_SUCCESS);
+}
+
+int32_t
+RtlUpcaseUnicodeString(unicode_string *dst, unicode_string *src, uint8_t alloc)
+{
+	uint16_t i, n;
+
+	if (alloc) {
+		dst->us_buf = ExAllocatePool(src->us_len);
+		if (dst->us_buf)
+			dst->us_maxlen = src->us_len;
+		else
+			return (NDIS_STATUS_NO_MEMORY);
+	} else {
+		if (dst->us_maxlen < src->us_len)
+			return (NDIS_STATUS_BUFFER_OVERFLOW);
+	}
+
+	n = src->us_len / sizeof(src->us_buf[0]);
+	for (i = 0; i < n; i++)
+		dst->us_buf[i] = toupper(src->us_buf[i]);
+
+	dst->us_len = src->us_len;
 	return (NDIS_STATUS_SUCCESS);
 }
 
@@ -3799,7 +3845,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 #ifdef __i386__
 	IMPORT_FFUNC(KeAcquireSpinLockRaiseToDpc, 1),
 	IMPORT_FFUNC(KefAcquireSpinLockAtDpcLevel, 1),
-	IMPORT_FFUNC(KefReleaseSpinLockFromDpcLevel,1),
+	IMPORT_FFUNC(KefReleaseSpinLockFromDpcLevel, 1),
 #endif /* __i386__ */
 #ifdef __amd64__
 	/*
@@ -3935,7 +3981,10 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlSecureZeroMemory, 2),
 	IMPORT_SFUNC(RtlUnicodeStringToAnsiString, 3),
 	IMPORT_SFUNC(RtlUnicodeStringToInteger, 3),
+	IMPORT_SFUNC(RtlUpcaseUnicodeString, 3),
 	IMPORT_SFUNC(RtlZeroMemory, 2),
+	IMPORT_SFUNC(RtlxAnsiStringToUnicodeSize, 1),
+	IMPORT_SFUNC(RtlxUnicodeStringToAnsiSize, 1),
 	IMPORT_SFUNC(WRITE_REGISTER_UCHAR, 2),
 	IMPORT_SFUNC(WRITE_REGISTER_ULONG, 2),
 	IMPORT_SFUNC(WRITE_REGISTER_USHORT, 2),

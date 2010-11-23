@@ -217,6 +217,7 @@ static void NdisResetEvent(struct ndis_event *);
 static uint8_t NdisWaitEvent(struct ndis_event *, uint32_t);
 static int32_t NdisUnicodeStringToAnsiString(ansi_string *,
     unicode_string *);
+static int32_t NdisUpcaseUnicodeString(unicode_string *, unicode_string *);
 static int32_t NdisAnsiStringToUnicodeString(unicode_string *,
     ansi_string *);
 static int32_t NdisMPciAssignResources(struct ndis_miniport_block *,
@@ -1732,31 +1733,21 @@ NdisWaitEvent(struct ndis_event *event, uint32_t msecs)
 }
 
 static int32_t
-NdisUnicodeStringToAnsiString(ansi_string *dstr, unicode_string *sstr)
+NdisUnicodeStringToAnsiString(ansi_string *dst, unicode_string *src)
 {
-	uint32_t rval;
-
-	rval = RtlUnicodeStringToAnsiString(dstr, sstr, FALSE);
-	if (rval == NDIS_STATUS_INSUFFICIENT_RESOURCES)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-	if (rval)
-		return (NDIS_STATUS_FAILURE);
-
-	return (NDIS_STATUS_SUCCESS);
+	return (RtlUnicodeStringToAnsiString(dst, src, FALSE));
 }
 
 static int32_t
-NdisAnsiStringToUnicodeString(unicode_string *dstr, ansi_string *sstr)
+NdisUpcaseUnicodeString(unicode_string *dst, unicode_string *src)
 {
-	uint32_t rval;
+	return (RtlUpcaseUnicodeString(dst, src, FALSE));
+}
 
-	rval = RtlAnsiStringToUnicodeString(dstr, sstr, FALSE);
-	if (rval == NDIS_STATUS_INSUFFICIENT_RESOURCES)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
-	if (rval)
-		return (NDIS_STATUS_FAILURE);
-
-	return (NDIS_STATUS_SUCCESS);
+static int32_t
+NdisAnsiStringToUnicodeString(unicode_string *dst, ansi_string *src)
+{
+	return (RtlAnsiStringToUnicodeString(dst, src, FALSE));
 }
 
 static int32_t
@@ -2747,6 +2738,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisUnchainBufferAtFront, 2),
 	IMPORT_SFUNC(NdisUnicodeStringToAnsiString, 2),
 	IMPORT_SFUNC(NdisUnmapFile, 1),
+	IMPORT_SFUNC(NdisUpcaseUnicodeString, 2),
 	IMPORT_SFUNC(NdisWaitEvent, 2),
 	IMPORT_SFUNC(NdisWriteConfiguration, 4),
 	IMPORT_SFUNC(NdisWritePciSlotInformation, 5),

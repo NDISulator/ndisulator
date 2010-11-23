@@ -1272,6 +1272,7 @@ struct slist_entry *InterlockedPushEntrySList(slist_header *, struct slist_entry
 struct slist_entry *InterlockedPopEntrySList(slist_header *);
 int32_t	RtlUnicodeStringToAnsiString(ansi_string *, const unicode_string *,
 	    uint8_t);
+int32_t	RtlUpcaseUnicodeString(unicode_string *, unicode_string *, uint8_t);
 int32_t	RtlAnsiStringToUnicodeString(unicode_string *, const ansi_string *,
 	    uint8_t);
 void	RtlInitAnsiString(ansi_string *, const char *);
