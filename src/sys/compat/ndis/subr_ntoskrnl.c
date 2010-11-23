@@ -109,6 +109,9 @@ static kspin_lock ntoskrnl_intlock;
 struct kuser_shared_data kuser_shared_data;
 #endif
 
+static int32_t RtlAppendUnicodeStringToString(unicode_string *,
+    const unicode_string *);
+static int32_t RtlAppendUnicodeToString(unicode_string *, const uint16_t *);
 static uint8_t RtlEqualString(const ansi_string *,
     const ansi_string *, uint8_t);
 static uint8_t RtlEqualUnicodeString(const unicode_string *,
@@ -2555,6 +2558,39 @@ ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
 	IoQueueWorkItem(iw, iwf, qtype, iw);
 }
 
+static int32_t
+RtlAppendUnicodeStringToString(unicode_string *dst, const unicode_string *src)
+{
+	if (dst->us_maxlen < src->us_len + dst->us_len)
+		return (NDIS_STATUS_BUFFER_TOO_SMALL);
+	if (src->us_len) {
+		memcpy(&dst->us_buf[dst->us_len], src->us_buf, src->us_len);
+		dst->us_len += src->us_len;
+		if (dst->us_maxlen > dst->us_len)
+			dst->us_buf[dst->us_len / sizeof(dst->us_buf[0])] = 0;
+	}
+	return (NDIS_STATUS_SUCCESS);
+}
+
+static int32_t
+RtlAppendUnicodeToString(unicode_string *dst, const uint16_t *src)
+{
+	if (src != NULL) {
+		int len;
+		for (len = 0; src[len]; len++)
+			;
+		if (dst->us_len +
+		    (len * sizeof(dst->us_buf[0])) > dst->us_maxlen)
+			return NDIS_STATUS_BUFFER_TOO_SMALL;
+		memcpy(&dst->us_buf[dst->us_len], src,
+		    len * sizeof(dst->us_buf[0]));
+		dst->us_len += len * sizeof(dst->us_buf[0]);
+		if (dst->us_maxlen > dst->us_len)
+			dst->us_buf[dst->us_len / sizeof(dst->us_buf[0])] = 0;
+	}
+	return (NDIS_STATUS_SUCCESS);
+}
+
 static void
 RtlZeroMemory(void *dst, size_t len)
 {
@@ -3879,6 +3915,8 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(READ_REGISTER_ULONG, 1),
 	IMPORT_SFUNC(READ_REGISTER_USHORT, 1),
 	IMPORT_SFUNC(RtlAnsiStringToUnicodeString, 3),
+	IMPORT_SFUNC(RtlAppendUnicodeStringToString, 2),
+	IMPORT_SFUNC(RtlAppendUnicodeToString, 2),
 	IMPORT_SFUNC(RtlCharToInteger, 3),
 	IMPORT_SFUNC(RtlCompareMemory, 3),
 	IMPORT_SFUNC(RtlCompareString, 3),
