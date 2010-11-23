@@ -329,7 +329,6 @@ struct ktimer {
 	uint32_t 			k_period;
 };
 
-#define	k_timerlistentry u.k_timerlistentry
 #define	k_callout u.k_callout
 
 typedef struct ktimer ktimer;

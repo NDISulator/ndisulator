@@ -3047,8 +3047,7 @@ ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
 	nr->no_obj = handle;
 	nr->no_dh.dh_type = DISP_TYPE_THREAD;
 	nr->no_dh.dh_sigstate = 0;
-	nr->no_dh.dh_size = (uint8_t)(sizeof(struct thread) /
-	    sizeof(uint32_t));
+	nr->no_dh.dh_size = (uint8_t)(sizeof(struct thread) / sizeof(uint32_t));
 	TAILQ_INSERT_TAIL(&ntoskrnl_reflist, nr, link);
 	*object = nr;
 
@@ -3282,10 +3281,10 @@ ntoskrnl_remove_timer(ktimer *timer)
 {
 	struct callout_entry *e;
 
-	e = (struct callout_entry *)timer->k_callout;
 	callout_stop(timer->k_callout);
 
 	mtx_lock_spin(&ntoskrnl_calllock);
+	e = (struct callout_entry *)timer->k_callout;
 	InsertHeadList((&ntoskrnl_calllist), (&e->ce_list));
 	mtx_unlock_spin(&ntoskrnl_calllock);
 }
