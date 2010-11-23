@@ -166,7 +166,7 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 	return (0);
 }
 DEV_MODULE(ndisapi, ndis_modevent, NULL);
-MODULE_VERSION(ndisapi, 1);
+MODULE_VERSION(ndisapi, 2);
 
 static void
 NdisMSendResourcesAvailable(struct ndis_miniport_block *block)

@@ -113,8 +113,8 @@ extern uint8_t DRV_DATA_END;
  * driver module will trigger a bus reprobe.
  */
 #define	MODULE_DECL(x)				\
-	MODULE_DEPEND(x, ndisapi, 1, 1, 1);	\
-	MODULE_DEPEND(x, ndis, 1, 1, 1)
+	MODULE_DEPEND(x, ndisapi, 2, 2, 2);	\
+	MODULE_DEPEND(x, ndis, 2, 2, 2)
 
 MODULE_DECL(DRV_NAME);
 

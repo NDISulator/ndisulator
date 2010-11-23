@@ -96,8 +96,8 @@ static const uint16_t dBm2mW[] = {
 
 MODULE_DEPEND(ndis, ether, 1, 1, 1);
 MODULE_DEPEND(ndis, wlan, 1, 1, 1);
-MODULE_DEPEND(ndis, ndisapi, 1, 1, 1);
-MODULE_VERSION(ndis, 1);
+MODULE_DEPEND(ndis, ndisapi, 2, 2, 2);
+MODULE_VERSION(ndis, 2);
 
 static void	NdisMEthIndicateReceive(struct ndis_miniport_block *,
 		    ndis_handle, char *, void *, uint32_t, void *, uint32_t,
