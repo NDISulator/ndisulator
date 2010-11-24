@@ -2640,8 +2640,8 @@ RtlMoveMemory(void *dst, const void *src, size_t len)
 static int32_t
 RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 {
-	int negative = 0;
 	uint32_t res;
+	int negative = 0;
 
 	if (src == NULL || val == NULL)
 		return (NDIS_STATUS_ACCESS_VIOLATION);
@@ -2788,58 +2788,58 @@ RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
 }
 
 static int32_t
-RtlUnicodeStringToInteger(const unicode_string *ustr, uint32_t base,
-   uint32_t *value)
+RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
+    uint32_t *val)
 {
+	uint32_t res;
 	uint16_t *uchr;
-	int len, neg = 0;
-	char abuf[64];
-	char *astr;
+	int i, negative = 0;
 
-	if (value == NULL)
+	if (src == NULL || val == NULL)
 		return (NDIS_STATUS_ACCESS_VIOLATION);
 
-	uchr = ustr->us_buf;
-	len = ustr->us_len;
-	bzero(abuf, sizeof(abuf));
-
-	if ((char)((*uchr) & 0xFF) == '-') {
-		neg = 1;
-		uchr++;
-		len -= 2;
-	} else if ((char)((*uchr) & 0xFF) == '+') {
-		neg = 0;
-		uchr++;
-		len -= 2;
+	uchr = src->us_buf;
+	i = 0;
+	while (i < (src->us_len / sizeof(*uchr)) && uchr[i] == ' ')
+		i++;
+	if (uchr[i] == '+')
+		i++;
+	else if (uchr[i] == '-') {
+		i++;
+		negative = 1;
 	}
-
 	if (base == 0) {
-		if ((char)((*uchr) & 0xFF) == 'b') {
-			base = 2;
-			uchr++;
-			len -= 2;
-		} else if ((char)((*uchr) & 0xFF) == 'o') {
-			base = 8;
-			uchr++;
-			len -= 2;
-		} else if ((char)((*uchr) & 0xFF) == 'x') {
-			base = 16;
-			uchr++;
-			len -= 2;
-		} else
-			base = 10;
-	} else if (base != 2 && base != 8 && base != 10 && base != 16)
+		base = 10;
+		if (i <= ((src->us_len / sizeof(*uchr)) - 2) && uchr[i] == '0') {
+			i++;
+			if (uchr[i] == 'b') {
+				base = 2;
+				i++;
+			} else if (uchr[i] == 'o') {
+				base = 8;
+				i++;
+			} else if (uchr[i] == 'x') {
+				base = 16;
+				i++;
+			}
+		}
+	}
+	if (!(base == 2 || base == 8 || base == 10 || base == 16))
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
-	astr = abuf;
-	if (neg) {
-		strcpy(astr, "-");
-		astr++;
+	for (res = 0; i < (src->us_len / sizeof(*uchr)); i++) {
+		int v;
+		if (isdigit((char)uchr[i]))
+			v = uchr[i] - '0';
+		else if (isxdigit((char)uchr[i]))
+			v = tolower((char)uchr[i]) - 'a' + 10;
+		else
+			v = base;
+		if (v >= base)
+			return (NDIS_STATUS_INVALID_PARAMETER);
+		res = res * base + v;
 	}
-
-	ntoskrnl_unicode_to_ascii(uchr, astr, len);
-	*value = strtoul(abuf, NULL, base);
-
+	*val = negative ? -res : res;
 	return (NDIS_STATUS_SUCCESS);
 }
 
