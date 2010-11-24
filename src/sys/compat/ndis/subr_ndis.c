@@ -406,7 +406,7 @@ NdisMSetAttributesEx(struct ndis_miniport_block *block, void *adapter_ctx,
 	 * the driver's internal functions.
 	 */
 	block->miniport_adapter_ctx = adapter_ctx;
-	block->check_for_hang_secs = hangsecs;
+	block->check_for_hang_secs = hangsecs ? hangsecs * 2 : 4;
 	block->bus_type = bus_type;
 	block->flags = flags;
 

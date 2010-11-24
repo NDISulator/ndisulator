@@ -725,6 +725,8 @@ ndis_attach(device_t dev)
 	if (!NDIS_SERIALIZED(sc->ndis_block))
 		sc->ndis_maxpkts = NDIS_TXPKTS;
 
+	sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
+
 	/* Enforce some sanity, just in case. */
 	if (sc->ndis_maxpkts == 0)
 		sc->ndis_maxpkts = 1;
@@ -1844,16 +1846,6 @@ ndis_init(void *xsc)
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	sc->ndis_tx_timer = 0;
 
-	/*
-	 * Some drivers don't set this value. The NDIS spec says
-	 * the default check_for_hang timeout is "approximately 2
-	 * seconds." We use 3 seconds, because it seems for some
-	 * drivers, exactly 2 seconds is too fast.
-	 */
-	if (sc->ndis_block->check_for_hang_secs == 0)
-		sc->ndis_block->check_for_hang_secs = 3;
-
-	sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 	NDIS_UNLOCK(sc);
 
