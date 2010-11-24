@@ -1454,7 +1454,7 @@ ndis_inputtask(struct device_object *dobj, void *arg)
 		if (m == NULL)
 			break;
 		KeReleaseSpinLock(&sc->ndis_rxlock, irql);
-		if (vap != NULL)
+		if (NDIS_80211(sc) && vap != NULL)
 			vap->iv_deliver_data(vap, vap->iv_bss, m);
 		else
 			(*ifp->if_input)(ifp, m);
@@ -1521,14 +1521,14 @@ NdisMIndicateStatus(struct ndis_miniport_block *block, int32_t status,
 
 	switch (status) {
 	case NDIS_STATUS_MEDIA_CONNECT:
-		if (vap != NULL) {
+		if (NDIS_80211(sc) && vap != NULL) {
 			ieee80211_new_state(vap, IEEE80211_S_RUN, -1);
 			if_link_state_change(vap->iv_ifp, LINK_STATE_UP);
 		} else
 			if_link_state_change(sc->ndis_ifp, LINK_STATE_UP);
 		break;
 	case NDIS_STATUS_MEDIA_DISCONNECT:
-		if (vap != NULL) {
+		if (NDIS_80211(sc) && vap != NULL) {
 			ieee80211_new_state(vap, IEEE80211_S_SCAN, 0);
 			if_link_state_change(vap->iv_ifp, LINK_STATE_DOWN);
 		} else
