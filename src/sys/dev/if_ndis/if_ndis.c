@@ -432,10 +432,6 @@ ndis_set_task_offload(struct ndis_softc *sc)
 
 	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 
-	error = ndis_probe_task_offload(sc);
-	if (error)
-		return (0);
-
 	if (sc->ndis_hwassist == 0)
 		return (0);
 
@@ -782,7 +778,6 @@ ndis_attach(device_t dev)
 	IFQ_SET_READY(&ifp->if_snd);
 	ifp->if_capenable = ifp->if_capabilities;
 	ifp->if_hwassist = sc->ndis_hwassist;
-
 
 	rval = ndis_get(sc, OID_PNP_CAPABILITIES, &pnp, sizeof(pnp));
 	if (!rval) {
