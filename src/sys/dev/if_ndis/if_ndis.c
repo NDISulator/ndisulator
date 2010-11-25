@@ -1865,17 +1865,9 @@ ndis_init(void *xsc)
 		ieee80211_start_all(ic);	/* start all vap's */
 }
 
-/*
- * Set media options.
- */
 static int
 ndis_ifmedia_upd(struct ifnet *ifp)
 {
-	struct ndis_softc *sc = ifp->if_softc;
-
-	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
-	ndis_stop(sc);
-	ndis_init(sc);
 	return (0);
 }
 
