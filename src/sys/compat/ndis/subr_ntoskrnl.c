@@ -216,6 +216,8 @@ static uint64_t KeQueryInterruptTime(void);
 static void KeQuerySystemTime(int64_t *);
 static uint32_t KeTickCount(void);
 static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
+static int32_t IoOpenDeviceRegistryKey(struct device_object *, uint32_t,
+    uint32_t, void **);
 static void ntoskrnl_thrfunc(void *);
 static int32_t PsCreateSystemThread(ndis_handle *, uint32_t, void *,
     ndis_handle, void *, void *, void *);
@@ -2918,6 +2920,12 @@ IoIsWdmVersionAvailable(uint8_t major, uint8_t minor)
 
 	return (FALSE);
 }
+static int32_t
+IoOpenDeviceRegistryKey(struct device_object *devobj, uint32_t type,
+    uint32_t mask, void **key)
+{
+	return (NDIS_STATUS_INVALID_DEVICE_REQUEST);
+}
 
 static int32_t
 IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
@@ -3900,6 +3908,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(IoInitializeIrp, 3),
 	IMPORT_SFUNC(IoIsWdmVersionAvailable, 2),
 	IMPORT_SFUNC(IoMakeAssociatedIrp, 2),
+	IMPORT_SFUNC(IoOpenDeviceRegistryKey, 4),
 	IMPORT_SFUNC(IoQueueWorkItem, 4),
 	IMPORT_SFUNC(IoReleaseCancelSpinLock, 1),
 	IMPORT_SFUNC(IoReuseIrp, 2),
