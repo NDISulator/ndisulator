@@ -187,6 +187,7 @@ static void	ndis_set_privacy_filter(struct ndis_softc *, uint32_t);
 static int	ndis_set_rtsthreshold(struct ndis_softc *, uint16_t);
 static void	ndis_set_ssid(struct ndis_softc *, uint8_t *, uint8_t);
 static int	ndis_set_txpower(struct ndis_softc *);
+static void	ndis_set_wol(struct ndis_softc *);
 static int	ndis_set_wpa(struct ndis_softc *, void *, int);
 static void	ndis_setstate_80211(struct ndis_softc *, struct ieee80211vap *);
 static void	ndis_start(struct ifnet *);
@@ -413,9 +414,8 @@ ndis_set_multi(struct ndis_softc *sc)
 	if_maddr_runlock(ifp);
 
 	len = len * ETHER_ADDR_LEN;
-	if (ndis_set(sc, OID_802_3_MULTICAST_LIST, mclist, len)) {
+	if (ndis_set(sc, OID_802_3_MULTICAST_LIST, mclist, len))
 		DPRINTF("set mclist failed\n");
-	}
 	free(mclist, M_NDIS_DEV);
 	return (0);
 }
@@ -434,9 +434,9 @@ ndis_set_task_offload(struct ndis_softc *sc)
 
 	error = ndis_probe_task_offload(sc);
 	if (error)
-		return (error);
+		return (0);
 
-	if (sc->ndis_hwassist == 0 && ifp->if_capabilities == 0)
+	if (sc->ndis_hwassist == 0)
 		return (0);
 
 	len = sizeof(struct ndis_task_offload_header) +
@@ -600,6 +600,7 @@ int
 ndis_attach(device_t dev)
 {
 	u_char eaddr[ETHER_ADDR_LEN];
+	struct ndis_pnp_capabilities pnp;
 	struct ndis_softc *sc;
 	struct driver_object *pdrv;
 	struct device_object *pdo;
@@ -781,6 +782,13 @@ ndis_attach(device_t dev)
 	IFQ_SET_READY(&ifp->if_snd);
 	ifp->if_capenable = ifp->if_capabilities;
 	ifp->if_hwassist = sc->ndis_hwassist;
+
+
+	rval = ndis_get(sc, OID_PNP_CAPABILITIES, &pnp, sizeof(pnp));
+	if (!rval) {
+		if (pnp.capabilities.min_magic_packet == NDIS_DEVICE_STATE_D3)
+			ifp->if_capabilities |= IFCAP_WOL;
+	}
 
 	/* Do media setup */
 	if (NDIS_80211(sc)) {
@@ -1148,6 +1156,14 @@ ndis_detach(device_t dev)
 	return (0);
 }
 
+static void
+ndis_set_wol(struct ndis_softc *sc)
+{
+	if (sc->ndis_ifp->if_capenable & IFCAP_WOL)
+		ndis_set_int(sc, OID_PNP_ENABLE_WAKE_UP,
+		    NDIS_PNP_WAKE_UP_MAGIC_PACKET);
+}
+
 int
 ndis_suspend(device_t dev)
 {
@@ -1155,6 +1171,7 @@ ndis_suspend(device_t dev)
 
 	sc = device_get_softc(dev);
 	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
+	ndis_set_wol(sc);
 	ndis_stop(sc);
 	return (0);
 }
@@ -2548,7 +2565,11 @@ ndis_stop(struct ndis_softc *sc)
 int
 ndis_shutdown(device_t dev)
 {
-	ndis_stop(device_get_softc(dev));
+	struct ndis_softc *sc;
+
+	sc = device_get_softc(dev);
+	ndis_set_wol(sc);
+	ndis_stop(sc);
 	return (0);
 }
 

@@ -1382,14 +1382,14 @@ struct ndis_encapsulation_format {
 };
 
 struct ndis_pm_wake_up_capabilities {
-	enum ndis_device_power_state	min_magic_packet_wake_up;
-	enum ndis_device_power_state	min_pattern_wake_up;
-	enum ndis_device_power_state	min_link_change_wake_up;
+	enum ndis_device_power_state	min_magic_packet;
+	enum ndis_device_power_state	min_pattern;
+	enum ndis_device_power_state	min_link_change;
 };
 
 struct ndis_pnp_capabilities {
 	uint32_t				flags;
-	struct ndis_pm_wake_up_capabilities	wake_up_capabilities;
+	struct ndis_pm_wake_up_capabilities	capabilities;
 };
 
 struct ndis_task_offload_header {
