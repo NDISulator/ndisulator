@@ -47,7 +47,7 @@ void	ndis_free_amem(void *);
 
 struct ndis_oid_data {		/* For setting/getting OIDs from userspace. */
 	uint32_t	oid;
-	size_t		len;
+	uint32_t	len;
 };
 
 struct ndis_shmem {
