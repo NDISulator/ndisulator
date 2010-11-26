@@ -96,7 +96,7 @@ ndis_devcompare_pci(enum ndis_bus_type bustype,
 	if (bustype != NDIS_PCIBUS)
 		return (FALSE);
 
-	while (t->name != NULL) {
+	for (; t->name != NULL; t++) {
 		if ((pci_get_vendor(dev) == t->vendor) &&
 		    (pci_get_device(dev) == t->device) &&
 		    ((pci_read_config(dev, PCIR_SUBVEND_0, 4) ==
@@ -104,7 +104,6 @@ ndis_devcompare_pci(enum ndis_bus_type bustype,
 			device_set_desc(dev, t->name);
 			return (TRUE);
 		}
-		t++;
 	}
 
 	return (FALSE);
@@ -254,8 +253,7 @@ ndis_attach_pci(device_t dev)
 	sc->ndis_bus_type = NDIS_PCIBUS;
 
 	/* Figure out exactly which device we matched. */
-	t = db->windrv_devlist;
-	while (t->name != NULL) {
+	for (t = db->windrv_devlist; t->name != NULL; t++, devidx++) {
 		if ((pci_get_vendor(dev) == t->vendor) &&
 		    (pci_get_device(dev) == t->device)) {
 			if (t->subsys == 0)
@@ -266,8 +264,6 @@ ndis_attach_pci(device_t dev)
 					break;
 			}
 		}
-		t++;
-		devidx++;
 	}
 	if (t->name == NULL)
 		sc->ndis_devidx = defidx;

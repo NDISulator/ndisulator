@@ -101,13 +101,12 @@ ndis_devcompare_usb(enum ndis_bus_type bustype,
 		return (FALSE);
 
 	uaa = device_get_ivars(dev);
-	while (t->name != NULL) {
+	for (; t->name != NULL; t++) {
 		if ((uaa->info.idVendor == t->vendor) &&
 		    (uaa->info.idProduct == t->device)) {
 			device_set_desc(dev, t->name);
 			return (TRUE);
 		}
-		t++;
 	}
 
 	return (FALSE);
@@ -164,15 +163,12 @@ ndis_attach_usb(device_t dev)
 	windrv_create_pdo(drv, dev);
 
 	/* Figure out exactly which device we matched. */
-	t = db->windrv_devlist;
-	while (t->name != NULL) {
+	for (t = db->windrv_devlist; t->name != NULL; t++, devidx++) {
 		if ((uaa->info.idVendor == t->vendor) &&
 		    (uaa->info.idProduct == t->device)) {
 			sc->ndis_devidx = devidx;
 			break;
 		}
-		t++;
-		devidx++;
 	}
 
 	if (ndis_attach(dev) != 0)
