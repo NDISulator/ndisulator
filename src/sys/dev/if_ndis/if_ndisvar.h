@@ -50,25 +50,6 @@ struct ndis_oid_data {		/* For setting/getting OIDs from userspace. */
 	size_t		len;
 };
 
-struct ndis_pci_type {
-	uint16_t	ndis_vid;
-	uint16_t	ndis_did;
-	uint32_t	ndis_subsys;
-	char		*ndis_name;
-};
-
-struct ndis_pccard_type {
-	const char	*ndis_vid;
-	const char	*ndis_did;
-	char		*ndis_name;
-};
-
-struct ndis_usb_type {
-	uint16_t	ndis_vid;
-	uint16_t	ndis_did;
-	char		*ndis_name;
-};
-
 struct ndis_shmem {
 	struct list_entry	ndis_list;
 	bus_dma_tag_t		ndis_stag;

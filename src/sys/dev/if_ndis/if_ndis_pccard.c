@@ -107,10 +107,10 @@ ndis_devcompare_pccard(enum ndis_bus_type bustype,
 	if (pccard_get_vendor_str(dev, &vendstr))
 		return (FALSE);
 
-	while (t->ndis_name != NULL) {
-		if (strcasecmp(vendstr, t->ndis_vid) == 0 &&
-		    strcasecmp(prodstr, t->ndis_did) == 0) {
-			device_set_desc(dev, t->ndis_name);
+	while (t->name != NULL) {
+		if (strcasecmp(vendstr, t->vendor) == 0 &&
+		    strcasecmp(prodstr, t->device) == 0) {
+			device_set_desc(dev, t->name);
 			return (TRUE);
 		}
 		t++;
@@ -188,9 +188,9 @@ ndis_attach_pccard(device_t dev)
 	error = pccard_get_vendor_str(dev, &vendstr);
 	if (error)
 		return (error);
-	while (t->ndis_name != NULL) {
-		if (strcasecmp(vendstr, t->ndis_vid) == 0 &&
-		    strcasecmp(prodstr, t->ndis_did) == 0)
+	while (t->name != NULL) {
+		if (strcasecmp(vendstr, t->vendor) == 0 &&
+		    strcasecmp(prodstr, t->device) == 0)
 			break;
 		t++;
 		devidx++;

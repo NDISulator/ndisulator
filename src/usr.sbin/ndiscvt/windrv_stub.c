@@ -50,25 +50,6 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/ndis_var.h>
 #include "windrv.h"
 
-struct ndis_pci_type {
-	uint16_t	ndis_vid;
-	uint16_t	ndis_did;
-	uint32_t	ndis_subsys;
-	char		*ndis_name;
-};
-
-struct ndis_pccard_type {
-	const char	*ndis_vid;
-	const char	*ndis_did;
-	char		*ndis_name;
-};
-
-struct ndis_usb_type {
-	uint16_t	ndis_vid;
-	uint16_t	ndis_did;
-	char		*ndis_name;
-};
-
 #ifdef NDIS_PCI_DEV_TABLE
 static struct ndis_pci_type ndis_devs_pci[] = {
 	NDIS_PCI_DEV_TABLE

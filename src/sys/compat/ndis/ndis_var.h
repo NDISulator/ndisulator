@@ -2063,8 +2063,26 @@ struct ndis_miniport_block {
 	kspin_lock			returnlock;
 	TAILQ_ENTRY(ndis_miniport_block)	link;
 };
-
 TAILQ_HEAD(nd_head, ndis_miniport_block);
+
+struct ndis_pci_type {
+	uint16_t	vendor;
+	uint16_t	device;
+	uint32_t	subsys;
+	char		*name;
+};
+
+struct ndis_pccard_type {
+	const char	*vendor;
+	const char	*device;
+	char		*name;
+};
+
+struct ndis_usb_type {
+	uint16_t	vendor;
+	uint16_t	device;
+	char		*name;
+};
 
 typedef int32_t (*driver_entry)(void *, unicode_string *);
 typedef uint8_t (*ndis_checkforhang_func)(ndis_handle);
