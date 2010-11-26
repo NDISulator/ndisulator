@@ -476,12 +476,12 @@ pe_get_message(vm_offset_t imgbase, uint32_t id, char **str, int *len,
 static vm_offset_t
 pe_functbl_match(struct image_patch_table *functbl, const char *name)
 {
-	struct image_patch_table *p = functbl;
+	struct image_patch_table *p;
 
 	KASSERT(functbl != NULL, ("no functbl"));
 	KASSERT(name != NULL, ("no name"));
 
-	while (p->name != NULL) {
+	for (p = functbl; p->name != NULL; p++) {
 		if (!strcmp(p->name, name)) {
 #ifdef _KERNEL
 			if (bootverbose)
@@ -496,7 +496,6 @@ pe_functbl_match(struct image_patch_table *functbl, const char *name)
 			 */
 			return ((vm_offset_t)p->wrap);
 		}
-		p++;
 	}
 	printf("NDIS: no match for %s\n", name);
 
@@ -521,7 +520,7 @@ pe_patch_imports(vm_offset_t imgbase, const char *module,
 {
 	struct image_import_descriptor *imp_desc;
 	char *name;
-	vm_offset_t *nptr, *fptr, func;
+	vm_offset_t *nptr, *fptr;
 
 	KASSERT(module != NULL, ("no module"));
 	KASSERT(functbl != NULL, ("no functbl"));
@@ -537,13 +536,7 @@ pe_patch_imports(vm_offset_t imgbase, const char *module,
 	while (nptr != NULL && pe_translate_addr(imgbase, *nptr)) {
 		name = (char *)pe_translate_addr(imgbase,
 		    (*nptr & ~IMAGE_ORDINAL_FLAG) + 2);
-		func = pe_functbl_match(functbl, name);
-		if (func)
-			*fptr = func;
-#ifdef notdef
-		if (*fptr == 0)
-			return (ENOENT);
-#endif
+		*fptr = pe_functbl_match(functbl, name);
 		nptr++;
 		fptr++;
 	}
