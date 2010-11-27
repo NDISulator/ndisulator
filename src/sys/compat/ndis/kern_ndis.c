@@ -72,6 +72,12 @@ __FBSDID("$FreeBSD$");
 #include <compat/ndis/usbd_var.h>
 #include <dev/if_ndis/if_ndisvar.h>
 
+#ifdef NDIS_DEBUG
+int ndis_debug = 0;
+SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug,
+	    0, "control debugging printfs");
+#endif
+
 static void	ndis_create_sysctls(struct ndis_softc *);
 static void	ndis_flush_sysctls(struct ndis_softc *);
 static void	NdisMIndicateStatus(struct ndis_miniport_block *, int32_t,
@@ -569,7 +575,7 @@ ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 }
 
 static int
-ndis_request_info(uint32_t request, struct ndis_softc *sc, uint32_t oid,
+ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
     void *buf, uint32_t buflen, uint32_t *written, uint32_t *needed)
 {
 	uint64_t duetime;
@@ -591,7 +597,7 @@ ndis_request_info(uint32_t request, struct ndis_softc *sc, uint32_t oid,
 	 * once one request has been issued, we must wait for it to
 	 * finish before allowing another request to proceed.
 	 */
-	if (request == NDIS_REQUEST_QUERY_INFORMATION) {
+	if (req == NDIS_REQUEST_QUERY_INFORMATION) {
 		KeResetEvent(&sc->ndis_block->getevent);
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
 		rval = MSCALL6(sc->ndis_chars->query_info_func,
@@ -604,7 +610,7 @@ ndis_request_info(uint32_t request, struct ndis_softc *sc, uint32_t oid,
 			    0, 0, FALSE, &duetime);
 			rval = sc->ndis_block->getstat;
 		}
-	} else if (request == NDIS_REQUEST_SET_INFORMATION) {
+	} else if (req == NDIS_REQUEST_SET_INFORMATION) {
 		KeResetEvent(&sc->ndis_block->setevent);
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
 		rval = MSCALL6(sc->ndis_chars->set_info_func,
@@ -619,6 +625,8 @@ ndis_request_info(uint32_t request, struct ndis_softc *sc, uint32_t oid,
 		}
 	} else
 		return (NDIS_STATUS_NOT_SUPPORTED);
+	TRACE(NDBG_REQ, "req %u sc %p oid %08X buf %p buflen %u rval %08X\n",
+	    req, sc, oid, buf, buflen, rval);
 	return (rval);
 }
 

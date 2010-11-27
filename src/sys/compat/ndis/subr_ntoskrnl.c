@@ -52,7 +52,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/module.h>
 #include <sys/smp.h>
 #include <sys/sched.h>
-#include <sys/sysctl.h>
 
 #include <machine/atomic.h>
 #include <machine/bus.h>
@@ -2148,28 +2147,32 @@ IoFreeMdl(mdl *m)
 static void *
 MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 {
+	TRACE(NDBG_MM, "size %u highest %llu\n", size, highest);
 	return (ExAllocatePool(roundup(size, PAGE_SIZE)));
 }
 
 static vm_memattr_t
-cnvmct(uint32_t cachetype)
+cnvmct(enum memory_caching_type type)
 {
-	switch (cachetype) {
+	switch (type) {
 	case MM_WRITE_COMBINED:		return (VM_MEMATTR_WRITE_COMBINING);
 	case MM_NON_CACHED:
 	case MM_NON_CACHED_UNORDERED:	return (VM_MEMATTR_UNCACHEABLE);
+	default:			return (VM_MEMATTR_DEFAULT);
 	}
 	return (VM_MEMATTR_DEFAULT);
 }
 
 static void *
 MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
-    uint64_t highest, uint64_t boundary, enum memory_caching_type cachetype)
+    uint64_t highest, uint64_t boundary, enum memory_caching_type type)
 {
 	void *ret;
 
+	TRACE(NDBG_MM, "size %u lowest %llu highest %llu boundary %llu"
+	    "type %d\n", size, lowest, highest, boundary, type);
 	ret = (void *)kmem_alloc_contig(kernel_map, size, M_ZERO|M_NOWAIT,
-	    lowest, highest, PAGE_SIZE, boundary, cnvmct(cachetype));
+	    lowest, highest, PAGE_SIZE, boundary, cnvmct(type));
 	if (ret != NULL)
 		malloc_type_allocated(M_NDIS_NTOSKRNL, round_page(size));
 	return (ret);
@@ -2178,13 +2181,15 @@ MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
 static void
 MmFreeContiguousMemory(void *base)
 {
+	TRACE(NDBG_MM, "base %p\n", base);
 	ExFreePool(base);
 }
 
 static void
 MmFreeContiguousMemorySpecifyCache(void *base, uint32_t size,
-     enum memory_caching_type cachetype)
+     enum memory_caching_type type)
 {
+	TRACE(NDBG_MM, "base %p size %u type %d\n", base, size, type);
 	if (base == NULL)
 		return;
 	kmem_free(kernel_map, (vm_offset_t)base, size);
@@ -2216,7 +2221,6 @@ MmBuildMdlForNonPagedPool(mdl *m)
 	int pagecnt, i;
 
 	pagecnt = SPAN_PAGES(m->mdl_byteoffset, m->mdl_bytecount);
-
 	if (pagecnt > (m->mdl_size - sizeof(mdl)) / sizeof(vm_offset_t *))
 		panic("not enough pages in MDL to describe buffer");
 
@@ -2239,27 +2243,31 @@ MmMapLockedPages(mdl *buf, uint8_t accessmode)
 
 static void *
 MmMapLockedPagesSpecifyCache(mdl *buf, uint8_t accessmode,
-    enum memory_caching_type cachetype,
+    enum memory_caching_type type,
     void *vaddr, uint32_t bugcheck, uint32_t prio)
 {
+	TRACE(NDBG_MM, "buf %p type %d vaddr %p\n", buf, type, vaddr);
 	return (MmMapLockedPages(buf, accessmode));
 }
 
 static void
 MmUnmapLockedPages(void *vaddr, mdl *buf)
 {
+	TRACE(NDBG_MM, "vaddr %p buf %p\n", vaddr, buf);
 	buf->mdl_flags &= ~MDL_MAPPED_TO_SYSTEM_VA;
 }
 
 static uint64_t
 MmGetPhysicalAddress(void *base)
 {
+	TRACE(NDBG_MM, "base %p\n", base);
 	return (pmap_extract(kernel_map->pmap, (vm_offset_t)base));
 }
 
 static uint8_t
 MmIsAddressValid(void *vaddr)
 {
+	TRACE(NDBG_MM, "vaddr %p\n", vaddr);
 	if (pmap_extract(kernel_map->pmap, (vm_offset_t)vaddr))
 		return (TRUE);
 	else
@@ -2267,7 +2275,7 @@ MmIsAddressValid(void *vaddr)
 }
 
 void *
-MmMapIoSpace(uint64_t paddr, uint32_t len, enum memory_caching_type cachetype)
+MmMapIoSpace(uint64_t paddr, uint32_t len, enum memory_caching_type type)
 {
 	devclass_t nexus_class;
 	device_t *nexus_devs, devp;

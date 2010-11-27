@@ -73,16 +73,6 @@ __FBSDID("$FreeBSD$");
 #include <dev/if_ndis/if_ndisvar.h>
 #include <net80211/ieee80211_regdomain.h>
 
-#define	NDIS_DEBUG
-#ifdef NDIS_DEBUG
-#define	DPRINTF(...)	do { if (ndis_debug > 0) device_printf(sc->ndis_dev, __VA_ARGS__); } while (0)
-static int ndis_debug = 0;
-SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug, 0,
-    "if_ndis debug level");
-#else
-#define	DPRINTF(x)
-#endif
-
 /* 0 - 30 dBm to mW conversion table */
 static const uint16_t dBm2mW[] = {
 	1, 1, 1, 1, 2, 2, 2, 2, 3, 3,
@@ -414,8 +404,7 @@ ndis_set_multi(struct ndis_softc *sc)
 	if_maddr_runlock(ifp);
 
 	len = len * ETHER_ADDR_LEN;
-	if (ndis_set(sc, OID_802_3_MULTICAST_LIST, mclist, len))
-		DPRINTF("set mclist failed\n");
+	ndis_set(sc, OID_802_3_MULTICAST_LIST, mclist, len);
 	free(mclist, M_NDIS_DEV);
 	return (0);
 }
@@ -700,8 +689,6 @@ ndis_attach(device_t dev)
 
 	rval = ndis_get(sc, OID_802_3_CURRENT_ADDRESS, &eaddr, sizeof(eaddr));
 	if (rval) {
-		DPRINTF("get current address failed; "
-		    "status: 0x%08X\n", rval);
 		rval = ndis_get(sc, OID_802_3_PERMANENT_ADDRESS,
 		    &eaddr, sizeof(eaddr));
 		if (rval) {
@@ -823,8 +810,6 @@ ndis_attach(device_t dev)
 		rval = ndis_get(sc,
 		    OID_802_11_NETWORK_TYPES_SUPPORTED, ntl, len);
 		if (rval) {
-			DPRINTF("failed to get network types; "
-			    "status: 0x%08X\n", rval);
 			free(ntl, M_NDIS_DEV);
 			rval = 0;
 			goto nonettypes;
@@ -846,9 +831,6 @@ nonettypes:
 		memset(&rates, 0, sizeof(rates));
 		rval = ndis_get_info(sc, OID_802_11_SUPPORTED_RATES,
 		    rates, sizeof(rates), &len, NULL);
-		if (rval)
-			DPRINTF("failed to get rates; "
-			    "status: 0x%08X\n", rval);
 		/*
 		 * Since the supported rates only up to 8 can be supported,
 		 * if this is not 802.11b we're just going to be faking it
@@ -1842,8 +1824,7 @@ ndis_init(void *xsc)
 	ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D0);
 
 	/* Program the packet filter */
-	if (ndis_set_filter(sc) != 0)
-		DPRINTF("set filter failed\n");
+	ndis_set_filter(sc);
 
 	/* Program the multicast filter, if necessary */
 	ndis_set_multi(sc);
@@ -1905,7 +1886,6 @@ ndis_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)
 		ifmr->ifm_active |= IFM_1000_T;
 		break;
 	default:
-		DPRINTF("unknown speed: %d\n", media_info);
 		break;
 	}
 }
@@ -2067,8 +2047,7 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 static void
 ndis_set_bssid(struct ndis_softc *sc, ndis_80211_macaddr bssid)
 {
-	if (ndis_set(sc, OID_802_11_BSSID, bssid, IEEE80211_ADDR_LEN))
-		DPRINTF("set bssid failed\n");
+	ndis_set(sc, OID_802_11_BSSID, bssid, IEEE80211_ADDR_LEN);
 }
 
 static void
@@ -2079,8 +2058,7 @@ ndis_set_ssid(struct ndis_softc *sc, uint8_t *essid, uint8_t esslen)
 	memset(&ssid, 0, sizeof(ssid));
 	memcpy(ssid.ssid, essid, esslen);
 	ssid.len = esslen;
-	if (ndis_set(sc, OID_802_11_SSID, &ssid, sizeof(ssid)))
-		DPRINTF("set ssid failed\n");
+	ndis_set(sc, OID_802_11_SSID, &ssid, sizeof(ssid));
 }
 
 static void
@@ -2101,16 +2079,13 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 			ndis_set_authmode(sc, NDIS_802_11_AUTH_MODE_OPEN);
 	}
 	if (!(vap->iv_flags & IEEE80211_F_PRIVACY)) {
-		if (ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_DISABLED) != 0)
-			DPRINTF("OPEN setup failed\n");
+		ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_DISABLED);
 	} else if (!(vap->iv_flags & IEEE80211_F_WPA)) {
-		if (ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_ENABLED) != 0)
-			DPRINTF("WEP setup failed\n");
+		ndis_set_encryption(sc, NDIS_802_11_WEPSTAT_ENABLED);
 	} else if (vap->iv_appie_wpa != NULL) {
 		struct ieee80211_appie *ie = vap->iv_appie_wpa;
 
-		if (ndis_set_wpa(sc, ie->ie_data, ie->ie_len) != 0)
-			DPRINTF("WPA setup failed\n");
+		ndis_set_wpa(sc, ie->ie_data, ie->ie_len);
 	}
 }
 
@@ -2120,8 +2095,7 @@ ndis_auth(struct ndis_softc *sc, struct ieee80211vap *vap)
 static void
 ndis_disassociate(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
-	if (ndis_set(sc, OID_802_11_DISASSOCIATE, NULL, 0))
-		DPRINTF("disassociate failed\n");
+	ndis_set(sc, OID_802_11_DISASSOCIATE, NULL, 0);
 	if (vap->iv_opmode == IEEE80211_M_STA)
 		vap->iv_bss->ni_associd = 0;
 }
@@ -2161,11 +2135,9 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	uint32_t arg;
 
 	ni = ieee80211_ref_node(vap->iv_bss);
-	if (ndis_get(sc, OID_802_11_BSSID, ni->ni_bssid, IEEE80211_ADDR_LEN))
-		DPRINTF("get bssid failed\n");
+	ndis_get(sc, OID_802_11_BSSID, ni->ni_bssid, IEEE80211_ADDR_LEN);
 
 	if (ndis_get(sc, OID_802_11_SSID, &ssid, sizeof(ssid))) {
-		DPRINTF("get ssid failed\n");
 		ieee80211_free_node(ni);
 		return;
 	}
@@ -2567,10 +2539,6 @@ ndis_newstate(struct ieee80211vap *vap, enum ieee80211_state nstate, int arg)
 	struct ieee80211com *ic = vap->iv_ic;
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
 
-	DPRINTF("%s: %s -> %s\n", __func__,
-		ieee80211_state_name[vap->iv_state],
-		ieee80211_state_name[nstate]);
-
 	IEEE80211_UNLOCK(ic);
 	switch (nstate) {
 	case IEEE80211_S_INIT:
@@ -2662,7 +2630,6 @@ ndis_set_channel(struct ieee80211com *ic)
 	config->dsconfig = ic->ic_bsschan->ic_freq * 1000;
 	config->len = sizeof(struct ndis_80211_config);
 	config->fhconfig.len = sizeof(struct ndis_80211_config_fh);
-	DPRINTF("Setting channel to %ukHz\n", config->dsconfig);
 	ndis_set(sc, OID_802_11_CONFIGURATION, config, config->len);
 	free(config, M_NDIS_DEV);
 }
@@ -2700,7 +2667,6 @@ ndis_scan_end(struct ieee80211com *ic)
 	if (bl == NULL)
 		return;
 
-	DPRINTF("%d scan results\n", bl->items);
 	wb = &bl->bssid[0];
 	for (i = 0; i < bl->items; i++) {
 		memset(&sp, 0, sizeof(sp));
@@ -2754,8 +2720,6 @@ ndis_scan_end(struct ieee80211com *ic)
 			sp.ies_len = efrm - frm;
 		}
 done:
-		DPRINTF("scan: bssid %s chan %dMHz (%d/%d) rssi %d\n",
-		    ether_sprintf(wb->macaddr), freq, sp.bchan, chanflag, rssi);
 		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, -96);
 		wb = (struct ndis_wlan_bssid_ex *)((char *)wb + wb->len);
 	}

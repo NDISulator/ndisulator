@@ -38,7 +38,8 @@
 #ifdef __amd64__
 #define	NDIS_BUS_SPACE_IO	AMD64_BUS_SPACE_IO
 #define	NDIS_BUS_SPACE_MEM	AMD64_BUS_SPACE_MEM
-#else
+#endif
+#ifdef __i386__
 #define	NDIS_BUS_SPACE_IO	I386_BUS_SPACE_IO
 #define	NDIS_BUS_SPACE_MEM	I386_BUS_SPACE_MEM
 #endif

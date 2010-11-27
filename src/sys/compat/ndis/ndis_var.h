@@ -35,6 +35,33 @@
 #ifndef _NDIS_VAR_H_
 #define	_NDIS_VAR_H_
 
+#define NDIS_DEBUG
+#ifdef NDIS_DEBUG
+
+enum {
+	NDBG_REQ	= 0x00000001,
+	NDBG_INIT	= 0x00000002,
+	NDBG_CFG	= 0x00000004,
+	NDBG_PCI	= 0x00000008,
+	NDBG_PCMCIA	= 0x00000010,
+	NDBG_DMA	= 0x00000020,
+	NDBG_MM		= 0x00000040,
+	NDBG_INTR	= 0x00000080,
+	NDBG_TIMER	= 0x00000100,
+	NDBG_EVENT	= 0x00000200,
+	NDBG_MEM	= 0x00000400,
+	NDBG_HAL	= 0x00000800,
+	NDBG_ANY	= 0xffffffff
+};
+extern int ndis_debug;
+#define	TRACE(m, fmt, ...) do {						\
+	if (ndis_debug & (m))						\
+		printf("%s:" fmt, __func__, __VA_ARGS__);		\
+} while (0)
+#else
+#define	TRACE(m, fmt, ...)
+#endif
+
 /* Forward declarations */
 struct ndis_miniport_block;
 struct ndis_mdriver_block;
