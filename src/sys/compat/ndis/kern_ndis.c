@@ -253,11 +253,15 @@ ndis_create_sysctls(struct ndis_softc *sc)
 	 * Environment can be either Windows (0) or WindowsNT (1).
 	 * We qualify as the latter.
 	 */
-	ndis_add_sysctl(sc, "Environment",
-	    "Windows environment", "1", CTLFLAG_RD);
+	ndis_add_sysctl(sc, "Environment", "Environment", "1", CTLFLAG_RD);
 	/* NDIS version should be 5.1. */
-	ndis_add_sysctl(sc, "NdisVersion",
-	    "NDIS API Version", "0x00050001", CTLFLAG_RD);
+	ndis_add_sysctl(sc, "NdisVersion", "NDIS API Version",
+	    "0x00050001", CTLFLAG_RD);
+	ndis_add_sysctl(sc, "SlotNumber", "Slot Number", "01", CTLFLAG_RD);
+	ndis_add_sysctl(sc, "NetCfgInstanceId", "NetCfgInstanceId",
+	    "{12345678-1234-5678-CAFE0-123456789ABC}", CTLFLAG_RD);
+	ndis_add_sysctl(sc, "DriverDesc", "Driver Description",
+	    "NDIS Network Adapter", CTLFLAG_RD);
 	/* Bus type (PCI, PCMCIA, etc...) */
 	sprintf(buf, "%d", sc->ndis_bus_type);
 	ndis_add_sysctl(sc, "BusType", "Bus Type", buf, CTLFLAG_RD);
