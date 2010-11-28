@@ -2036,12 +2036,18 @@ static int
 ndis_set_infra(struct ndis_softc *sc, int opmode)
 {
 	enum ndis_80211_network_infrastructure mode;
+	int32_t rval;
 
 	if (opmode == IEEE80211_M_IBSS)
 		mode = NDIS_802_11_IBSS;
 	else
 		mode = NDIS_802_11_INFRASTRUCTURE;
-	return (ndis_set_int(sc, OID_802_11_INFRASTRUCTURE_MODE, mode));
+	if (!(sc->ndis_ifp->if_flags & IFF_UP))
+		ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D0);
+	rval = ndis_set_int(sc, OID_802_11_INFRASTRUCTURE_MODE, mode);
+	if (!(sc->ndis_ifp->if_flags & IFF_UP))
+		ndis_set_powerstate(sc, NDIS_DEVICE_STATE_D3);
+	return (rval);
 }
 
 static void
