@@ -2154,7 +2154,6 @@ void	ndis_send_packets(struct ndis_softc *, struct ndis_packet **, int);
 int32_t	ndis_send_packet(struct ndis_softc *, struct ndis_packet *);
 int	ndis_convert_res(struct ndis_softc *);
 void	ndis_free_packet(struct ndis_packet *);
-void	ndis_free_bufs(ndis_buffer *);
 int32_t	ndis_reset_nic(struct ndis_softc *);
 void	ndis_disable_interrupts_nic(struct ndis_softc *);
 void	ndis_enable_interrupts_nic(struct ndis_softc *);

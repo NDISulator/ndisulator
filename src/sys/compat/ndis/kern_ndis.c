@@ -80,6 +80,7 @@ SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug,
 
 static void	ndis_create_sysctls(struct ndis_softc *);
 static void	ndis_flush_sysctls(struct ndis_softc *);
+static void	ndis_free_bufs(ndis_buffer *);
 static void	NdisMIndicateStatus(struct ndis_miniport_block *, int32_t,
 		    void *, uint32_t);
 static void	NdisMIndicateStatusComplete(struct ndis_miniport_block *);
@@ -369,13 +370,10 @@ ndis_return_packet(void *buf, void *arg)
 	    WORKQUEUE_CRITICAL, block);
 }
 
-void
+static void
 ndis_free_bufs(ndis_buffer *b0)
 {
 	ndis_buffer *next;
-
-	if (b0 == NULL)
-		return;
 
 	while (b0 != NULL) {
 		next = b0->mdl_next;
@@ -629,8 +627,9 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 		}
 	} else
 		return (NDIS_STATUS_NOT_SUPPORTED);
-	TRACE(NDBG_REQ, "req %u sc %p oid %08X buf %p buflen %u rval %08X\n",
-	    req, sc, oid, buf, buflen, rval);
+	TRACE(NDBG_REQ, "req %u sc %p oid %08X buf %p buflen %u written %u "
+	    "needed %u rval %08X\n",
+	    req, sc, oid, buf, buflen, *written, *needed, rval);
 	return (rval);
 }
 
