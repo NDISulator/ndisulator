@@ -177,7 +177,6 @@ static void NdisMDeregisterIoPortRange(struct ndis_miniport_block *,
     uint32_t, uint32_t, void *);
 static void NdisReadNetworkAddress(int32_t *, void **, uint32_t *,
     struct ndis_miniport_block *);
-static int32_t NdisQueryMapRegisterCount(uint32_t, uint32_t *);
 static int32_t NdisMAllocateMapRegisters(struct ndis_miniport_block *,
     uint32_t, uint8_t, uint32_t, uint32_t);
 static void NdisMFreeMapRegisters(struct ndis_miniport_block *);
@@ -331,15 +330,6 @@ NdisInitializeWrapper(void **wrapper, struct driver_object *drv,
     void *path, void *unused)
 {
 	TRACE(NDBG_INIT, "drv %p\n", drv);
-	/*
-	 * As of yet, I haven't come up with a compelling
-	 * reason to define a private NDIS wrapper structure,
-	 * so we use a pointer to the driver object as the
-	 * wrapper handle. The driver object has the miniport
-	 * characteristics struct for this driver hung off it
-	 * via IoAllocateDriverObjectExtension(), and that's
-	 * really all the private data we need.
-	 */
 	*wrapper = drv;
 }
 
@@ -347,7 +337,6 @@ static void
 NdisTerminateWrapper(struct driver_object *drv, void *syspec)
 {
 	TRACE(NDBG_INIT, "drv %p\n", drv);
-	/* Nothing to see here, move along. */
 }
 
 static int32_t
@@ -392,7 +381,6 @@ static int32_t
 NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags, uint64_t high)
 {
 	TRACE(NDBG_MEM, "len %u flags %u high %llu\n", len, flags, high);
-
 	return (NdisAllocateMemoryWithTag(vaddr, len, 0));
 }
 
@@ -400,7 +388,6 @@ static void
 NdisFreeMemory(void *vaddr, uint32_t len, uint32_t flags)
 {
 	TRACE(NDBG_MEM, "vaddr %p len %u flags %u\n", vaddr, len, flags);
-
 	free(vaddr, M_NDIS_SUBR);
 }
 
@@ -660,9 +647,6 @@ NdisCloseConfiguration(struct ndis_miniport_block *block)
 	}
 }
 
-/*
- * Initialize a Windows spinlock.
- */
 static void
 NdisAllocateSpinLock(struct ndis_spin_lock *lock)
 {
@@ -1090,13 +1074,6 @@ NdisReadNetworkAddress(int32_t *status, void **addr, uint32_t *addrlen,
 		*addrlen = ETHER_ADDR_LEN;
 		*status = NDIS_STATUS_SUCCESS;
 	}
-}
-
-static int32_t
-NdisQueryMapRegisterCount(uint32_t bustype, uint32_t *cnt)
-{
-	*cnt = 8192;
-	return (NDIS_STATUS_SUCCESS);
 }
 
 static bus_addr_t
@@ -2808,7 +2785,6 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisQueryBuffer, 3),
 	IMPORT_SFUNC(NdisQueryBufferOffset, 3),
 	IMPORT_SFUNC(NdisQueryBufferSafe, 4),
-	IMPORT_SFUNC(NdisQueryMapRegisterCount, 2),
 	IMPORT_SFUNC(NdisReadConfiguration, 5),
 	IMPORT_SFUNC(NdisReadNetworkAddress, 4),
 	IMPORT_SFUNC(NdisReadPciSlotInformation, 5),
