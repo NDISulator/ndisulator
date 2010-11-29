@@ -1389,28 +1389,20 @@ NdisMInitializeScatterGatherDma(struct ndis_miniport_block *block,
 {
 	struct ndis_softc *sc;
 
+	TRACE(NDBG_DMA, "block %p is64 %u maxphysmap %u\n",
+	    block, is64, maxphysmap);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 
-	TRACE(NDBG_DMA, "block %p is64 %u maxphysmap %u\n",
-	    block, is64, maxphysmap);
-	/* Don't do this twice. */
 	sc = device_get_softc(block->physdeviceobj->devext);
-	if (sc->ndis_sc == 1)
+	if (sc->ndis_sc == 1)	/* Don't do this twice. */
 		return (NDIS_STATUS_SUCCESS);
 
-	if (bus_dma_tag_create(sc->ndis_parent_tag,
-			ETHER_ALIGN, 0,
-			BUS_SPACE_MAXADDR_32BIT,
-			BUS_SPACE_MAXADDR,
-			NULL, NULL,
-			MCLBYTES * NDIS_MAXSEG,
-			NDIS_MAXSEG,
-			MCLBYTES,
-			BUS_DMA_ALLOCNOW,
-			NULL,
-			NULL,
-			&sc->ndis_ttag) != 0)
+	if (bus_dma_tag_create(sc->ndis_parent_tag, ETHER_ALIGN, 0,
+	    is64 ? BUS_SPACE_MAXADDR : BUS_SPACE_MAXADDR_32BIT,
+	    BUS_SPACE_MAXADDR, NULL, NULL, MCLBYTES * NDIS_MAXSEG,
+	    NDIS_MAXSEG, MCLBYTES, BUS_DMA_ALLOCNOW, NULL, NULL,
+	    &sc->ndis_ttag) != 0)
 		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
 
 	sc->ndis_sc = 1;
