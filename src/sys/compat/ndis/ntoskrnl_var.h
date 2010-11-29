@@ -540,6 +540,15 @@ struct kinterrupt {
 	void			*ki_svcctx;
 };
 
+struct object_attributes {
+	uint32_t	length;
+	void		*root_directory;
+	unicode_string	*name;
+	uint32_t	attributes;
+	void		*security_descriptor;
+	void		*security_qos;
+};
+
 struct ksystem_time {
 	uint32_t	low_part;
 	int32_t		high1_time;

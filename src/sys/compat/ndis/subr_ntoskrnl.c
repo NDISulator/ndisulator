@@ -231,9 +231,22 @@ static int32_t KeReadStateMutex(kmutant *);
 static int32_t ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
     uint8_t, void **, void **);
 static void ObfDereferenceObject(void *);
-static int32_t ZwClose(ndis_handle);
-static int32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t,
-    uint32_t, void *);
+static int32_t ZwClose(void *);
+static int32_t ZwCreateFile(void **, uint32_t, struct object_attributes *,
+    struct io_status_block *, int64_t *, uint32_t, uint32_t, uint32_t,
+    uint32_t, void *, uint32_t);
+static int32_t ZwCreateKey(void **, uint32_t, struct object_attributes *,
+    uint32_t, unicode_string *, uint32_t, uint32_t *);
+static int32_t ZwDeleteKey(void *);
+static int32_t ZwOpenFile(void **, uint32_t, struct object_attributes *,
+    struct io_status_block *, uint32_t, uint32_t);
+static int32_t ZwOpenKey(void **, uint32_t, struct object_attributes *);
+static int32_t ZwReadFile(void *, struct nt_kevent *, void *, void *,
+    struct io_status_block *, void *, uint32_t, int64_t *, uint32_t *);
+static int32_t ZwWriteFile(void *, struct nt_kevent *, void *, void *,
+    struct io_status_block *, void *, uint32_t, int64_t *, uint32_t *);
+static int32_t WmiQueryTraceInformation(uint32_t, void *, uint32_t, uint32_t,
+    void *);
 static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static int32_t IoWMIRegistrationControl(struct device_object *, uint32_t);
 static int32_t IoWMIQueryAllData(void *, uint32_t *, void *);
@@ -2091,7 +2104,7 @@ ExInterlockedAddLargeStatistic(uint64_t *addend, uint32_t inc)
 
 mdl *
 IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
-     uint8_t chargequota, irp *iopkt)
+    uint8_t chargequota, irp *iopkt)
 {
 	mdl *m;
 	int zone = 0;
@@ -2187,7 +2200,7 @@ MmFreeContiguousMemory(void *base)
 
 static void
 MmFreeContiguousMemorySpecifyCache(void *base, uint32_t size,
-     enum memory_caching_type type)
+    enum memory_caching_type type)
 {
 	TRACE(NDBG_MM, "base %p size %u type %d\n", base, size, type);
 	if (base == NULL)
@@ -3163,9 +3176,61 @@ ObfDereferenceObject(void *object)
 }
 
 static int32_t
-ZwClose(ndis_handle handle)
+ZwClose(void *handle)
 {
-	return (NDIS_STATUS_SUCCESS);
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwCreateFile(void **handle, uint32_t access, struct object_attributes *attr,
+    struct io_status_block *iosb, int64_t *size, uint32_t file_attr,
+    uint32_t share_access, uint32_t create_disposition,
+    uint32_t create_options, void *ea_buf, uint32_t ea_len)
+{
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwCreateKey(void **handle, uint32_t access, struct object_attributes *attr,
+    uint32_t title_index, unicode_string *class, uint32_t create_options,
+    uint32_t *create_disposition)
+{
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwDeleteKey(void *handle)
+{
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwOpenFile(void **handle, uint32_t access, struct object_attributes *attr,
+    struct io_status_block *iosb, uint32_t share_access, uint32_t options)
+{
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwOpenKey(void **handle, uint32_t access, struct object_attributes *attr)
+{
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwReadFile(void *handle, struct nt_kevent *event, void *apc_func,
+    void *apc_ctx, struct io_status_block *iosb, void *buffer, uint32_t len,
+    int64_t *byte_offset, uint32_t *key)
+{
+	return (NDIS_STATUS_FAILURE);
+}
+
+static int32_t
+ZwWriteFile(void *handle, struct nt_kevent *event, void *apc_func,
+    void *apc_ctx, struct io_status_block *iosb, void *buffer, uint32_t len,
+    int64_t *byte_offset, uint32_t *key)
+{
+	return (NDIS_STATUS_FAILURE);
 }
 
 static int32_t
@@ -4007,6 +4072,13 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(WRITE_REGISTER_USHORT, 2),
 	IMPORT_SFUNC(WmiQueryTraceInformation, 5),
 	IMPORT_SFUNC(ZwClose, 1),
+	IMPORT_SFUNC(ZwCreateFile, 11),
+	IMPORT_SFUNC(ZwCreateKey, 7),
+	IMPORT_SFUNC(ZwDeleteKey, 1),
+	IMPORT_SFUNC(ZwOpenFile, 6),
+	IMPORT_SFUNC(ZwOpenKey, 3),
+	IMPORT_SFUNC(ZwReadFile, 9),
+	IMPORT_SFUNC(ZwWriteFile, 9),
 	IMPORT_SFUNC(_alldiv, 2 + 2),
 	IMPORT_SFUNC(_allmul, 2 + 2),
 	IMPORT_SFUNC(_allrem, 2 + 2),
