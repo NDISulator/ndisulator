@@ -329,7 +329,7 @@ static void
 NdisInitializeWrapper(void **wrapper, struct driver_object *drv,
     void *path, void *unused)
 {
-	TRACE(NDBG_INIT, "drv %p\n", drv);
+	TRACE(NDBG_INIT, "wrapper %p drv %p\n", wrapper, drv);
 	*wrapper = drv;
 }
 
@@ -2124,10 +2124,14 @@ NdisGetVersion(void)
 static void
 NdisInitializeString(unicode_string *dst, char *src)
 {
-	ansi_string as;
-
-	RtlInitAnsiString(&as, src);
-	RtlAnsiStringToUnicodeString(dst, &as, TRUE);
+	if (src == NULL) {
+		dst->us_len = dst->us_maxlen = 0;
+		dst->us_buf = NULL;
+	} else {
+		ansi_string as;
+		RtlInitAnsiString(&as, src);
+		RtlAnsiStringToUnicodeString(dst, &as, TRUE);
+	}
 }
 
 static void
