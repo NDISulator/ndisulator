@@ -2639,7 +2639,7 @@ RtlxAnsiStringToUnicodeSize(const ansi_string *str)
 	int i;
 
 	for (i = 0; i < str->as_maxlen && str->as_buf[i]; i++);
-	return i * sizeof(uint16_t);
+	return (i * sizeof(uint16_t));
 }
 
 static uint32_t
@@ -2648,7 +2648,7 @@ RtlxUnicodeStringToAnsiSize(const unicode_string *str)
 	int i;
 
 	for (i = 0; i < str->us_maxlen && str->us_buf[i]; i++);
-	return i * sizeof(uint8_t);
+	return (i * sizeof(uint8_t));
 }
 
 static void
@@ -2981,7 +2981,7 @@ wcsicmp(const uint16_t *s1, const uint16_t *s2)
 		s1++;
 		s2++;
 	}
-	return tolower((char)*s1) - tolower((char)*s2);
+	return (tolower((char)*s1) - tolower((char)*s2));
 }
 
 static size_t
