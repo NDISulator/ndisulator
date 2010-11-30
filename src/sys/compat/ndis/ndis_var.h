@@ -2146,6 +2146,7 @@ int	ndis_get(struct ndis_softc *, uint32_t, void *, uint32_t);
 int	ndis_get_int(struct ndis_softc *, uint32_t, uint32_t *);
 int	ndis_get_info(struct ndis_softc *, uint32_t, void *, uint32_t,
 	    uint32_t *, uint32_t *);
+void	*ndis_get_routine_address(struct image_patch_table *, char *);
 int	ndis_set(struct ndis_softc *, uint32_t, void *, uint32_t);
 int	ndis_set_int(struct ndis_softc *, uint32_t, uint32_t);
 int	ndis_set_info(struct ndis_softc *, uint32_t, void *, uint32_t,

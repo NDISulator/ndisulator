@@ -324,6 +324,17 @@ ndis_flush_sysctls(struct ndis_softc *sc)
 	}
 }
 
+void *
+ndis_get_routine_address(struct image_patch_table *functbl, char *name)
+{
+	int i;
+
+	for (i = 0; functbl[i].name != NULL; i++)
+		if (strcmp(name, functbl[i].name) == 0)
+			return (functbl[i].wrap);
+	return (NULL);
+}
+
 static void
 ndis_return_packet_nic(struct device_object *dobj,
     struct ndis_miniport_block *block)

@@ -192,6 +192,7 @@ static int32_t NdisMMapIoSpace(void **, struct ndis_miniport_block *,
     uint64_t, uint32_t);
 static void NdisMUnmapIoSpace(struct ndis_miniport_block *, void *, uint32_t);
 static uint32_t NdisGetCacheFillSize(void);
+static void *NdisGetRoutineAddress(unicode_string *);
 static uint32_t NdisMGetDmaAlignment(struct ndis_miniport_block *);
 static int32_t NdisMInitializeScatterGatherDma(struct ndis_miniport_block *,
     uint8_t, uint32_t);
@@ -1365,6 +1366,17 @@ static uint32_t
 NdisGetCacheFillSize(void)
 {
 	return (128);
+}
+
+static void *
+NdisGetRoutineAddress(unicode_string *ustr)
+{
+	ansi_string astr;
+
+	if (RtlUnicodeStringToAnsiString(&astr, ustr, TRUE))
+		return (NULL);
+	TRACE(NDBG_INIT, "routine %s\n", astr.as_buf);
+	return (ndis_get_routine_address(ndis_functbl, astr.as_buf));
 }
 
 static uint32_t
@@ -2718,6 +2730,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisGetCurrentSystemTime, 1),
 	IMPORT_SFUNC(NdisGetFirstBufferFromPacket, 5),
 	IMPORT_SFUNC(NdisGetFirstBufferFromPacketSafe, 6),
+	IMPORT_SFUNC(NdisGetRoutineAddress, 1),
 	IMPORT_SFUNC(NdisGetSystemUpTime, 1),
 	IMPORT_SFUNC(NdisGetSystemUpTimeEx, 1),
 	IMPORT_SFUNC(NdisGetVersion, 0),

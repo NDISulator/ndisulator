@@ -184,6 +184,7 @@ static void MmFreeContiguousMemory(void *);
 static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t,
     enum memory_caching_type);
 static uint64_t MmGetPhysicalAddress(void *);
+static void *MmGetSystemRoutineAddress(unicode_string *);
 static uint8_t MmIsAddressValid(void *);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(mdl *, uint8_t);
@@ -2283,6 +2284,17 @@ MmGetPhysicalAddress(void *base)
 	return (pmap_extract(kernel_map->pmap, (vm_offset_t)base));
 }
 
+static void *
+MmGetSystemRoutineAddress(unicode_string *ustr)
+{
+	ansi_string astr;
+
+	if (RtlUnicodeStringToAnsiString(&astr, ustr, TRUE))
+		return (NULL);
+	TRACE(NDBG_INIT, "routine %s\n", astr.as_buf);
+	return (ndis_get_routine_address(ntoskrnl_functbl, astr.as_buf));
+}
+
 static uint8_t
 MmIsAddressValid(void *vaddr)
 {
@@ -4101,6 +4113,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(MmFreeContiguousMemory, 1),
 	IMPORT_SFUNC(MmFreeContiguousMemorySpecifyCache, 3),
 	IMPORT_SFUNC(MmGetPhysicalAddress, 1),
+	IMPORT_SFUNC(MmGetSystemRoutineAddress, 1),
 	IMPORT_SFUNC(MmIsAddressValid, 1),
 	IMPORT_SFUNC(MmMapIoSpace, 3 + 1),
 	IMPORT_SFUNC(MmMapLockedPages, 2),
