@@ -1957,8 +1957,6 @@ NDIS_BUFFER_TO_SPAN_PAGES(ndis_buffer *buf)
 static void
 NdisGetBufferPhysicalArraySize(ndis_buffer *buf, uint32_t *pages)
 {
-	if (buf == NULL)
-		return;
 	*pages = NDIS_BUFFER_TO_SPAN_PAGES(buf);
 }
 
