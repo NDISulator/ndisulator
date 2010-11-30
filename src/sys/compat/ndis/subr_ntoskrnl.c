@@ -210,6 +210,12 @@ static int atoi(const char *);
 static long atol(const char *);
 static int rand(void);
 static void srand(unsigned int);
+static uint16_t *wcscat(uint16_t *, const uint16_t *);
+static int wcscmp(const uint16_t *, const uint16_t *);
+static uint16_t *wcscpy(uint16_t *, const uint16_t *);
+static int wcsicmp(const uint16_t *, const uint16_t *);
+static size_t wcslen(const uint16_t *);
+static uint16_t *wcsncpy(uint16_t *, const uint16_t *, size_t);
 static unsigned long KeQueryActiveProcessors(void);
 static uint64_t KeQueryInterruptTime(void);
 static void KeQuerySystemTime(int64_t *);
@@ -2602,8 +2608,7 @@ RtlAppendUnicodeToString(unicode_string *dst, const uint16_t *src)
 {
 	if (src != NULL) {
 		int len;
-		for (len = 0; src[len]; len++)
-			;
+		for (len = 0; src[len]; len++);
 		if (dst->us_len +
 		    (len * sizeof(dst->us_buf[0])) > dst->us_maxlen)
 			return NDIS_STATUS_BUFFER_TOO_SMALL;
@@ -2621,8 +2626,7 @@ RtlxAnsiStringToUnicodeSize(const ansi_string *str)
 {
 	int i;
 
-	for (i = 0; i < str->as_maxlen && str->as_buf[i]; i++)
-		;
+	for (i = 0; i < str->as_maxlen && str->as_buf[i]; i++);
 	return i * sizeof(uint16_t);
 }
 
@@ -2631,8 +2635,7 @@ RtlxUnicodeStringToAnsiSize(const unicode_string *str)
 {
 	int i;
 
-	for (i = 0; i < str->us_maxlen && str->us_buf[i]; i++)
-		;
+	for (i = 0; i < str->us_maxlen && str->us_buf[i]; i++);
 	return i * sizeof(uint8_t);
 }
 
@@ -2725,8 +2728,7 @@ RtlCompareMemory(const void *s1, const void *s2, size_t len)
 	m1 = (char *)s1;
 	m2 = (char *)s2;
 
-	for (i = 0; i < len && m1[i] == m2[i]; i++)
-		;
+	for (i = 0; i < len && m1[i] == m2[i]; i++);
 	return (i);
 }
 
@@ -2784,8 +2786,7 @@ RtlInitAnsiString(ansi_string *dst, const char *src)
 		dst->as_buf = NULL;
 	} else {
 		int i;
-		for (i = 0; src[i]; i++)
-			;
+		for (i = 0; src[i]; i++);
 		dst->as_buf = (char *)src;
 		dst->as_len = i;
 		dst->as_maxlen = i + 1;
@@ -2802,8 +2803,7 @@ RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
 		dst->us_buf = NULL;
 	} else {
 		int i;
-		for (i = 0; src[i]; i++)
-			;
+		for (i = 0; src[i]; i++);
 		dst->us_buf = (uint16_t *)src;
 		dst->us_len = i * sizeof(dst->us_buf[0]);
 		dst->us_maxlen = (i + 1) * sizeof(dst->us_buf[0]);
@@ -2931,6 +2931,72 @@ static void
 srand(unsigned int seed)
 {
 	srandom(seed);
+}
+
+uint16_t *
+wcscat(uint16_t *s, const uint16_t *append)
+{
+	uint16_t *save = s;
+
+	for (; *s; ++s);
+	while ((*s++ = *append++) != 0);
+	return (save);
+}
+
+static int
+wcscmp(const uint16_t *s1, const uint16_t *s2)
+{
+	while (*s1 && *s1 == *s2) {
+		s1++;
+		s2++;
+	}
+	return (*s1 - *s2);
+}
+
+static uint16_t *
+wcscpy(uint16_t *to, const uint16_t *from)
+{
+	uint16_t *save = to;
+
+	for (; (*to = *from) != 0; ++from, ++to);
+	return (save);
+}
+
+int
+wcsicmp(const uint16_t *s1, const uint16_t *s2)
+{
+	while (*s1 && tolower((char)*s1) == tolower((char)*s2)) {
+		s1++;
+		s2++;
+	}
+	return tolower((char)*s1) - tolower((char)*s2);
+}
+
+static size_t
+wcslen(const uint16_t *str)
+{
+	register const uint16_t *s;
+
+	for (s = str; *s; ++s);
+	return (s - str);
+}
+
+static uint16_t *
+wcsncpy(uint16_t *dst, const uint16_t *src, size_t n)
+{
+	if (n != 0) {
+		register uint16_t *d = dst;
+		register const uint16_t *s = src;
+
+		do {
+			if ((*d++ = *s++) == 0) {
+				while (--n != 0)
+					*d++ = 0;
+				break;
+			}
+		} while (--n != 0);
+	}
+	return (dst);
 }
 
 static uint8_t
@@ -3902,6 +3968,12 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC(strncpy, 0),
 	IMPORT_CFUNC(strstr, 0),
 	IMPORT_CFUNC(vsprintf, 0),
+	IMPORT_CFUNC(wcscat, 0),
+	IMPORT_CFUNC(wcscmp, 0),
+	IMPORT_CFUNC(wcscpy, 0),
+	IMPORT_CFUNC(wcsicmp, 0),
+	IMPORT_CFUNC(wcslen, 0),
+	IMPORT_CFUNC(wcsncpy, 0),
 	IMPORT_CFUNC_MAP(_snprintf, snprintf, 0),
 	IMPORT_CFUNC_MAP(_vsnprintf, vsnprintf, 0),
 	IMPORT_CFUNC_MAP(memchr, ntoskrnl_memchr, 0),
