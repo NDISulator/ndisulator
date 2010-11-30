@@ -1530,6 +1530,13 @@ struct ndis_task_ipsec {
 #define	NDIS_DMA_32BITS		0x01
 #define	NDIS_DMA_64BITS		0x02
 
+struct ndis_cfg {
+	char	*key;
+	char	*desc;
+	char	*val;
+	int	idx;
+};
+
 struct ndis_binary_data {
 	uint16_t	len;
 	void		*buf;
