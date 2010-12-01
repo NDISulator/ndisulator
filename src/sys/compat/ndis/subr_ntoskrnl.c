@@ -750,9 +750,7 @@ IoGetAttachedDevice(struct device_object *dev)
 
 	if (d == NULL)
 		return (NULL);
-	while (d->attacheddev != NULL)
-		d = d->attacheddev;
-
+	for (; d->attacheddev != NULL; d = d->attacheddev);
 	return (d);
 }
 
@@ -1247,12 +1245,8 @@ IoDetachDevice(struct device_object *topdev)
 	topdev->attacheddev = tail->attacheddev;
 	topdev->refcnt--;
 
-	/* Now reduce the stacksize count for the takm_il objects. */
-	tail = topdev->attacheddev;
-	while (tail != NULL) {
+	for (tail = topdev->attacheddev; tail != NULL; tail = tail->attacheddev)
 		tail->stacksize--;
-		tail = tail->attacheddev;
-	}
 
 	mtx_unlock(&ntoskrnl_dispatchlock);
 }
@@ -1920,14 +1914,11 @@ ntoskrnl_popsl(slist_header *head)
 static funcptr
 ntoskrnl_findwrap(void *func)
 {
-	struct image_patch_table *patch = ntoskrnl_functbl;
+	struct image_patch_table *p;
 
-	while (patch->func != NULL) {
-		if ((funcptr)patch->func == func)
-			return ((funcptr)patch->wrap);
-		patch++;
-	}
-
+	for (p = ntoskrnl_functbl; p->func != NULL; p++)
+		if ((funcptr)p->func == func)
+			return ((funcptr)p->wrap);
 	return (NULL);
 }
 
@@ -2503,15 +2494,13 @@ IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func,
 	 * already been inserted. Queuing the same workitem
 	 * twice will hose the list but good.
 	 */
-	l = kq->kq_disp.nle_flink;
-	while (l != &kq->kq_disp) {
+	for (l = kq->kq_disp.nle_flink; l != &kq->kq_disp; l = l->nle_flink) {
 		cur = CONTAINING_RECORD(l, io_workitem, iw_listentry);
 		if (cur == iw) {
 			/* Already queued -- do nothing. */
 			KeReleaseSpinLock(&kq->kq_lock, irql);
 			return;
 		}
-		l = l->nle_flink;
 	}
 
 	iw->iw_func = iw_func;
@@ -3532,18 +3521,14 @@ ntoskrnl_remove_timer(ktimer *timer)
 void
 KeInitializeTimer(ktimer *timer)
 {
-	if (timer == NULL)
-		return;
-
+	KASSERT(timer != NULL, ("no timer"));
 	KeInitializeTimerEx(timer,  EVENT_TYPE_NOTIFY);
 }
 
 void
 KeInitializeTimerEx(ktimer *timer, uint32_t type)
 {
-	if (timer == NULL)
-		return;
-
+	KASSERT(timer != NULL, ("no timer"));
 	bzero((char *)timer, sizeof(ktimer));
 	InitializeListHead((&timer->k_header.dh_waitlisthead));
 	timer->k_header.dh_sigstate = FALSE;
@@ -3658,12 +3643,10 @@ ntoskrnl_insert_dpc(struct list_entry *head, kdpc *dpc)
 	struct list_entry *l;
 	kdpc *d;
 
-	l = head->nle_flink;
-	while (l != head) {
+	for (l = head->nle_flink; l != head; l = l->nle_flink) {
 		d = CONTAINING_RECORD(l, kdpc, k_dpclistentry);
 		if (d == dpc)
 			return (FALSE);
-		l = l->nle_flink;
 	}
 
 	if (dpc->k_importance == KDPC_IMPORTANCE_LOW)
