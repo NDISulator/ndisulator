@@ -161,11 +161,12 @@ static void NdisMInitializeTimer(struct ndis_miniport_timer *,
     struct ndis_miniport_block *, ndis_timer_function, void *);
 static void NdisInitializeTimer(struct ndis_timer *, ndis_timer_function,
     void *);
+static void NdisCancelTimer(struct ndis_timer *, uint8_t *);
 static void NdisSetTimer(struct ndis_timer *, uint32_t);
 static int32_t NdisScheduleWorkItem(struct ndis_work_item *);
 static void NdisMSetPeriodicTimer(struct ndis_miniport_timer *, uint32_t);
 static void NdisMSleep(uint32_t);
-static void NdisMCancelTimer(struct ndis_timer *, uint8_t *);
+static void NdisMCancelTimer(struct ndis_miniport_timer *, uint8_t *);
 static void ndis_timercall(kdpc *, struct ndis_miniport_timer *, void *,
     void *);
 static void NdisMQueryAdapterResources(int32_t *, struct ndis_miniport_block *,
@@ -895,11 +896,6 @@ NdisMCompleteBufferPhysicalMapping(struct ndis_miniport_block *block,
 	bus_dmamap_unload(sc->ndis_mtag, map);
 }
 
-/*
- * This is an older (?) timer init routine which doesn't
- * accept a miniport context handle. Serialized miniports should
- * never call this function.
- */
 static void
 NdisInitializeTimer(struct ndis_timer *timer, ndis_timer_function func,
     void *ctx)
@@ -928,28 +924,12 @@ ndis_timercall(kdpc *dpc, struct ndis_miniport_timer *timer, void *sysarg1,
 		KeReleaseSpinLockFromDpcLevel(&timer->nmt_block->lock);
 }
 
-/*
- * For a long time I wondered why there were two NDIS timer initialization
- * routines, and why this one needed an NDIS_MINIPORT_TIMER and the
- * MiniportAdapterHandle. The NDIS_MINIPORT_TIMER has its own callout
- * function and context pointers separate from those in the DPC, which
- * allows for another level of indirection: when the timer fires, we
- * can have our own timer function invoked, and from there we can call
- * the driver's function. But why go to all that trouble? Then it hit
- * me: for serialized miniports, the timer callouts are not re-entrant.
- * By trapping the callouts and having access to the MiniportAdapterHandle,
- * we can protect the driver callouts by acquiring the NDIS serialization
- * lock. This is essential for allowing serialized miniports to work
- * correctly on SMP systems. On UP hosts, setting IRQL to DISPATCH_LEVEL
- * is enough to prevent other threads from pre-empting you, but with
- * SMP, you must acquire a lock as well, otherwise the other CPU is
- * free to clobber you.
- */
 static void
 NdisMInitializeTimer(struct ndis_miniport_timer *timer,
     struct ndis_miniport_block *block, ndis_timer_function func, void *ctx)
 {
-	TRACE(NDBG_TIMER, "timer %p block %p func %p ctx %p\n", timer, block, func, ctx);
+	TRACE(NDBG_TIMER, "timer %p block %p func %p ctx %p\n",
+	    timer, block, func, ctx);
 	KASSERT(block != NULL, ("no block"));
 
 	/* Save the driver's funcptr and context */
@@ -966,6 +946,14 @@ NdisMInitializeTimer(struct ndis_miniport_timer *timer,
 	KeInitializeTimer(&timer->nmt_ktimer);
 	KeInitializeDpc(&timer->nmt_kdpc, ndis_timercall_wrap, timer);
 	timer->nmt_ktimer.k_dpc = &timer->nmt_kdpc;
+}
+
+static void
+NdisCancelTimer(struct ndis_timer *timer, uint8_t *cancelled)
+{
+	KASSERT(timer != NULL, ("no timer"));
+	*cancelled = KeCancelTimer(&timer->nt_ktimer);
+	TRACE(NDBG_TIMER, "timer %p cancelled %u\n", timer, *cancelled);
 }
 
 static void
@@ -986,17 +974,11 @@ NdisMSetPeriodicTimer(struct ndis_miniport_timer *timer, uint32_t msecs)
 	    ((int64_t)msecs * -10000), msecs, &timer->nmt_kdpc);
 }
 
-/*
- * Technically, this is really NdisCancelTimer(), but we also
- * (ab)use it for NdisMCancelTimer(), since in our implementation
- * we don't need the extra info in the ndis_miniport_timer
- * structure just to cancel a timer.
- */
 static void
-NdisMCancelTimer(struct ndis_timer *timer, uint8_t *cancelled)
+NdisMCancelTimer(struct ndis_miniport_timer *timer, uint8_t *cancelled)
 {
 	KASSERT(timer != NULL, ("no timer"));
-	*cancelled = KeCancelTimer(&timer->nt_ktimer);
+	*cancelled = KeCancelTimer(&timer->nmt_ktimer);
 	TRACE(NDBG_TIMER, "timer %p cancelled %u\n", timer, *cancelled);
 }
 
@@ -1009,7 +991,6 @@ NdisMQueryAdapterResources(int32_t *status, struct ndis_miniport_block *block,
 
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
-
 	sc = device_get_softc(block->physdeviceobj->devext);
 	rsclen = sizeof(struct cm_partial_resource_list) +
 	    (sizeof(struct cm_partial_resource_desc) * (sc->ndis_rescnt - 1));
@@ -2712,6 +2693,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisBufferLength, 1),
 	IMPORT_SFUNC(NdisBufferVirtualAddress, 1),
 	IMPORT_SFUNC(NdisBufferVirtualAddressSafe, 2),
+	IMPORT_SFUNC(NdisCancelTimer, 2),
 	IMPORT_SFUNC(NdisCloseConfiguration, 1),
 	IMPORT_SFUNC(NdisCloseFile, 1),
 	IMPORT_SFUNC(NdisCopyFromPacketToPacket, 6),
@@ -2812,7 +2794,6 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisWriteConfiguration, 4),
 	IMPORT_SFUNC(NdisWritePciSlotInformation, 5),
 	IMPORT_SFUNC(NdisWritePcmciaAttributeMemory, 4),
-	IMPORT_SFUNC_MAP(NdisCancelTimer, NdisMCancelTimer, 2),
 	IMPORT_SFUNC_MAP(NdisDprAllocatePacket, NdisAllocatePacket, 3),
 	IMPORT_SFUNC_MAP(NdisDprFreePacket, NdisFreePacket, 1),
 	IMPORT_SFUNC_MAP(NdisImmediateReadPciSlotInformation,
