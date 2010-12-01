@@ -3854,6 +3854,7 @@ KeCancelTimer(ktimer *timer)
 	mtx_lock(&ntoskrnl_dispatchlock);
 
 	pending = timer->k_header.dh_inserted;
+	timer->k_period = 0;
 
 	if (timer->k_header.dh_inserted == TRUE) {
 		timer->k_header.dh_inserted = FALSE;
