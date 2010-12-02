@@ -1294,7 +1294,6 @@ uint8_t	KeRemoveQueueDpc(kdpc *);
 void	KeSetImportanceDpc(kdpc *, uint32_t);
 void	KeSetTargetProcessorDpc(kdpc *, uint8_t);
 void	KeFlushQueuedDpcs(void);
-uint32_t	KeGetCurrentProcessorNumber(void);
 void	KeInitializeTimer(ktimer *);
 void	KeInitializeTimerEx(ktimer *, uint32_t);
 uint8_t	KeSetTimer(ktimer *, int64_t, kdpc *);

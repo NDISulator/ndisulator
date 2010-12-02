@@ -173,6 +173,7 @@ static void ExDeleteNPagedLookasideList(struct npaged_lookaside_list *);
 static struct slist_entry *ExInterlockedPushEntrySList(slist_header *,
     struct slist_entry *, kspin_lock *);
 static struct slist_entry *ExInterlockedPopEntrySList(slist_header *, kspin_lock *);
+static void InitializeSListHead(slist_header *);
 static uint32_t InterlockedIncrement(volatile uint32_t *);
 static uint32_t InterlockedDecrement(volatile uint32_t *);
 static void ExInterlockedAddLargeStatistic(uint64_t *, uint32_t);
@@ -267,6 +268,8 @@ static void DbgBreakPoint(void);
 static void KeBugCheck(uint32_t);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
+static uint32_t KeGetCurrentProcessorNumber(void);
+static struct thread * KeGetCurrentThread(void);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
@@ -3781,10 +3784,10 @@ KeFlushQueuedDpcs(void)
 	}
 }
 
-uint32_t
+static uint32_t
 KeGetCurrentProcessorNumber(void)
 {
-	return ((uint32_t)curthread->td_oncpu);
+	return (curthread->td_oncpu);
 }
 
 uint8_t

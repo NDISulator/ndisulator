@@ -128,16 +128,16 @@ static int32_t usbd_taskadd(irp *, unsigned);
 static void usbd_xfertask(struct device_object *, struct ndis_softc *);
 static void dummy(void);
 
-static union usbd_urb *USBD_CreateConfigurationRequestEx(
-    usb_config_descriptor_t *, struct usbd_interface_list_entry *);
 static union usbd_urb *USBD_CreateConfigurationRequest(
     usb_config_descriptor_t *, uint16_t *);
+static union usbd_urb *USBD_CreateConfigurationRequestEx(
+    usb_config_descriptor_t *, struct usbd_interface_list_entry *);
 static void USBD_GetUSBDIVersion(struct usbd_version_info *);
+static usb_interface_descriptor_t *USBD_ParseConfigurationDescriptor(
+    usb_config_descriptor_t *, uint8_t, uint8_t);
 static usb_interface_descriptor_t *USBD_ParseConfigurationDescriptorEx(
     usb_config_descriptor_t *, void *, int32_t, int32_t, int32_t, int32_t,
     int32_t);
-static usb_interface_descriptor_t *USBD_ParseConfigurationDescriptor(
-    usb_config_descriptor_t *, uint8_t, uint8_t);
 
 /*
  * We need to wrap these functions because these need `context switch' from

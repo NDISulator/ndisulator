@@ -204,6 +204,7 @@ static void NdisAllocateBuffer(int32_t *, ndis_buffer **, void *, void *,
     uint32_t);
 static void NdisFreeBuffer(ndis_buffer *);
 static uint32_t NdisBufferLength(ndis_buffer *);
+static uint32_t NdisPacketPoolUsage(struct ndis_packet_pool *);
 static void NdisQueryBuffer(ndis_buffer *, void **, uint32_t *);
 static void NdisQueryBufferSafe(ndis_buffer *, void **, uint32_t *, uint32_t);
 static void *NdisBufferVirtualAddress(ndis_buffer *);
@@ -1463,15 +1464,12 @@ NdisPacketPoolUsage(struct ndis_packet_pool *pool)
 void
 NdisFreePacketPool(struct ndis_packet_pool *pool)
 {
+#ifdef NDIS_DEBUG_PACKETS
 	int usage;
-#ifdef NDIS_DEBUG_PACKETS
 	uint8_t irql;
-#endif
-#ifdef NDIS_DEBUG_PACKETS
+
 	KeAcquireSpinLock(&pool->lock, &irql);
-#endif
 	usage = NdisPacketPoolUsage(pool);
-#ifdef NDIS_DEBUG_PACKETS
 	if (usage) {
 		pool->dead = 1;
 		KeResetEvent(&pool->event);
