@@ -53,6 +53,9 @@ __FBSDID("$FreeBSD$");
 #ifdef __i386__
 #include <machine/segments.h>
 #endif
+#ifdef __amd64__
+#include <machine/fpu.h>
+#endif
 
 #include <dev/usb/usb.h>
 
@@ -528,6 +531,86 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, uint8_t ftype)
 	*calladdr = (vm_offset_t)func;
 
 	*wrap = p;
+}
+
+uint64_t
+_x86_64_call1(void *fn, uint64_t a)
+{
+	struct fpu_kern_ctx fpu_ctx_save;
+	uint64_t rval;
+
+	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
+	rval = x86_64_call1(fn, a);
+	fpu_kern_leave(curthread, &fpu_ctx_save);
+
+	return (rval);
+}
+
+uint64_t
+_x86_64_call2(void *fn, uint64_t a, uint64_t b)
+{
+	struct fpu_kern_ctx fpu_ctx_save;
+	uint64_t rval;
+
+	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
+	rval = x86_64_call2(fn, a, b);
+	fpu_kern_leave(curthread, &fpu_ctx_save);
+
+	return (rval);
+}
+
+uint64_t
+_x86_64_call3(void *fn, uint64_t a, uint64_t b, uint64_t c)
+{
+	struct fpu_kern_ctx fpu_ctx_save;
+	uint64_t rval;
+
+	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
+	rval = x86_64_call3(fn, a, b, c);
+	fpu_kern_leave(curthread, &fpu_ctx_save);
+
+	return (rval);
+}
+
+uint64_t
+_x86_64_call4(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d)
+{
+	struct fpu_kern_ctx fpu_ctx_save;
+	uint64_t rval;
+
+	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
+	rval = x86_64_call4(fn, a, b, c, d);
+	fpu_kern_leave(curthread, &fpu_ctx_save);
+
+	return (rval);
+}
+
+uint64_t
+_x86_64_call5(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
+    uint64_t e)
+{
+	struct fpu_kern_ctx fpu_ctx_save;
+	uint64_t rval;
+
+	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
+	rval = x86_64_call5(fn, a, b, c, d, e);
+	fpu_kern_leave(curthread, &fpu_ctx_save);
+
+	return (rval);
+}
+
+uint64_t
+_x86_64_call6(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
+    uint64_t e, uint64_t f)
+{
+	struct fpu_kern_ctx fpu_ctx_save;
+	uint64_t rval;
+
+	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
+	rval = x86_64_call6(fn, a, b, c, d, e, f);
+	fpu_kern_leave(curthread, &fpu_ctx_save);
+
+	return (rval);
 }
 #endif /* __amd64__ */
 
