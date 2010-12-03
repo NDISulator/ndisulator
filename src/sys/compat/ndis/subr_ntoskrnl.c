@@ -3436,16 +3436,6 @@ ntoskrnl_timercall(void *arg)
 	mtx_lock(&ntoskrnl_dispatchlock);
 
 	ntoskrnl_remove_timer(timer);
-	/*
-	 * This should never happen, but complain
-	 * if it does.
-	 */
-	if (timer->k_header.dh_inserted == FALSE) {
-		mtx_unlock(&ntoskrnl_dispatchlock);
-		printf("NTOS: timer %p fired even though "
-		    "it was canceled\n", timer);
-		return;
-	}
 
 	/* Mark the timer as no longer being on the timer queue. */
 	timer->k_header.dh_inserted = FALSE;
