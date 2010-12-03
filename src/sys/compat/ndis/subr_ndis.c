@@ -1634,7 +1634,8 @@ NdisAllocateBuffer(int32_t *status, ndis_buffer **buffer, void *pool,
 
 	buf = IoAllocateMdl(vaddr, len, FALSE, FALSE, NULL);
 	if (buf == NULL) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*buffer = NULL;
+		*status = NDIS_STATUS_FAILURE;
 		return;
 	}
 	MmBuildMdlForNonPagedPool(buf);
