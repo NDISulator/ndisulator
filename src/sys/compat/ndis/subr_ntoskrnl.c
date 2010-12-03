@@ -3851,8 +3851,7 @@ KeCancelTimer(ktimer *timer)
 {
 	uint8_t pending;
 
-	if (timer == NULL)
-		return (FALSE);
+	KASSERT(timer != NULL, ("no timer"));
 
 	mtx_lock(&ntoskrnl_dispatchlock);
 
