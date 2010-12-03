@@ -118,13 +118,10 @@ ndis_probe_usb(device_t dev)
 	struct drvdb_ent *db;
 
 	uaa = device_get_ivars(dev);
-	if (uaa->usb_mode != USB_MODE_HOST)
-		return (ENXIO);
-	if (uaa->info.bConfigIndex != NDISUSB_CONFIG_NO)
-		return (ENXIO);
-	if (uaa->info.bIfaceIndex != NDISUSB_IFACE_INDEX)
-		return (ENXIO);
-	if (windrv_lookup(0, "USB Bus") == NULL)
+	if (uaa->usb_mode != USB_MODE_HOST ||
+	    uaa->info.bConfigIndex != NDISUSB_CONFIG_NO ||
+	    uaa->info.bIfaceIndex != NDISUSB_IFACE_INDEX ||
+	    windrv_lookup(0, "USB Bus") == NULL)
 		return (ENXIO);
 
 	db = windrv_match((matchfuncptr)ndis_devcompare_usb, dev);
