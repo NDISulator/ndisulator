@@ -103,10 +103,7 @@ static funcptr ndis_timercall_wrap;
 static funcptr ndis_asyncmem_complete_wrap;
 static funcptr ndis_interrupt_nic_wrap;
 static funcptr ndis_intrhand_wrap;
-static char ndis_filepath[MAXPATHLEN] = "/compat/ndis";
-
-SYSCTL_STRING(_hw, OID_AUTO, ndis_filepath, CTLFLAG_RW, ndis_filepath,
-    MAXPATHLEN, "Path used by NdisOpenFile() to search for files");
+static char ndis_filepath[] = "/compat/ndis";
 
 static void NdisInitializeWrapper(void **, struct driver_object *, void *,
     void *);
