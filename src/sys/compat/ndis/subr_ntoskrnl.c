@@ -1452,11 +1452,7 @@ KeQuerySystemTime(int64_t *current_time)
 static void
 KeQueryTickCount(int64_t *count)
 {
-	struct timeval tv;
-
-	getmicrouptime(&tv);
-
-	*count = tvtohz(&tv);
+	*count = ticks;
 }
 
 static uint32_t
@@ -1468,11 +1464,7 @@ KeQueryTimeIncrement(void)
 static uint32_t
 KeTickCount(void)
 {
-	struct timeval tv;
-
-	getmicrouptime(&tv);
-
-	return (tvtohz(&tv));
+	return (ticks);
 }
 
 /*
@@ -3910,13 +3902,7 @@ KeQueryActiveProcessors(void)
 static uint64_t
 KeQueryInterruptTime(void)
 {
-	int ticks;
-	struct timeval tv;
-
-	getmicrouptime(&tv);
-	ticks = tvtohz(&tv);
-
-	return (ticks * ((10000000 + hz - 1) / hz));
+	return (ticks * tick * 10);
 }
 
 static struct thread *
