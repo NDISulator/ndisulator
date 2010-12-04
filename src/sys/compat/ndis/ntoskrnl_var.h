@@ -1253,7 +1253,7 @@ struct drvdb_ent {
 
 extern struct image_patch_table ntoskrnl_functbl[];
 #ifdef __amd64__
-extern struct kuser_shared_data kuser_shared_data;
+extern struct kuser_shared_data kuser_data;
 #endif
 typedef void (*funcptr)(void);
 typedef int (*matchfuncptr)(uint32_t, void *, void *);

@@ -104,7 +104,9 @@ static struct mtx ntoskrnl_calllock;
 static kspin_lock ntoskrnl_intlock;
 
 #ifdef __amd64__
-struct kuser_shared_data kuser_shared_data;
+struct kuser_shared_data kuser_data;
+struct callout update_kuser;
+static void ntoskrnl_update_kuser(void *);
 #endif
 
 static int32_t RtlAppendUnicodeStringToString(unicode_string *,
@@ -220,6 +222,8 @@ static uint16_t *wcsncpy(uint16_t *, const uint16_t *, size_t);
 static unsigned long KeQueryActiveProcessors(void);
 static uint64_t KeQueryInterruptTime(void);
 static void KeQuerySystemTime(int64_t *);
+static void KeQueryTickCount(int64_t *);
+static uint32_t KeQueryTimeIncrement(void);
 static uint32_t KeTickCount(void);
 static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
 static int32_t IoOpenDeviceRegistryKey(struct device_object *, uint32_t,
@@ -382,7 +386,8 @@ ntoskrnl_libinit(void)
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
 
 #ifdef __amd64__
-	memset(&kuser_shared_data, 0, sizeof(struct kuser_shared_data));
+	callout_init(&update_kuser, CALLOUT_MPSAFE);
+	callout_reset(&update_kuser, hz / 40, ntoskrnl_update_kuser, 0);
 #endif
 }
 
@@ -417,7 +422,21 @@ ntoskrnl_libfini(void)
 	mtx_destroy(&ntoskrnl_dispatchlock);
 	mtx_destroy(&ntoskrnl_interlock);
 	mtx_destroy(&ntoskrnl_calllock);
+#ifdef __amd64__
+	callout_drain(&update_kuser);
+#endif
 }
+
+#ifdef __amd64__
+static void
+ntoskrnl_update_kuser(void *unused)
+{
+	ntoskrnl_time(&kuser_data.system_time);
+	KeQueryTickCount(&kuser_data.tick.tick_count_quad);
+	*((uint64_t *)&kuser_data.interrupt_time) = KeQueryInterruptTime();
+	callout_reset(&update_kuser, hz / 40, ntoskrnl_update_kuser, 0);
+}
+#endif
 
 static void *
 ntoskrnl_memchr(void *buf, unsigned char ch, size_t len)
@@ -1428,6 +1447,22 @@ static void
 KeQuerySystemTime(int64_t *current_time)
 {
 	ntoskrnl_time(current_time);
+}
+
+static void
+KeQueryTickCount(int64_t *count)
+{
+	struct timeval tv;
+
+	getmicrouptime(&tv);
+
+	*count = tvtohz(&tv);
+}
+
+static uint32_t
+KeQueryTimeIncrement(void)
+{
+	return (tick * 10);
 }
 
 static uint32_t
@@ -4066,6 +4101,8 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(KeQueryActiveProcessors, 0),
 	IMPORT_SFUNC(KeQueryInterruptTime, 0),
 	IMPORT_SFUNC(KeQuerySystemTime, 1),
+	IMPORT_SFUNC(KeQueryTickCount, 1),
+	IMPORT_SFUNC(KeQueryTimeIncrement, 0),
 	IMPORT_SFUNC(KeReadStateEvent, 1),
 	IMPORT_SFUNC(KeReadStateMutex, 1),
 	IMPORT_SFUNC(KeReadStateTimer, 1),

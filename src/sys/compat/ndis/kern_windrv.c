@@ -284,12 +284,12 @@ patch_user_shared_data_address(vm_offset_t img, size_t len)
 	unsigned long i, n, max_addr, *addr;
 
 	n = len - sizeof(unsigned long);
-	max_addr = KI_USER_SHARED_DATA + sizeof(kuser_shared_data);
+	max_addr = KI_USER_SHARED_DATA + sizeof(struct kuser_shared_data);
 	for (i = 0; i < n; i++) {
 		addr = (unsigned long *)(img + i);
 		if (*addr >= KI_USER_SHARED_DATA && *addr < max_addr) {
 			*addr -= KI_USER_SHARED_DATA;
-			*addr += (unsigned long)&kuser_shared_data;
+			*addr += (unsigned long)&kuser_data;
 		}
 	}
 }
