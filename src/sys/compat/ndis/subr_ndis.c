@@ -2215,24 +2215,20 @@ ndis_find_sym(linker_file_t lf, char *filename, char *suffix, caddr_t *sym)
 	return (0);
 }
 
-struct ndis_checkmodule {
+struct ndis_module {
 	char				*afilename;
 	struct ndis_file_handle		*fh;
 };
 
-/*
- * See if a single module contains the symbols for a specified file.
- */
 static int
-NdisCheckModule(linker_file_t lf, void *context)
+ndis_check_module(linker_file_t lf, void *context)
 {
-	struct ndis_checkmodule *nc;
+	struct ndis_module *nc;
 	caddr_t kldstart, kldend;
 
-	nc = (struct ndis_checkmodule *)context;
-	if (ndis_find_sym(lf, nc->afilename, "_start", &kldstart))
-		return (FALSE);
-	if (ndis_find_sym(lf, nc->afilename, "_end", &kldend))
+	nc = (struct ndis_module *)context;
+	if (ndis_find_sym(lf, nc->afilename, "_start", &kldstart) ||
+	    ndis_find_sym(lf, nc->afilename, "_end", &kldend))
 		return (FALSE);
 	nc->fh->vp = lf;
 	nc->fh->map = NULL;
@@ -2249,7 +2245,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	char *afilename = NULL, *path;
 	struct thread *td = curthread;
 	struct nameidata nd;
-	struct ndis_checkmodule nc;
+	struct ndis_module nc;
 	struct vattr vat, *vap = &vat;
 	struct ndis_file_handle *fh;
 	int flags, vfslocked;
@@ -2290,7 +2286,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	 */
 	nc.afilename = afilename;
 	nc.fh = fh;
-	if (linker_file_foreach(NdisCheckModule, &nc)) {
+	if (linker_file_foreach(ndis_check_module, &nc)) {
 		*filelength = fh->maplen;
 		*filehandle = fh;
 		*status = NDIS_STATUS_SUCCESS;
