@@ -3468,8 +3468,6 @@ ntoskrnl_timercall(void *arg)
 	struct timeval tv;
 	kdpc *dpc;
 
-	mtx_lock(&ntoskrnl_dispatchlock);
-
 	ntoskrnl_remove_timer(timer);
 
 	/* Mark the timer as no longer being on the timer queue. */
@@ -3495,8 +3493,6 @@ ntoskrnl_timercall(void *arg)
 	}
 
 	dpc = timer->k_dpc;
-
-	mtx_unlock(&ntoskrnl_dispatchlock);
 
 	/* If there's a DPC associated with the timer, queue it up. */
 	if (dpc != NULL)
@@ -3824,8 +3820,6 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 
 	KASSERT(timer != NULL, ("no timer"));
 
-	mtx_lock(&ntoskrnl_dispatchlock);
-
 	if (timer->k_header.dh_inserted == TRUE) {
 		ntoskrnl_remove_timer(timer);
 		timer->k_header.dh_inserted = FALSE;
@@ -3855,8 +3849,6 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 	timer->k_header.dh_inserted = TRUE;
 	ntoskrnl_insert_timer(timer, tvtohz(&tv));
 
-	mtx_unlock(&ntoskrnl_dispatchlock);
-
 	return (pending);
 }
 
@@ -3878,8 +3870,6 @@ KeCancelTimer(ktimer *timer)
 
 	KASSERT(timer != NULL, ("no timer"));
 
-	mtx_lock(&ntoskrnl_dispatchlock);
-
 	pending = timer->k_header.dh_inserted;
 	timer->k_period = 0;
 
@@ -3887,8 +3877,6 @@ KeCancelTimer(ktimer *timer)
 		timer->k_header.dh_inserted = FALSE;
 		ntoskrnl_remove_timer(timer);
 	}
-	mtx_unlock(&ntoskrnl_dispatchlock);
-
 	return (pending);
 }
 
