@@ -306,18 +306,6 @@ typedef struct nt_objref nt_objref;
 #define	EVENT_TYPE_NOTIFY 0
 #define	EVENT_TYPE_SYNC 1
 
-/*
- * We need to use the timeout()/untimeout() API for ktimers
- * since timers can be initialized, but not destroyed (so
- * malloc()ing our own callout structures would mean a leak,
- * since there'd be no way to free() them). This means we
- * need to use struct callout_handle, which is really just a
- * pointer. To make it easier to deal with, we use a union
- * to overlay the callout_handle over the k_timerlistentry.
- * The latter is a list_entry, which is two pointers, so
- * there's enough space available to hide a callout_handle
- * there.
- */
 struct ktimer {
 	struct nt_dispatch_header	k_header;
 	uint64_t			k_duetime;
@@ -1299,7 +1287,6 @@ void	KeInitializeTimerEx(ktimer *, uint32_t);
 uint8_t	KeSetTimer(ktimer *, int64_t, kdpc *);
 uint8_t	KeSetTimerEx(ktimer *, int64_t, uint32_t, kdpc *);
 uint8_t	KeCancelTimer(ktimer *);
-uint8_t	KeReadStateTimer(ktimer *);
 int32_t	KeWaitForSingleObject(void *, uint32_t, uint32_t, uint8_t, int64_t *);
 void	KeInitializeEvent(nt_kevent *, uint32_t, uint8_t);
 void	KeClearEvent(nt_kevent *);

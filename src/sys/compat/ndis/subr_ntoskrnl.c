@@ -91,16 +91,7 @@ struct wb_ext {
 	struct thread		*we_td;
 };
 
-#define	NTOSKRNL_TIMEOUTS	256
-
-struct callout_entry {
-	struct callout		ce_callout;
-	struct list_entry		ce_list;
-};
-
-static struct list_entry ntoskrnl_calllist;
 static struct list_entry ntoskrnl_intlist;
-static struct mtx ntoskrnl_calllock;
 static kspin_lock ntoskrnl_intlock;
 
 #ifdef __amd64__
@@ -137,8 +128,7 @@ static void ntoskrnl_waittest(struct nt_dispatch_header *, uint32_t);
 static void ntoskrnl_satisfy_wait(struct nt_dispatch_header *, struct thread *);
 static void ntoskrnl_satisfy_multiple_waits(struct wait_block *);
 static int ntoskrnl_is_signalled(struct nt_dispatch_header *, struct thread *);
-static void ntoskrnl_insert_timer(ktimer *, int);
-static void ntoskrnl_remove_timer(ktimer *);
+static int ntoskrnl_insert_timer(ktimer *, int);
 static void ntoskrnl_timercall(void *);
 static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_destroy_dpc_threads(void);
@@ -274,6 +264,7 @@ static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
 static uint32_t KeGetCurrentProcessorNumber(void);
 static struct thread * KeGetCurrentThread(void);
+static uint8_t KeReadStateTimer(ktimer *);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
@@ -300,7 +291,6 @@ ntoskrnl_libinit(void)
 {
 	struct thread *t;
 	struct kdpc_queue *kq;
-	struct callout_entry *e;
 	int i;
 
 	mtx_init(&ntoskrnl_dispatchlock,
@@ -310,9 +300,7 @@ ntoskrnl_libinit(void)
 	KeInitializeSpinLock(&ntoskrnl_intlock);
 	TAILQ_INIT(&ntoskrnl_reflist);
 
-	InitializeListHead(&ntoskrnl_calllist);
 	InitializeListHead(&ntoskrnl_intlist);
-	mtx_init(&ntoskrnl_calllock, "ntoskrnl calllock", NULL, MTX_SPIN);
 
 	kq_queues = ExAllocatePool(
 #ifdef NTOSKRNL_MULTIPLE_DPCS
@@ -358,15 +346,6 @@ ntoskrnl_libinit(void)
 	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
 	ExFreePool_wrap = ntoskrnl_findwrap(ExFreePool);
 
-	for (i = 0; i < NTOSKRNL_TIMEOUTS; i++) {
-		e = ExAllocatePool(sizeof(struct callout_entry));
-		if (e == NULL)
-			panic("failed to allocate timeouts");
-		mtx_lock_spin(&ntoskrnl_calllock);
-		InsertHeadList((&ntoskrnl_calllist), (&e->ce_list));
-		mtx_unlock_spin(&ntoskrnl_calllock);
-	}
-
 	/*
 	 * MDLs are supposed to be variable size (they describe
 	 * buffers containing some number of pages, but we don't
@@ -394,9 +373,6 @@ ntoskrnl_libinit(void)
 void
 ntoskrnl_libfini(void)
 {
-	struct callout_entry *e;
-	struct list_entry *l;
-
 	windrv_unwrap_table(ntoskrnl_functbl);
 	windrv_unwrap(ntoskrnl_workitem_wrap);
 
@@ -409,19 +385,8 @@ ntoskrnl_libfini(void)
 	uma_zdestroy(mdl_zone);
 	uma_zdestroy(iw_zone);
 
-	mtx_lock_spin(&ntoskrnl_calllock);
-	while (!IsListEmpty(&ntoskrnl_calllist)) {
-		l = RemoveHeadList(&ntoskrnl_calllist);
-		e = CONTAINING_RECORD(l, struct callout_entry, ce_list);
-		mtx_unlock_spin(&ntoskrnl_calllock);
-		ExFreePool(e);
-		mtx_lock_spin(&ntoskrnl_calllock);
-	}
-	mtx_unlock_spin(&ntoskrnl_calllock);
-
 	mtx_destroy(&ntoskrnl_dispatchlock);
 	mtx_destroy(&ntoskrnl_interlock);
-	mtx_destroy(&ntoskrnl_calllock);
 #ifdef __amd64__
 	callout_drain(&update_kuser);
 #endif
@@ -3460,15 +3425,6 @@ ntoskrnl_timercall(void *arg)
 	struct timeval tv;
 	kdpc *dpc;
 
-	ntoskrnl_remove_timer(timer);
-
-	/* Mark the timer as no longer being on the timer queue. */
-	timer->k_header.dh_inserted = FALSE;
-
-	/* Now signal the object and satisfy any waits on it. */
-	timer->k_header.dh_sigstate = 1;
-	ntoskrnl_waittest(&timer->k_header, IO_NO_INCREMENT);
-
 	/*
 	 * If this is a periodic timer, re-arm it
 	 * so it will fire again. We do this before
@@ -3480,7 +3436,6 @@ ntoskrnl_timercall(void *arg)
 	if (timer->k_period) {
 		tv.tv_sec = 0;
 		tv.tv_usec = timer->k_period * 1000;
-		timer->k_header.dh_inserted = TRUE;
 		ntoskrnl_insert_timer(timer, tvtohz(&tv));
 	}
 
@@ -3491,47 +3446,10 @@ ntoskrnl_timercall(void *arg)
 		KeInsertQueueDpc(dpc, NULL, NULL);
 }
 
-/*
- * Must be called with dispatcher lock held.
- */
-static void
+static int
 ntoskrnl_insert_timer(ktimer *timer, int ticks)
 {
-	struct callout_entry *e;
-	struct list_entry *l;
-	struct callout *c;
-
-	/*
-	 * Try and allocate a timer.
-	 */
-	mtx_lock_spin(&ntoskrnl_calllock);
-	if (IsListEmpty(&ntoskrnl_calllist)) {
-		mtx_unlock_spin(&ntoskrnl_calllock);
-		panic("out of timers!");
-	}
-	l = RemoveHeadList(&ntoskrnl_calllist);
-	mtx_unlock_spin(&ntoskrnl_calllock);
-
-	e = CONTAINING_RECORD(l, struct callout_entry, ce_list);
-	c = &e->ce_callout;
-
-	timer->k_callout = c;
-
-	callout_init(c, CALLOUT_MPSAFE);
-	callout_reset(c, ticks, ntoskrnl_timercall, timer);
-}
-
-static void
-ntoskrnl_remove_timer(ktimer *timer)
-{
-	struct callout_entry *e;
-
-	callout_stop(timer->k_callout);
-
-	mtx_lock_spin(&ntoskrnl_calllock);
-	e = (struct callout_entry *)timer->k_callout;
-	InsertHeadList((&ntoskrnl_calllist), (&e->ce_list));
-	mtx_unlock_spin(&ntoskrnl_calllock);
+	return (callout_reset(timer->k_callout, ticks, ntoskrnl_timercall, timer));
 }
 
 void
@@ -3545,15 +3463,9 @@ void
 KeInitializeTimerEx(ktimer *timer, uint32_t type)
 {
 	KASSERT(timer != NULL, ("no timer"));
-	bzero((char *)timer, sizeof(ktimer));
 	InitializeListHead((&timer->k_header.dh_waitlisthead));
-	timer->k_header.dh_sigstate = FALSE;
-	timer->k_header.dh_inserted = FALSE;
-	if (type == EVENT_TYPE_NOTIFY)
-		timer->k_header.dh_type = DISP_TYPE_NOTIFICATION_TIMER;
-	else
-		timer->k_header.dh_type = DISP_TYPE_SYNCHRONIZATION_TIMER;
-	timer->k_header.dh_size = sizeof(ktimer) / sizeof(uint32_t);
+	timer->k_callout = ExAllocatePool(sizeof(struct callout));
+	callout_init(timer->k_callout, CALLOUT_MPSAFE);
 }
 
 /*
@@ -3808,16 +3720,8 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 {
 	struct timeval tv;
 	uint64_t curtime;
-	uint8_t pending;
 
 	KASSERT(timer != NULL, ("no timer"));
-
-	if (timer->k_header.dh_inserted == TRUE) {
-		ntoskrnl_remove_timer(timer);
-		timer->k_header.dh_inserted = FALSE;
-		pending = TRUE;
-	} else
-		pending = FALSE;
 
 	timer->k_duetime = duetime;
 	timer->k_period = period;
@@ -3838,10 +3742,7 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 			    (tv.tv_sec * 1000000);
 		}
 	}
-	timer->k_header.dh_inserted = TRUE;
-	ntoskrnl_insert_timer(timer, tvtohz(&tv));
-
-	return (pending);
+	return (ntoskrnl_insert_timer(timer, tvtohz(&tv)));
 }
 
 uint8_t
@@ -3850,32 +3751,19 @@ KeSetTimer(ktimer *timer, int64_t duetime, kdpc *dpc)
 	return (KeSetTimerEx(timer, duetime, 0, dpc));
 }
 
-/*
- * The Windows DDK documentation seems to say that cancelling
- * a timer that has a DPC will result in the DPC also being
- * cancelled, but this isn't really the case.
- */
 uint8_t
 KeCancelTimer(ktimer *timer)
 {
-	uint8_t pending;
-
 	KASSERT(timer != NULL, ("no timer"));
 
-	pending = timer->k_header.dh_inserted;
 	timer->k_period = 0;
-
-	if (timer->k_header.dh_inserted == TRUE) {
-		timer->k_header.dh_inserted = FALSE;
-		ntoskrnl_remove_timer(timer);
-	}
-	return (pending);
+	return (callout_stop(timer->k_callout));
 }
 
-uint8_t
+static uint8_t
 KeReadStateTimer(ktimer *timer)
 {
-	return (timer->k_header.dh_sigstate);
+	return (callout_pending(timer->k_callout));
 }
 
 static int32_t
