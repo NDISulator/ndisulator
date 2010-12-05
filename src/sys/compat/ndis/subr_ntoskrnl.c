@@ -3769,15 +3769,24 @@ KeReadStateTimer(ktimer *timer)
 static int32_t
 KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 {
-	ktimer timer;
+	struct timeval tv;
+	uint64_t curtime;
 
-	if (wait_mode != 0)
-		panic("invalid wait_mode %d", wait_mode);
-
-	KeInitializeTimer(&timer);
-	KeSetTimer(&timer, *interval, NULL);
-	KeWaitForSingleObject(&timer, 0, 0, alertable, NULL);
-
+	if (*interval < 0) {
+		tv.tv_sec = - (*interval) / 10000000;
+		tv.tv_usec = (- (*interval) / 10) -
+		    (tv.tv_sec * 1000000);
+	} else {
+		ntoskrnl_time(&curtime);
+		if (*interval < curtime)
+			tv.tv_sec = tv.tv_usec = 0;
+		else {
+			tv.tv_sec = ((*interval) - curtime) / 10000000;
+			tv.tv_usec = ((*interval) - curtime) / 10 -
+			    (tv.tv_sec * 1000000);
+		}
+	}
+	pause("delayx", tvtohz(&tv));
 	return (NDIS_STATUS_SUCCESS);
 }
 
