@@ -622,6 +622,9 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 			    0, 0, FALSE, &duetime);
 			rval = sc->ndis_block->getstat;
 		}
+		TRACE(NDBG_GET, "req %u sc %p oid %08X buf %p buflen %u "
+		    "written %u needed %u rval %08X\n",
+		    req, sc, oid, buf, buflen, *written, *needed, rval);
 	} else if (req == NDIS_REQUEST_SET_INFORMATION) {
 		KeResetEvent(&sc->ndis_block->setevent);
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
@@ -635,11 +638,11 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 			    0, 0, FALSE, &duetime);
 			rval = sc->ndis_block->setstat;
 		}
+		TRACE(NDBG_SET, "req %u sc %p oid %08X buf %p buflen %u "
+		    "written %u needed %u rval %08X\n",
+		    req, sc, oid, buf, buflen, *written, *needed, rval);
 	} else
 		return (NDIS_STATUS_NOT_SUPPORTED);
-	TRACE(NDBG_REQ, "req %u sc %p oid %08X buf %p buflen %u written %u "
-	    "needed %u rval %08X\n",
-	    req, sc, oid, buf, buflen, *written, *needed, rval);
 	return (rval);
 }
 
