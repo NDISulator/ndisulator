@@ -79,7 +79,7 @@ SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug,
 
 static void	ndis_create_sysctls(struct ndis_softc *);
 static void	ndis_flush_sysctls(struct ndis_softc *);
-static void	ndis_free_bufs(ndis_buffer *);
+static void	ndis_free_bufs(struct mdl *);
 static void	NdisMIndicateStatus(struct ndis_miniport_block *, int32_t,
 		    void *, uint32_t);
 static void	NdisMIndicateStatusComplete(struct ndis_miniport_block *);
@@ -381,9 +381,9 @@ ndis_return_packet(void *buf, void *arg)
 }
 
 static void
-ndis_free_bufs(ndis_buffer *b0)
+ndis_free_bufs(struct mdl *b0)
 {
-	ndis_buffer *next;
+	struct mdl *next;
 
 	while (b0 != NULL) {
 		next = b0->mdl_next;
@@ -469,7 +469,7 @@ ndis_convert_res(struct ndis_softc *sc)
  * packet, it will hand it to us in the form of an ndis_packet,
  * which we need to convert to an mbuf that is then handed off
  * to the stack. Note: we configure the mbuf list so that it uses
- * the memory regions specified by the ndis_buffer structures in
+ * the memory regions specified by the mdl structures in
  * the ndis_packet as external storage. In most cases, this will
  * point to a memory region allocated by the driver (either by
  * ndis_malloc_withtag() or ndis_alloc_sharedmem()). We expect
@@ -480,7 +480,7 @@ int
 ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 {
 	struct mbuf *m = NULL, *prev = NULL;
-	ndis_buffer *buf;
+	struct mdl *buf;
 	struct ndis_packet_private *priv;
 	uint32_t totlen = 0;
 	struct ifnet *ifp;
@@ -547,16 +547,16 @@ ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
  *
  * NDIS packets consist of two parts: an ndis_packet structure,
  * which is vaguely analagous to the pkthdr portion of an mbuf,
- * and one or more ndis_buffer structures, which define the
+ * and one or more mdl structures, which define the
  * actual memory segments in which the packet data resides.
- * We need to allocate one ndis_buffer for each mbuf in a chain,
+ * We need to allocate one mdl for each mbuf in a chain,
  * plus one ndis_packet as the header.
  */
 int
 ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 {
 	struct mbuf *m;
-	ndis_buffer *buf = NULL, *prev = NULL;
+	struct mdl *buf = NULL, *prev = NULL;
 	struct ndis_packet_private *priv;
 
 	KASSERT(*p != NULL, ("no packet"));

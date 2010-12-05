@@ -1740,8 +1740,8 @@ struct ndis_packet_extension {
 struct ndis_packet_private {
 	uint32_t	physcnt;
 	uint32_t	totlen;
-	ndis_buffer	*head;
-	ndis_buffer	*tail;
+	struct mdl	*head;
+	struct mdl	*tail;
 	void		*pool;
 	uint32_t	count;
 	uint32_t	flags;

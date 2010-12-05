@@ -86,7 +86,6 @@ struct mdl {
 	uint32_t	mdl_bytecount;
 	uint32_t	mdl_byteoffset;
 };
-typedef struct mdl mdl, ndis_buffer;
 
 /* MDL flags */
 #define	MDL_MAPPED_TO_SYSTEM_VA		0x0001
@@ -105,7 +104,7 @@ typedef struct mdl mdl, ndis_buffer;
 #define	MDL_ALLOCATED_MUST_SUCCEED	0x4000
 #define	MDL_ZONE_ALLOCED		0x8000	/* BSD private */
 #define	MDL_ZONE_PAGES 16
-#define	MDL_ZONE_SIZE (sizeof(mdl) + (sizeof(vm_offset_t) * MDL_ZONE_PAGES))
+#define	MDL_ZONE_SIZE (sizeof(struct mdl) + (sizeof(vm_offset_t) * MDL_ZONE_PAGES))
 
 /* Note: assumes x86 page size of 4K. */
 #define	SPAN_PAGES(ptr, len)					\
@@ -118,7 +117,7 @@ typedef struct mdl mdl, ndis_buffer;
 
 #define	MmInitializeMdl(b, baseva, len)					\
 	(b)->mdl_next = NULL;						\
-	(b)->mdl_size = (uint16_t)(sizeof(mdl) +			\
+	(b)->mdl_size = (uint16_t)(sizeof(struct mdl) +			\
 		(sizeof(vm_offset_t) * SPAN_PAGES((baseva), (len))));	\
 	(b)->mdl_flags = 0;						\
 	(b)->mdl_startva = (void *)PAGE_ALIGN((baseva));		\
@@ -915,7 +914,7 @@ struct io_stack_location {
 struct irp {
 	uint16_t		type;
 	uint16_t		size;
-	mdl			*mdl;
+	struct mdl		*mdl;
 	uint32_t		flags;
 	union {
 		struct irp	*master;
@@ -1310,7 +1309,7 @@ void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
 void	*MmMapIoSpace(uint64_t, uint32_t, enum memory_caching_type);
 void	MmUnmapIoSpace(void *, size_t);
-void	MmBuildMdlForNonPagedPool(mdl *);
+void	MmBuildMdlForNonPagedPool(struct mdl *);
 void	IoDisconnectInterrupt(struct kinterrupt *);
 void	*IoGetDriverObjectExtension(struct driver_object *, void *);
 int32_t IoConnectInterrupt(struct kinterrupt **, void *, void *, kspin_lock *,
@@ -1325,8 +1324,8 @@ void	IofCompleteRequest(irp *, uint8_t);
 void	IoAcquireCancelSpinLock(uint8_t *);
 void	IoReleaseCancelSpinLock(uint8_t);
 void	IoDetachDevice(struct device_object *);
-mdl	*IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, irp *);
-void	IoFreeMdl(mdl *);
+struct mdl *IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, irp *);
+void	IoFreeMdl(struct mdl *);
 void	ExQueueWorkItem(work_queue_item *, enum work_queue_type);
 void	IoFreeWorkItem(io_workitem *);
 void	IoQueueWorkItem(io_workitem *, io_workitem_func, enum work_queue_type,

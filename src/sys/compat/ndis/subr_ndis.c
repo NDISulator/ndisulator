@@ -151,9 +151,9 @@ static void NdisWriteErrorLogEntry(struct ndis_miniport_block *,
 static bus_addr_t ndis_dmasize(uint8_t dmasize);
 static void ndis_map_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMStartBufferPhysicalMapping(struct ndis_miniport_block *,
-    ndis_buffer *, uint32_t, uint8_t, struct ndis_paddr_unit *, uint32_t *);
+    struct mdl *, uint32_t, uint8_t, struct ndis_paddr_unit *, uint32_t *);
 static void NdisMCompleteBufferPhysicalMapping(struct ndis_miniport_block *,
-    ndis_buffer *, uint32_t);
+    struct mdl *, uint32_t);
 static void NdisMInitializeTimer(struct ndis_miniport_timer *,
     struct ndis_miniport_block *, ndis_timer_function, void *);
 static void NdisInitializeTimer(struct ndis_timer *, ndis_timer_function,
@@ -193,20 +193,20 @@ static void *NdisGetRoutineAddress(unicode_string *);
 static uint32_t NdisMGetDmaAlignment(struct ndis_miniport_block *);
 static int32_t NdisMInitializeScatterGatherDma(struct ndis_miniport_block *,
     uint8_t, uint32_t);
-static void NdisUnchainBufferAtFront(struct ndis_packet *, ndis_buffer **);
-static void NdisUnchainBufferAtBack(struct ndis_packet *, ndis_buffer **);
+static void NdisUnchainBufferAtFront(struct ndis_packet *, struct mdl **);
+static void NdisUnchainBufferAtBack(struct ndis_packet *, struct mdl **);
 static void NdisAllocateBufferPool(int32_t *, void **, uint32_t);
 static void NdisFreeBufferPool(void *);
-static void NdisAllocateBuffer(int32_t *, ndis_buffer **, void *, void *,
+static void NdisAllocateBuffer(int32_t *, struct mdl **, void *, void *,
     uint32_t);
-static void NdisFreeBuffer(ndis_buffer *);
-static uint32_t NdisBufferLength(ndis_buffer *);
+static void NdisFreeBuffer(struct mdl *);
+static uint32_t NdisBufferLength(struct mdl *);
 static uint32_t NdisPacketPoolUsage(struct ndis_packet_pool *);
-static void NdisQueryBuffer(ndis_buffer *, void **, uint32_t *);
-static void NdisQueryBufferSafe(ndis_buffer *, void **, uint32_t *, uint32_t);
-static void *NdisBufferVirtualAddress(ndis_buffer *);
-static void *NdisBufferVirtualAddressSafe(ndis_buffer *, uint32_t);
-static void NdisAdjustBufferLength(ndis_buffer *, uint32_t);
+static void NdisQueryBuffer(struct mdl *, void **, uint32_t *);
+static void NdisQueryBufferSafe(struct mdl *, void **, uint32_t *, uint32_t);
+static void *NdisBufferVirtualAddress(struct mdl *);
+static void *NdisBufferVirtualAddressSafe(struct mdl *, uint32_t);
+static void NdisAdjustBufferLength(struct mdl *, uint32_t);
 static uint32_t NdisInterlockedIncrement(uint32_t *);
 static uint32_t NdisInterlockedDecrement(uint32_t *);
 static void NdisInitializeEvent(struct ndis_event *);
@@ -227,9 +227,9 @@ static void NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *);
 static void NdisMRegisterAdapterShutdownHandler(struct ndis_miniport_block *,
     void *, ndis_shutdown_func);
 static void NdisMDeregisterAdapterShutdownHandler(struct ndis_miniport_block *);
-static uint32_t NDIS_BUFFER_TO_SPAN_PAGES(ndis_buffer *);
-static void NdisGetBufferPhysicalArraySize(ndis_buffer *, uint32_t *);
-static void NdisQueryBufferOffset(ndis_buffer *, uint32_t *, uint32_t *);
+static uint32_t NDIS_BUFFER_TO_SPAN_PAGES(struct mdl *);
+static void NdisGetBufferPhysicalArraySize(struct mdl *, uint32_t *);
+static void NdisQueryBufferOffset(struct mdl *, uint32_t *, uint32_t *);
 static uint32_t NdisReadPcmciaAttributeMemory(struct ndis_miniport_block *,
     uint32_t, void *, uint32_t);
 static uint32_t NdisWritePcmciaAttributeMemory(struct ndis_miniport_block *,
@@ -255,10 +255,10 @@ static void NdisTerminateWrapper(struct driver_object *, void *);
 static void NdisMGetDeviceProperty(struct ndis_miniport_block *block,
     struct device_object **, struct device_object **, struct device_object **,
     struct cm_resource_list *, struct cm_resource_list *);
-static void NdisGetFirstBufferFromPacket(struct ndis_packet *, ndis_buffer **,
+static void NdisGetFirstBufferFromPacket(struct ndis_packet *, struct mdl **,
     void **, uint32_t *, uint32_t *);
 static void NdisGetFirstBufferFromPacketSafe(struct ndis_packet *,
-    ndis_buffer **, void **, uint32_t *, uint32_t *, uint32_t);
+    struct mdl **, void **, uint32_t *, uint32_t *, uint32_t);
 static int ndis_find_sym(linker_file_t, char *, char *, caddr_t *);
 static void NdisOpenFile(int32_t *, struct ndis_file_handle **, uint32_t *,
     unicode_string *, uint64_t);
@@ -840,7 +840,7 @@ ndis_map_cb(void *arg, bus_dma_segment_t *segs, int nseg, int error)
 
 static void
 NdisMStartBufferPhysicalMapping(struct ndis_miniport_block *block,
-    ndis_buffer *buf, uint32_t mapreg, uint8_t writedev,
+    struct mdl *buf, uint32_t mapreg, uint8_t writedev,
     struct ndis_paddr_unit *addrarray, uint32_t *arraysize)
 {
 	struct ndis_softc *sc;
@@ -873,7 +873,7 @@ NdisMStartBufferPhysicalMapping(struct ndis_miniport_block *block,
 
 static void
 NdisMCompleteBufferPhysicalMapping(struct ndis_miniport_block *block,
-    ndis_buffer *buf, uint32_t mapreg)
+    struct mdl *buf, uint32_t mapreg)
 {
 	struct ndis_softc *sc;
 	bus_dmamap_t map;
@@ -1553,7 +1553,7 @@ NdisFreePacket(struct ndis_packet *packet)
 }
 
 static void
-NdisUnchainBufferAtFront(struct ndis_packet *packet, ndis_buffer **buf)
+NdisUnchainBufferAtFront(struct ndis_packet *packet, struct mdl **buf)
 {
 	struct ndis_packet_private *priv;
 
@@ -1571,10 +1571,10 @@ NdisUnchainBufferAtFront(struct ndis_packet *packet, ndis_buffer **buf)
 }
 
 static void
-NdisUnchainBufferAtBack(struct ndis_packet *packet, ndis_buffer **buf)
+NdisUnchainBufferAtBack(struct ndis_packet *packet, struct mdl **buf)
 {
 	struct ndis_packet_private *priv;
-	ndis_buffer *tmp;
+	struct mdl *tmp;
 
 	if (packet == NULL || buf == NULL)
 		return;
@@ -1624,10 +1624,10 @@ NdisFreeBufferPool(void *pool)
 }
 
 static void
-NdisAllocateBuffer(int32_t *status, ndis_buffer **buffer, void *pool,
+NdisAllocateBuffer(int32_t *status, struct mdl **buffer, void *pool,
     void *vaddr, uint32_t len)
 {
-	ndis_buffer *buf;
+	struct mdl *buf;
 
 	buf = IoAllocateMdl(vaddr, len, FALSE, FALSE, NULL);
 	if (buf == NULL) {
@@ -1644,14 +1644,14 @@ NdisAllocateBuffer(int32_t *status, ndis_buffer **buffer, void *pool,
 }
 
 static void
-NdisFreeBuffer(ndis_buffer *buf)
+NdisFreeBuffer(struct mdl *buf)
 {
 	TRACE(NDBG_MEM, "buf %p\n", buf);
 	IoFreeMdl(buf);
 }
 
 static uint32_t
-NdisBufferLength(ndis_buffer *buf)
+NdisBufferLength(struct mdl *buf)
 {
 	TRACE(NDBG_MM, "buf %p\n", buf);
 	return (MmGetMdlByteCount(buf));
@@ -1662,7 +1662,7 @@ NdisBufferLength(ndis_buffer *buf)
  * Note: the vaddr argument is optional.
  */
 static void
-NdisQueryBuffer(ndis_buffer *buf, void **vaddr, uint32_t *len)
+NdisQueryBuffer(struct mdl *buf, void **vaddr, uint32_t *len)
 {
 	if (vaddr != NULL)
 		*vaddr = MmGetMdlVirtualAddress(buf);
@@ -1671,28 +1671,28 @@ NdisQueryBuffer(ndis_buffer *buf, void **vaddr, uint32_t *len)
 }
 
 static void
-NdisQueryBufferSafe(ndis_buffer *buf, void **vaddr, uint32_t *len,
+NdisQueryBufferSafe(struct mdl *buf, void **vaddr, uint32_t *len,
     uint32_t prio)
 {
 	NdisQueryBuffer(buf, vaddr, len);
 }
 
 static void *
-NdisBufferVirtualAddress(ndis_buffer *buf)
+NdisBufferVirtualAddress(struct mdl *buf)
 {
 	TRACE(NDBG_MM, "buf %p\n", buf);
 	return (MmGetMdlVirtualAddress(buf));
 }
 
 static void *
-NdisBufferVirtualAddressSafe(ndis_buffer *buf, uint32_t prio)
+NdisBufferVirtualAddressSafe(struct mdl *buf, uint32_t prio)
 {
 	TRACE(NDBG_MM, "buf %p prio %u\n", buf, prio);
 	return (MmGetMdlVirtualAddress(buf));
 }
 
 static void
-NdisAdjustBufferLength(ndis_buffer *buf, uint32_t len)
+NdisAdjustBufferLength(struct mdl *buf, uint32_t len)
 {
 	MmGetMdlByteCount(buf) = len;
 }
@@ -1921,7 +1921,7 @@ NdisMDeregisterAdapterShutdownHandler(struct ndis_miniport_block *block)
 }
 
 static uint32_t
-NDIS_BUFFER_TO_SPAN_PAGES(ndis_buffer *buf)
+NDIS_BUFFER_TO_SPAN_PAGES(struct mdl *buf)
 {
 	if (buf == NULL)
 		return (0);
@@ -1932,13 +1932,13 @@ NDIS_BUFFER_TO_SPAN_PAGES(ndis_buffer *buf)
 }
 
 static void
-NdisGetBufferPhysicalArraySize(ndis_buffer *buf, uint32_t *pages)
+NdisGetBufferPhysicalArraySize(struct mdl *buf, uint32_t *pages)
 {
 	*pages = NDIS_BUFFER_TO_SPAN_PAGES(buf);
 }
 
 static void
-NdisQueryBufferOffset(ndis_buffer *buf, uint32_t *off, uint32_t *len)
+NdisQueryBufferOffset(struct mdl *buf, uint32_t *off, uint32_t *len)
 {
 	if (buf == NULL)
 		return;
@@ -2152,10 +2152,10 @@ NdisMGetDeviceProperty(struct ndis_miniport_block *block,
 }
 
 static void
-NdisGetFirstBufferFromPacket(struct ndis_packet *packet, ndis_buffer **buf,
+NdisGetFirstBufferFromPacket(struct ndis_packet *packet, struct mdl **buf,
     void **firstva, uint32_t *firstlen, uint32_t *totlen)
 {
-	ndis_buffer *tmp;
+	struct mdl *tmp;
 
 	tmp = packet->private.head;
 	*buf = tmp;
@@ -2171,7 +2171,7 @@ NdisGetFirstBufferFromPacket(struct ndis_packet *packet, ndis_buffer **buf,
 }
 
 static void
-NdisGetFirstBufferFromPacketSafe(struct ndis_packet *packet, ndis_buffer **buf,
+NdisGetFirstBufferFromPacketSafe(struct ndis_packet *packet, struct mdl **buf,
     void **firstva, uint32_t *firstlen, uint32_t *totlen, uint32_t prio)
 {
 	NdisGetFirstBufferFromPacket(packet, buf, firstva, firstlen, totlen);
@@ -2509,7 +2509,7 @@ static void
 NdisCopyFromPacketToPacket(struct ndis_packet *dpkt, uint32_t doff,
     uint32_t reqlen, struct ndis_packet *spkt, uint32_t soff, uint32_t *cpylen)
 {
-	ndis_buffer *src, *dst;
+	struct mdl *src, *dst;
 	char *sptr, *dptr;
 	int resid, copied, len, scnt, dcnt;
 

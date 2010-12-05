@@ -1170,7 +1170,7 @@ NdisMEthIndicateReceive(struct ndis_miniport_block *block, ndis_handle ctx,
 {
 	uint8_t irql = 0;
 	uint32_t status;
-	ndis_buffer *b;
+	struct mdl *b;
 	struct ndis_packet *p;
 	struct mbuf *m;
 	struct ndis_ethpriv *priv;

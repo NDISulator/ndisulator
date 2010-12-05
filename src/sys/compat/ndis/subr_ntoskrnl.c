@@ -179,10 +179,10 @@ static uint64_t MmGetPhysicalAddress(void *);
 static void *MmGetSystemRoutineAddress(unicode_string *);
 static uint8_t MmIsAddressValid(void *);
 static uint32_t MmSizeOfMdl(void *, size_t);
-static void *MmMapLockedPages(mdl *, uint8_t);
-static void *MmMapLockedPagesSpecifyCache(mdl *, uint8_t,
+static void *MmMapLockedPages(struct mdl *, uint8_t);
+static void *MmMapLockedPagesSpecifyCache(struct mdl *, uint8_t,
     enum memory_caching_type, void *, uint32_t, uint32_t);
-static void MmUnmapLockedPages(void *, mdl *);
+static void MmUnmapLockedPages(void *, struct mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
 static uint32_t RtlxAnsiStringToUnicodeSize(const ansi_string *);
 static uint32_t RtlxUnicodeStringToAnsiSize(const unicode_string *);
@@ -1068,7 +1068,7 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	if (ip->flags & IRP_ASSOCIATED_IRP) {
 		uint32_t masterirpcnt;
 		irp *masterirp;
-		mdl *m;
+		struct mdl *m;
 
 		masterirp = ip->assoc.master;
 		masterirpcnt =
@@ -2094,11 +2094,11 @@ ExInterlockedAddLargeStatistic(uint64_t *addend, uint32_t inc)
 	mtx_unlock_spin(&ntoskrnl_interlock);
 }
 
-mdl *
+struct mdl *
 IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
     uint8_t chargequota, irp *iopkt)
 {
-	mdl *m;
+	struct mdl *m;
 	int zone = 0;
 
 	if (MmSizeOfMdl(vaddr, len) > MDL_ZONE_SIZE)
@@ -2122,7 +2122,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 
 	if (iopkt != NULL) {
 		if (secondarybuf == TRUE) {
-			mdl *last;
+			struct mdl *last;
 			last = iopkt->mdl;
 			while (last->mdl_next != NULL)
 				last = last->mdl_next;
@@ -2138,7 +2138,7 @@ IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
 }
 
 void
-IoFreeMdl(mdl *m)
+IoFreeMdl(struct mdl *m)
 {
 	if (m == NULL)
 		return;
@@ -2220,13 +2220,13 @@ MmSizeOfMdl(void *vaddr, size_t len)
  * addresses of the buffers.
  */
 void
-MmBuildMdlForNonPagedPool(mdl *m)
+MmBuildMdlForNonPagedPool(struct mdl *m)
 {
 	vm_offset_t *mdl_pages;
 	int pagecnt, i;
 
 	pagecnt = SPAN_PAGES(m->mdl_byteoffset, m->mdl_bytecount);
-	if (pagecnt > (m->mdl_size - sizeof(mdl)) / sizeof(vm_offset_t *))
+	if (pagecnt > (m->mdl_size - sizeof(struct mdl)) / sizeof(vm_offset_t *))
 		panic("not enough pages in MDL to describe buffer");
 
 	mdl_pages = MmGetMdlPfnArray(m);
@@ -2239,7 +2239,7 @@ MmBuildMdlForNonPagedPool(mdl *m)
 }
 
 static void *
-MmMapLockedPages(mdl *buf, uint8_t accessmode)
+MmMapLockedPages(struct mdl *buf, uint8_t accessmode)
 {
 	buf->mdl_flags |= MDL_MAPPED_TO_SYSTEM_VA;
 
@@ -2247,7 +2247,7 @@ MmMapLockedPages(mdl *buf, uint8_t accessmode)
 }
 
 static void *
-MmMapLockedPagesSpecifyCache(mdl *buf, uint8_t accessmode,
+MmMapLockedPagesSpecifyCache(struct mdl *buf, uint8_t accessmode,
     enum memory_caching_type type,
     void *vaddr, uint32_t bugcheck, uint32_t prio)
 {
@@ -2256,7 +2256,7 @@ MmMapLockedPagesSpecifyCache(mdl *buf, uint8_t accessmode,
 }
 
 static void
-MmUnmapLockedPages(void *vaddr, mdl *buf)
+MmUnmapLockedPages(void *vaddr, struct mdl *buf)
 {
 	TRACE(NDBG_MM, "vaddr %p buf %p\n", vaddr, buf);
 	buf->mdl_flags &= ~MDL_MAPPED_TO_SYSTEM_VA;
