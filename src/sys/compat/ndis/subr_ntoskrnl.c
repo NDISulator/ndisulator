@@ -2373,13 +2373,13 @@ ntoskrnl_finddev(device_t dev, uint64_t paddr, struct resource **res)
 	for (i = 0; i < childcnt; i++) {
 		matching_dev = ntoskrnl_finddev(children[i], paddr, res);
 		if (matching_dev != NULL) {
-			free(children, M_NDIS_NTOSKRNL);
+			free(children, M_TEMP);
 			return (matching_dev);
 		}
 	}
 	/* Won't somebody please think of the children! */
 	if (children != NULL)
-		free(children, M_NDIS_NTOSKRNL);
+		free(children, M_TEMP);
 
 	return (NULL);
 }
