@@ -533,7 +533,7 @@ RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
 	if (allocate == TRUE) {
 		dst->as_buf = ExAllocatePool((src->us_len / 2) + 1);
 		if (dst->as_buf == NULL)
-			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_RESOURCES);
 		dst->as_len = dst->as_maxlen = src->us_len / 2;
 	} else {
 		dst->as_len = src->us_len / 2; /* XXX */
@@ -555,7 +555,7 @@ RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
 	if (allocate == TRUE) {
 		dst->us_buf = ExAllocatePool(src->as_len * 2);
 		if (dst->us_buf == NULL)
-			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_RESOURCES);
 		dst->us_len = dst->us_maxlen = strlen(src->as_buf) * 2;
 	} else {
 		dst->us_len = src->as_len * 2; /* XXX */
@@ -603,7 +603,7 @@ IoAllocateDriverObjectExtension(struct driver_object *drv, void *clid,
 
 	ce = ExAllocatePool(sizeof(struct custom_extension) + extlen);
 	if (ce == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	ce->ce_clid = clid;
 	InsertTailList((&drv->driver_extension->usrext), (&ce->ce_list));
@@ -647,7 +647,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 
 	dev = ExAllocatePool(sizeof(struct device_object));
 	if (dev == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	dev->type = devtype;
 	dev->drvobj = drv;
@@ -658,7 +658,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 		dev->devext = ExAllocatePool(devextlen);
 		if (dev->devext == NULL) {
 			ExFreePool(dev);
-			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_RESOURCES);
 		}
 	} else
 		dev->devext = NULL;
@@ -684,7 +684,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 		if (dev->devext != NULL)
 			ExFreePool(dev->devext);
 		ExFreePool(dev);
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 	}
 
 	dev->devobj_ext->type = 0;
@@ -1167,7 +1167,7 @@ IoConnectInterrupt(struct kinterrupt **iobj, void *svcfunc, void *svcctx,
 
 	*iobj = ExAllocatePool(sizeof(struct kinterrupt));
 	if (*iobj == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	(*iobj)->ki_svcfunc = svcfunc;
 	(*iobj)->ki_svcctx = svcctx;
@@ -3016,7 +3016,7 @@ IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
 	/* TODO */
 	devobj = NULL;
 	fileobj = NULL;
-	return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+	return (NDIS_STATUS_RESOURCES);
 }
 
 static int32_t
@@ -3213,7 +3213,7 @@ ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
 
 	nr = malloc(sizeof(nt_objref), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (nr == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	InitializeListHead((&nr->no_dh.dh_waitlisthead));
 	nr->no_obj = handle;
@@ -3357,7 +3357,7 @@ PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
 
 	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (tc == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 	tc->tc_thrctx = thrctx;
 	tc->tc_thrfunc = thrfunc;
 

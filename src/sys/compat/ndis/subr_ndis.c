@@ -360,7 +360,7 @@ NdisMRegisterMiniport(struct driver_object *drv,
 	if (IoAllocateDriverObjectExtension(drv, (void *)1,
 	    sizeof(struct ndis_miniport_characteristics),
 	    (void **)&ch) != NDIS_STATUS_SUCCESS)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	memcpy(ch, characteristics, len);
 	return (NDIS_STATUS_SUCCESS);
@@ -444,7 +444,7 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 	np = malloc(sizeof(struct ndis_parmlist_entry),
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (np == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 	InsertHeadList((&block->parmlist), (&np->list));
 	*parm = p = &np->parm;
 	p->parameter_type = type;
@@ -455,7 +455,7 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 		RtlInitAnsiString(&as, (char *)oid->oid_arg1);
 		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
 			free(np, M_NDIS_SUBR);
-			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_RESOURCES);
 		}
 		break;
 	case NDIS_PARAMETER_INTEGER:
@@ -497,7 +497,7 @@ NdisReadConfiguration(int32_t *status,
 	}
 
 	if (RtlUnicodeStringToAnsiString(&as, key, TRUE)) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 
@@ -563,7 +563,7 @@ ndis_decode_parm(struct ndis_miniport_block *block,
 	case NDIS_PARAMETER_STRING:
 		ustr = &parm->parameter_data.string_data;
 		if (RtlUnicodeStringToAnsiString(&as, ustr, TRUE))
-			return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+			return (NDIS_STATUS_RESOURCES);
 		memcpy(val, as.as_buf, as.as_len);
 		RtlFreeAnsiString(&as);
 		break;
@@ -599,7 +599,7 @@ NdisWriteConfiguration(int32_t *status, struct ndis_miniport_block *block,
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 
 	if (RtlUnicodeStringToAnsiString(&as, key, TRUE)) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 
@@ -1081,7 +1081,7 @@ NdisMAllocateMapRegisters(struct ndis_miniport_block *block,
 	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * physmapneeded,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (sc->ndis_mmaps == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	if (bus_dma_tag_create(sc->ndis_parent_tag,
 			ETHER_ALIGN, 0,
@@ -1096,7 +1096,7 @@ NdisMAllocateMapRegisters(struct ndis_miniport_block *block,
 			NULL,
 			&sc->ndis_mtag) != 0) {
 		free(sc->ndis_mmaps, M_NDIS_SUBR);
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 	}
 
 	for (i = 0; i < physmapneeded; i++)
@@ -1393,7 +1393,7 @@ NdisMInitializeScatterGatherDma(struct ndis_miniport_block *block,
 	    BUS_SPACE_MAXADDR, NULL, NULL, MCLBYTES * NDIS_MAXSEG,
 	    NDIS_MAXSEG, MCLBYTES, BUS_DMA_ALLOCNOW, NULL, NULL,
 	    &sc->ndis_ttag) != 0)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	sc->ndis_sc = 1;
 
@@ -1412,7 +1412,7 @@ NdisAllocatePacketPool(int32_t *status, struct ndis_packet_pool **pool,
 	p = malloc(sizeof(struct ndis_packet_pool),
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (p == NULL) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 
@@ -1422,7 +1422,7 @@ NdisAllocatePacketPool(int32_t *status, struct ndis_packet_pool **pool,
 	packets = malloc(p->cnt * p->len, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (packets == NULL) {
 		free(p, M_NDIS_SUBR);
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 
@@ -1494,7 +1494,7 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 		KeReleaseSpinLock(&pool->lock, irql);
 		printf("NDIS: tried to allocate packet from dead pool %p\n",
 		    pool);
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 #endif
@@ -1503,7 +1503,7 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 	KeReleaseSpinLock(&pool->lock, irql);
 #endif
 	if (pkt == NULL) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 	memset(pkt, 0, sizeof(struct ndis_packet));
@@ -1848,7 +1848,7 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 	sc = device_get_softc(block->physdeviceobj->devext);
 	ch = IoGetDriverObjectExtension(block->deviceobj->drvobj, (void *)1);
 	if (ch == NULL)
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 
 	intr->block = block;
 	intr->isr_requested = reqisr;
@@ -2248,7 +2248,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	int flags, vfslocked;
 
 	if (RtlUnicodeStringToAnsiString(&as, filename, TRUE)) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 	afilename = strdup(as.as_buf, M_NDIS_SUBR);
@@ -2257,7 +2257,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	fh = malloc(sizeof(struct ndis_file_handle), M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (fh == NULL) {
 		free(afilename, M_NDIS_SUBR);
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 
@@ -2305,7 +2305,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	if (path == NULL) {
 		free(fh, M_NDIS_SUBR);
 		free(afilename, M_NDIS_SUBR);
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 	snprintf(path, MAXPATHLEN, "%s/%s", ndis_filepath, afilename);
@@ -2381,7 +2381,7 @@ NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_file_handle *file)
 
 	file->map = malloc(file->maplen, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (file->map == NULL) {
-		*status = NDIS_STATUS_INSUFFICIENT_RESOURCES;
+		*status = NDIS_STATUS_RESOURCES;
 		return;
 	}
 
@@ -2641,7 +2641,7 @@ NdisMQueryAdapterInstanceName(unicode_string *name,
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	RtlInitAnsiString(&as, device_get_nameunit(block->physdeviceobj->devext));
 	if (RtlAnsiStringToUnicodeString(name, &as, TRUE))
-		return (NDIS_STATUS_INSUFFICIENT_RESOURCES);
+		return (NDIS_STATUS_RESOURCES);
 	return (NDIS_STATUS_SUCCESS);
 }
 

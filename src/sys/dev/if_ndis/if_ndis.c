@@ -1384,8 +1384,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 				ndis_return_packet(block, p);
 		} else {
 			m = m_dup(m0, M_DONTWAIT);
-			if (p->oob.npo_status ==
-			    NDIS_STATUS_INSUFFICIENT_RESOURCES)
+			if (p->oob.npo_status == NDIS_STATUS_RESOURCES)
 				p->refcnt++;
 			else
 				p->oob.npo_status = NDIS_STATUS_PENDING;
