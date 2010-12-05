@@ -1,5 +1,5 @@
 all:
-	@echo "targets: attach detach build install clean"
+	@echo "targets: attach detach build install clean load unload"
 attach:
 	@echo "mounting NDISulator code on top of FreeBSD code"
 	mount_nullfs src/sys/compat/ndis /usr/src/sys/compat/ndis
@@ -26,3 +26,9 @@ clean:
 	cd /usr/src/sys/modules/ndis && make clean
 	cd /usr/src/sys/modules/if_ndis && make clean
 	cd /usr/src/usr.sbin/ndiscvt && make clean
+load:
+	kldload /usr/src/sys/modules/ndis/ndis.ko
+	kldload /usr/src/sys/modules/if_ndis/if_ndis.ko
+unload:
+	kldunload if_ndis.ko
+	kldunload ndis.ko
