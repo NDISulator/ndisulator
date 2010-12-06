@@ -954,7 +954,7 @@ ndis_interrupt_setup(kdpc *dpc, struct device_object *dobj, irp *ip,
 }
 
 int32_t
-NdisAddDevice(struct driver_object *drv, struct device_object *pdo)
+ndis_load_driver(struct driver_object *drv, struct device_object *pdo)
 {
 	struct device_object *fdo;
 	struct ndis_miniport_block *block;

@@ -629,7 +629,7 @@ ndis_attach(device_t dev)
 	 * Create a new functional device object for this device.
 	 * This is what creates the miniport block for this device instance.
 	 */
-	if (NdisAddDevice(sc->ndis_dobj, pdo) != NDIS_STATUS_SUCCESS) {
+	if (ndis_load_driver(sc->ndis_dobj, pdo) != NDIS_STATUS_SUCCESS) {
 		device_printf(dev, "failed to create FDO\n");
 		goto fail;
 	}
