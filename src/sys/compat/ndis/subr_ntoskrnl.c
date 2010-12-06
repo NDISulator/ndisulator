@@ -472,6 +472,7 @@ RtlEqualUnicodeString(const unicode_string *str1, const unicode_string *str2,
 static void
 RtlCopyString(ansi_string *dst, const ansi_string *src)
 {
+	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (src != NULL && src->as_buf != NULL && dst->as_buf != NULL) {
 		dst->as_len = min(src->as_len, dst->as_maxlen);
 		memcpy(dst->as_buf, src->as_buf, dst->as_len);
@@ -484,6 +485,7 @@ RtlCopyString(ansi_string *dst, const ansi_string *src)
 static void
 RtlCopyUnicodeString(unicode_string *dst, const unicode_string *src)
 {
+	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (src != NULL && src->us_buf != NULL && dst->us_buf != NULL) {
 		dst->us_len = min(src->us_len, dst->us_maxlen);
 		memcpy(dst->us_buf, src->us_buf, dst->us_len);
@@ -523,6 +525,7 @@ int32_t
 RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
     uint8_t allocate)
 {
+	TRACE(NDBG_RTL, "dst %p src %p allocate %u\n", dst, src, allocate);
 	if (dst == NULL || src == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
@@ -549,6 +552,7 @@ int32_t
 RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
     uint8_t allocate)
 {
+	TRACE(NDBG_RTL, "dst %p src %p allocate %u\n", dst, src, allocate);
 	if (dst == NULL || src == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
@@ -2587,6 +2591,7 @@ ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
 static int32_t
 RtlAppendUnicodeStringToString(unicode_string *dst, const unicode_string *src)
 {
+	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (dst->us_maxlen < src->us_len + dst->us_len)
 		return (NDIS_STATUS_BUFFER_TOO_SMALL);
 	if (src->us_len) {
@@ -2601,6 +2606,7 @@ RtlAppendUnicodeStringToString(unicode_string *dst, const unicode_string *src)
 static int32_t
 RtlAppendUnicodeToString(unicode_string *dst, const uint16_t *src)
 {
+	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (src != NULL) {
 		int len;
 		for (len = 0; src[len]; len++);
@@ -2664,6 +2670,7 @@ RtlCharToInteger(const char *src, uint32_t base, uint32_t *val)
 	uint32_t res;
 	int negative = 0;
 
+	TRACE(NDBG_RTL, "src %p base %u val %p\n", src, base, val);
 	if (src == NULL || val == NULL)
 		return (NDIS_STATUS_ACCESS_VIOLATION);
 	while (*src != '\0' && *src <= ' ')
@@ -2733,11 +2740,11 @@ RtlCompareString(const ansi_string *str1, const ansi_string *str2,
 {
 	int32_t ret = 0;
 	uint16_t len;
-	const char *p1, *p2;
+	const char *p1 = str1->as_buf, *p2 = str2->as_buf;
 
+	TRACE(NDBG_RTL, "str1 %p str2 %p case_in_sensitive %u\n",
+	    str1, str2, case_in_sensitive);
 	len = min(str1->as_len, str2->as_len) / sizeof(char);
-	p1 = str1->as_buf;
-	p2 = str2->as_buf;
 	if (case_in_sensitive)
 		while (!ret && len--)
 			ret = ntoskrnl_toupper(*p1++) - ntoskrnl_toupper(*p2++);
@@ -2755,11 +2762,11 @@ RtlCompareUnicodeString(const unicode_string *str1, const unicode_string *str2,
 {
 	int32_t ret = 0;
 	uint16_t len;
-	const uint16_t *p1, *p2;
+	const uint16_t *p1 = str1->us_buf, *p2 = str2->us_buf;
 
+	TRACE(NDBG_RTL, "str1 %p str2 %p case_in_sensitive %u\n",
+	    str1, str2, case_in_sensitive);
 	len = min(str1->us_len, str2->us_len) / sizeof(uint16_t);
-	p1 = str1->us_buf;
-	p2 = str2->us_buf;
 	if (case_in_sensitive)
 		while (!ret && len--)
 			ret = ntoskrnl_toupper(*p1++) - ntoskrnl_toupper(*p2++);
@@ -2774,6 +2781,7 @@ RtlCompareUnicodeString(const unicode_string *str1, const unicode_string *str2,
 void
 RtlInitAnsiString(ansi_string *dst, const char *src)
 {
+	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (dst == NULL)
 		return;
 	if (src == NULL) {
@@ -2791,6 +2799,7 @@ RtlInitAnsiString(ansi_string *dst, const char *src)
 void
 RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
 {
+	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (dst == NULL)
 		return;
 	if (src == NULL) {
@@ -2811,13 +2820,13 @@ RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
 {
 	uint32_t res;
 	uint16_t *uchr;
-	int i, negative = 0;
+	int i = 0, negative = 0;
 
+	TRACE(NDBG_RTL, "src %p base %u val %p\n", src, base, val);
 	if (src == NULL || val == NULL)
 		return (NDIS_STATUS_ACCESS_VIOLATION);
 
 	uchr = src->us_buf;
-	i = 0;
 	while (i < (src->us_len / sizeof(*uchr)) && uchr[i] == ' ')
 		i++;
 	if (uchr[i] == '+')
@@ -2866,6 +2875,7 @@ RtlUpcaseUnicodeString(unicode_string *dst, unicode_string *src, uint8_t alloc)
 {
 	uint16_t i, n;
 
+	TRACE(NDBG_RTL, "dst %p src %p alloc %u\n", dst, src, alloc);
 	if (alloc) {
 		dst->us_buf = ExAllocatePool(src->us_len);
 		if (dst->us_buf)
@@ -2886,17 +2896,19 @@ RtlUpcaseUnicodeString(unicode_string *dst, unicode_string *src, uint8_t alloc)
 }
 
 void
-RtlFreeUnicodeString(unicode_string *ustr)
+RtlFreeUnicodeString(unicode_string *str)
 {
-	ExFreePool(ustr->us_buf);
-	ustr->us_buf = NULL;
+	TRACE(NDBG_RTL, "str %p\n", str);
+	ExFreePool(str->us_buf);
+	str->us_buf = NULL;
 }
 
 void
-RtlFreeAnsiString(ansi_string *astr)
+RtlFreeAnsiString(ansi_string *str)
 {
-	ExFreePool(astr->as_buf);
-	astr->as_buf = NULL;
+	TRACE(NDBG_RTL, "str %p\n", str);
+	ExFreePool(str->as_buf);
+	str->as_buf = NULL;
 }
 
 static int

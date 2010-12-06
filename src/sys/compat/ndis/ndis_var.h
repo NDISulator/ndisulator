@@ -52,6 +52,7 @@ enum {
 	NDBG_EVENT	= 0x00000400,
 	NDBG_MEM	= 0x00000800,
 	NDBG_HAL	= 0x00001000,
+	NDBG_RTL	= 0x00002000,
 	NDBG_ANY	= 0xffffffff
 };
 extern int ndis_debug;
