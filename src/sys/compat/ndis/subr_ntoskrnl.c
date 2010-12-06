@@ -128,7 +128,6 @@ static void ntoskrnl_waittest(struct nt_dispatch_header *, uint32_t);
 static void ntoskrnl_satisfy_wait(struct nt_dispatch_header *, struct thread *);
 static void ntoskrnl_satisfy_multiple_waits(struct wait_block *);
 static int ntoskrnl_is_signalled(struct nt_dispatch_header *, struct thread *);
-static int ntoskrnl_insert_timer(ktimer *, int);
 static void ntoskrnl_timercall(void *);
 static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_destroy_dpc_threads(void);
@@ -3348,7 +3347,7 @@ ntoskrnl_thrfunc(void *arg)
 	thread_context *thrctx = arg;
 	uint32_t (*tfunc)(void *);
 	void *tctx;
-	uint32_t rval;
+	int32_t rval;
 
 	tfunc = thrctx->tc_thrfunc;
 	tctx = thrctx->tc_thrctx;
@@ -3361,12 +3360,15 @@ ntoskrnl_thrfunc(void *arg)
 }
 
 static int32_t
-PsCreateSystemThread(ndis_handle *handle, uint32_t reqaccess, void *objattrs,
-    ndis_handle phandle, void *clientid, void *thrfunc, void *thrctx)
+PsCreateSystemThread(void **handle, uint32_t access, void *objattr,
+    void *process, void *clientid, void *thrfunc, void *thrctx)
 {
 	thread_context *tc;
 	struct thread *t;
 
+	TRACE(NDBG_THREAD, "handle %p access %u objattr %p process %p "
+	    "clientid %p thrfunc %p thrctx %p\n",
+	    handle, access, objattr, process, clientid, thrfunc, thrctx);
 	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (tc == NULL)
 		return (NDIS_STATUS_RESOURCES);
@@ -3389,11 +3391,12 @@ static int32_t
 PsTerminateSystemThread(int32_t status)
 {
 
+	TRACE(NDBG_THREAD, "status %d\n", status);
 	ntoskrnl_kth--;
 
 	kthread_exit();
 
-	return (0);	/* notreached */
+	return (NDIS_STATUS_FAILURE);	/* notreached */
 }
 
 static int32_t
@@ -3448,7 +3451,8 @@ ntoskrnl_timercall(void *arg)
 	if (timer->k_period) {
 		tv.tv_sec = 0;
 		tv.tv_usec = timer->k_period * 1000;
-		ntoskrnl_insert_timer(timer, tvtohz(&tv));
+		callout_reset(timer->k_callout, tvtohz(&tv),
+		    ntoskrnl_timercall, timer);
 	}
 
 	dpc = timer->k_dpc;
@@ -3456,12 +3460,6 @@ ntoskrnl_timercall(void *arg)
 	/* If there's a DPC associated with the timer, queue it up. */
 	if (dpc != NULL)
 		KeInsertQueueDpc(dpc, NULL, NULL);
-}
-
-static int
-ntoskrnl_insert_timer(ktimer *timer, int ticks)
-{
-	return (callout_reset(timer->k_callout, ticks, ntoskrnl_timercall, timer));
 }
 
 void
@@ -3754,7 +3752,8 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 			    (tv.tv_sec * 1000000);
 		}
 	}
-	return (ntoskrnl_insert_timer(timer, tvtohz(&tv)));
+	return (callout_reset(timer->k_callout, tvtohz(&tv),
+	    ntoskrnl_timercall, timer));
 }
 
 uint8_t
