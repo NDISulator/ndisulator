@@ -89,7 +89,7 @@ MODULE_DEPEND(ndis, ndisapi, 2, 2, 2);
 MODULE_VERSION(ndis, 2);
 
 static void	NdisMEthIndicateReceive(struct ndis_miniport_block *,
-		    ndis_handle, char *, void *, uint32_t, void *, uint32_t,
+		    void *, char *, void *, uint32_t, void *, uint32_t,
 		    uint32_t);
 static void	NdisMEthIndicateReceiveComplete(struct ndis_miniport_block *);
 static void	NdisMIndicateReceivePacket(struct ndis_miniport_block *,
@@ -1164,7 +1164,7 @@ ndis_resume(device_t dev)
 }
 
 static void
-NdisMEthIndicateReceive(struct ndis_miniport_block *block, ndis_handle ctx,
+NdisMEthIndicateReceive(struct ndis_miniport_block *block, void *ctx,
     char *addr, void *hdr, uint32_t hdrlen, void *lookahead,
     uint32_t lookaheadlen, uint32_t pktlen)
 {
@@ -1366,7 +1366,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 	if (!(ifp->if_drv_flags & IFF_DRV_RUNNING)) {
 		for (i = 0; i < pktcnt; i++) {
 			p = packets[i];
-			if (p->oob.npo_status == NDIS_STATUS_SUCCESS) {
+			if (p->oob.status == NDIS_STATUS_SUCCESS) {
 				p->refcnt++;
 				ndis_return_packet(block, p);
 			}
@@ -1380,14 +1380,14 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 		p->softc = sc;
 		if (ndis_ptom(&m0, p)) {
 			device_printf(sc->ndis_dev, "ptom failed\n");
-			if (p->oob.npo_status == NDIS_STATUS_SUCCESS)
+			if (p->oob.status == NDIS_STATUS_SUCCESS)
 				ndis_return_packet(block, p);
 		} else {
 			m = m_dup(m0, M_DONTWAIT);
-			if (p->oob.npo_status == NDIS_STATUS_RESOURCES)
+			if (p->oob.status == NDIS_STATUS_RESOURCES)
 				p->refcnt++;
 			else
-				p->oob.npo_status = NDIS_STATUS_PENDING;
+				p->oob.status = NDIS_STATUS_PENDING;
 			m_freem(m0);
 			if (m == NULL) {
 				ifp->if_ierrors++;
@@ -1733,7 +1733,7 @@ ndis_start(struct ifnet *ifp)
 		p = sc->ndis_txarray[sc->ndis_txidx];
 		p->txidx = sc->ndis_txidx;
 		p->m0 = m;
-		p->oob.npo_status = NDIS_STATUS_PENDING;
+		p->oob.status = NDIS_STATUS_PENDING;
 
 		/*
 		 * Do scatter/gather processing, if driver requested it.

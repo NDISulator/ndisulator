@@ -150,13 +150,12 @@ windrv_libfini(void)
 struct driver_object *
 windrv_lookup(vm_offset_t img, const char *name)
 {
+	struct unicode_string us;
+	struct ansi_string as;
 	struct drvdb_ent *d;
-	unicode_string us;
-	ansi_string as;
 
 	bzero((char *)&us, sizeof(us));
 
-	/* Damn unicode. */
 	if (name != NULL) {
 		RtlInitAnsiString(&as, name);
 		if (RtlAnsiStringToUnicodeString(&us, &as, TRUE))
@@ -166,8 +165,8 @@ windrv_lookup(vm_offset_t img, const char *name)
 	mtx_lock(&drvdb_mtx);
 	STAILQ_FOREACH(d, &drvdb_head, link) {
 		if (d->windrv_object->driver_start == (void *)img ||
-		    (bcmp((char *)d->windrv_object->driver_name.us_buf,
-		    (char *)us.us_buf, us.us_len) == 0 && us.us_len)) {
+		    (bcmp((char *)d->windrv_object->driver_name.buf,
+		    (char *)us.buf, us.len) == 0 && us.len)) {
 			mtx_unlock(&drvdb_mtx);
 			if (name != NULL)
 				RtlFreeUnicodeString(&us);
@@ -303,13 +302,13 @@ int
 windrv_load(module_t mod, vm_offset_t img, size_t len,
     uint32_t bustype, void *devlist, void *regvals)
 {
+	struct ansi_string as;
 	struct image_optional_header *opt_hdr;
 	driver_entry entry;
 	struct drvdb_ent *new;
 	struct driver_object *drv;
 	uint32_t *ptr;
 	int32_t rval;
-	ansi_string as;
 
 	if (pe_validate_header(img))
 		return (ENOEXEC);
@@ -473,8 +472,8 @@ windrv_find_pdo(const struct driver_object *drv, device_t bsddev)
 int
 windrv_bus_attach(struct driver_object *drv, const char *name)
 {
+	struct ansi_string as;
 	struct drvdb_ent *new;
-	ansi_string as;
 
 	new = malloc(sizeof(struct drvdb_ent), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (new == NULL)

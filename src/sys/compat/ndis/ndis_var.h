@@ -71,7 +71,6 @@ struct ndis_mdriver_block;
 struct ndis_softc;
 
 /* Base types */
-typedef void *ndis_handle;
 typedef register_t ndis_kspin_lock;
 typedef uint8_t ndis_kirql;
 
@@ -1549,23 +1548,19 @@ struct ndis_configuration_parameter {
 	enum ndis_parameter_type	parameter_type;
 	union {
 		uint32_t		integer_data;
-		unicode_string		string_data;
+		struct unicode_string	string_data;
 		struct ndis_binary_data	binary_data;
 	} parameter_data;
 };
 
-/*
- * Not part of Windows NDIS spec; we uses this to keep a
- * list of ndis_config_parm structures that we've allocated.
- */
 struct ndis_parmlist_entry {
 	struct list_entry			list;
 	struct ndis_configuration_parameter	parm;
 };
 
 struct ndis_bind_paths {
-	uint32_t	number;
-	unicode_string	paths[1];
+	uint32_t		number;
+	struct unicode_string	paths[1];
 };
 
 #define	dispatch_header nt_dispatch_header
@@ -1683,9 +1678,9 @@ struct ndis_work_item;
 typedef void (*ndis_proc)(struct ndis_work_item *, void *);
 
 struct ndis_work_item {
-	void		*nwi_ctx;
-	ndis_proc	nwi_func;
-	uint8_t		nwi_wraprsvd[sizeof(void *) * 8];
+	void		*ctx;
+	ndis_proc	func;
+	uint8_t		wraprsvd[sizeof(void *) * 8];
 };
 
 struct ndis_sc_element {
@@ -1784,14 +1779,14 @@ struct ndis_mediaspecific_info {
 
 struct ndis_packet_oob {
 	union {
-		uint64_t	npo_timetotx;
-		uint64_t	npo_timetxed;
+		uint64_t	timetotx;
+		uint64_t	timetxed;
 	} u;
-	uint64_t	npo_timerxed;
-	uint32_t	npo_hdrlen;
-	uint32_t	npo_mediaspecific_len;
-	void		*npo_mediaspecific;
-	int32_t		npo_status;
+	uint64_t	timerxed;
+	uint32_t	hdrlen;
+	uint32_t	mediaspecific_len;
+	void		*mediaspecific;
+	int32_t		status;
 };
 
 /*
@@ -1981,8 +1976,6 @@ struct ndis_file_handle {
  * NdisMIndicateReceivePacket() routine is a macro rather than
  * a function.) For another, the driver maintains a pointer to the
  * miniport block and passes it as a handle to various NDIS functions.
- * (The driver never really knows this because it's hidden behind
- * an ndis_handle though.)
  *
  * The miniport block has two parts: the first part contains fields
  * that must never change, since they are referenced by driver
@@ -2001,12 +1994,12 @@ struct ndis_miniport_block {
 	void				*signature;	/* magic number */
 	struct ndis_miniport_block	*next_miniport;
 	struct ndis_mdriver_block	*driver_handle;
-	ndis_handle			miniport_adapter_ctx;
-	unicode_string			miniport_name;
+	void				*miniport_adapter_ctx;
+	struct unicode_string		miniport_name;
 	struct ndis_bind_paths		*bind_paths;
-	ndis_handle			open_queue;
+	void				*open_queue;
 	struct ndis_reference		short_ref;
-	ndis_handle			device_ctx;
+	void				*device_ctx;
 	uint8_t				padding;
 	uint8_t				lock_acquired;
 	uint8_t				pmode_opens;
@@ -2027,13 +2020,13 @@ struct ndis_miniport_block {
 	uint32_t			pnp_caps;
 	struct cm_resource_list		*resources;
 	struct ndis_timer		wakekup_dpc_timer;
-	unicode_string			base_name;
-	unicode_string			symbolic_link_name;
+	struct unicode_string		base_name;
+	struct unicode_string		symbolic_link_name;
 	uint32_t			check_for_hang_secs;
 	uint16_t			check_for_hang_ticks;
 	uint16_t			check_for_hang_current_tick;
 	int32_t				reset_status;
-	ndis_handle			reset_open;
+	void				*reset_open;
 	struct ndis_filter_dbs		filter_dbs;
 	void				*packet_indicate_func;
 	void				*send_done_func;
@@ -2054,7 +2047,7 @@ struct ndis_miniport_block {
 	uint16_t			max_send_packets;
 	int32_t				fake_status;
 	void				*lock_handler;
-	unicode_string			*adapter_instance_name;
+	struct unicode_string		*adapter_instance_name;
 	void				*timer_queue;
 	uint32_t			mac_options;
 	struct ndis_request		*pending_request;
@@ -2121,27 +2114,27 @@ struct ndis_usb_type {
 	char		*name;
 };
 
-typedef int32_t (*driver_entry)(void *, unicode_string *);
-typedef uint8_t (*ndis_checkforhang_func)(ndis_handle);
-typedef void (*ndis_disable_interrupts_func)(ndis_handle);
-typedef void (*ndis_enable_interrupts_func)(ndis_handle);
-typedef void (*ndis_halt_func)(ndis_handle);
-typedef void (*ndis_interrupt_func)(ndis_handle);
+typedef int32_t (*driver_entry)(void *, struct unicode_string *);
+typedef uint8_t (*ndis_checkforhang_func)(void *);
+typedef void (*ndis_disable_interrupts_func)(void *);
+typedef void (*ndis_enable_interrupts_func)(void *);
+typedef void (*ndis_halt_func)(void *);
+typedef void (*ndis_interrupt_func)(void *);
 typedef int32_t (*ndis_init_func)(int32_t *, uint32_t *, enum ndis_medium *,
-    uint32_t, ndis_handle, ndis_handle);
-typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, ndis_handle);
-typedef int32_t (*ndis_query_info_func)(ndis_handle, uint32_t, void *,
+    uint32_t, void *, void *);
+typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, void *);
+typedef int32_t (*ndis_query_info_func)(void *, uint32_t, void *,
     uint32_t, uint32_t *, uint32_t *);
-typedef int (*ndis_reset_func)(uint8_t *, ndis_handle);
-typedef int32_t (*ndis_send_func)(ndis_handle, struct ndis_packet *, uint32_t);
-typedef int32_t (*ndis_set_info_func)(ndis_handle, uint32_t, void *,
+typedef int (*ndis_reset_func)(uint8_t *, void *);
+typedef int32_t (*ndis_send_func)(void *, struct ndis_packet *, uint32_t);
+typedef int32_t (*ndis_set_info_func)(void *, uint32_t, void *,
     uint32_t, uint32_t *, uint32_t *);
-typedef int32_t (*ndis_transfer_data_func)(ndis_handle, struct ndis_packet *,
+typedef int32_t (*ndis_transfer_data_func)(void *, struct ndis_packet *,
     uint32_t *, uint32_t);
-typedef void (*ndis_return_func)(ndis_handle, struct ndis_packet *);
-typedef void (*ndis_send_packets_func)(ndis_handle, struct ndis_packet **,
+typedef void (*ndis_return_func)(void *, struct ndis_packet *);
+typedef void (*ndis_send_packets_func)(void *, struct ndis_packet **,
     uint32_t);
-typedef void (*ndis_allocate_complete_func)(ndis_handle, void *,
+typedef void (*ndis_allocate_complete_func)(void *, void *,
     uint64_t *, uint32_t, void *);
 typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
 typedef void (*ndis_shutdown_func)(void *);

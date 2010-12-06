@@ -100,15 +100,18 @@ struct callout update_kuser;
 static void ntoskrnl_update_kuser(void *);
 #endif
 
-static int32_t RtlAppendUnicodeStringToString(unicode_string *,
-    const unicode_string *);
-static int32_t RtlAppendUnicodeToString(unicode_string *, const uint16_t *);
-static uint8_t RtlEqualString(const ansi_string *,
-    const ansi_string *, uint8_t);
-static uint8_t RtlEqualUnicodeString(const unicode_string *,
-    const unicode_string *, uint8_t);
-static void RtlCopyString(ansi_string *, const ansi_string *);
-static void RtlCopyUnicodeString(unicode_string *, const unicode_string *);
+static int32_t RtlAppendUnicodeStringToString(struct unicode_string *,
+    const struct unicode_string *);
+static int32_t RtlAppendUnicodeToString(struct unicode_string *,
+    const uint16_t *);
+static uint8_t RtlEqualString(const struct ansi_string *,
+    const struct ansi_string *, uint8_t);
+static uint8_t RtlEqualUnicodeString(const struct unicode_string *,
+    const struct unicode_string *, uint8_t);
+static void RtlCopyString(struct ansi_string *,
+    const struct ansi_string *);
+static void RtlCopyUnicodeString(struct unicode_string *,
+    const struct unicode_string *);
 static irp *IoBuildSynchronousFsdRequest(uint32_t, struct device_object *,
     void *, uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
 static irp *IoBuildAsynchronousFsdRequest(uint32_t, struct device_object *,
@@ -175,7 +178,7 @@ static void MmFreeContiguousMemory(void *);
 static void MmFreeContiguousMemorySpecifyCache(void *, uint32_t,
     enum memory_caching_type);
 static uint64_t MmGetPhysicalAddress(void *);
-static void *MmGetSystemRoutineAddress(unicode_string *);
+static void *MmGetSystemRoutineAddress(struct unicode_string *);
 static uint8_t MmIsAddressValid(void *);
 static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(struct mdl *, uint8_t);
@@ -183,8 +186,8 @@ static void *MmMapLockedPagesSpecifyCache(struct mdl *, uint8_t,
     enum memory_caching_type, void *, uint32_t, uint32_t);
 static void MmUnmapLockedPages(void *, struct mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
-static uint32_t RtlxAnsiStringToUnicodeSize(const ansi_string *);
-static uint32_t RtlxUnicodeStringToAnsiSize(const unicode_string *);
+static uint32_t RtlxAnsiStringToUnicodeSize(const struct ansi_string *);
+static uint32_t RtlxUnicodeStringToAnsiSize(const struct unicode_string *);
 static void RtlZeroMemory(void *, size_t);
 static void RtlSecureZeroMemory(void *, size_t);
 static void RtlFillMemory(void *, size_t, uint8_t);
@@ -192,11 +195,12 @@ static void RtlMoveMemory(void *, const void *, size_t);
 static int32_t RtlCharToInteger(const char *, uint32_t, uint32_t *);
 static void RtlCopyMemory(void *, const void *, size_t);
 static size_t RtlCompareMemory(const void *, const void *, size_t);
-static int32_t RtlCompareString(const ansi_string *,
-    const ansi_string *, uint8_t);
-static int32_t RtlCompareUnicodeString(const unicode_string *,
-    const unicode_string *, uint8_t);
-static int32_t RtlUnicodeStringToInteger(const unicode_string *, uint32_t,
+static int32_t RtlCompareString(const struct ansi_string *,
+    const struct ansi_string *, uint8_t);
+static int32_t RtlCompareUnicodeString(const struct unicode_string *,
+    const struct unicode_string *, uint8_t);
+static int32_t RtlUnicodeStringToInteger(const struct unicode_string *,
+    uint32_t,
     uint32_t *);
 static int atoi(const char *);
 static long atol(const char *);
@@ -218,25 +222,25 @@ static uint8_t IoIsWdmVersionAvailable(uint8_t, uint8_t);
 static int32_t IoOpenDeviceRegistryKey(struct device_object *, uint32_t,
     uint32_t, void **);
 static void ntoskrnl_thrfunc(void *);
-static int32_t PsCreateSystemThread(ndis_handle *, uint32_t, void *,
-    ndis_handle, void *, void *, void *);
+static int32_t PsCreateSystemThread(void **, uint32_t, void *, void *, void *,
+    void *, void *);
 static int32_t PsTerminateSystemThread(int32_t);
-static int32_t IoGetDeviceObjectPointer(unicode_string *, uint32_t,
+static int32_t IoGetDeviceObjectPointer(struct unicode_string *, uint32_t,
     void *, struct device_object *);
 static int32_t IoGetDeviceProperty(struct device_object *,
     enum device_registry_property, uint32_t, void *, uint32_t *);
 static void KeInitializeMutex(kmutant *, uint32_t);
 static int32_t KeReleaseMutex(kmutant *, uint8_t);
 static int32_t KeReadStateMutex(kmutant *);
-static int32_t ObReferenceObjectByHandle(ndis_handle, uint32_t, void *,
-    uint8_t, void **, void **);
+static int32_t ObReferenceObjectByHandle(void *, uint32_t, void *, uint8_t,
+    void **, void **);
 static void ObfDereferenceObject(void *);
 static int32_t ZwClose(void *);
 static int32_t ZwCreateFile(void **, uint32_t, struct object_attributes *,
     struct io_status_block *, int64_t *, uint32_t, uint32_t, uint32_t,
     uint32_t, void *, uint32_t);
 static int32_t ZwCreateKey(void **, uint32_t, struct object_attributes *,
-    uint32_t, unicode_string *, uint32_t, uint32_t *);
+    uint32_t, struct unicode_string *, uint32_t, uint32_t *);
 static int32_t ZwDeleteKey(void *);
 static int32_t ZwOpenFile(void **, uint32_t, struct object_attributes *,
     struct io_status_block *, uint32_t, uint32_t);
@@ -454,44 +458,45 @@ static uint8_t
 RtlEqualString(const struct ansi_string *str1, const struct ansi_string *str2,
     uint8_t case_in_sensitive)
 {
-	if (str1->as_len != str2->as_len)
+	if (str1->len != str2->len)
 		return (FALSE);
 	return (!RtlCompareString(str1, str2, case_in_sensitive));
 }
 
 static uint8_t
-RtlEqualUnicodeString(const unicode_string *str1, const unicode_string *str2,
-    uint8_t case_in_sensitive)
+RtlEqualUnicodeString(const struct unicode_string *str1,
+     const struct unicode_string *str2, uint8_t case_in_sensitive)
 {
-	if (str1->us_len != str2->us_len)
+	if (str1->len != str2->len)
 		return (FALSE);
 	return (!RtlCompareUnicodeString(str1, str2, case_in_sensitive));
 }
 
 static void
-RtlCopyString(ansi_string *dst, const ansi_string *src)
+RtlCopyString(struct ansi_string *dst, const struct ansi_string *src)
 {
 	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
-	if (src != NULL && src->as_buf != NULL && dst->as_buf != NULL) {
-		dst->as_len = min(src->as_len, dst->as_maxlen);
-		memcpy(dst->as_buf, src->as_buf, dst->as_len);
-		if (dst->as_len < dst->as_maxlen)
-			dst->as_buf[dst->as_len] = 0;
+	if (src != NULL && src->buf != NULL && dst->buf != NULL) {
+		dst->len = min(src->len, dst->maxlen);
+		memcpy(dst->buf, src->buf, dst->len);
+		if (dst->len < dst->maxlen)
+			dst->buf[dst->len] = 0;
 	} else
-		dst->as_len = 0;
+		dst->len = 0;
 }
 
 static void
-RtlCopyUnicodeString(unicode_string *dst, const unicode_string *src)
+RtlCopyUnicodeString(struct unicode_string *dst,
+    const struct unicode_string *src)
 {
 	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
-	if (src != NULL && src->us_buf != NULL && dst->us_buf != NULL) {
-		dst->us_len = min(src->us_len, dst->us_maxlen);
-		memcpy(dst->us_buf, src->us_buf, dst->us_len);
-		if (dst->us_len < dst->us_maxlen)
-			dst->us_buf[dst->us_len / sizeof(dst->us_buf[0])] = 0;
+	if (src != NULL && src->buf != NULL && dst->buf != NULL) {
+		dst->len = min(src->len, dst->maxlen);
+		memcpy(dst->buf, src->buf, dst->len);
+		if (dst->len < dst->maxlen)
+			dst->buf[dst->len / sizeof(dst->buf[0])] = 0;
 	} else
-		dst->us_len = 0;
+		dst->len = 0;
 }
 
 static void
@@ -521,51 +526,51 @@ ntoskrnl_unicode_to_ascii(uint16_t *unicode, char *ascii, int len)
 }
 
 int32_t
-RtlUnicodeStringToAnsiString(ansi_string *dst, const unicode_string *src,
-    uint8_t allocate)
+RtlUnicodeStringToAnsiString(struct ansi_string *dst,
+    const struct unicode_string *src, uint8_t allocate)
 {
 	TRACE(NDBG_RTL, "dst %p src %p allocate %u\n", dst, src, allocate);
 	if (dst == NULL || src == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
-	dst->as_len = src->us_len / 2;
-	if (dst->as_maxlen < dst->as_len)
-		dst->as_len = dst->as_maxlen;
+	dst->len = src->len / 2;
+	if (dst->maxlen < dst->len)
+		dst->len = dst->maxlen;
 
 	if (allocate == TRUE) {
-		dst->as_buf = ExAllocatePool((src->us_len / 2) + 1);
-		if (dst->as_buf == NULL)
+		dst->buf = ExAllocatePool((src->len / 2) + 1);
+		if (dst->buf == NULL)
 			return (NDIS_STATUS_RESOURCES);
-		dst->as_len = dst->as_maxlen = src->us_len / 2;
+		dst->len = dst->maxlen = src->len / 2;
 	} else {
-		dst->as_len = src->us_len / 2; /* XXX */
-		if (dst->as_maxlen < dst->as_len)
-			dst->as_len = dst->as_maxlen;
+		dst->len = src->len / 2; /* XXX */
+		if (dst->maxlen < dst->len)
+			dst->len = dst->maxlen;
 	}
-	ntoskrnl_unicode_to_ascii(src->us_buf, dst->as_buf, dst->as_len * 2);
+	ntoskrnl_unicode_to_ascii(src->buf, dst->buf, dst->len * 2);
 
 	return (NDIS_STATUS_SUCCESS);
 }
 
 int32_t
-RtlAnsiStringToUnicodeString(unicode_string *dst, const ansi_string *src,
-    uint8_t allocate)
+RtlAnsiStringToUnicodeString(struct unicode_string *dst,
+    const struct ansi_string *src, uint8_t allocate)
 {
 	TRACE(NDBG_RTL, "dst %p src %p allocate %u\n", dst, src, allocate);
 	if (dst == NULL || src == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
 	if (allocate == TRUE) {
-		dst->us_buf = ExAllocatePool(src->as_len * 2);
-		if (dst->us_buf == NULL)
+		dst->buf = ExAllocatePool(src->len * 2);
+		if (dst->buf == NULL)
 			return (NDIS_STATUS_RESOURCES);
-		dst->us_len = dst->us_maxlen = strlen(src->as_buf) * 2;
+		dst->len = dst->maxlen = strlen(src->buf) * 2;
 	} else {
-		dst->us_len = src->as_len * 2; /* XXX */
-		if (dst->us_maxlen < dst->us_len)
-			dst->us_len = dst->us_maxlen;
+		dst->len = src->len * 2; /* XXX */
+		if (dst->maxlen < dst->len)
+			dst->len = dst->maxlen;
 	}
-	ntoskrnl_ascii_to_unicode(src->as_buf, dst->us_buf, dst->us_len / 2);
+	ntoskrnl_ascii_to_unicode(src->buf, dst->buf, dst->len / 2);
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -643,8 +648,8 @@ IoGetDriverObjectExtension(struct driver_object *drv, void *clid)
 
 int32_t
 IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
-    unicode_string *devname, enum device_type devtype, uint32_t devchars,
-    uint8_t exclusive, struct device_object **newdev)
+    struct unicode_string *devname, enum device_type devtype,
+    uint32_t devchars, uint8_t exclusive, struct device_object **newdev)
 {
 	struct device_object *dev;
 
@@ -2273,14 +2278,14 @@ MmGetPhysicalAddress(void *base)
 }
 
 static void *
-MmGetSystemRoutineAddress(unicode_string *ustr)
+MmGetSystemRoutineAddress(struct unicode_string *ustr)
 {
-	ansi_string astr;
+	struct ansi_string astr;
 
 	if (RtlUnicodeStringToAnsiString(&astr, ustr, TRUE))
 		return (NULL);
-	TRACE(NDBG_INIT, "routine %s\n", astr.as_buf);
-	return (ndis_get_routine_address(ntoskrnl_functbl, astr.as_buf));
+	TRACE(NDBG_INIT, "routine %s\n", astr.buf);
+	return (ndis_get_routine_address(ntoskrnl_functbl, astr.buf));
 }
 
 static uint8_t
@@ -2588,54 +2593,55 @@ ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
 }
 
 static int32_t
-RtlAppendUnicodeStringToString(unicode_string *dst, const unicode_string *src)
+RtlAppendUnicodeStringToString(struct unicode_string *dst,
+    const struct unicode_string *src)
 {
 	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
-	if (dst->us_maxlen < src->us_len + dst->us_len)
+	if (dst->maxlen < src->len + dst->len)
 		return (NDIS_STATUS_BUFFER_TOO_SMALL);
-	if (src->us_len) {
-		memcpy(&dst->us_buf[dst->us_len], src->us_buf, src->us_len);
-		dst->us_len += src->us_len;
-		if (dst->us_maxlen > dst->us_len)
-			dst->us_buf[dst->us_len / sizeof(dst->us_buf[0])] = 0;
+	if (src->len) {
+		memcpy(&dst->buf[dst->len], src->buf, src->len);
+		dst->len += src->len;
+		if (dst->maxlen > dst->len)
+			dst->buf[dst->len / sizeof(dst->buf[0])] = 0;
 	}
 	return (NDIS_STATUS_SUCCESS);
 }
 
 static int32_t
-RtlAppendUnicodeToString(unicode_string *dst, const uint16_t *src)
+RtlAppendUnicodeToString(struct unicode_string *dst, const uint16_t *src)
 {
 	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (src != NULL) {
 		int len;
 		for (len = 0; src[len]; len++);
-		if (dst->us_len +
-		    (len * sizeof(dst->us_buf[0])) > dst->us_maxlen)
+		if (dst->len +
+		    (len * sizeof(dst->buf[0])) > dst->maxlen)
 			return NDIS_STATUS_BUFFER_TOO_SMALL;
-		memcpy(&dst->us_buf[dst->us_len], src,
-		    len * sizeof(dst->us_buf[0]));
-		dst->us_len += len * sizeof(dst->us_buf[0]);
-		if (dst->us_maxlen > dst->us_len)
-			dst->us_buf[dst->us_len / sizeof(dst->us_buf[0])] = 0;
+		memcpy(&dst->buf[dst->len], src,
+		    len * sizeof(dst->buf[0]));
+		dst->len += len * sizeof(dst->buf[0]);
+		if (dst->maxlen > dst->len)
+			dst->buf[dst->len / sizeof(dst->buf[0])] = 0;
 	}
 	return (NDIS_STATUS_SUCCESS);
 }
 
 static uint32_t
-RtlxAnsiStringToUnicodeSize(const ansi_string *str)
+RtlxAnsiStringToUnicodeSize(const struct ansi_string *str)
 {
 	int i;
 
-	for (i = 0; i < str->as_maxlen && str->as_buf[i]; i++);
+	for (i = 0; i < str->maxlen && str->buf[i]; i++);
 	return (i * sizeof(uint16_t));
 }
 
 static uint32_t
-RtlxUnicodeStringToAnsiSize(const unicode_string *str)
+RtlxUnicodeStringToAnsiSize(const struct unicode_string *str)
 {
 	int i;
 
-	for (i = 0; i < str->us_maxlen && str->us_buf[i]; i++);
+	for (i = 0; i < str->maxlen && str->buf[i]; i++);
 	return (i * sizeof(uint8_t));
 }
 
@@ -2734,16 +2740,16 @@ RtlCompareMemory(const void *s1, const void *s2, size_t len)
 }
 
 static int32_t
-RtlCompareString(const ansi_string *str1, const ansi_string *str2,
+RtlCompareString(const struct ansi_string *str1, const struct ansi_string *str2,
     uint8_t case_in_sensitive)
 {
 	int32_t ret = 0;
 	uint16_t len;
-	const char *p1 = str1->as_buf, *p2 = str2->as_buf;
+	const char *p1 = str1->buf, *p2 = str2->buf;
 
 	TRACE(NDBG_RTL, "str1 %p str2 %p case_in_sensitive %u\n",
 	    str1, str2, case_in_sensitive);
-	len = min(str1->as_len, str2->as_len) / sizeof(char);
+	len = min(str1->len, str2->len) / sizeof(char);
 	if (case_in_sensitive)
 		while (!ret && len--)
 			ret = ntoskrnl_toupper(*p1++) - ntoskrnl_toupper(*p2++);
@@ -2751,21 +2757,21 @@ RtlCompareString(const ansi_string *str1, const ansi_string *str2,
 		while (!ret && len--)
 			ret = *p1++ - *p2++;
 	if (!ret)
-		ret = str1->as_len - str2->as_len;
+		ret = str1->len - str2->len;
 	return (ret);
 }
 
 static int32_t
-RtlCompareUnicodeString(const unicode_string *str1, const unicode_string *str2,
-    uint8_t case_in_sensitive)
+RtlCompareUnicodeString(const struct unicode_string *str1,
+    const struct unicode_string *str2, uint8_t case_in_sensitive)
 {
 	int32_t ret = 0;
 	uint16_t len;
-	const uint16_t *p1 = str1->us_buf, *p2 = str2->us_buf;
+	const uint16_t *p1 = str1->buf, *p2 = str2->buf;
 
 	TRACE(NDBG_RTL, "str1 %p str2 %p case_in_sensitive %u\n",
 	    str1, str2, case_in_sensitive);
-	len = min(str1->us_len, str2->us_len) / sizeof(uint16_t);
+	len = min(str1->len, str2->len) / sizeof(uint16_t);
 	if (case_in_sensitive)
 		while (!ret && len--)
 			ret = ntoskrnl_toupper(*p1++) - ntoskrnl_toupper(*p2++);
@@ -2773,48 +2779,48 @@ RtlCompareUnicodeString(const unicode_string *str1, const unicode_string *str2,
 		while (!ret && len--)
 			ret = *p1++ - *p2++;
 	if (!ret)
-		ret = str1->us_len - str2->us_len;
+		ret = str1->len - str2->len;
 	return (ret);
 }
 
 void
-RtlInitAnsiString(ansi_string *dst, const char *src)
+RtlInitAnsiString(struct ansi_string *dst, const char *src)
 {
 	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (dst == NULL)
 		return;
 	if (src == NULL) {
-		dst->as_len = dst->as_maxlen = 0;
-		dst->as_buf = NULL;
+		dst->len = dst->maxlen = 0;
+		dst->buf = NULL;
 	} else {
 		int i;
 		for (i = 0; src[i]; i++);
-		dst->as_buf = (char *)src;
-		dst->as_len = i;
-		dst->as_maxlen = i + 1;
+		dst->buf = (char *)src;
+		dst->len = i;
+		dst->maxlen = i + 1;
 	}
 }
 
 void
-RtlInitUnicodeString(unicode_string *dst, const uint16_t *src)
+RtlInitUnicodeString(struct unicode_string *dst, const uint16_t *src)
 {
 	TRACE(NDBG_RTL, "dst %p src %p\n", dst, src);
 	if (dst == NULL)
 		return;
 	if (src == NULL) {
-		dst->us_len = dst->us_maxlen = 0;
-		dst->us_buf = NULL;
+		dst->len = dst->maxlen = 0;
+		dst->buf = NULL;
 	} else {
 		int i;
 		for (i = 0; src[i]; i++);
-		dst->us_buf = (uint16_t *)src;
-		dst->us_len = i * sizeof(dst->us_buf[0]);
-		dst->us_maxlen = (i + 1) * sizeof(dst->us_buf[0]);
+		dst->buf = (uint16_t *)src;
+		dst->len = i * sizeof(dst->buf[0]);
+		dst->maxlen = (i + 1) * sizeof(dst->buf[0]);
 	}
 }
 
 static int32_t
-RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
+RtlUnicodeStringToInteger(const struct unicode_string *src, uint32_t base,
     uint32_t *val)
 {
 	uint32_t res;
@@ -2825,8 +2831,8 @@ RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
 	if (src == NULL || val == NULL)
 		return (NDIS_STATUS_ACCESS_VIOLATION);
 
-	uchr = src->us_buf;
-	while (i < (src->us_len / sizeof(*uchr)) && uchr[i] == ' ')
+	uchr = src->buf;
+	while (i < (src->len / sizeof(*uchr)) && uchr[i] == ' ')
 		i++;
 	if (uchr[i] == '+')
 		i++;
@@ -2836,7 +2842,7 @@ RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
 	}
 	if (base == 0) {
 		base = 10;
-		if (i <= ((src->us_len / sizeof(*uchr)) - 2) && uchr[i] == '0') {
+		if (i <= ((src->len / sizeof(*uchr)) - 2) && uchr[i] == '0') {
 			i++;
 			if (uchr[i] == 'b') {
 				base = 2;
@@ -2853,7 +2859,7 @@ RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
 	if (!(base == 2 || base == 8 || base == 10 || base == 16))
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
-	for (res = 0; i < (src->us_len / sizeof(*uchr)); i++) {
+	for (res = 0; i < (src->len / sizeof(*uchr)); i++) {
 		int v;
 		if (isdigit((char)uchr[i]))
 			v = uchr[i] - '0';
@@ -2870,44 +2876,45 @@ RtlUnicodeStringToInteger(const unicode_string *src, uint32_t base,
 }
 
 int32_t
-RtlUpcaseUnicodeString(unicode_string *dst, unicode_string *src, uint8_t alloc)
+RtlUpcaseUnicodeString(struct unicode_string *dst, struct unicode_string *src,
+    uint8_t alloc)
 {
 	uint16_t i, n;
 
 	TRACE(NDBG_RTL, "dst %p src %p alloc %u\n", dst, src, alloc);
 	if (alloc) {
-		dst->us_buf = ExAllocatePool(src->us_len);
-		if (dst->us_buf)
-			dst->us_maxlen = src->us_len;
+		dst->buf = ExAllocatePool(src->len);
+		if (dst->buf)
+			dst->maxlen = src->len;
 		else
 			return (NDIS_STATUS_NO_MEMORY);
 	} else {
-		if (dst->us_maxlen < src->us_len)
+		if (dst->maxlen < src->len)
 			return (NDIS_STATUS_BUFFER_OVERFLOW);
 	}
 
-	n = src->us_len / sizeof(src->us_buf[0]);
+	n = src->len / sizeof(src->buf[0]);
 	for (i = 0; i < n; i++)
-		dst->us_buf[i] = toupper(src->us_buf[i]);
+		dst->buf[i] = toupper(src->buf[i]);
 
-	dst->us_len = src->us_len;
+	dst->len = src->len;
 	return (NDIS_STATUS_SUCCESS);
 }
 
 void
-RtlFreeUnicodeString(unicode_string *str)
+RtlFreeUnicodeString(struct unicode_string *str)
 {
 	TRACE(NDBG_RTL, "str %p\n", str);
-	ExFreePool(str->us_buf);
-	str->us_buf = NULL;
+	ExFreePool(str->buf);
+	str->buf = NULL;
 }
 
 void
-RtlFreeAnsiString(ansi_string *str)
+RtlFreeAnsiString(struct ansi_string *str)
 {
 	TRACE(NDBG_RTL, "str %p\n", str);
-	ExFreePool(str->as_buf);
-	str->as_buf = NULL;
+	ExFreePool(str->buf);
+	str->buf = NULL;
 }
 
 static int
@@ -3021,7 +3028,7 @@ IoOpenDeviceRegistryKey(struct device_object *devobj, uint32_t type,
 }
 
 static int32_t
-IoGetDeviceObjectPointer(unicode_string *name, uint32_t reqaccess,
+IoGetDeviceObjectPointer(struct unicode_string *name, uint32_t reqaccess,
     void *fileobj, struct device_object *devobj)
 {
 	/* TODO */
@@ -3043,8 +3050,8 @@ IoGetDeviceProperty(struct device_object *devobj,
 	switch (regprop) {
 	case DEVICE_PROPERTY_DRIVER_KEY_NAME:
 		name = prop;
-		*name = drv->driver_name.us_buf;
-		*reslen = drv->driver_name.us_len;
+		*name = drv->driver_name.buf;
+		*reslen = drv->driver_name.len;
 		break;
 	default:
 		return (NDIS_STATUS_INVALID_PARAMETER_2);
@@ -3217,7 +3224,7 @@ KeReadStateEvent(nt_kevent *kevent)
  * handle returned by PsCreateSystemThread().
  */
 static int32_t
-ObReferenceObjectByHandle(ndis_handle handle, uint32_t reqaccess, void *otype,
+ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
     uint8_t accessmode, void **object, void **handleinfo)
 {
 	nt_objref *nr;
@@ -3264,7 +3271,7 @@ ZwCreateFile(void **handle, uint32_t access, struct object_attributes *attr,
 
 static int32_t
 ZwCreateKey(void **handle, uint32_t access, struct object_attributes *attr,
-    uint32_t title_index, unicode_string *class, uint32_t create_options,
+    uint32_t title_index, struct unicode_string *class, uint32_t create_options,
     uint32_t *create_disposition)
 {
 	return (NDIS_STATUS_FAILURE);

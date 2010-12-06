@@ -35,24 +35,17 @@
 #ifndef _NTOSKRNL_VAR_H_
 #define	_NTOSKRNL_VAR_H_
 
-/*
- * us_buf is really a wchar_t *, but it's inconvenient to include
- * all the necessary header goop needed to define it, and it's a
- * pointer anyway, so for now, just make it a uint16_t *.
- */
 struct unicode_string {
-	uint16_t	us_len;
-	uint16_t	us_maxlen;
-	uint16_t	*us_buf;
+	uint16_t	len;
+	uint16_t	maxlen;
+	uint16_t	*buf;
 };
-typedef struct unicode_string unicode_string;
 
 struct ansi_string {
-	uint16_t	as_len;
-	uint16_t	as_maxlen;
-	char		*as_buf;
+	uint16_t	len;
+	uint16_t	maxlen;
+	char		*buf;
 };
-typedef struct ansi_string ansi_string;
 
 /*
  * Windows memory descriptor list. In Windows, it's possible for
@@ -496,7 +489,7 @@ struct driver_extension {
 	struct driver_object	*driver_object;
 	void			*add_device;
 	uint32_t		count;
-	unicode_string		service_key_name;
+	struct unicode_string	service_key_name;
 
 	/*
 	 * Drivers are allowed to add one or more custom extensions
@@ -528,12 +521,12 @@ struct kinterrupt {
 };
 
 struct object_attributes {
-	uint32_t	length;
-	void		*root_directory;
-	unicode_string	*name;
-	uint32_t	attributes;
-	void		*security_descriptor;
-	void		*security_qos;
+	uint32_t		length;
+	void			*root_directory;
+	struct unicode_string	*name;
+	uint32_t		attributes;
+	void			*security_descriptor;
+	void			*security_qos;
 };
 
 struct ksystem_time {
@@ -1063,8 +1056,8 @@ struct driver_object {
 	uint32_t		driver_size;
 	void			*driver_section;
 	struct driver_extension	*driver_extension;
-	unicode_string		driver_name;
-	unicode_string		*hardware_database;
+	struct unicode_string	driver_name;
+	struct unicode_string	*hardware_database;
 	void			*fast_io_dispatch;
 	void			*driver_init_func;
 	void			*driver_start_io_func;
@@ -1266,23 +1259,24 @@ void	ntoskrnl_time(uint64_t *);
 uint16_t ExQueryDepthSList(slist_header *);
 struct slist_entry *InterlockedPushEntrySList(slist_header *, struct slist_entry *);
 struct slist_entry *InterlockedPopEntrySList(slist_header *);
-int32_t	RtlUnicodeStringToAnsiString(ansi_string *, const unicode_string *,
+int32_t	RtlUnicodeStringToAnsiString(struct ansi_string *,
+	    const struct unicode_string *, uint8_t);
+int32_t	RtlUpcaseUnicodeString(struct unicode_string *, struct unicode_string *,
 	    uint8_t);
-int32_t	RtlUpcaseUnicodeString(unicode_string *, unicode_string *, uint8_t);
-int32_t	RtlAnsiStringToUnicodeString(unicode_string *, const ansi_string *,
-	    uint8_t);
-void	RtlInitAnsiString(ansi_string *, const char *);
-void	RtlInitUnicodeString(unicode_string *, const uint16_t *);
-void	RtlFreeUnicodeString(unicode_string *);
-void	RtlFreeAnsiString(ansi_string *);
-void	KeInitializeDpc(kdpc *, void *, void *);
-uint8_t	KeInsertQueueDpc(kdpc *, void *, void *);
-uint8_t	KeRemoveQueueDpc(kdpc *);
-void	KeSetImportanceDpc(kdpc *, uint32_t);
-void	KeSetTargetProcessorDpc(kdpc *, uint8_t);
+int32_t	RtlAnsiStringToUnicodeString(struct unicode_string *,
+	    const struct ansi_string *, uint8_t);
+void	RtlInitAnsiString(struct ansi_string *, const char *);
+void	RtlInitUnicodeString(struct unicode_string *, const uint16_t *);
+void	RtlFreeUnicodeString(struct unicode_string *);
+void	RtlFreeAnsiString(struct ansi_string *);
+void	KeInitializeDpc(struct kdpc *, void *, void *);
+uint8_t	KeInsertQueueDpc(struct kdpc *, void *, void *);
+uint8_t	KeRemoveQueueDpc(struct kdpc *);
+void	KeSetImportanceDpc(struct kdpc *, uint32_t);
+void	KeSetTargetProcessorDpc(struct kdpc *, uint8_t);
 void	KeFlushQueuedDpcs(void);
-void	KeInitializeTimer(ktimer *);
-void	KeInitializeTimerEx(ktimer *, uint32_t);
+void	KeInitializeTimer(struct ktimer *);
+void	KeInitializeTimerEx(struct ktimer *, uint32_t);
 uint8_t	KeSetTimer(ktimer *, int64_t, kdpc *);
 uint8_t	KeSetTimerEx(ktimer *, int64_t, uint32_t, kdpc *);
 uint8_t	KeCancelTimer(ktimer *);
@@ -1316,8 +1310,9 @@ int32_t IoConnectInterrupt(struct kinterrupt **, void *, void *, kspin_lock *,
 	    uint32_t, uint8_t, uint8_t, uint8_t, uint8_t, uint32_t, uint8_t);
 int32_t	IoAllocateDriverObjectExtension(struct driver_object *, void *,
 	    uint32_t, void **);
-int32_t	IoCreateDevice(struct driver_object *, uint32_t, unicode_string *,
-	    enum device_type, uint32_t, uint8_t, struct device_object **);
+int32_t	IoCreateDevice(struct driver_object *, uint32_t,
+	    struct unicode_string *, enum device_type, uint32_t, uint8_t,
+	    struct device_object **);
 void	IoDeleteDevice(struct device_object *);
 int32_t	IofCallDriver(struct device_object *, irp *);
 void	IofCompleteRequest(irp *, uint8_t);

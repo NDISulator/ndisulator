@@ -690,7 +690,7 @@ ndis_set_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
 	    sc, oid, buf, buflen, written, needed));
 }
 
-typedef void (*ndis_send_done_func) (ndis_handle, struct ndis_packet *, int32_t);
+typedef void (*ndis_send_done_func) (void *, struct ndis_packet *, int32_t);
 
 void
 ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
@@ -716,10 +716,10 @@ ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
 		 * it and release it asynchronously later. Skip to the
 		 * next one.
 		 */
-		if (p == NULL || p->oob.npo_status == NDIS_STATUS_PENDING)
+		if (p == NULL || p->oob.status == NDIS_STATUS_PENDING)
 			continue;
 		MSCALL3(sc->ndis_block->send_done_func,
-		    sc->ndis_block, p, p->oob.npo_status);
+		    sc->ndis_block, p, p->oob.status);
 	}
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
