@@ -275,7 +275,7 @@ static struct proc *ndisproc;
 static struct mtx ntoskrnl_dispatchlock;
 static struct mtx ntoskrnl_interlock;
 static kspin_lock ntoskrnl_cancellock;
-static int ntoskrnl_kth = 0;
+static uint8_t ntoskrnl_kth;
 static struct nt_objref_head ntoskrnl_reflist;
 static uma_zone_t mdl_zone;
 static uma_zone_t iw_zone;
@@ -3392,7 +3392,6 @@ PsTerminateSystemThread(int32_t status)
 {
 
 	TRACE(NDBG_THREAD, "status %d\n", status);
-	ntoskrnl_kth--;
 
 	kthread_exit();
 
