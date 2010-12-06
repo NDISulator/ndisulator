@@ -639,8 +639,8 @@ NdisCloseConfiguration(struct ndis_miniport_block *block)
 static void
 NdisAllocateSpinLock(struct ndis_spin_lock *lock)
 {
-	KeInitializeSpinLock(&lock->nsl_spinlock);
-	lock->nsl_kirql = 0;
+	KeInitializeSpinLock(&lock->spinlock);
+	lock->kirql = 0;
 }
 
 /*
@@ -654,8 +654,8 @@ NdisAllocateSpinLock(struct ndis_spin_lock *lock)
 static void
 NdisFreeSpinLock(struct ndis_spin_lock *lock)
 {/*
-	KeInitializeSpinLock(&lock->nsl_spinlock);
-	lock->nsl_kirql = 0; */
+	KeInitializeSpinLock(&lock->spinlock);
+	lock->kirql = 0; */
 }
 
 /*
@@ -664,7 +664,7 @@ NdisFreeSpinLock(struct ndis_spin_lock *lock)
 static void
 NdisAcquireSpinLock(struct ndis_spin_lock *lock)
 {
-	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
+	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
 }
 
 /*
@@ -673,7 +673,7 @@ NdisAcquireSpinLock(struct ndis_spin_lock *lock)
 static void
 NdisReleaseSpinLock(struct ndis_spin_lock *lock)
 {
-	KeReleaseSpinLock(&lock->nsl_spinlock, lock->nsl_kirql);
+	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 }
 
 /*
@@ -682,7 +682,7 @@ NdisReleaseSpinLock(struct ndis_spin_lock *lock)
 static void
 NdisDprAcquireSpinLock(struct ndis_spin_lock *lock)
 {
-	KeAcquireSpinLockAtDpcLevel(&lock->nsl_spinlock);
+	KeAcquireSpinLockAtDpcLevel(&lock->spinlock);
 }
 
 /*
@@ -691,7 +691,7 @@ NdisDprAcquireSpinLock(struct ndis_spin_lock *lock)
 static void
 NdisDprReleaseSpinLock(struct ndis_spin_lock *lock)
 {
-	KeReleaseSpinLockFromDpcLevel(&lock->nsl_spinlock);
+	KeReleaseSpinLockFromDpcLevel(&lock->spinlock);
 }
 
 static void
@@ -889,9 +889,9 @@ NdisInitializeTimer(struct ndis_timer *timer, ndis_timer_function func,
     void *ctx)
 {
 	TRACE(NDBG_TIMER, "timer %p func %p ctx %p\n", timer, func, ctx);
-	KeInitializeTimer(&timer->nt_ktimer);
-	KeInitializeDpc(&timer->nt_kdpc, func, ctx);
-	KeSetImportanceDpc(&timer->nt_kdpc, KDPC_IMPORTANCE_LOW);
+	KeInitializeTimer(&timer->ktimer);
+	KeInitializeDpc(&timer->kdpc, func, ctx);
+	KeSetImportanceDpc(&timer->kdpc, KDPC_IMPORTANCE_LOW);
 }
 
 static void
@@ -904,12 +904,11 @@ ndis_timercall(kdpc *dpc, struct ndis_miniport_timer *timer, void *sysarg1,
 	 * spinlock, we can use KeAcquireSpinLockAtDpcLevel()
 	 * rather than KeAcquireSpinLock().
 	 */
-	if (NDIS_SERIALIZED(timer->nmt_block))
-		KeAcquireSpinLockAtDpcLevel(&timer->nmt_block->lock);
-	MSCALL4(timer->nmt_timerfunc, dpc, timer->nmt_timerctx,
-	    sysarg1, sysarg2);
-	if (NDIS_SERIALIZED(timer->nmt_block))
-		KeReleaseSpinLockFromDpcLevel(&timer->nmt_block->lock);
+	if (NDIS_SERIALIZED(timer->block))
+		KeAcquireSpinLockAtDpcLevel(&timer->block->lock);
+	MSCALL4(timer->func, dpc, timer->ctx, sysarg1, sysarg2);
+	if (NDIS_SERIALIZED(timer->block))
+		KeReleaseSpinLockFromDpcLevel(&timer->block->lock);
 }
 
 static void
@@ -921,9 +920,9 @@ NdisMInitializeTimer(struct ndis_miniport_timer *timer,
 	KASSERT(block != NULL, ("no block"));
 
 	/* Save the driver's funcptr and context */
-	timer->nmt_timerfunc = func;
-	timer->nmt_timerctx = ctx;
-	timer->nmt_block = block;
+	timer->func = func;
+	timer->ctx = ctx;
+	timer->block = block;
 
 	/*
 	 * Set up the timer so it will call our intermediate DPC.
@@ -931,16 +930,16 @@ NdisMInitializeTimer(struct ndis_miniport_timer *timer,
 	 * ntoskrnl_run_dpc() expects to invoke a function with
 	 * Microsoft calling conventions.
 	 */
-	KeInitializeTimer(&timer->nmt_ktimer);
-	KeInitializeDpc(&timer->nmt_kdpc, ndis_timercall_wrap, timer);
-	timer->nmt_ktimer.k_dpc = &timer->nmt_kdpc;
+	KeInitializeTimer(&timer->ktimer);
+	KeInitializeDpc(&timer->kdpc, ndis_timercall_wrap, timer);
+	timer->ktimer.k_dpc = &timer->kdpc;
 }
 
 static void
 NdisCancelTimer(struct ndis_timer *timer, uint8_t *cancelled)
 {
 	KASSERT(timer != NULL, ("no timer"));
-	*cancelled = KeCancelTimer(&timer->nt_ktimer);
+	*cancelled = KeCancelTimer(&timer->ktimer);
 	TRACE(NDBG_TIMER, "timer %p cancelled %u\n", timer, *cancelled);
 }
 
@@ -949,8 +948,8 @@ NdisSetTimer(struct ndis_timer *timer, uint32_t msecs)
 {
 	TRACE(NDBG_TIMER, "timer %p msecs %u\n", timer, msecs);
 	KASSERT(timer != NULL, ("no timer"));
-	KeSetTimer(&timer->nt_ktimer,
-	    ((int64_t)msecs * -10000), &timer->nt_kdpc);
+	KeSetTimer(&timer->ktimer,
+	    ((int64_t)msecs * -10000), &timer->kdpc);
 }
 
 static void
@@ -958,15 +957,15 @@ NdisMSetPeriodicTimer(struct ndis_miniport_timer *timer, uint32_t msecs)
 {
 	TRACE(NDBG_TIMER, "timer %p msecs %u\n", timer, msecs);
 	KASSERT(timer != NULL, ("no timer"));
-	KeSetTimerEx(&timer->nmt_ktimer,
-	    ((int64_t)msecs * -10000), msecs, &timer->nmt_kdpc);
+	KeSetTimerEx(&timer->ktimer,
+	    ((int64_t)msecs * -10000), msecs, &timer->kdpc);
 }
 
 static void
 NdisMCancelTimer(struct ndis_miniport_timer *timer, uint8_t *cancelled)
 {
 	KASSERT(timer != NULL, ("no timer"));
-	*cancelled = KeCancelTimer(&timer->nmt_ktimer);
+	*cancelled = KeCancelTimer(&timer->ktimer);
 	TRACE(NDBG_TIMER, "timer %p cancelled %u\n", timer, *cancelled);
 }
 
@@ -1664,21 +1663,21 @@ NdisInitializeEvent(struct ndis_event *event)
 	 * NDIS events are always notification events,
 	 * and should be initialized to the not signaled state.
 	 */
-	KeInitializeEvent(&event->ne_event, EVENT_TYPE_NOTIFY, FALSE);
+	KeInitializeEvent(&event->kevent, EVENT_TYPE_NOTIFY, FALSE);
 }
 
 static void
 NdisSetEvent(struct ndis_event *event)
 {
 	TRACE(NDBG_EVENT, "event %p\n", event);
-	KeSetEvent(&event->ne_event, IO_NO_INCREMENT, FALSE);
+	KeSetEvent(&event->kevent, IO_NO_INCREMENT, FALSE);
 }
 
 static void
 NdisResetEvent(struct ndis_event *event)
 {
 	TRACE(NDBG_EVENT, "event %p\n", event);
-	KeResetEvent(&event->ne_event);
+	KeResetEvent(&event->kevent);
 }
 
 static uint8_t
@@ -1954,13 +1953,13 @@ NdisInterlockedInsertHeadList(struct list_entry *head, struct list_entry *entry,
 {
 	struct list_entry *flink;
 
-	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
+	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
 	flink = head->nle_flink;
 	entry->nle_flink = flink;
 	entry->nle_blink = head;
 	flink->nle_blink = entry;
 	head->nle_flink = entry;
-	KeReleaseSpinLock(&lock->nsl_spinlock, lock->nsl_kirql);
+	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 
 	return (flink);
 }
@@ -1972,12 +1971,12 @@ NdisInterlockedRemoveHeadList(struct list_entry *head,
 	struct list_entry *flink;
 	struct list_entry *entry;
 
-	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
+	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
 	entry = head->nle_flink;
 	flink = entry->nle_flink;
 	head->nle_flink = flink;
 	flink->nle_blink = head;
-	KeReleaseSpinLock(&lock->nsl_spinlock, lock->nsl_kirql);
+	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 
 	return (entry);
 }
@@ -1988,13 +1987,13 @@ NdisInterlockedInsertTailList(struct list_entry *head, struct list_entry *entry,
 {
 	struct list_entry *blink;
 
-	KeAcquireSpinLock(&lock->nsl_spinlock, &lock->nsl_kirql);
+	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
 	blink = head->nle_blink;
 	entry->nle_flink = head;
 	entry->nle_blink = blink;
 	blink->nle_flink = entry;
 	head->nle_blink = entry;
-	KeReleaseSpinLock(&lock->nsl_spinlock, lock->nsl_kirql);
+	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 
 	return (blink);
 }

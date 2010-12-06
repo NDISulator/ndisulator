@@ -1564,59 +1564,29 @@ struct ndis_bind_paths {
 	struct unicode_string	paths[1];
 };
 
-#define	dispatch_header nt_dispatch_header
-
-struct ndis_ktimer {
-	struct dispatch_header	nk_header;
-	uint64_t		nk_duetime;
-	struct list_entry	nk_timerlistentry;
-	void			*nk_dpc;
-	uint32_t		nk_period;
-};
-
-struct ndis_kevent {
-	struct dispatch_header	nk_header;
-};
-
 struct ndis_event {
-	struct nt_kevent	ne_event;
-};
-
-/* Kernel defered procedure call (i.e. timer callback) */
-struct ndis_kdpc;
-typedef void (*ndis_kdpc_func)(struct ndis_kdpc *, void *, void *, void *);
-
-struct ndis_kdpc {
-	uint16_t		nk_type;
-	uint8_t			nk_num;
-	uint8_t			nk_importance;
-	struct list_entry	nk_dpclistentry;
-	ndis_kdpc_func		nk_deferedfunc;
-	void			*nk_deferredctx;
-	void			*nk_sysarg1;
-	void			*nk_sysarg2;
-	uint32_t		*nk_lock;
+	struct nt_kevent	kevent;
 };
 
 struct ndis_timer {
-	struct ktimer	nt_ktimer;
-	struct kdpc	nt_kdpc;
+	struct ktimer	ktimer;
+	struct kdpc	kdpc;
 };
 
 typedef void (*ndis_timer_function)(void *, void *, void *, void *);
 
 struct ndis_miniport_timer {
-	struct ktimer			nmt_ktimer;
-	struct kdpc			nmt_kdpc;
-	ndis_timer_function		nmt_timerfunc;
-	void				*nmt_timerctx;
-	struct ndis_miniport_block	*nmt_block;
-	struct ndis_miniport_timer	*nmt_nexttimer;
+	struct ktimer			ktimer;
+	struct kdpc			kdpc;
+	ndis_timer_function		func;
+	void				*ctx;
+	struct ndis_miniport_block	*block;
+	struct ndis_miniport_timer	*nexttimer;
 };
 
 struct ndis_spin_lock {
-	ndis_kspin_lock		nsl_spinlock;
-	ndis_kirql		nsl_kirql;
+	ndis_kspin_lock		spinlock;
+	ndis_kirql		kirql;
 };
 
 struct ndis_rw_lock {
@@ -1666,7 +1636,7 @@ struct ndis_miniport_interrupt {
 	void				*rsvd;
 	void				*isr_func;
 	void				*dpc_func;
-	kdpc				interrupt_dpc;
+	struct kdpc			interrupt_dpc;
 	struct ndis_miniport_block	*block;
 	uint8_t				dpc_count;
 	uint8_t				filler1;
