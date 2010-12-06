@@ -367,7 +367,7 @@ ntoskrnl_libinit(void)
 	iw_zone = uma_zcreate("Windows WorkItem", sizeof(io_workitem),
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
 
-#ifdef __amd64__
+#ifdef notdef
 	callout_init(&update_kuser, CALLOUT_MPSAFE);
 	callout_reset(&update_kuser, hz / 40, ntoskrnl_update_kuser, 0);
 #endif
@@ -390,7 +390,7 @@ ntoskrnl_libfini(void)
 
 	mtx_destroy(&ntoskrnl_dispatchlock);
 	mtx_destroy(&ntoskrnl_interlock);
-#ifdef __amd64__
+#ifdef notdef
 	callout_drain(&update_kuser);
 #endif
 }
