@@ -71,10 +71,6 @@ struct ndis_miniport_block;
 struct ndis_mdriver_block;
 struct ndis_softc;
 
-/* Base types */
-typedef register_t ndis_kspin_lock;
-typedef uint8_t ndis_kirql;
-
 /*
  * NDIS status codes (there are lots of them). The ones that
  * don't seem to fit the pattern are actually mapped to generic
@@ -1585,13 +1581,13 @@ struct ndis_miniport_timer {
 };
 
 struct ndis_spin_lock {
-	ndis_kspin_lock		spinlock;
-	ndis_kirql		kirql;
+	unsigned long		spinlock;
+	uint8_t			kirql;
 };
 
 struct ndis_rw_lock {
 	union {
-		kspin_lock	spinlock;
+		unsigned long	spinlock;
 		void		*ctx;
 	} u;
 	uint8_t		reserved[16];
@@ -1599,7 +1595,7 @@ struct ndis_rw_lock {
 
 struct ndis_lock_state {
 	uint16_t	lockstate;
-	ndis_kirql	oldirql;
+	uint8_t		oldirql;
 };
 
 struct ndis_request {
@@ -1632,7 +1628,7 @@ struct ndis_request {
 
 struct ndis_miniport_interrupt {
 	struct kinterrupt		*interrupt_object;
-	ndis_kspin_lock			dpc_count_lock;
+	unsigned long			dpc_count_lock;
 	void				*rsvd;
 	void				*isr_func;
 	void				*dpc_func;
@@ -1812,7 +1808,7 @@ struct ndis_packet {
 struct ndis_packet_pool {
 	slist_header	head;
 	nt_kevent	event;
-	kspin_lock	lock;
+	unsigned long	lock;
 	uint32_t	cnt;
 	uint32_t	len;
 	void		*pktmem;
@@ -1911,7 +1907,7 @@ struct ndis_miniport_driver_characteristics {
 };
 
 struct ndis_reference {
-	ndis_kspin_lock	spinlock;
+	unsigned long	spinlock;
 	uint16_t	refcnt;
 	uint8_t		closing;
 };
@@ -1972,7 +1968,7 @@ struct ndis_miniport_block {
 	uint8_t				lock_acquired;
 	uint8_t				pmode_opens;
 	uint8_t				assigned_processor;
-	ndis_kspin_lock			lock;
+	unsigned long			lock;
 	struct ndis_request		*media_request;
 	struct ndis_miniport_interrupt	*interrupt;
 	uint32_t			flags;
@@ -2058,7 +2054,7 @@ struct ndis_miniport_block {
 	io_workitem			*returnitem;
 	struct ndis_packet_pool		*rxpool;
 	struct list_entry		returnlist;
-	kspin_lock			returnlock;
+	unsigned long			returnlock;
 	TAILQ_ENTRY(ndis_miniport_block)	link;
 };
 TAILQ_HEAD(nd_head, ndis_miniport_block);

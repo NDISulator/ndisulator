@@ -186,7 +186,7 @@ READ_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *buffer, uint32_t count)
 }
 
 uint8_t
-KfAcquireSpinLock(kspin_lock *lock)
+KfAcquireSpinLock(unsigned long *lock)
 {
 	uint8_t oldirql;
 
@@ -198,7 +198,7 @@ KfAcquireSpinLock(kspin_lock *lock)
 }
 
 void
-KfReleaseSpinLock(kspin_lock *lock, uint8_t newirql)
+KfReleaseSpinLock(unsigned long *lock, uint8_t newirql)
 {
 	TRACE(NDBG_HAL, "lock %p newirql %u\n", lock, newirql);
 	KeReleaseSpinLockFromDpcLevel(lock);

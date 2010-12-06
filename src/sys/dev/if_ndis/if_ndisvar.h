@@ -100,7 +100,7 @@ struct ndisusb_ep {
 	struct usb_xfer		*ne_xfer[1];
 	struct list_entry	ne_active;
 	struct list_entry	ne_pending;
-	kspin_lock		ne_lock;
+	unsigned long		ne_lock;
 	uint8_t			ne_dirin;
 };
 
@@ -185,7 +185,7 @@ struct ndis_softc {
 	uint32_t			ndis_evtpidx;
 	uint32_t			ndis_evtcidx;
 	struct ifqueue			ndis_rxqueue;
-	kspin_lock			ndis_rxlock;
+	unsigned long			ndis_rxlock;
 
 	int			(*ndis_newstate)(struct ieee80211com *,
 				    enum ieee80211_state, int);
@@ -202,10 +202,10 @@ struct ndis_softc {
 	struct ndisusb_ep		ndisusb_ep[NDISUSB_ENDPT_MAX];
 	io_workitem			*ndisusb_xferdoneitem;
 	struct list_entry		ndisusb_xferdonelist;
-	kspin_lock			ndisusb_xferdonelock;
+	unsigned long			ndisusb_xferdonelock;
 	io_workitem			*ndisusb_taskitem;
 	struct list_entry		ndisusb_tasklist;
-	kspin_lock			ndisusb_tasklock;
+	unsigned long			ndisusb_tasklock;
 	int				ndisusb_status;
 #define	NDISUSB_STATUS_DETACH	0x1
 #define	NDISUSB_STATUS_SETUP_EP	0x2

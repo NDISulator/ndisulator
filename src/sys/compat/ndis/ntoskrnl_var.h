@@ -131,29 +131,6 @@ struct mdl {
 #define	WDM_MINOR_WINXP		0x20
 #define	WDM_MINOR_WIN2003	0x30
 
-/*-
- * The ndis_kspin_lock type is called KSPIN_LOCK in MS-Windows.
- * According to the Windows DDK header files, KSPIN_LOCK is defined like this:
- *	typedef ULONG_PTR KSPIN_LOCK;
- *
- * From basetsd.h (SDK, Feb. 2003):
- *	typedef [public] unsigned __int3264 ULONG_PTR, *PULONG_PTR;
- *	typedef unsigned __int64 ULONG_PTR, *PULONG_PTR;
- *	typedef _W64 unsigned long ULONG_PTR, *PULONG_PTR;
- *
- * The keyword __int3264 specifies an integral type that has the following
- * properties:
- *	+ It is 32-bit on 32-bit platforms
- *	+ It is 64-bit on 64-bit platforms
- *	+ It is 32-bit on the wire for backward compatibility.
- *	  It gets truncated on the sending side and extended appropriately
- *	  (signed or unsigned) on the receiving side.
- *
- * Thus register_t seems the proper mapping onto FreeBSD for spin locks.
- */
-
-typedef register_t kspin_lock;
-
 struct slist_entry {
 	struct slist_entry *sl_next;
 };
@@ -413,7 +390,7 @@ struct general_lookaside {
 struct npaged_lookaside_list {
 	struct general_lookaside	nll_l;
 #ifdef __i386__
-	kspin_lock		nll_obsoletelock;
+	unsigned long		nll_obsoletelock;
 #endif
 };
 
@@ -433,7 +410,7 @@ struct kdevice_queue {
 	uint16_t		kq_type;
 	uint16_t		kq_size;
 	struct list_entry	kq_devlisthead;
-	kspin_lock		kq_lock;
+	unsigned long		kq_lock;
 	uint8_t			kq_busy;
 };
 typedef struct kdevice_queue kdevice_queue;
@@ -514,8 +491,8 @@ struct kinterrupt {
 	int			ki_rid;
 	void			*ki_cookie;
 	struct resource 	*ki_irq;
-	kspin_lock		ki_lock_priv;
-	kspin_lock		*ki_lock;
+	unsigned long		ki_lock_priv;
+	unsigned long		*ki_lock;
 	void			*ki_svcfunc;
 	void			*ki_svcctx;
 };
@@ -1287,14 +1264,14 @@ int32_t	KeReadStateEvent(nt_kevent *);
 int32_t	KeSetEvent(nt_kevent *, int32_t, uint8_t);
 int32_t	KeResetEvent(nt_kevent *);
 #ifdef __i386__
-void	KefAcquireSpinLockAtDpcLevel(kspin_lock *);
-void	KefReleaseSpinLockFromDpcLevel(kspin_lock *);
-uint8_t	KeAcquireSpinLockRaiseToDpc(kspin_lock *);
+void	KefAcquireSpinLockAtDpcLevel(unsigned long *);
+void	KefReleaseSpinLockFromDpcLevel(unsigned long *);
+uint8_t	KeAcquireSpinLockRaiseToDpc(unsigned long *);
 #else
-void	KeAcquireSpinLockAtDpcLevel(kspin_lock *);
-void	KeReleaseSpinLockFromDpcLevel(kspin_lock *);
+void	KeAcquireSpinLockAtDpcLevel(unsigned long *);
+void	KeReleaseSpinLockFromDpcLevel(unsigned long *);
 #endif
-void	KeInitializeSpinLock(kspin_lock *);
+void	KeInitializeSpinLock(unsigned long *);
 uint8_t	KeAcquireInterruptSpinLock(struct kinterrupt *);
 void	KeReleaseInterruptSpinLock(struct kinterrupt *, uint8_t);
 uint8_t	KeSynchronizeExecution(struct kinterrupt *, void *, void *);
@@ -1306,8 +1283,9 @@ void	MmUnmapIoSpace(void *, size_t);
 void	MmBuildMdlForNonPagedPool(struct mdl *);
 void	IoDisconnectInterrupt(struct kinterrupt *);
 void	*IoGetDriverObjectExtension(struct driver_object *, void *);
-int32_t IoConnectInterrupt(struct kinterrupt **, void *, void *, kspin_lock *,
-	    uint32_t, uint8_t, uint8_t, uint8_t, uint8_t, uint32_t, uint8_t);
+int32_t IoConnectInterrupt(struct kinterrupt **, void *, void *,
+	    unsigned long *, uint32_t, uint8_t, uint8_t, uint8_t, uint8_t,
+	    uint32_t, uint8_t);
 int32_t	IoAllocateDriverObjectExtension(struct driver_object *, void *,
 	    uint32_t, void **);
 int32_t	IoCreateDevice(struct driver_object *, uint32_t,

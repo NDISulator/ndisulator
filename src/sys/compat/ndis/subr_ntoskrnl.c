@@ -81,7 +81,7 @@ struct kdpc_queue {
 	int			kq_cpu;
 	int			kq_exit;
 	int			kq_running;
-	kspin_lock		kq_lock;
+	unsigned long		kq_lock;
 	nt_kevent		kq_proc;
 	nt_kevent		kq_done;
 };
@@ -92,7 +92,7 @@ struct wb_ext {
 };
 
 static struct list_entry ntoskrnl_intlist;
-static kspin_lock ntoskrnl_intlock;
+static unsigned long ntoskrnl_intlock;
 
 #ifdef __amd64__
 struct kuser_shared_data kuser_data;
@@ -165,8 +165,9 @@ static void ExInitializeNPagedLookasideList(struct npaged_lookaside_list *,
     uint16_t);
 static void ExDeleteNPagedLookasideList(struct npaged_lookaside_list *);
 static struct slist_entry *ExInterlockedPushEntrySList(slist_header *,
-    struct slist_entry *, kspin_lock *);
-static struct slist_entry *ExInterlockedPopEntrySList(slist_header *, kspin_lock *);
+    struct slist_entry *, unsigned long *);
+static struct slist_entry *ExInterlockedPopEntrySList(slist_header *,
+    unsigned long *);
 static void InitializeSListHead(slist_header *);
 static uint32_t InterlockedIncrement(volatile uint32_t *);
 static uint32_t InterlockedDecrement(volatile uint32_t *);
@@ -278,7 +279,7 @@ static funcptr ExAllocatePoolWithTag_wrap;
 static struct proc *ndisproc;
 static struct mtx ntoskrnl_dispatchlock;
 static struct mtx ntoskrnl_interlock;
-static kspin_lock ntoskrnl_cancellock;
+static unsigned long ntoskrnl_cancellock;
 static uint8_t ntoskrnl_kth;
 static struct nt_objref_head ntoskrnl_reflist;
 static uma_zone_t mdl_zone;
@@ -1168,7 +1169,7 @@ KeSynchronizeExecution(struct kinterrupt *iobj, void *syncfunc, void *syncctx)
  */
 int32_t
 IoConnectInterrupt(struct kinterrupt **iobj, void *svcfunc, void *svcctx,
-    kspin_lock *lock, uint32_t vector, uint8_t irql, uint8_t syncirql,
+    unsigned long *lock, uint32_t vector, uint8_t irql, uint8_t syncirql,
     uint8_t imode, uint8_t shared, uint32_t affinity, uint8_t savefloat)
 {
 	uint8_t curirql;
@@ -1997,13 +1998,13 @@ InitializeSListHead(slist_header *head)
 
 static struct slist_entry *
 ExInterlockedPushEntrySList(slist_header *head, struct slist_entry *entry,
-    kspin_lock *lock)
+    unsigned long *lock)
 {
 	return (InterlockedPushEntrySList(head, entry));
 }
 
 static struct slist_entry *
-ExInterlockedPopEntrySList(slist_header *head, kspin_lock *lock)
+ExInterlockedPopEntrySList(slist_header *head, unsigned long *lock)
 {
 	return (InterlockedPopEntrySList(head));
 }
@@ -2021,27 +2022,27 @@ ExQueryDepthSList(slist_header *head)
 }
 
 void
-KeInitializeSpinLock(kspin_lock *lock)
+KeInitializeSpinLock(unsigned long *lock)
 {
 	*lock = 0;
 }
 
 #ifdef __i386__
 void
-KefAcquireSpinLockAtDpcLevel(kspin_lock *lock)
+KefAcquireSpinLockAtDpcLevel(unsigned long *lock)
 {
 	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0)
 		/* sit and spin */;
 }
 
 void
-KefReleaseSpinLockFromDpcLevel(kspin_lock *lock)
+KefReleaseSpinLockFromDpcLevel(unsigned long *lock)
 {
 	atomic_store_rel_int((volatile unsigned int *)lock, 0);
 }
 
 uint8_t
-KeAcquireSpinLockRaiseToDpc(kspin_lock *lock)
+KeAcquireSpinLockRaiseToDpc(unsigned long *lock)
 {
 	uint8_t oldirql;
 
@@ -2052,14 +2053,14 @@ KeAcquireSpinLockRaiseToDpc(kspin_lock *lock)
 }
 #else
 void
-KeAcquireSpinLockAtDpcLevel(kspin_lock *lock)
+KeAcquireSpinLockAtDpcLevel(unsigned long *lock)
 {
 	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0)
 		/* sit and spin */;
 }
 
 void
-KeReleaseSpinLockFromDpcLevel(kspin_lock *lock)
+KeReleaseSpinLockFromDpcLevel(unsigned long *lock)
 {
 	atomic_store_rel_int((volatile unsigned int *)lock, 0);
 }
