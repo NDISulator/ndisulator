@@ -291,15 +291,6 @@ static void dummy(void);
 
 MALLOC_DEFINE(M_NDIS_SUBR, "ndis_subr", "ndis_subr buffers");
 
-/*
- * Some really old drivers do not properly check the return value
- * from NdisAllocatePacket() and NdisAllocateBuffer() and will
- * sometimes allocate few more buffers/packets that they originally
- * requested when they created the pool. To prevent this from being
- * a problem, we allocate a few extra buffers/packets beyond what
- * the driver asks for. This #define controls how many.
- */
-#define	NDIS_POOL_EXTRA	16
 void
 ndis_libinit(void)
 {
@@ -1416,7 +1407,7 @@ NdisAllocatePacketPool(int32_t *status, struct ndis_packet_pool **pool,
 		return;
 	}
 
-	p->cnt = descnum + NDIS_POOL_EXTRA;
+	p->cnt = descnum;
 	p->len = sizeof(struct ndis_packet) + protrsvdlen;
 
 	packets = malloc(p->cnt * p->len, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
