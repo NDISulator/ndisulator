@@ -141,7 +141,7 @@ struct image_optional_header {
 	uint32_t	size_of_uninitialized_data;
 	uint32_t	address_of_entry_point;
 	uint32_t	base_of_code;
-#ifndef __amd64__
+#ifdef __i386__
 	uint32_t	base_of_data;
 #endif
 	/* NT-specific fields */
