@@ -54,6 +54,7 @@ enum {
 	NDBG_MEM	= 0x00001000,
 	NDBG_HAL	= 0x00002000,
 	NDBG_RTL	= 0x00004000,
+	NDBG_PACKET	= 0x00008000,
 	NDBG_ANY	= 0xffffffff
 };
 extern int ndis_debug;
@@ -1840,9 +1841,6 @@ struct ndis_packet {
 
 struct ndis_packet_pool {
 	slist_header	head;
-#ifdef NDIS_DEBUG_PACKETS
-	uint32_t	dead;
-#endif
 	nt_kevent	event;
 	kspin_lock	lock;
 	uint32_t	cnt;

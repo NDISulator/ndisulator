@@ -1407,7 +1407,8 @@ NdisAllocatePacketPool(int32_t *status, struct ndis_packet_pool **pool,
 	struct ndis_packet *packets;
 	int i;
 
-	TRACE(NDBG_MEM, "descnum %u protrsvdlen %u\n", descnum, protrsvdlen);
+	TRACE(NDBG_PACKET, "pool %p descnum %u protrsvdlen %u\n",
+	    pool, descnum, protrsvdlen);
 	p = malloc(sizeof(struct ndis_packet_pool),
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (p == NULL) {
@@ -1431,24 +1432,18 @@ NdisAllocatePacketPool(int32_t *status, struct ndis_packet_pool **pool,
 		InterlockedPushEntrySList(&p->head,
 		    (struct slist_entry *)&packets[i]);
 
-#ifdef NDIS_DEBUG_PACKETS
-	p->dead = 0;
-	KeInitializeSpinLock(&p->lock);
-	KeInitializeEvent(&p->event, EVENT_TYPE_NOTIFY, TRUE);
-#endif
-
 	*pool = p;
 	*status = NDIS_STATUS_SUCCESS;
 }
 
 void
 NdisAllocatePacketPoolEx(int32_t *status, struct ndis_packet_pool **pool,
-    uint32_t descnum, uint32_t oflowdescnum, uint32_t protrsvdlen)
+    uint32_t descnum, uint32_t overflow, uint32_t protrsvdlen)
 {
-	TRACE(NDBG_MEM, "descnum %u oflowdescnum %u protrsvdlen %u\n",
-	    descnum, protrsvdlen, oflowdescnum);
+	TRACE(NDBG_PACKET, "pool %p descnum %u overflow %u protrsvdlen %u\n",
+	    pool, descnum, protrsvdlen, overflow);
 	return (NdisAllocatePacketPool(status, pool,
-	    descnum + oflowdescnum, protrsvdlen));
+	    descnum + overflow, protrsvdlen));
 }
 
 static uint32_t
@@ -1460,21 +1455,7 @@ NdisPacketPoolUsage(struct ndis_packet_pool *pool)
 void
 NdisFreePacketPool(struct ndis_packet_pool *pool)
 {
-#ifdef NDIS_DEBUG_PACKETS
-	int usage;
-	uint8_t irql;
-
-	KeAcquireSpinLock(&pool->lock, &irql);
-	usage = NdisPacketPoolUsage(pool);
-	if (usage) {
-		pool->dead = 1;
-		KeResetEvent(&pool->event);
-		KeReleaseSpinLock(&pool->lock, irql);
-		KeWaitForSingleObject(&pool->event, 0, 0, FALSE, NULL);
-	} else
-		KeReleaseSpinLock(&pool->lock, irql);
-#endif
-	TRACE(NDBG_MEM, "pool %p\n", pool);
+	TRACE(NDBG_PACKET, "pool %p\n", pool);
 	free(pool->pktmem, M_NDIS_SUBR);
 	free(pool, M_NDIS_SUBR);
 }
@@ -1484,23 +1465,9 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
     struct ndis_packet_pool *pool)
 {
 	struct ndis_packet *pkt;
-#ifdef NDIS_DEBUG_PACKETS
-	uint8_t irql;
-#endif
-#ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&pool->lock, &irql);
-	if (pool->dead) {
-		KeReleaseSpinLock(&pool->lock, irql);
-		printf("NDIS: tried to allocate packet from dead pool %p\n",
-		    pool);
-		*status = NDIS_STATUS_RESOURCES;
-		return;
-	}
-#endif
+
+	TRACE(NDBG_PACKET, "packet %p pool %p\n", packet, pool);
 	pkt = (struct ndis_packet *)InterlockedPopEntrySList(&pool->head);
-#ifdef NDIS_DEBUG_PACKETS
-	KeReleaseSpinLock(&pool->lock, irql);
-#endif
 	if (pkt == NULL) {
 		*status = NDIS_STATUS_RESOURCES;
 		return;
@@ -1531,24 +1498,10 @@ void
 NdisFreePacket(struct ndis_packet *packet)
 {
 	struct ndis_packet_pool *p;
-#ifdef NDIS_DEBUG_PACKETS
-	uint8_t irql;
-#endif
+
+	TRACE(NDBG_PACKET, "packet %p\n", packet);
 	p = (struct ndis_packet_pool *)packet->private.pool;
-
-#ifdef NDIS_DEBUG_PACKETS
-	KeAcquireSpinLock(&p->lock, &irql);
-#endif
 	InterlockedPushEntrySList(&p->head, (struct slist_entry *)packet);
-
-#ifdef NDIS_DEBUG_PACKETS
-	if (p->dead) {
-		if (ExQueryDepthSList(&p->head) == p->cnt)
-			KeSetEvent(&p->event, IO_NO_INCREMENT, FALSE);
-	}
-	KeReleaseSpinLock(&p->lock, irql);
-#endif
-	TRACE(NDBG_MEM, "packet %p\n", packet);
 }
 
 static void
@@ -2513,6 +2466,8 @@ NdisCopyFromPacketToPacket(struct ndis_packet *dpkt, uint32_t doff,
 	char *sptr, *dptr;
 	int resid, copied, len, scnt, dcnt;
 
+	TRACE(NDBG_PACKET, "dpkt %p doff %u reqlen %d spkt %p soff %u\n",
+	    dpkt, doff, reqlen, spkt, soff);
 	*cpylen = 0;
 
 	src = spkt->private.head;
@@ -2611,15 +2566,14 @@ NdisMRegisterDevice(struct driver_object *drv_obj,
 	struct device_object *dobj;
 	uint32_t status;
 
+	TRACE(NDBG_INIT, "drv_obj %p devname %p symname %p dev_obj %p "
+	    "devhandle %p\n", drv_obj, devname, symname, dev_obj, devhandle);
 	status = IoCreateDevice(drv_obj, 0, devname,
 	    FILE_DEVICE_NETWORK, 0, FALSE, &dobj);
 	if (status == NDIS_STATUS_SUCCESS) {
 		*dev_obj = dobj;
 		*devhandle = dobj;
 	}
-
-	TRACE(NDBG_INIT, "drv_obj %p dev_obj %p status %08X\n",
-	    drv_obj, *dev_obj, status);
 	return (status);
 }
 
