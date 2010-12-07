@@ -1267,7 +1267,7 @@ ntoskrnl_is_signalled(struct nt_dispatch_header *obj, struct thread *td)
 {
 	struct kmutant *km;
 
-	if (obj->dh_type == DISP_TYPE_MUTANT) {
+	if (obj->dh_type == MUTANT_OBJECT) {
 		km = (struct kmutant *)obj;
 		if ((obj->dh_sigstate <= 0 && km->km_ownerthread == td) ||
 		    obj->dh_sigstate == 1)
@@ -1286,7 +1286,7 @@ ntoskrnl_satisfy_wait(struct nt_dispatch_header *obj, struct thread *td)
 	struct kmutant *km;
 
 	switch (obj->dh_type) {
-	case DISP_TYPE_MUTANT:
+	case MUTANT_OBJECT:
 		km = (struct kmutant *)obj;
 		obj->dh_sigstate--;
 		/*
@@ -1300,11 +1300,11 @@ ntoskrnl_satisfy_wait(struct nt_dispatch_header *obj, struct thread *td)
 		}
 		break;
 	/* Synchronization objects get reset to unsignalled. */
-	case DISP_TYPE_SYNCHRONIZATION_EVENT:
-	case DISP_TYPE_SYNCHRONIZATION_TIMER:
+	case SYNCHRONIZATION_EVENT_OBJECT:
+	case SYNCHRONIZATION_TIMER_OBJECT:
 		obj->dh_sigstate = 0;
 		break;
-	case DISP_TYPE_SEMAPHORE:
+	case SEMAPHORE_OBJECT:
 		obj->dh_sigstate--;
 		break;
 	default:
@@ -1346,7 +1346,7 @@ ntoskrnl_waittest(struct nt_dispatch_header *obj, uint32_t increment)
 	 *
 	 * The rules work like this:
 	 *
-	 * If a wait block is marked as WAITTYPE_ANY, then
+	 * If a wait block is marked as WAIT_ANY, then
 	 * we can satisfy the wait conditions on the current
 	 * object and wake the thread right away. Satisfying
 	 * the wait also has the effect of breaking us out
@@ -1369,7 +1369,7 @@ ntoskrnl_waittest(struct nt_dispatch_header *obj, uint32_t increment)
 		we = w->wb_ext;
 		td = we->we_td;
 		satisfied = FALSE;
-		if (w->wb_waittype == WAITTYPE_ANY) {
+		if (w->wb_waittype == WAIT_ANY) {
 			/*
 			 * Thread can be awakened if
 			 * any wait is satisfied.
@@ -1532,7 +1532,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 			 * recursively acquire a mutant. If we hit
 			 * the limit, something is very wrong.
 			 */
-			if (obj->dh_type == DISP_TYPE_MUTANT) {
+			if (obj->dh_type == MUTANT_OBJECT) {
 				mtx_unlock(&ntoskrnl_dispatchlock);
 				panic("mutant limit exceeded");
 			}
@@ -1542,7 +1542,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	bzero((char *)&w, sizeof(struct wait_block));
 	w.wb_object = obj;
 	w.wb_ext = &we;
-	w.wb_waittype = WAITTYPE_ANY;
+	w.wb_waittype = WAIT_ANY;
 	w.wb_next = &w;
 	w.wb_waitkey = 0;
 	w.wb_awakened = FALSE;
@@ -1594,7 +1594,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 
 	return (NDIS_STATUS_SUCCESS);
 /*
-	return (KeWaitForMultipleObjects(1, &obj, WAITTYPE_ALL, reason,
+	return (KeWaitForMultipleObjects(1, &obj, WAIT_ALL, reason,
 	    mode, alertable, duetime, &w));
 */
 }
@@ -1653,17 +1653,17 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 			 * is very wrong.
 			 */
 			if (obj[i]->dh_sigstate == INT32_MIN &&
-			    obj[i]->dh_type == DISP_TYPE_MUTANT) {
+			    obj[i]->dh_type == MUTANT_OBJECT) {
 				mtx_unlock(&ntoskrnl_dispatchlock);
 				panic("mutant limit exceeded");
 			}
 
 			/*
-			 * If this is a WAITTYPE_ANY wait, then
+			 * If this is a WAIT_ANY wait, then
 			 * satisfy the waited object and exit
 			 * right now.
 			 */
-			if (wtype == WAITTYPE_ANY) {
+			if (wtype == WAIT_ANY) {
 				ntoskrnl_satisfy_wait(obj[i], td);
 				status = NDIS_STATUS_WAIT_0 + i;
 				goto wait_done;
@@ -1677,10 +1677,10 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 	}
 
 	/*
-	 * If this is a WAITTYPE_ALL wait and all objects are
+	 * If this is a WAIT_ALL wait and all objects are
 	 * already signalled, satisfy the waits and exit now.
 	 */
-	if (wtype == WAITTYPE_ALL && wcnt == 0) {
+	if (wtype == WAIT_ALL && wcnt == 0) {
 		for (i = 0; i < cnt; i++)
 			ntoskrnl_satisfy_wait(obj[i], td);
 		status = NDIS_STATUS_SUCCESS;
@@ -1737,12 +1737,12 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 			    w->wb_awakened == TRUE) {
 				/* Sanity check the signal state value. */
 				if (cur->dh_sigstate == INT32_MIN &&
-				    cur->dh_type == DISP_TYPE_MUTANT) {
+				    cur->dh_type == MUTANT_OBJECT) {
 					mtx_unlock(&ntoskrnl_dispatchlock);
 					panic("mutant limit exceeded");
 				}
 				wcnt--;
-				if (wtype == WAITTYPE_ANY) {
+				if (wtype == WAIT_ANY) {
 					status = w->wb_waitkey &
 					    NDIS_STATUS_WAIT_0;
 					goto wait_done;
@@ -1753,7 +1753,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 
 		/*
 		 * If all objects have been signalled, or if this
-		 * is a WAITTYPE_ANY wait and we were woke up by
+		 * is a WAIT_ANY wait and we were woke up by
 		 * someone, we can bail.
 		 */
 		if (wcnt == 0) {
@@ -1762,7 +1762,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 		}
 
 		/*
-		 * If this is WAITTYPE_ALL wait, and there's still
+		 * If this is WAIT_ALL wait, and there's still
 		 * objects that haven't been signalled, deduct the
 		 * time that's elapsed so far from the timeout and
 		 * wait again (or continue waiting indefinitely if
@@ -3074,7 +3074,7 @@ KeInitializeMutex(struct kmutant *kmutex, uint32_t level)
 	kmutex->km_abandoned = FALSE;
 	kmutex->km_apcdisable = 1;
 	kmutex->km_header.dh_sigstate = 1;
-	kmutex->km_header.dh_type = DISP_TYPE_MUTANT;
+	kmutex->km_header.dh_type = MUTANT_OBJECT;
 	kmutex->km_header.dh_size = sizeof(struct kmutant) / sizeof(uint32_t);
 	kmutex->km_ownerthread = NULL;
 }
@@ -3111,14 +3111,11 @@ KeReadStateMutex(struct kmutant *kmutex)
 }
 
 void
-KeInitializeEvent(struct nt_kevent *kevent, uint32_t type, uint8_t state)
+KeInitializeEvent(struct nt_kevent *kevent, enum event_type type, uint8_t state)
 {
 	InitializeListHead((&kevent->k_header.dh_waitlisthead));
 	kevent->k_header.dh_sigstate = state;
-	if (type == EVENT_TYPE_NOTIFY)
-		kevent->k_header.dh_type = DISP_TYPE_NOTIFICATION_EVENT;
-	else
-		kevent->k_header.dh_type = DISP_TYPE_SYNCHRONIZATION_EVENT;
+	kevent->k_header.dh_type = NOTIFICATION_EVENT_OBJECT + type;
 	kevent->k_header.dh_size = sizeof(struct nt_kevent) / sizeof(uint32_t);
 }
 
@@ -3160,15 +3157,15 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		 * to automatically clear synchronization events anyway).
 		 *
 		 * If it's a notification event, or the the first
-		 * waiter is doing a WAITTYPE_ALL wait, go through
+		 * waiter is doing a WAIT_ALL wait, go through
 		 * the full wait satisfaction process.
 		 */
 		w = CONTAINING_RECORD(dh->dh_waitlisthead.nle_flink,
 		    struct wait_block, wb_waitlist);
 		we = w->wb_ext;
 		td = we->we_td;
-		if (kevent->k_header.dh_type == DISP_TYPE_NOTIFICATION_EVENT ||
-		    w->wb_waittype == WAITTYPE_ALL) {
+		if (kevent->k_header.dh_type == NOTIFICATION_EVENT_OBJECT ||
+		    w->wb_waittype == WAIT_ALL) {
 			if (prevstate == 0) {
 				dh->dh_sigstate = 1;
 				ntoskrnl_waittest(dh, increment);
@@ -3241,7 +3238,7 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 
 	InitializeListHead((&nr->no_dh.dh_waitlisthead));
 	nr->no_obj = handle;
-	nr->no_dh.dh_type = DISP_TYPE_THREAD;
+	nr->no_dh.dh_type = THREAD_OBJECT;
 	nr->no_dh.dh_sigstate = 0;
 	nr->no_dh.dh_size = (uint8_t)(sizeof(struct thread) / sizeof(uint32_t));
 	TAILQ_INSERT_TAIL(&ntoskrnl_reflist, nr, link);
@@ -3453,6 +3450,7 @@ ntoskrnl_timercall(void *arg)
 	struct ktimer *timer = arg;
 	struct kdpc *dpc;
 
+	timer->k_header.dh_sigstate = TRUE;
 	/*
 	 * If this is a periodic timer, re-arm it
 	 * so it will fire again. We do this before
@@ -3483,10 +3481,14 @@ KeInitializeTimer(struct ktimer *timer)
 }
 
 void
-KeInitializeTimerEx(struct ktimer *timer, uint32_t type)
+KeInitializeTimerEx(struct ktimer *timer, enum timer_type type)
 {
 	KASSERT(timer != NULL, ("no timer"));
 	InitializeListHead((&timer->k_header.dh_waitlisthead));
+	timer->k_header.dh_sigstate = FALSE;
+	timer->k_header.dh_inserted = FALSE;
+	timer->k_header.dh_type = NOTIFICATION_TIMER_OBJECT + type;
+	timer->k_header.dh_size = sizeof(struct ktimer) / sizeof(uint32_t);
 	timer->u.k_callout = ExAllocatePool(sizeof(struct callout));
 	callout_init(timer->u.k_callout, CALLOUT_MPSAFE);
 }
@@ -3747,9 +3749,10 @@ KeSetTimerEx(struct ktimer *timer, int64_t duetime, uint32_t period,
 
 	KASSERT(timer != NULL, ("no timer"));
 
+	timer->k_header.dh_sigstate = FALSE;
+	timer->k_header.dh_inserted = TRUE;
 	timer->k_duetime = duetime;
 	timer->k_period = period;
-	timer->k_header.dh_sigstate = FALSE;
 	timer->k_dpc = dpc;
 
 	if (duetime < 0) {
@@ -3782,6 +3785,8 @@ KeCancelTimer(struct ktimer *timer)
 	KASSERT(timer != NULL, ("no timer"));
 
 	timer->k_period = 0;
+	timer->k_header.dh_inserted = FALSE;
+	timer->k_header.dh_sigstate = FALSE;
 	return (callout_stop(timer->u.k_callout));
 }
 

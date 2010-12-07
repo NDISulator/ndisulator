@@ -226,16 +226,17 @@ struct nt_dispatch_header {
 	struct list_entry	dh_waitlisthead;
 };
 
-/* Dispatcher object types */
-#define	DISP_TYPE_NOTIFICATION_EVENT	0	/* KEVENT */
-#define	DISP_TYPE_SYNCHRONIZATION_EVENT	1	/* KEVENT */
-#define	DISP_TYPE_MUTANT		2	/* KMUTANT/KMUTEX */
-#define	DISP_TYPE_PROCESS		3	/* KPROCESS */
-#define	DISP_TYPE_QUEUE			4	/* KQUEUE */
-#define	DISP_TYPE_SEMAPHORE		5	/* KSEMAPHORE */
-#define	DISP_TYPE_THREAD		6	/* KTHREAD */
-#define	DISP_TYPE_NOTIFICATION_TIMER	8	/* KTIMER */
-#define	DISP_TYPE_SYNCHRONIZATION_TIMER	9	/* KTIMER */
+enum dispatch_header_type {
+	NOTIFICATION_EVENT_OBJECT,
+	SYNCHRONIZATION_EVENT_OBJECT,
+	MUTANT_OBJECT,
+	PROCESS_OBJECT,
+	QUEUE_OBJECT,
+	SEMAPHORE_OBJECT,
+	THREAD_OBJECT,
+	NOTIFICATION_TIMER_OBJECT,
+	SYNCHRONIZATION_TIMER_OBJECT
+};
 
 /* Windows dispatcher levels. */
 #define	PASSIVE_LEVEL	0
@@ -425,9 +426,6 @@ struct wait_block {
 #define	THREAD_WAIT_OBJECTS 3
 #define	MAX_WAIT_OBJECTS 64
 
-#define	WAITTYPE_ALL 0
-#define	WAITTYPE_ANY 1
-
 #define	WAITKEY_VALID 0x8000
 
 /* kthread priority  */
@@ -498,6 +496,21 @@ enum nt_product_type {
 	NT_PRODUCT_WIN_NT = 1,
 	NT_PRODUCT_LAN_MAN_NT,
 	NT_PRODUCT_SERVER
+};
+
+enum event_type {
+	NOTIFICATION_EVENT,
+	SYNCHRONIZATION_EVENT
+};
+
+enum timer_type {
+	NOTIFICATION_TIMER,
+	SYNCHRONIZATION_TIMER
+};
+
+enum wait_type {
+	WAIT_ALL,
+	WAIT_ANY
 };
 
 enum alt_arch_type {
