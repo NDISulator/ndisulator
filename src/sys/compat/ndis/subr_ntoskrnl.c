@@ -274,6 +274,7 @@ static struct thread * KeGetCurrentThread(void);
 static uint8_t KeReadStateTimer(struct ktimer *);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
+static int32_t KeQueryPriorityThread(struct thread *);
 static void dummy(void);
 
 static funcptr ntoskrnl_workitem_wrap;
@@ -3795,6 +3796,8 @@ KeDelayExecutionThread(uint8_t wait_mode, uint8_t alertable, int64_t *interval)
 	struct timeval tv;
 	uint64_t curtime;
 
+	TRACE(NDBG_THREAD, "wait_mode %u alertable %u interval %p\n",
+	    wait_mode, alertable, interval);
 	if (*interval < 0) {
 		tv.tv_sec = - (*interval) / 10000000;
 		tv.tv_usec = (- (*interval) / 10) -
@@ -3832,30 +3835,41 @@ KeGetCurrentThread(void)
 }
 
 static int32_t
-KeSetPriorityThread(struct thread *td, int32_t pri)
+KeSetPriorityThread(struct thread *thread, int32_t priority)
 {
 	int32_t old;
 
-	if (td == NULL)
-		return (LOW_REALTIME_PRIORITY);
-	if (td->td_priority <= PRI_MIN_KERN)
-		old = HIGH_PRIORITY;
-	else if (td->td_priority >= PRI_MAX_KERN)
-		old = LOW_PRIORITY;
-	else
-		old = LOW_REALTIME_PRIORITY;
+	TRACE(NDBG_THREAD, "thread %p priority %u\n", thread, priority);
+	old = KeQueryPriorityThread(thread);
 
-	thread_lock(td);
-	if (pri == HIGH_PRIORITY)
-		sched_prio(td, PRI_MIN_KERN);
-	if (pri == LOW_REALTIME_PRIORITY)
-		sched_prio(td, PRI_MIN_KERN +
+	thread_lock(thread);
+	if (priority == HIGH_PRIORITY)
+		sched_prio(thread, PRI_MIN_KERN);
+	if (priority == LOW_REALTIME_PRIORITY)
+		sched_prio(thread, PRI_MIN_KERN +
 		    (PRI_MAX_KERN - PRI_MIN_KERN) / 2);
-	if (pri == LOW_PRIORITY)
-		sched_prio(td, PRI_MAX_KERN);
-	thread_unlock(td);
+	if (priority == LOW_PRIORITY)
+		sched_prio(thread, PRI_MAX_KERN);
+	thread_unlock(thread);
 
 	return (old);
+}
+
+static int32_t
+KeQueryPriorityThread(struct thread *thread)
+{
+	int32_t priority;
+
+	TRACE(NDBG_THREAD, "thread %p\n", thread);
+	if (thread == NULL)
+		return (LOW_REALTIME_PRIORITY);
+	if (thread->td_priority <= PRI_MIN_KERN)
+		priority = HIGH_PRIORITY;
+	else if (thread->td_priority >= PRI_MAX_KERN)
+		priority = LOW_PRIORITY;
+	else
+		priority = LOW_REALTIME_PRIORITY;
+	return (priority);
 }
 
 static void
@@ -3994,6 +4008,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(KeInsertQueueDpc, 3),
 	IMPORT_SFUNC(KeQueryActiveProcessors, 0),
 	IMPORT_SFUNC(KeQueryInterruptTime, 0),
+	IMPORT_SFUNC(KeQueryPriorityThread, 1),
 	IMPORT_SFUNC(KeQuerySystemTime, 1),
 	IMPORT_SFUNC(KeQueryTickCount, 1),
 	IMPORT_SFUNC(KeQueryTimeIncrement, 0),
