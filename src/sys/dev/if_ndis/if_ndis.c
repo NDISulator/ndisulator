@@ -641,17 +641,6 @@ ndis_attach(device_t dev)
 	else
 		sc->ndis_block->rlist = NULL;
 
-	/* Install our RX and TX interrupt handlers. */
-	sc->ndis_block->ethrx_done_func = ndis_rxeof_done_wrap;
-	sc->ndis_block->ethrx_indicate_func = ndis_rxeof_eth_wrap;
-	sc->ndis_block->packet_indicate_func = ndis_rxeof_wrap;
-	sc->ndis_block->send_done_func = ndis_txeof_wrap;
-	sc->ndis_block->tdcond_func = ndis_rxeof_xfr_done_wrap;
-
-	/* Override the status handler so we can detect link changes. */
-	sc->ndis_block->status_func = ndis_linksts_wrap;
-	sc->ndis_block->status_done_func = ndis_linksts_done_wrap;
-
 	/* Set up work item handlers. */
 	sc->ndis_tickitem = IoAllocateWorkItem(sc->ndis_block->deviceobj);
 	sc->ndis_startitem = IoAllocateWorkItem(sc->ndis_block->deviceobj);
@@ -751,6 +740,17 @@ ndis_attach(device_t dev)
 	}
 	sc->ndis_ifp = ifp;
 	ifp->if_softc = sc;
+
+	/* Install our RX and TX interrupt handlers. */
+	sc->ndis_block->ethrx_done_func = ndis_rxeof_done_wrap;
+	sc->ndis_block->ethrx_indicate_func = ndis_rxeof_eth_wrap;
+	sc->ndis_block->packet_indicate_func = ndis_rxeof_wrap;
+	sc->ndis_block->send_done_func = ndis_txeof_wrap;
+	sc->ndis_block->tdcond_func = ndis_rxeof_xfr_done_wrap;
+
+	/* Override the status handler so we can detect link changes. */
+	sc->ndis_block->status_func = ndis_linksts_wrap;
+	sc->ndis_block->status_done_func = ndis_linksts_done_wrap;
 
 	ndis_probe_task_offload(sc);
 
