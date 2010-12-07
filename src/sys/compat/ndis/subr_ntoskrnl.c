@@ -3263,7 +3263,8 @@ ObfDereferenceObject(void *object)
 static int32_t
 ZwClose(void *handle)
 {
-	return (NDIS_STATUS_FAILURE);
+	TRACE(NDBG_ZW, "handle %p\n", handle);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static int32_t
