@@ -237,11 +237,6 @@ struct nt_dispatch_header {
 #define	DISP_TYPE_NOTIFICATION_TIMER	8	/* KTIMER */
 #define	DISP_TYPE_SYNCHRONIZATION_TIMER	9	/* KTIMER */
 
-#define	OTYPE_EVENT	0
-#define	OTYPE_MUTEX	1
-#define	OTYPE_THREAD	2
-#define	OTYPE_TIMER	3
-
 /* Windows dispatcher levels. */
 #define	PASSIVE_LEVEL	0
 #define	LOW_LEVEL	0
