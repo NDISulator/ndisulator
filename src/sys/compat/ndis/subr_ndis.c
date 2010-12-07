@@ -431,7 +431,6 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 {
 	struct ndis_configuration_parameter *p;
 	struct ndis_parmlist_entry *np;
-	struct unicode_string *us;
 	struct ansi_string as;
 
 	np = malloc(sizeof(struct ndis_parmlist_entry),
@@ -440,28 +439,24 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 		return (NDIS_STATUS_RESOURCES);
 	InsertHeadList((&block->parmlist), (&np->list));
 	*parm = p = &np->parm;
-	p->parameter_type = type;
+	p->type = type;
 
 	switch (type) {
 	case NDIS_PARAMETER_STRING:
-		us = &p->parameter_data.string_data;
 		RtlInitAnsiString(&as, (char *)oid->oid_arg1);
-		if (RtlAnsiStringToUnicodeString(us, &as, TRUE)) {
+		if (RtlAnsiStringToUnicodeString(&p->data.string, &as, TRUE)) {
 			free(np, M_NDIS_SUBR);
 			return (NDIS_STATUS_RESOURCES);
 		}
 		break;
 	case NDIS_PARAMETER_INTEGER:
-		p->parameter_data.integer_data =
-		   strtol((char *)oid->oid_arg1, NULL, 0);
+		p->data.integer = strtol((char *)oid->oid_arg1, NULL, 0);
 		break;
 	case NDIS_PARAMETER_HEX_INTEGER:
-		p->parameter_data.integer_data =
-		   strtoul((char *)oid->oid_arg1, NULL, 16);
+		p->data.integer = strtoul((char *)oid->oid_arg1, NULL, 16);
 		break;
 	case NDIS_PARAMETER_BINARY:
-		p->parameter_data.integer_data =
-		   strtoul((char *)oid->oid_arg1, NULL, 2);
+		p->data.integer = strtoul((char *)oid->oid_arg1, NULL, 2);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
@@ -550,25 +545,22 @@ ndis_decode_parm(struct ndis_miniport_block *block,
 	struct ansi_string as;
 	struct unicode_string *ustr;
 
-	switch (parm->parameter_type) {
+	switch (parm->type) {
 	case NDIS_PARAMETER_STRING:
-		ustr = &parm->parameter_data.string_data;
+		ustr = &parm->data.string;
 		if (RtlUnicodeStringToAnsiString(&as, ustr, TRUE))
 			return (NDIS_STATUS_RESOURCES);
 		memcpy(val, as.buf, as.len);
 		RtlFreeAnsiString(&as);
 		break;
 	case NDIS_PARAMETER_INTEGER:
-		snprintf(val, sizeof(uint32_t), "%d",
-		    parm->parameter_data.integer_data);
+		snprintf(val, sizeof(uint32_t), "%d", parm->data.integer);
 		break;
 	case NDIS_PARAMETER_HEX_INTEGER:
-		snprintf(val, sizeof(uint32_t), "%x",
-		    parm->parameter_data.integer_data);
+		snprintf(val, sizeof(uint32_t), "%x", parm->data.integer);
 		break;
 	case NDIS_PARAMETER_BINARY:
-		snprintf(val, sizeof(uint32_t), "%u",
-		    parm->parameter_data.integer_data);
+		snprintf(val, sizeof(uint32_t), "%u", parm->data.integer);
 		break;
 	default:
 		return (NDIS_STATUS_FAILURE);
@@ -630,8 +622,8 @@ NdisCloseConfiguration(struct ndis_miniport_block *block)
 		e = RemoveHeadList(&block->parmlist);
 		pe = CONTAINING_RECORD(e, struct ndis_parmlist_entry, list);
 		p = &pe->parm;
-		if (p->parameter_type == NDIS_PARAMETER_STRING)
-			RtlFreeUnicodeString(&p->parameter_data.string_data);
+		if (p->type == NDIS_PARAMETER_STRING)
+			RtlFreeUnicodeString(&p->data.string);
 		free(e, M_NDIS_SUBR);
 	}
 }

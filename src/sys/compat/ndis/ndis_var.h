@@ -1542,12 +1542,12 @@ struct ndis_binary_data {
 };
 
 struct ndis_configuration_parameter {
-	enum ndis_parameter_type	parameter_type;
+	enum ndis_parameter_type	type;
 	union {
-		uint32_t		integer_data;
-		struct unicode_string	string_data;
-		struct ndis_binary_data	binary_data;
-	} parameter_data;
+		uint32_t		integer;
+		struct unicode_string	string;
+		struct ndis_binary_data	binary;
+	} data;
 };
 
 struct ndis_parmlist_entry {
