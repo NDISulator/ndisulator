@@ -1028,7 +1028,7 @@ struct dot11_phy_attributes {
 	struct dot11_hrdsss_phy_attributes	hrdsss_attributes;
 	struct dot11_ofdm_phy_attributes	ofdm_attributes;
 	struct dot11_erp_phy_attributes		erp_attributes;
-	};
+	} u;
 	uint32_t				num_supported_power_levels;
 	uint32_t				tx_power_levels[8];
 	uint32_t				num_data_rate_mapping_entries;
