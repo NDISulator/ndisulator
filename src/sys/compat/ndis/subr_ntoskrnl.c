@@ -172,8 +172,8 @@ static struct slist_entry *ExInterlockedPushEntrySList(union slist_header *,
 static struct slist_entry *ExInterlockedPopEntrySList(union slist_header *,
     unsigned long *);
 static void InitializeSListHead(union slist_header *);
-static uint32_t InterlockedIncrement(volatile uint32_t *);
-static uint32_t InterlockedDecrement(volatile uint32_t *);
+static int32_t InterlockedIncrement(volatile int32_t *);
+static int32_t InterlockedDecrement(volatile int32_t *);
 static void ExInterlockedAddLargeStatistic(uint64_t *, uint32_t);
 static void *MmAllocateContiguousMemory(uint32_t, uint64_t);
 static void *MmAllocateContiguousMemorySpecifyCache(uint32_t, uint64_t,
@@ -2083,18 +2083,18 @@ InterlockedExchange(volatile uint32_t *dst, uintptr_t val)
 	return (r);
 }
 
-static uint32_t
-InterlockedIncrement(volatile uint32_t *addend)
+static int32_t
+InterlockedIncrement(volatile int32_t *addend)
 {
-	atomic_add_long((volatile unsigned long *)addend, 1);
+	atomic_add_int(addend, 1);
 
 	return (*addend);
 }
 
-static uint32_t
-InterlockedDecrement(volatile uint32_t *addend)
+static int32_t
+InterlockedDecrement(volatile int32_t *addend)
 {
-	atomic_subtract_long((volatile unsigned long *)addend, 1);
+	atomic_subtract_int(addend, 1);
 
 	return (*addend);
 }

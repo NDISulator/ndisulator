@@ -207,8 +207,8 @@ static void NdisQueryBufferSafe(struct mdl *, void **, uint32_t *, uint32_t);
 static void *NdisBufferVirtualAddress(struct mdl *);
 static void *NdisBufferVirtualAddressSafe(struct mdl *, uint32_t);
 static void NdisAdjustBufferLength(struct mdl *, uint32_t);
-static uint32_t NdisInterlockedIncrement(uint32_t *);
-static uint32_t NdisInterlockedDecrement(uint32_t *);
+static int32_t NdisInterlockedIncrement(int32_t *);
+static int32_t NdisInterlockedDecrement(int32_t *);
 static void NdisInitializeEvent(struct ndis_event *);
 static void NdisSetEvent(struct ndis_event *);
 static void NdisResetEvent(struct ndis_event *);
@@ -1630,18 +1630,18 @@ NdisAdjustBufferLength(struct mdl *buf, uint32_t len)
 	MmGetMdlByteCount(buf) = len;
 }
 
-static uint32_t
-NdisInterlockedIncrement(uint32_t *addend)
+static int32_t
+NdisInterlockedIncrement(int32_t *addend)
 {
-	atomic_add_long((unsigned long *)addend, 1);
+	atomic_add_int(addend, 1);
 
 	return (*addend);
 }
 
-static uint32_t
-NdisInterlockedDecrement(uint32_t *addend)
+static int32_t
+NdisInterlockedDecrement(int32_t *addend)
 {
-	atomic_subtract_long((unsigned long *)addend, 1);
+	atomic_subtract_int(addend, 1);
 
 	return (*addend);
 }
