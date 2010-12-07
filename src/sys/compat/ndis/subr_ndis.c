@@ -362,8 +362,8 @@ NdisMRegisterMiniport(struct driver_object *drv,
 static int32_t
 NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 {
+	TRACE(NDBG_MEM, "vaddr %p len %u tag %u\n", vaddr, len, tag);
 	*vaddr = malloc(len, M_NDIS_SUBR, M_NOWAIT|M_ZERO);
-	TRACE(NDBG_MEM, "vaddr %p len %u tag %u\n", *vaddr, len, tag);
 	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
 	return (NDIS_STATUS_SUCCESS);
@@ -829,8 +829,9 @@ NdisMStartBufferPhysicalMapping(struct ndis_miniport_block *block,
 	struct ndis_map_arg nma;
 	bus_dmamap_t map;
 
-	TRACE(NDBG_DMA, "block %p mapreg %u writedev %u {\n",
-	    block, mapreg, writedev);
+	TRACE(NDBG_DMA, "block %p buf %p mapreg %u writedev %u addrarray %p "
+	    "arraysize %p\n",
+	    block, buf, mapreg, writedev, addrarray, arraysize);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 
@@ -850,7 +851,6 @@ NdisMStartBufferPhysicalMapping(struct ndis_miniport_block *block,
 	    writedev ? BUS_DMASYNC_PREWRITE : BUS_DMASYNC_PREREAD);
 
 	*arraysize = nma.cnt;
-	TRACE(NDBG_DMA, "} arraysize %u\n", *arraysize);
 }
 
 static void
@@ -860,7 +860,7 @@ NdisMCompleteBufferPhysicalMapping(struct ndis_miniport_block *block,
 	struct ndis_softc *sc;
 	bus_dmamap_t map;
 
-	TRACE(NDBG_DMA, "block %p mapreg %u\n", block, mapreg);
+	TRACE(NDBG_DMA, "block %p buf %p mapreg %u\n", block, buf, mapreg);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 
@@ -1049,17 +1049,17 @@ ndis_dmasize(uint8_t dmasize)
 
 static int32_t
 NdisMAllocateMapRegisters(struct ndis_miniport_block *block,
-    uint32_t channel, uint8_t size, uint32_t physmapneeded, uint32_t maxmap)
+    uint32_t channel, uint8_t size, uint32_t basemap, uint32_t maxmap)
 {
 	struct ndis_softc *sc;
 	int i, nseg = NDIS_MAXSEG;
 
-	TRACE(NDBG_DMA, "block %p channel %u size %u physmapneeded %u maxmap %u\n",
-	    block, channel, size, physmapneeded, maxmap);
+	TRACE(NDBG_DMA, "block %p channel %u size %u basemap %u maxmap %u\n",
+	    block, channel, size, basemap, maxmap);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	sc = device_get_softc(block->physdeviceobj->devext);
-	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * physmapneeded,
+	sc->ndis_mmaps = malloc(sizeof(bus_dmamap_t) * basemap,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (sc->ndis_mmaps == NULL)
 		return (NDIS_STATUS_RESOURCES);
@@ -1080,10 +1080,10 @@ NdisMAllocateMapRegisters(struct ndis_miniport_block *block,
 		return (NDIS_STATUS_RESOURCES);
 	}
 
-	for (i = 0; i < physmapneeded; i++)
+	for (i = 0; i < basemap; i++)
 		bus_dmamap_create(sc->ndis_mtag, 0, &sc->ndis_mmaps[i]);
 
-	sc->ndis_mmapcnt = physmapneeded;
+	sc->ndis_mmapcnt = basemap;
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -1125,7 +1125,8 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 	struct ndis_softc *sc;
 	struct ndis_shmem *sh;
 
-	TRACE(NDBG_DMA, "len %u cached %u {\n", len, cached);
+	TRACE(NDBG_DMA, "block %p len %u cached %u vaddr %p paddr %p\n",
+	    block, len, cached, vaddr, paddr);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	sc = device_get_softc(block->physdeviceobj->devext);
@@ -1167,7 +1168,6 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 		return;
 	}
 
-	TRACE(NDBG_DMA, "} vaddr %p paddr %llu\n", *vaddr, *paddr);
 	/*
 	 * Save the physical address along with the source address.
 	 * The AirGo MIMO driver will call NdisMFreeSharedMemory()
@@ -1473,7 +1473,6 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 
 	*packet = pkt;
 	*status = NDIS_STATUS_SUCCESS;
-	TRACE(NDBG_MEM, "packet %p\n", *packet);
 }
 
 void
@@ -1563,6 +1562,8 @@ NdisAllocateBuffer(int32_t *status, struct mdl **buffer, void *pool,
 {
 	struct mdl *buf;
 
+	TRACE(NDBG_MEM, "buffer %p pool %p vaddr %p len %u\n",
+	    buffer, pool, vaddr, len);
 	buf = IoAllocateMdl(vaddr, len, FALSE, FALSE, NULL);
 	if (buf == NULL) {
 		*buffer = NULL;
@@ -1573,8 +1574,6 @@ NdisAllocateBuffer(int32_t *status, struct mdl **buffer, void *pool,
 
 	*buffer = buf;
 	*status = NDIS_STATUS_SUCCESS;
-	TRACE(NDBG_MEM, "buffer %p pool %p vaddr %p len %u\n",
-	    *buffer, pool, vaddr, len);
 }
 
 static void
