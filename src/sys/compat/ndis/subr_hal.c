@@ -293,6 +293,6 @@ struct image_patch_table hal_functbl[] = {
 	IMPORT_SFUNC(WRITE_PORT_USHORT, 2),
 #undef KeLowerIrql
 	IMPORT_SFUNC_MAP(KeLowerIrql, _KeLowerIrql, 1),
-	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
+	{ NULL, (FUNC)dummy, NULL, 0, STDCALL },
 	{ NULL, NULL, NULL }
 };

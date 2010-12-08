@@ -205,29 +205,29 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 			break;
 		ndisdrv_loaded = 1;
 		windrv_wrap((funcptr)NdisMIndicateReceivePacket,
-		    &ndis_rxeof_wrap, 3, WINDRV_WRAP_STDCALL);
+		    &ndis_rxeof_wrap, 3, STDCALL);
 		windrv_wrap((funcptr)NdisMEthIndicateReceive,
-		    &ndis_rxeof_eth_wrap, 8, WINDRV_WRAP_STDCALL);
+		    &ndis_rxeof_eth_wrap, 8, STDCALL);
 		windrv_wrap((funcptr)NdisMEthIndicateReceiveComplete,
-		    &ndis_rxeof_done_wrap, 1, WINDRV_WRAP_STDCALL);
+		    &ndis_rxeof_done_wrap, 1, STDCALL);
 		windrv_wrap((funcptr)ndis_rxeof_xfr, &ndis_rxeof_xfr_wrap,
-		    4, WINDRV_WRAP_STDCALL);
+		    4, STDCALL);
 		windrv_wrap((funcptr)NdisMTransferDataComplete,
-		    &ndis_rxeof_xfr_done_wrap, 4, WINDRV_WRAP_STDCALL);
+		    &ndis_rxeof_xfr_done_wrap, 4, STDCALL);
 		windrv_wrap((funcptr)NdisMSendComplete,
-		    &ndis_txeof_wrap, 3, WINDRV_WRAP_STDCALL);
+		    &ndis_txeof_wrap, 3, STDCALL);
 		windrv_wrap((funcptr)NdisMIndicateStatus,
-		    &ndis_linksts_wrap, 4, WINDRV_WRAP_STDCALL);
+		    &ndis_linksts_wrap, 4, STDCALL);
 		windrv_wrap((funcptr)NdisMIndicateStatusComplete,
-		    &ndis_linksts_done_wrap, 1, WINDRV_WRAP_STDCALL);
+		    &ndis_linksts_done_wrap, 1, STDCALL);
 		windrv_wrap((funcptr)ndis_ticktask, &ndis_ticktask_wrap,
-		    2, WINDRV_WRAP_STDCALL);
+		    2, STDCALL);
 		windrv_wrap((funcptr)ndis_starttask, &ndis_starttask_wrap,
-		    2, WINDRV_WRAP_STDCALL);
+		    2, STDCALL);
 		windrv_wrap((funcptr)ndis_resettask, &ndis_resettask_wrap,
-		    2, WINDRV_WRAP_STDCALL);
+		    2, STDCALL);
 		windrv_wrap((funcptr)ndis_inputtask, &ndis_inputtask_wrap,
-		    2, WINDRV_WRAP_STDCALL);
+		    2, STDCALL);
 		break;
 	case MOD_UNLOAD:
 		if (ndisdrv_loaded == 0)

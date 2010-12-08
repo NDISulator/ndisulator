@@ -508,7 +508,8 @@ extern void x86_64_wrap_call(void);
 extern void x86_64_wrap_end(void);
 
 void
-windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, uint8_t ftype)
+windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt,
+    enum windrv_wrap_type type)
 {
 	vm_offset_t *calladdr, wrapstart, wrapend, wrapcall;
 	funcptr p;
@@ -816,19 +817,20 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 }
 
 void
-windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt, uint8_t ftype)
+windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt,
+    enum windrv_wrap_type type)
 {
-	switch (ftype) {
-	case WINDRV_WRAP_FASTCALL:
+	switch (type) {
+	case FASTCALL:
 		windrv_wrap_fastcall(func, wrap, argcnt);
 		break;
-	case WINDRV_WRAP_STDCALL:
+	case STDCALL:
 		windrv_wrap_stdcall(func, wrap, argcnt);
 		break;
-	case WINDRV_WRAP_REGPARM:
+	case REGPARM:
 		windrv_wrap_regparm(func, wrap);
 		break;
-	case WINDRV_WRAP_CDECL:
+	case CDECL:
 		windrv_wrap_stdcall(func, wrap, 0);
 		break;
 	default:

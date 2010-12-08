@@ -349,7 +349,7 @@ ntoskrnl_libinit(void)
 	}
 
 	windrv_wrap((funcptr)ntoskrnl_workitem,
-	    (funcptr *)&ntoskrnl_workitem_wrap, 2, WINDRV_WRAP_STDCALL);
+	    &ntoskrnl_workitem_wrap, 2, STDCALL);
 	windrv_wrap_table(ntoskrnl_functbl);
 	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
 	ExFreePool_wrap = ntoskrnl_findwrap(ExFreePool);
@@ -4103,6 +4103,6 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	    ExInitializeNPagedLookasideList, 7),
 	IMPORT_SFUNC_MAP(KeReleaseSpinLock, KfReleaseSpinLock, 1),
 	IMPORT_SFUNC_MAP(RtlInitString, RtlInitAnsiString, 2),
-	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
+	{ NULL, (FUNC)dummy, NULL, 0, STDCALL },
 	{ NULL, NULL, NULL }
 };

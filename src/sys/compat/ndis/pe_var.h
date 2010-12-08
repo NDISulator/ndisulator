@@ -406,18 +406,14 @@ uint64_t _x86_64_call6(void *, uint64_t, uint64_t, uint64_t, uint64_t,
 	_x86_64_call6((fn), (uint64_t)(a), (uint64_t)(b),		\
 	(uint64_t)(c), (uint64_t)(d), (uint64_t)(e), (uint64_t)(f))
 
-#define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_SFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
-#define	IMPORT_FFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_FFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
-#define	IMPORT_RFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_RFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
-#define	IMPORT_CFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_AMD64 }
-#define	IMPORT_CFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_AMD64 }
+#define	IMPORT_CFUNC(x, y)		{ #x, (FUNC)x, NULL, y, AMD64 }
+#define	IMPORT_CFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, AMD64 }
+#define	IMPORT_FFUNC(x, y)		{ #x, (FUNC)x, NULL, y, AMD64 }
+#define	IMPORT_FFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, AMD64 }
+#define	IMPORT_RFUNC(x, y)		{ #x, (FUNC)x, NULL, y, AMD64 }
+#define	IMPORT_RFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, AMD64 }
+#define	IMPORT_SFUNC(x, y)		{ #x, (FUNC)x, NULL, y, AMD64 }
+#define	IMPORT_SFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, AMD64 }
 #endif /* __amd64__ */
 
 #ifdef __i386__
@@ -432,18 +428,14 @@ uint32_t x86_stdcall_call(void *, int, ...);
 #define	MSCALL6(fn, a, b, c, d, e, f)	\
 		x86_stdcall_call(fn, 6, (a), (b), (c), (d), (e), (f))
 
-#define	IMPORT_SFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_STDCALL }
-#define	IMPORT_SFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_STDCALL }
-#define	IMPORT_FFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_FASTCALL }
-#define	IMPORT_FFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_FASTCALL }
-#define	IMPORT_RFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_REGPARM }
-#define	IMPORT_RFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_REGPARM }
-#define	IMPORT_CFUNC(x, y)	{ #x, (FUNC)x, NULL, y, WINDRV_WRAP_CDECL }
-#define	IMPORT_CFUNC_MAP(x, y, z)					\
-				{ #x, (FUNC)y, NULL, z, WINDRV_WRAP_CDECL }
+#define	IMPORT_CFUNC(x, y)		{ #x, (FUNC)x, NULL, y, CDECL }
+#define	IMPORT_CFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, CDECL }
+#define	IMPORT_FFUNC(x, y)		{ #x, (FUNC)x, NULL, y, FASTCALL }
+#define	IMPORT_FFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, FASTCALL }
+#define	IMPORT_RFUNC(x, y)		{ #x, (FUNC)x, NULL, y, REGPARM }
+#define	IMPORT_RFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, REGPARM }
+#define	IMPORT_SFUNC(x, y)		{ #x, (FUNC)x, NULL, y, STDCALL }
+#define	IMPORT_SFUNC_MAP(x, y, z)	{ #x, (FUNC)y, NULL, z, STDCALL }
 #endif /* __i386__ */
 
 void	pe_get_optional_header(vm_offset_t, struct image_optional_header **);

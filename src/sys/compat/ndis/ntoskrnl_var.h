@@ -1182,14 +1182,13 @@ struct work_queue_item {
  */
 #define	NDIS_KSTACK_PAGES	8
 
-/*
- * Different kinds of function wrapping we can do.
- */
-#define	WINDRV_WRAP_STDCALL	1
-#define	WINDRV_WRAP_FASTCALL	2
-#define	WINDRV_WRAP_REGPARM	3
-#define	WINDRV_WRAP_CDECL	4
-#define	WINDRV_WRAP_AMD64	5
+enum windrv_wrap_type {
+	STDCALL	= 1,
+	FASTCALL,
+	REGPARM,
+	CDECL,
+	AMD64
+};
 
 struct drvdb_ent {
 	struct driver_object		*windrv_object;
@@ -1214,7 +1213,7 @@ int	windrv_unload(module_t, vm_offset_t);
 int32_t	windrv_create_pdo(struct driver_object *, device_t);
 void	windrv_destroy_pdo(struct driver_object *, device_t);
 int	windrv_bus_attach(struct driver_object *, const char *);
-void	windrv_wrap(funcptr, funcptr *, uint8_t, uint8_t);
+void	windrv_wrap(funcptr, funcptr *, uint8_t, enum windrv_wrap_type);
 void	windrv_unwrap(funcptr);
 void	windrv_wrap_table(struct image_patch_table *);
 void	windrv_unwrap_table(struct image_patch_table *);

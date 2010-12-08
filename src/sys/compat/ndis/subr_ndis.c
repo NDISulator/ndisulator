@@ -292,13 +292,13 @@ ndis_libinit(void)
 {
 
 	windrv_wrap((funcptr)ndis_timercall,
-	    (funcptr *)&ndis_timercall_wrap, 4, WINDRV_WRAP_STDCALL);
+	    &ndis_timercall_wrap, 4, STDCALL);
 	windrv_wrap((funcptr)ndis_asyncmem_complete,
-	    (funcptr *)&ndis_asyncmem_complete_wrap, 2, WINDRV_WRAP_STDCALL);
+	    &ndis_asyncmem_complete_wrap, 2, STDCALL);
 	windrv_wrap((funcptr)ndis_interrupt_nic,
-	    (funcptr *)&ndis_interrupt_nic_wrap, 2, WINDRV_WRAP_STDCALL);
+	    &ndis_interrupt_nic_wrap, 2, STDCALL);
 	windrv_wrap((funcptr)ndis_intrhand,
-	    (funcptr *)&ndis_intrhand_wrap, 4, WINDRV_WRAP_STDCALL);
+	    &ndis_intrhand_wrap, 4, STDCALL);
 	windrv_wrap_table(ndis_functbl);
 }
 
@@ -2723,6 +2723,6 @@ struct image_patch_table ndis_functbl[] = {
 	    NdisReadPciSlotInformation, 5),
 	IMPORT_SFUNC_MAP(NdisImmediateWritePciSlotInformation,
 	    NdisWritePciSlotInformation, 5),
-	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
+	{ NULL, (FUNC)dummy, NULL, 0, STDCALL },
 	{ NULL, NULL, NULL }
 };

@@ -158,20 +158,13 @@ usbd_libinit(void)
 	int i;
 
 	windrv_wrap_table(usbd_functbl);
-	windrv_wrap((funcptr)usbd_ioinvalid,
-	    (funcptr *)&usbd_ioinvalid_wrap, 2, WINDRV_WRAP_STDCALL);
-	windrv_wrap((funcptr)usbd_iodispatch,
-	    (funcptr *)&usbd_iodispatch_wrap, 2, WINDRV_WRAP_STDCALL);
-	windrv_wrap((funcptr)usbd_pnp,
-	    (funcptr *)&usbd_pnp_wrap, 2, WINDRV_WRAP_STDCALL);
-	windrv_wrap((funcptr)usbd_power,
-	    (funcptr *)&usbd_power_wrap, 2, WINDRV_WRAP_STDCALL);
-	windrv_wrap((funcptr)usbd_irpcancel,
-	    (funcptr *)&usbd_irpcancel_wrap, 2, WINDRV_WRAP_STDCALL);
-	windrv_wrap((funcptr)usbd_task,
-	    (funcptr *)&usbd_task_wrap, 2, WINDRV_WRAP_STDCALL);
-	windrv_wrap((funcptr)usbd_xfertask,
-	    (funcptr *)&usbd_xfertask_wrap, 2, WINDRV_WRAP_STDCALL);
+	windrv_wrap((funcptr)usbd_ioinvalid, &usbd_ioinvalid_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)usbd_iodispatch, &usbd_iodispatch_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)usbd_pnp, &usbd_pnp_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)usbd_power, &usbd_power_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)usbd_irpcancel, &usbd_irpcancel_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)usbd_task, &usbd_task_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)usbd_xfertask, &usbd_xfertask_wrap, 2, STDCALL);
 
 	/* Create a fake USB driver instance. */
 	windrv_bus_attach(&usbd_driver, "USB Bus");
@@ -1437,7 +1430,7 @@ struct image_patch_table usbd_functbl[] = {
 	    USBD_CreateConfigurationRequestEx, 2),
 	IMPORT_SFUNC_MAP(_USBD_ParseConfigurationDescriptorEx@28,
 	    USBD_ParseConfigurationDescriptorEx, 7),
-	{ NULL, (FUNC)dummy, NULL, 0, WINDRV_WRAP_STDCALL },
+	{ NULL, (FUNC)dummy, NULL, 0, STDCALL },
 	{ NULL, NULL, NULL }
 };
 
