@@ -50,25 +50,21 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/ctype.h>
 #include <sys/param.h>
-#include <sys/errno.h>
 
-#include <sys/callout.h>
 #include <sys/kernel.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/lock.h>
-#include <sys/mutex.h>
 #include <sys/socket.h>
+#include <sys/queue.h>
 #include <sys/sysctl.h>
 #include <sys/timespec.h>
 #include <sys/smp.h>
-#include <sys/queue.h>
 #include <sys/proc.h>
 #include <sys/filedesc.h>
 #include <sys/namei.h>
 #include <sys/fcntl.h>
 #include <sys/vnode.h>
-#include <sys/kthread.h>
 #include <sys/linker.h>
 #include <sys/mount.h>
 #include <sys/sysproto.h>
