@@ -300,9 +300,11 @@ struct kdpc {
 	void			*k_lock;
 };
 
-#define	KDPC_IMPORTANCE_LOW 0
-#define	KDPC_IMPORTANCE_MEDIUM 1
-#define	KDPC_IMPORTANCE_HIGH 2
+enum kdpc_importance {
+	IMPORTANCE_LOW,
+	IMPORTANCE_MEDIUM,
+	IMPORTANCE_HIGH
+};
 
 #define	KDPC_CPU_DEFAULT 255
 

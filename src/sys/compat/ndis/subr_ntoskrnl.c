@@ -2487,13 +2487,15 @@ IoFreeWorkItem(struct io_workitem *iw)
 
 void
 IoQueueWorkItem(struct io_workitem *iw, io_workitem_func iw_func,
-    enum work_queue_type qtype, void *ctx)
+    enum work_queue_type type, void *ctx)
 {
 	struct kdpc_queue *kq;
 	struct list_entry *l;
 	struct io_workitem *cur;
 	uint8_t irql;
 
+	TRACE(NDBG_WORK, "workitem %p func %p type %d ctx %p\n",
+	    iw, iw_func, type, ctx);
 	kq = wq_queues + iw->iw_idx;
 
 	KeAcquireSpinLock(&kq->kq_lock, &irql);
@@ -2515,7 +2517,10 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func iw_func,
 	iw->iw_func = iw_func;
 	iw->iw_ctx = ctx;
 
-	InsertTailList((&kq->kq_disp), (&iw->iw_listentry));
+	if (type == WORKQUEUE_DELAYED)
+		InsertTailList((&kq->kq_disp), (&iw->iw_listentry));
+	else
+		InsertHeadList((&kq->kq_disp), (&iw->iw_listentry));
 	KeReleaseSpinLock(&kq->kq_lock, irql);
 
 	KeSetEvent(&kq->kq_proc, IO_NO_INCREMENT, FALSE);
@@ -3602,7 +3607,7 @@ ntoskrnl_insert_dpc(struct list_entry *head, struct kdpc *dpc)
 			return (FALSE);
 	}
 
-	if (dpc->k_importance == KDPC_IMPORTANCE_LOW)
+	if (dpc->k_importance == IMPORTANCE_LOW)
 		InsertTailList((head), (&dpc->k_dpclistentry));
 	else
 		InsertHeadList((head), (&dpc->k_dpclistentry));
@@ -3619,7 +3624,7 @@ KeInitializeDpc(struct kdpc *dpc, void *dpcfunc, void *dpcctx)
 	dpc->k_deferedfunc = dpcfunc;
 	dpc->k_deferredctx = dpcctx;
 	dpc->k_num = KDPC_CPU_DEFAULT;
-	dpc->k_importance = KDPC_IMPORTANCE_MEDIUM;
+	dpc->k_importance = IMPORTANCE_MEDIUM;
 	InitializeListHead((&dpc->k_dpclistentry));
 }
 
@@ -3695,14 +3700,9 @@ KeRemoveQueueDpc(struct kdpc *dpc)
 }
 
 void
-KeSetImportanceDpc(struct kdpc *dpc, uint32_t imp)
+KeSetImportanceDpc(struct kdpc *dpc, enum kdpc_importance imp)
 {
-	if (imp != KDPC_IMPORTANCE_LOW &&
-	    imp != KDPC_IMPORTANCE_MEDIUM &&
-	    imp != KDPC_IMPORTANCE_HIGH)
-		return;
-
-	dpc->k_importance = (uint8_t)imp;
+	dpc->k_importance = imp;
 }
 
 void

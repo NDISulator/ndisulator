@@ -1022,7 +1022,7 @@ ndis_load_driver(struct driver_object *drv, struct device_object *pdo)
 
 	/* Give interrupt handling priority over timers. */
 	IoInitializeDpcRequest(fdo, kernndis_functbl[6].wrap);
-	KeSetImportanceDpc(&fdo->dpc, KDPC_IMPORTANCE_HIGH);
+	KeSetImportanceDpc(&fdo->dpc, IMPORTANCE_HIGH);
 
 	/* Finish up BSD-specific setup. */
 	block->status_func = kernndis_functbl[0].wrap;

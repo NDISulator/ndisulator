@@ -879,7 +879,7 @@ NdisInitializeTimer(struct ndis_timer *timer, ndis_timer_function func,
 	TRACE(NDBG_TIMER, "timer %p func %p ctx %p\n", timer, func, ctx);
 	KeInitializeTimer(&timer->ktimer);
 	KeInitializeDpc(&timer->kdpc, func, ctx);
-	KeSetImportanceDpc(&timer->kdpc, KDPC_IMPORTANCE_LOW);
+	KeSetImportanceDpc(&timer->kdpc, IMPORTANCE_LOW);
 }
 
 static void
@@ -1791,7 +1791,7 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 	KeInitializeEvent(&intr->dpcs_completed_event,
 	    EVENT_TYPE_NOTIFY, TRUE);
 	KeInitializeDpc(&intr->interrupt_dpc, ndis_intrhand_wrap, intr);
-	KeSetImportanceDpc(&intr->interrupt_dpc, KDPC_IMPORTANCE_LOW);
+	KeSetImportanceDpc(&intr->interrupt_dpc, IMPORTANCE_LOW);
 
 	if (IoConnectInterrupt(&intr->interrupt_object,
 	    ndis_interrupt_nic_wrap, sc, NULL,
@@ -2428,6 +2428,7 @@ NdisScheduleWorkItem(struct ndis_work_item *work)
 {
 	struct work_queue_item *wqi;
 
+	TRACE(NDBG_WORK, "work %p\n", work);
 	wqi = (struct work_queue_item *)work->wraprsvd;
 	ExInitializeWorkItem(wqi, (work_item_func)work->func, work->ctx);
 	ExQueueWorkItem(wqi, WORKQUEUE_DELAYED);
