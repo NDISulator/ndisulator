@@ -143,7 +143,6 @@ union slist_header {  /* FIXME: amd64 */
 		uint16_t		slh_seq;
 	} slh_list;
 };
-typedef union slist_header slist_header;
 
 struct list_entry {
 	struct list_entry	*nle_flink;
@@ -270,7 +269,6 @@ struct nt_objref {
 	TAILQ_ENTRY(nt_objref)		link;
 };
 TAILQ_HEAD(nt_objref_head, nt_objref);
-typedef struct nt_objref nt_objref;
 
 #define	EVENT_TYPE_NOTIFY 0
 #define	EVENT_TYPE_SYNC 1
@@ -286,14 +284,9 @@ struct ktimer {
 	uint32_t 			k_period;
 };
 
-#define	k_callout u.k_callout
-
-typedef struct ktimer ktimer;
-
 struct nt_kevent {
 	struct nt_dispatch_header	k_header;
 };
-typedef struct nt_kevent nt_kevent;
 
 /* Kernel defered procedure call (i.e. timer callback) */
 struct kdpc;
@@ -310,7 +303,6 @@ struct kdpc {
 	void			*k_sysarg2;
 	void			*k_lock;
 };
-typedef struct kdpc kdpc;
 
 #define	KDPC_IMPORTANCE_LOW 0
 #define	KDPC_IMPORTANCE_MEDIUM 1
@@ -336,7 +328,6 @@ struct kmutant {
 	uint8_t				km_abandoned;
 	uint8_t				km_apcdisable;
 };
-typedef struct kmutant kmutant;
 
 enum pool_type {
 	NON_PAGED_POOL,
@@ -360,7 +351,7 @@ enum memory_caching_type {
 #define	LOOKASIDE_DEPTH 256
 
 struct general_lookaside {
-	slist_header		list_head;
+	union slist_header	list_head;
 	uint16_t		depth;
 	uint16_t		maximum_depth;
 	uint32_t		total_alocates;
@@ -404,7 +395,6 @@ struct kdevice_qentry {
 	uint32_t		kqe_sortkey;
 	uint8_t			kqe_inserted;
 };
-typedef struct kdevice_qentry kdevice_qentry;
 
 struct kdevice_queue {
 	uint16_t		kq_type;
@@ -413,18 +403,16 @@ struct kdevice_queue {
 	unsigned long		kq_lock;
 	uint8_t			kq_busy;
 };
-typedef struct kdevice_queue kdevice_queue;
 
 struct wait_ctx_block {
-	kdevice_qentry	wcb_waitqueue;
-	void		*wcb_devfunc;
-	void		*wcb_devctx;
-	uint32_t	wcb_mapregcnt;
-	void		*wcb_devobj;
-	void		*wcb_curirp;
-	void		*wcb_bufchaindpc;
+	struct kdevice_qentry	wcb_waitqueue;
+	void			*wcb_devfunc;
+	void			*wcb_devctx;
+	uint32_t		wcb_mapregcnt;
+	void			*wcb_devobj;
+	void			*wcb_curirp;
+	void			*wcb_bufchaindpc;
 };
-typedef struct wait_ctx_block wait_ctx_block;
 
 struct wait_block {
 	struct list_entry		wb_waitlist;
@@ -456,7 +444,6 @@ struct thread_context {
 	void	*tc_thrctx;
 	void	*tc_thrfunc;
 };
-typedef struct thread_context thread_context;
 
 /* Forward declaration */
 struct driver_object;
@@ -596,11 +583,11 @@ struct device_object {
 	uint8_t			stacksize;
 	union {
 		struct list_entry	listent;
-		wait_ctx_block		wcb;
+		struct wait_ctx_block	wcb;
 	} queue;
 	uint32_t		alignreq;
-	kdevice_queue		devqueue;
-	struct			kdpc dpc;
+	struct kdevice_queue	devqueue;
+	struct kdpc 		dpc;
 	uint32_t		activethreads;
 	void			*securitydesc;
 	struct			nt_kevent devlock;
@@ -824,7 +811,6 @@ struct kapc {
 	uint8_t			apc_cpumode;
 	uint8_t			apc_inserted;
 };
-typedef struct kapc kapc;
 
 typedef uint32_t (*completion_func)(struct device_object *, struct irp *, void *);
 typedef uint32_t (*cancel_func)(struct device_object *, struct irp *);
@@ -902,7 +888,7 @@ struct irp {
 	uint8_t			apcenv;
 	uint8_t			allocflags;
 	struct io_status_block	*usriostat;
-	nt_kevent		*usrevent;
+	struct nt_kevent	*usrevent;
 	union {
 		struct {
 			void	*apcfunc;
@@ -917,7 +903,7 @@ struct irp {
 	union {
 		struct {
 			union {
-				kdevice_qentry	dqe;
+				struct kdevice_qentry	dqe;
 				struct {
 					void	*drvctx[4];
 				} s1;
@@ -934,7 +920,7 @@ struct irp {
 			void	*fileobj;
 		} overlay;
 		union {
-			kapc	apc;
+			struct kapc	apc;
 			struct {
 				void	*ep;
 				void	*dev;
@@ -943,7 +929,6 @@ struct irp {
 		void	*compkey;
 	} tail;
 };
-typedef struct irp irp;
 
 #define	IRP_NDIS_DEV(irp) (irp)->tail.misc.usb.dev
 #define	IRP_NDISUSB_EP(irp) (irp)->tail.misc.usb.ep
@@ -952,7 +937,7 @@ typedef struct irp irp;
 	(void *)InterlockedExchange((uint32_t *)(dst), (uintptr_t)(val))
 
 #define	IoSizeOfIrp(ssize)						\
-	((uint16_t) (sizeof(irp) +					\
+	((uint16_t) (sizeof(struct irp) +				\
 	((ssize) * (sizeof(struct io_stack_location)))))
 
 #define	IoSetCancelRoutine(irp, func)					\
@@ -1013,7 +998,7 @@ typedef struct irp irp;
 #define	IoRequestDpc(dobj, irp, ctx)					\
 	KeInsertQueueDpc(&(dobj)->dpc, irp, ctx)
 
-typedef uint32_t (*driver_dispatch)(struct device_object *, irp *);
+typedef uint32_t (*driver_dispatch)(struct device_object *, struct irp *);
 
 /*
  * The driver_object is allocated once for each driver that's loaded
@@ -1151,7 +1136,6 @@ struct io_workitem {
 	struct device_object	*iw_dobj;
 	int			iw_idx;
 };
-typedef struct io_workitem io_workitem;
 
 enum work_queue_type {
 	WORKQUEUE_CRITICAL,
@@ -1175,7 +1159,6 @@ struct work_queue_item {
 	work_item_func		wqi_func;
 	void			*wqi_ctx;
 };
-typedef struct work_queue_item work_queue_item;
 
 #define	ExInitializeWorkItem(w, func, ctx)		\
 	do {						\
@@ -1233,9 +1216,10 @@ void	ntoskrnl_libinit(void);
 void	ntoskrnl_libfini(void);
 void	ntoskrnl_intr(void *);
 void	ntoskrnl_time(uint64_t *);
-uint16_t ExQueryDepthSList(slist_header *);
-struct slist_entry *InterlockedPushEntrySList(slist_header *, struct slist_entry *);
-struct slist_entry *InterlockedPopEntrySList(slist_header *);
+uint16_t ExQueryDepthSList(union slist_header *);
+struct slist_entry *InterlockedPushEntrySList(union slist_header *,
+	    struct slist_entry *);
+struct slist_entry *InterlockedPopEntrySList(union slist_header *);
 int32_t	RtlUnicodeStringToAnsiString(struct ansi_string *,
 	    const struct unicode_string *, uint8_t);
 int32_t	RtlUpcaseUnicodeString(struct unicode_string *, struct unicode_string *,
@@ -1254,15 +1238,15 @@ void	KeSetTargetProcessorDpc(struct kdpc *, uint8_t);
 void	KeFlushQueuedDpcs(void);
 void	KeInitializeTimer(struct ktimer *);
 void	KeInitializeTimerEx(struct ktimer *, uint32_t);
-uint8_t	KeSetTimer(ktimer *, int64_t, kdpc *);
-uint8_t	KeSetTimerEx(ktimer *, int64_t, uint32_t, kdpc *);
-uint8_t	KeCancelTimer(ktimer *);
+uint8_t	KeSetTimer(struct ktimer *, int64_t, struct kdpc *);
+uint8_t	KeSetTimerEx(struct ktimer *, int64_t, uint32_t, struct kdpc *);
+uint8_t	KeCancelTimer(struct ktimer *);
 int32_t	KeWaitForSingleObject(void *, uint32_t, uint32_t, uint8_t, int64_t *);
-void	KeInitializeEvent(nt_kevent *, uint32_t, uint8_t);
-void	KeClearEvent(nt_kevent *);
-int32_t	KeReadStateEvent(nt_kevent *);
-int32_t	KeSetEvent(nt_kevent *, int32_t, uint8_t);
-int32_t	KeResetEvent(nt_kevent *);
+void	KeInitializeEvent(struct nt_kevent *, uint32_t, uint8_t);
+void	KeClearEvent(struct nt_kevent *);
+int32_t	KeReadStateEvent(struct nt_kevent *);
+int32_t	KeSetEvent(struct nt_kevent *, int32_t, uint8_t);
+int32_t	KeResetEvent(struct nt_kevent *);
 #ifdef __i386__
 void	KefAcquireSpinLockAtDpcLevel(unsigned long *);
 void	KefReleaseSpinLockFromDpcLevel(unsigned long *);
@@ -1292,18 +1276,18 @@ int32_t	IoCreateDevice(struct driver_object *, uint32_t,
 	    struct unicode_string *, enum device_type, uint32_t, uint8_t,
 	    struct device_object **);
 void	IoDeleteDevice(struct device_object *);
-int32_t	IofCallDriver(struct device_object *, irp *);
-void	IofCompleteRequest(irp *, uint8_t);
+int32_t	IofCallDriver(struct device_object *, struct irp *);
+void	IofCompleteRequest(struct irp *, uint8_t);
 void	IoAcquireCancelSpinLock(uint8_t *);
 void	IoReleaseCancelSpinLock(uint8_t);
 void	IoDetachDevice(struct device_object *);
-struct mdl *IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, irp *);
+struct mdl *IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, struct irp *);
 void	IoFreeMdl(struct mdl *);
-void	ExQueueWorkItem(work_queue_item *, enum work_queue_type);
-void	IoFreeWorkItem(io_workitem *);
-void	IoQueueWorkItem(io_workitem *, io_workitem_func, enum work_queue_type,
-	    void *);
-io_workitem	*IoAllocateWorkItem(struct device_object *);
+void	ExQueueWorkItem(struct work_queue_item *, enum work_queue_type);
+void	IoFreeWorkItem(struct io_workitem *);
+void	IoQueueWorkItem(struct io_workitem *, io_workitem_func,
+	    enum work_queue_type, void *);
+struct io_workitem	*IoAllocateWorkItem(struct device_object *);
 struct driver_object	*windrv_lookup(vm_offset_t, const char *);
 struct device_object	*IoGetAttachedDevice(struct device_object *);
 struct device_object	*IoAttachDeviceToDeviceStack(struct device_object *,

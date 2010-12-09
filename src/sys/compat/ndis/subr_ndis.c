@@ -164,7 +164,7 @@ static int32_t NdisScheduleWorkItem(struct ndis_work_item *);
 static void NdisMSetPeriodicTimer(struct ndis_miniport_timer *, uint32_t);
 static void NdisMSleep(uint32_t);
 static void NdisMCancelTimer(struct ndis_miniport_timer *, uint8_t *);
-static void ndis_timercall(kdpc *, struct ndis_miniport_timer *, void *,
+static void ndis_timercall(struct kdpc *, struct ndis_miniport_timer *, void *,
     void *);
 static void NdisMQueryAdapterResources(int32_t *, struct ndis_miniport_block *,
     struct cm_partial_resource_list *, uint32_t *);
@@ -272,8 +272,8 @@ static void NdisMIndicateStatusComplete(struct ndis_miniport_block *);
 static void NdisMIndicateStatus(struct ndis_miniport_block *, int32_t, void *,
     uint32_t);
 static uint8_t ndis_interrupt_nic(struct kinterrupt *, struct ndis_softc *);
-static void ndis_intrhand(kdpc *, struct ndis_miniport_interrupt *, void *,
-    void *);
+static void ndis_intrhand(struct kdpc *, struct ndis_miniport_interrupt *,
+    void *, void *);
 static void NdisCopyFromPacketToPacket(struct ndis_packet *, uint32_t, uint32_t,
     struct ndis_packet *, uint32_t, uint32_t *);
 static void NdisCopyFromPacketToPacketSafe(struct ndis_packet *, uint32_t,
@@ -887,8 +887,8 @@ NdisInitializeTimer(struct ndis_timer *timer, ndis_timer_function func,
 }
 
 static void
-ndis_timercall(kdpc *dpc, struct ndis_miniport_timer *timer, void *sysarg1,
-    void *sysarg2)
+ndis_timercall(struct kdpc *dpc, struct ndis_miniport_timer *timer,
+    void *sysarg1, void *sysarg2)
 {
 	/*
 	 * Since we're called as a DPC, we should be running
@@ -1187,7 +1187,7 @@ struct ndis_allocwork {
 	uint32_t		na_len;
 	uint8_t			na_cached;
 	void			*na_ctx;
-	io_workitem		*na_iw;
+	struct io_workitem	*na_iw;
 };
 
 static void
@@ -1223,7 +1223,7 @@ NdisMAllocateSharedMemoryAsync(struct ndis_miniport_block *block,
     uint32_t len, uint8_t cached, void *ctx)
 {
 	struct ndis_allocwork *w;
-	io_workitem *iw;
+	struct io_workitem *iw;
 	io_workitem_func ifw;
 
 	KASSERT(block != NULL, ("no block"));
@@ -1741,8 +1741,8 @@ ndis_interrupt_nic(struct kinterrupt *iobj, struct ndis_softc *sc)
 }
 
 static void
-ndis_intrhand(kdpc *dpc, struct ndis_miniport_interrupt *intr, void *sysarg1,
-    void *sysarg2)
+ndis_intrhand(struct kdpc *dpc, struct ndis_miniport_interrupt *intr,
+    void *sysarg1, void *sysarg2)
 {
 	struct ndis_softc *sc;
 
@@ -2431,9 +2431,9 @@ NdisMIndicateStatus(struct ndis_miniport_block *block, int32_t status,
 static int32_t
 NdisScheduleWorkItem(struct ndis_work_item *work)
 {
-	work_queue_item *wqi;
+	struct work_queue_item *wqi;
 
-	wqi = (work_queue_item *)work->wraprsvd;
+	wqi = (struct work_queue_item *)work->wraprsvd;
 	ExInitializeWorkItem(wqi, (work_item_func)work->func, work->ctx);
 	ExQueueWorkItem(wqi, WORKQUEUE_DELAYED);
 

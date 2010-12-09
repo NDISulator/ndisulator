@@ -82,8 +82,8 @@ struct kdpc_queue {
 	int			kq_exit;
 	int			kq_running;
 	unsigned long		kq_lock;
-	nt_kevent		kq_proc;
-	nt_kevent		kq_done;
+	struct nt_kevent	kq_proc;
+	struct nt_kevent	kq_done;
 };
 
 struct wb_ext {
@@ -112,19 +112,21 @@ static void RtlCopyString(struct ansi_string *,
     const struct ansi_string *);
 static void RtlCopyUnicodeString(struct unicode_string *,
     const struct unicode_string *);
-static irp *IoBuildSynchronousFsdRequest(uint32_t, struct device_object *,
-    void *, uint32_t, uint64_t *, nt_kevent *, struct io_status_block *);
-static irp *IoBuildAsynchronousFsdRequest(uint32_t, struct device_object *,
-    void *, uint32_t, uint64_t *, struct io_status_block *);
-static irp *IoBuildDeviceIoControlRequest(uint32_t, struct device_object *,
-    void *, uint32_t, void *, uint32_t, uint8_t, nt_kevent *,
+static struct irp *IoBuildSynchronousFsdRequest(uint32_t,
+    struct device_object *, void *, uint32_t, uint64_t *, struct nt_kevent *,
     struct io_status_block *);
-static irp *IoAllocateIrp(uint8_t, uint8_t);
-static void IoReuseIrp(irp *, uint32_t);
-static uint8_t IoCancelIrp(irp *);
-static void IoFreeIrp(irp *);
-static void IoInitializeIrp(irp *, uint16_t, uint8_t);
-static irp *IoMakeAssociatedIrp(irp *, uint8_t);
+static struct irp *IoBuildAsynchronousFsdRequest(uint32_t,
+    struct device_object *, void *, uint32_t, uint64_t *,
+    struct io_status_block *);
+static struct irp *IoBuildDeviceIoControlRequest(uint32_t,
+    struct device_object *, void *, uint32_t, void *, uint32_t, uint8_t,
+    struct nt_kevent *, struct io_status_block *);
+static struct irp *IoAllocateIrp(uint8_t, uint8_t);
+static void IoReuseIrp(struct irp *, uint32_t);
+static uint8_t IoCancelIrp(struct irp *);
+static void IoFreeIrp(struct irp *);
+static void IoInitializeIrp(struct irp *, uint16_t, uint8_t);
+static struct irp *IoMakeAssociatedIrp(struct irp *, uint8_t);
 static int32_t KeWaitForMultipleObjects(uint32_t, struct nt_dispatch_header **,
     uint32_t, uint32_t, uint32_t, uint8_t, int64_t *, struct wait_block *);
 static void ntoskrnl_waittest(struct nt_dispatch_header *, uint32_t);
@@ -139,7 +141,7 @@ static void ntoskrnl_workitem_thread(void *);
 static void ntoskrnl_workitem(struct device_object *, void *);
 static void ntoskrnl_unicode_to_ascii(uint16_t *, char *, int);
 static void ntoskrnl_ascii_to_unicode(char *, uint16_t *, int);
-static uint8_t ntoskrnl_insert_dpc(struct list_entry *, kdpc *);
+static uint8_t ntoskrnl_insert_dpc(struct list_entry *, struct kdpc *);
 static void WRITE_REGISTER_USHORT(uint16_t *, uint16_t);
 static uint16_t READ_REGISTER_USHORT(uint16_t *);
 static void WRITE_REGISTER_ULONG(uint32_t *, uint32_t);
@@ -156,19 +158,20 @@ static uint64_t _aulldiv(uint64_t, uint64_t);
 static uint64_t _aullrem(uint64_t, uint64_t);
 static uint64_t _aullshr(uint64_t, uint8_t);
 static uint64_t _aullshl(uint64_t, uint8_t);
-static struct slist_entry *ntoskrnl_pushsl(slist_header *, struct slist_entry *);
-static struct slist_entry *ntoskrnl_popsl(slist_header *);
+static struct slist_entry *ntoskrnl_pushsl(union slist_header *,
+    struct slist_entry *);
+static struct slist_entry *ntoskrnl_popsl(union slist_header *);
 static void *ExAllocatePoolWithTag(uint32_t, size_t, uint32_t);
 static void ExFreePoolWithTag(void *, uint32_t);
 static void ExInitializeNPagedLookasideList(struct npaged_lookaside_list *,
     lookaside_alloc_func *, lookaside_free_func *, uint32_t, size_t, uint32_t,
     uint16_t);
 static void ExDeleteNPagedLookasideList(struct npaged_lookaside_list *);
-static struct slist_entry *ExInterlockedPushEntrySList(slist_header *,
+static struct slist_entry *ExInterlockedPushEntrySList(union slist_header *,
     struct slist_entry *, unsigned long *);
-static struct slist_entry *ExInterlockedPopEntrySList(slist_header *,
+static struct slist_entry *ExInterlockedPopEntrySList(union slist_header *,
     unsigned long *);
-static void InitializeSListHead(slist_header *);
+static void InitializeSListHead(union slist_header *);
 static uint32_t InterlockedIncrement(volatile uint32_t *);
 static uint32_t InterlockedDecrement(volatile uint32_t *);
 static void ExInterlockedAddLargeStatistic(uint64_t *, uint32_t);
@@ -230,9 +233,9 @@ static int32_t IoGetDeviceObjectPointer(struct unicode_string *, uint32_t,
     void *, struct device_object *);
 static int32_t IoGetDeviceProperty(struct device_object *,
     enum device_registry_property, uint32_t, void *, uint32_t *);
-static void KeInitializeMutex(kmutant *, uint32_t);
-static int32_t KeReleaseMutex(kmutant *, uint8_t);
-static int32_t KeReadStateMutex(kmutant *);
+static void KeInitializeMutex(struct kmutant *, uint32_t);
+static int32_t KeReleaseMutex(struct kmutant *, uint8_t);
+static int32_t KeReadStateMutex(struct kmutant *);
 static int32_t ObReferenceObjectByHandle(void *, uint32_t, void *, uint8_t,
     void **, void **);
 static void ObfDereferenceObject(void *);
@@ -268,7 +271,7 @@ static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
 static uint32_t KeGetCurrentProcessorNumber(void);
 static struct thread * KeGetCurrentThread(void);
-static uint8_t KeReadStateTimer(ktimer *);
+static uint8_t KeReadStateTimer(struct ktimer *);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static void dummy(void);
@@ -365,7 +368,7 @@ ntoskrnl_libinit(void)
 	mdl_zone = uma_zcreate("Windows MDL", MDL_ZONE_SIZE,
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
 
-	iw_zone = uma_zcreate("Windows WorkItem", sizeof(io_workitem),
+	iw_zone = uma_zcreate("Windows WorkItem", sizeof(struct io_workitem),
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
 
 #ifdef notdef
@@ -750,12 +753,12 @@ IoGetAttachedDevice(struct device_object *dev)
 	return (d);
 }
 
-static irp *
+static struct irp *
 IoBuildSynchronousFsdRequest(uint32_t func, struct device_object *dobj,
-    void *buf, uint32_t len, uint64_t *off, nt_kevent *event,
+    void *buf, uint32_t len, uint64_t *off, struct nt_kevent *event,
     struct io_status_block *status)
 {
-	irp *ip;
+	struct irp *ip;
 
 	ip = IoBuildAsynchronousFsdRequest(func, dobj, buf, len, off, status);
 	if (ip == NULL)
@@ -765,11 +768,11 @@ IoBuildSynchronousFsdRequest(uint32_t func, struct device_object *dobj,
 	return (ip);
 }
 
-static irp *
+static struct irp *
 IoBuildAsynchronousFsdRequest(uint32_t func, struct device_object *dobj,
     void *buf, uint32_t len, uint64_t *off, struct io_status_block *status)
 {
-	irp *ip;
+	struct irp *ip;
 	struct io_stack_location *sl;
 
 	ip = IoAllocateIrp(dobj->stacksize, TRUE);
@@ -830,12 +833,12 @@ IoBuildAsynchronousFsdRequest(uint32_t func, struct device_object *dobj,
 	return (ip);
 }
 
-static irp *
+static struct irp *
 IoBuildDeviceIoControlRequest(uint32_t iocode, struct device_object *dobj,
     void *ibuf, uint32_t ilen, void *obuf, uint32_t olen, uint8_t isinternal,
-    nt_kevent *event, struct io_status_block *status)
+    struct nt_kevent *event, struct io_status_block *status)
 {
-	irp *ip;
+	struct irp *ip;
 	struct io_stack_location *sl;
 	uint32_t buflen;
 
@@ -909,10 +912,10 @@ IoBuildDeviceIoControlRequest(uint32_t iocode, struct device_object *dobj,
 	return (ip);
 }
 
-static irp *
+static struct irp *
 IoAllocateIrp(uint8_t stsize, uint8_t chargequota)
 {
-	irp *i;
+	struct irp *i;
 
 	i = ExAllocatePool(IoSizeOfIrp(stsize));
 	if (i == NULL)
@@ -922,10 +925,10 @@ IoAllocateIrp(uint8_t stsize, uint8_t chargequota)
 	return (i);
 }
 
-static irp *
-IoMakeAssociatedIrp(irp *ip, uint8_t stsize)
+static struct irp *
+IoMakeAssociatedIrp(struct irp *ip, uint8_t stsize)
 {
-	irp *associrp;
+	struct irp *associrp;
 
 	associrp = IoAllocateIrp(stsize, FALSE);
 	if (associrp == NULL)
@@ -941,13 +944,13 @@ IoMakeAssociatedIrp(irp *ip, uint8_t stsize)
 }
 
 static void
-IoFreeIrp(irp *ip)
+IoFreeIrp(struct irp *ip)
 {
 	ExFreePool(ip);
 }
 
 static void
-IoInitializeIrp(irp *io, uint16_t psize, uint8_t ssize)
+IoInitializeIrp(struct irp *io, uint16_t psize, uint8_t ssize)
 {
 	bzero((char *)io, IoSizeOfIrp(ssize));
 	io->size = psize;
@@ -959,7 +962,7 @@ IoInitializeIrp(irp *io, uint16_t psize, uint8_t ssize)
 }
 
 static void
-IoReuseIrp(irp *ip, uint32_t status)
+IoReuseIrp(struct irp *ip, uint32_t status)
 {
 	uint8_t allocflags;
 
@@ -982,7 +985,7 @@ IoReleaseCancelSpinLock(uint8_t irql)
 }
 
 static uint8_t
-IoCancelIrp(irp *ip)
+IoCancelIrp(struct irp *ip)
 {
 	cancel_func cfunc;
 	uint8_t cancelirql;
@@ -1001,7 +1004,7 @@ IoCancelIrp(irp *ip)
 }
 
 int32_t
-IofCallDriver(struct device_object *dobj, irp *ip)
+IofCallDriver(struct device_object *dobj, struct irp *ip)
 {
 	struct io_stack_location *sl;
 	int32_t status;
@@ -1026,7 +1029,7 @@ IofCallDriver(struct device_object *dobj, irp *ip)
 }
 
 void
-IofCompleteRequest(irp *ip, uint8_t prioboost)
+IofCompleteRequest(struct irp *ip, uint8_t prioboost)
 {
 	struct device_object *dobj;
 	struct io_stack_location *sl;
@@ -1076,7 +1079,7 @@ IofCompleteRequest(irp *ip, uint8_t prioboost)
 	/* Handle any associated IRPs. */
 	if (ip->flags & IRP_ASSOCIATED_IRP) {
 		uint32_t masterirpcnt;
-		irp *masterirp;
+		struct irp *masterirp;
 		struct mdl *m;
 
 		masterirp = ip->assoc.master;
@@ -1261,10 +1264,10 @@ IoDetachDevice(struct device_object *topdev)
 static int
 ntoskrnl_is_signalled(struct nt_dispatch_header *obj, struct thread *td)
 {
-	kmutant *km;
+	struct kmutant *km;
 
 	if (obj->dh_type == DISP_TYPE_MUTANT) {
-		km = (kmutant *)obj;
+		km = (struct kmutant *)obj;
 		if ((obj->dh_sigstate <= 0 && km->km_ownerthread == td) ||
 		    obj->dh_sigstate == 1)
 			return (TRUE);
@@ -1279,7 +1282,7 @@ ntoskrnl_is_signalled(struct nt_dispatch_header *obj, struct thread *td)
 static void
 ntoskrnl_satisfy_wait(struct nt_dispatch_header *obj, struct thread *td)
 {
-	kmutant *km;
+	struct kmutant *km;
 
 	switch (obj->dh_type) {
 	case DISP_TYPE_MUTANT:
@@ -1879,7 +1882,7 @@ _aullshr(uint64_t a, uint8_t b)
 }
 
 static struct slist_entry *
-ntoskrnl_pushsl(slist_header *head, struct slist_entry *entry)
+ntoskrnl_pushsl(union slist_header *head, struct slist_entry *entry)
 {
 	struct slist_entry *oldhead;
 
@@ -1892,7 +1895,7 @@ ntoskrnl_pushsl(slist_header *head, struct slist_entry *entry)
 }
 
 static struct slist_entry *
-ntoskrnl_popsl(slist_header *head)
+ntoskrnl_popsl(union slist_header *head)
 {
 	struct slist_entry *first;
 
@@ -1967,7 +1970,7 @@ ExDeleteNPagedLookasideList(struct npaged_lookaside_list *lookaside)
 }
 
 struct slist_entry *
-InterlockedPushEntrySList(slist_header *head, struct slist_entry *entry)
+InterlockedPushEntrySList(union slist_header *head, struct slist_entry *entry)
 {
 	struct slist_entry *oldhead;
 
@@ -1979,7 +1982,7 @@ InterlockedPushEntrySList(slist_header *head, struct slist_entry *entry)
 }
 
 struct slist_entry *
-InterlockedPopEntrySList(slist_header *head)
+InterlockedPopEntrySList(union slist_header *head)
 {
 	struct slist_entry *first;
 
@@ -1991,26 +1994,26 @@ InterlockedPopEntrySList(slist_header *head)
 }
 
 static void
-InitializeSListHead(slist_header *head)
+InitializeSListHead(union slist_header *head)
 {
 	memset(head, 0, sizeof(*head));
 }
 
 static struct slist_entry *
-ExInterlockedPushEntrySList(slist_header *head, struct slist_entry *entry,
+ExInterlockedPushEntrySList(union slist_header *head, struct slist_entry *entry,
     unsigned long *lock)
 {
 	return (InterlockedPushEntrySList(head, entry));
 }
 
 static struct slist_entry *
-ExInterlockedPopEntrySList(slist_header *head, unsigned long *lock)
+ExInterlockedPopEntrySList(union slist_header *head, unsigned long *lock)
 {
 	return (InterlockedPopEntrySList(head));
 }
 
 uint16_t
-ExQueryDepthSList(slist_header *head)
+ExQueryDepthSList(union slist_header *head)
 {
 	uint16_t depth;
 
@@ -2105,7 +2108,7 @@ ExInterlockedAddLargeStatistic(uint64_t *addend, uint32_t inc)
 
 struct mdl *
 IoAllocateMdl(void *vaddr, uint32_t len, uint8_t secondarybuf,
-    uint8_t chargequota, irp *iopkt)
+    uint8_t chargequota, struct irp *iopkt)
 {
 	struct mdl *m;
 	int zone = 0;
@@ -2403,7 +2406,7 @@ ntoskrnl_workitem_thread(void *arg)
 {
 	struct kdpc_queue *kq = arg;
 	struct list_entry *l;
-	io_workitem *iw;
+	struct io_workitem *iw;
 	uint8_t irql;
 
 	InitializeListHead(&kq->kq_disp);
@@ -2424,7 +2427,8 @@ ntoskrnl_workitem_thread(void *arg)
 
 		while (!IsListEmpty(&kq->kq_disp)) {
 			l = RemoveHeadList(&kq->kq_disp);
-			iw = CONTAINING_RECORD(l, io_workitem, iw_listentry);
+			iw = CONTAINING_RECORD(l, struct io_workitem,
+			    iw_listentry);
 			InitializeListHead((&iw->iw_listentry));
 			if (iw->iw_func == NULL)
 				continue;
@@ -2454,10 +2458,10 @@ ntoskrnl_destroy_workitem_threads(void)
 	}
 }
 
-io_workitem *
+struct io_workitem *
 IoAllocateWorkItem(struct device_object *dobj)
 {
-	io_workitem *iw;
+	struct io_workitem *iw;
 
 	iw = uma_zalloc(iw_zone, M_NOWAIT|M_ZERO);
 	if (iw == NULL)
@@ -2475,18 +2479,18 @@ IoAllocateWorkItem(struct device_object *dobj)
 }
 
 void
-IoFreeWorkItem(io_workitem *iw)
+IoFreeWorkItem(struct io_workitem *iw)
 {
 	uma_zfree(iw_zone, iw);
 }
 
 void
-IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func,
+IoQueueWorkItem(struct io_workitem *iw, io_workitem_func iw_func,
     enum work_queue_type qtype, void *ctx)
 {
 	struct kdpc_queue *kq;
 	struct list_entry *l;
-	io_workitem *cur;
+	struct io_workitem *cur;
 	uint8_t irql;
 
 	kq = wq_queues + iw->iw_idx;
@@ -2499,7 +2503,7 @@ IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func,
 	 * twice will hose the list but good.
 	 */
 	for (l = kq->kq_disp.nle_flink; l != &kq->kq_disp; l = l->nle_flink) {
-		cur = CONTAINING_RECORD(l, io_workitem, iw_listentry);
+		cur = CONTAINING_RECORD(l, struct io_workitem, iw_listentry);
 		if (cur == iw) {
 			/* Already queued -- do nothing. */
 			KeReleaseSpinLock(&kq->kq_lock, irql);
@@ -2519,11 +2523,11 @@ IoQueueWorkItem(io_workitem *iw, io_workitem_func iw_func,
 static void
 ntoskrnl_workitem(struct device_object *dobj, void *arg)
 {
-	io_workitem *iw = arg;
-	work_queue_item *w;
+	struct io_workitem *iw = arg;
+	struct work_queue_item *w;
 	work_item_func f;
 
-	w = (work_queue_item *)dobj;
+	w = (struct work_queue_item *)dobj;
 	f = (work_item_func)w->wqi_func;
 	uma_zfree(iw_zone, iw);
 	MSCALL2(f, w, w->wqi_ctx);
@@ -2554,9 +2558,9 @@ ntoskrnl_workitem(struct device_object *dobj, void *arg)
  * be queued twice. If it's already pending, we silently return
  */
 void
-ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
+ExQueueWorkItem(struct work_queue_item *w, enum work_queue_type qtype)
 {
-	io_workitem *iw, *cur;
+	struct io_workitem *iw, *cur;
 	io_workitem_func iwf;
 	struct kdpc_queue *kq;
 	struct list_entry *l;
@@ -2574,7 +2578,7 @@ ExQueueWorkItem(work_queue_item *w, enum work_queue_type qtype)
 	KeAcquireSpinLock(&kq->kq_lock, &irql);
 	l = kq->kq_disp.nle_flink;
 	while (l != &kq->kq_disp) {
-		cur = CONTAINING_RECORD(l, io_workitem, iw_listentry);
+		cur = CONTAINING_RECORD(l, struct io_workitem, iw_listentry);
 		if (cur->iw_dobj == (struct device_object *)w) {
 			/* Already queued -- do nothing. */
 			KeReleaseSpinLock(&kq->kq_lock, irql);
@@ -3063,19 +3067,19 @@ IoGetDeviceProperty(struct device_object *devobj,
 }
 
 static void
-KeInitializeMutex(kmutant *kmutex, uint32_t level)
+KeInitializeMutex(struct kmutant *kmutex, uint32_t level)
 {
 	InitializeListHead((&kmutex->km_header.dh_waitlisthead));
 	kmutex->km_abandoned = FALSE;
 	kmutex->km_apcdisable = 1;
 	kmutex->km_header.dh_sigstate = 1;
 	kmutex->km_header.dh_type = DISP_TYPE_MUTANT;
-	kmutex->km_header.dh_size = sizeof(kmutant) / sizeof(uint32_t);
+	kmutex->km_header.dh_size = sizeof(struct kmutant) / sizeof(uint32_t);
 	kmutex->km_ownerthread = NULL;
 }
 
 static int32_t
-KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
+KeReleaseMutex(struct kmutant *kmutex, uint8_t kwait)
 {
 	int32_t prevstate;
 
@@ -3100,13 +3104,13 @@ KeReleaseMutex(kmutant *kmutex, uint8_t kwait)
 }
 
 static int32_t
-KeReadStateMutex(kmutant *kmutex)
+KeReadStateMutex(struct kmutant *kmutex)
 {
 	return (kmutex->km_header.dh_sigstate);
 }
 
 void
-KeInitializeEvent(nt_kevent *kevent, uint32_t type, uint8_t state)
+KeInitializeEvent(struct nt_kevent *kevent, uint32_t type, uint8_t state)
 {
 	InitializeListHead((&kevent->k_header.dh_waitlisthead));
 	kevent->k_header.dh_sigstate = state;
@@ -3114,11 +3118,11 @@ KeInitializeEvent(nt_kevent *kevent, uint32_t type, uint8_t state)
 		kevent->k_header.dh_type = DISP_TYPE_NOTIFICATION_EVENT;
 	else
 		kevent->k_header.dh_type = DISP_TYPE_SYNCHRONIZATION_EVENT;
-	kevent->k_header.dh_size = sizeof(nt_kevent) / sizeof(uint32_t);
+	kevent->k_header.dh_size = sizeof(struct nt_kevent) / sizeof(uint32_t);
 }
 
 int32_t
-KeResetEvent(nt_kevent *kevent)
+KeResetEvent(struct nt_kevent *kevent)
 {
 	int32_t prevstate;
 
@@ -3130,7 +3134,7 @@ KeResetEvent(nt_kevent *kevent)
 }
 
 int32_t
-KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
+KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 {
 	int32_t prevstate;
 	struct wait_block *w;
@@ -3180,13 +3184,13 @@ KeSetEvent(nt_kevent *kevent, int32_t increment, uint8_t kwait)
 }
 
 void
-KeClearEvent(nt_kevent *kevent)
+KeClearEvent(struct nt_kevent *kevent)
 {
 	kevent->k_header.dh_sigstate = FALSE;
 }
 
 int32_t
-KeReadStateEvent(nt_kevent *kevent)
+KeReadStateEvent(struct nt_kevent *kevent)
 {
 	return (kevent->k_header.dh_sigstate);
 }
@@ -3228,9 +3232,9 @@ static int32_t
 ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
     uint8_t accessmode, void **object, void **handleinfo)
 {
-	nt_objref *nr;
+	struct nt_objref *nr;
 
-	nr = malloc(sizeof(nt_objref), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
+	nr = malloc(sizeof(struct nt_objref), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
 	if (nr == NULL)
 		return (NDIS_STATUS_RESOURCES);
 
@@ -3248,7 +3252,7 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 static void
 ObfDereferenceObject(void *object)
 {
-	nt_objref *nr;
+	struct nt_objref *nr;
 
 	nr = object;
 	TAILQ_REMOVE(&ntoskrnl_reflist, nr, link);
@@ -3352,7 +3356,7 @@ IoWMIOpenBlock(void *data_block_guid, uint32_t access, void **data_block_object)
 static void
 ntoskrnl_thrfunc(void *arg)
 {
-	thread_context *thrctx = arg;
+	struct thread_context *thrctx = arg;
 	uint32_t (*tfunc)(void *);
 	void *tctx;
 	int32_t rval;
@@ -3371,13 +3375,13 @@ static int32_t
 PsCreateSystemThread(void **handle, uint32_t access, void *objattr,
     void *process, void *clientid, void *thrfunc, void *thrctx)
 {
-	thread_context *tc;
+	struct thread_context *tc;
 	struct thread *t;
 
 	TRACE(NDBG_THREAD, "handle %p access %u objattr %p process %p "
 	    "clientid %p thrfunc %p thrctx %p\n",
 	    handle, access, objattr, process, clientid, thrfunc, thrctx);
-	tc = malloc(sizeof(thread_context), M_NDIS_NTOSKRNL, M_NOWAIT|M_ZERO);
+	tc = malloc(sizeof(struct thread_context), M_NDIS_NTOSKRNL, M_NOWAIT);
 	if (tc == NULL)
 		return (NDIS_STATUS_RESOURCES);
 	tc->tc_thrctx = thrctx;
@@ -3443,9 +3447,9 @@ KeBugCheckEx(uint32_t code, unsigned long prm1, unsigned long prm2,
 static void
 ntoskrnl_timercall(void *arg)
 {
-	ktimer *timer = arg;
 	struct timeval tv;
-	kdpc *dpc;
+	struct ktimer *timer = arg;
+	struct kdpc *dpc;
 
 	/*
 	 * If this is a periodic timer, re-arm it
@@ -3458,7 +3462,7 @@ ntoskrnl_timercall(void *arg)
 	if (timer->k_period) {
 		tv.tv_sec = 0;
 		tv.tv_usec = timer->k_period * 1000;
-		callout_reset(timer->k_callout, tvtohz(&tv),
+		callout_reset(timer->u.k_callout, tvtohz(&tv),
 		    ntoskrnl_timercall, timer);
 	}
 
@@ -3470,19 +3474,19 @@ ntoskrnl_timercall(void *arg)
 }
 
 void
-KeInitializeTimer(ktimer *timer)
+KeInitializeTimer(struct ktimer *timer)
 {
 	KASSERT(timer != NULL, ("no timer"));
 	KeInitializeTimerEx(timer,  EVENT_TYPE_NOTIFY);
 }
 
 void
-KeInitializeTimerEx(ktimer *timer, uint32_t type)
+KeInitializeTimerEx(struct ktimer *timer, uint32_t type)
 {
 	KASSERT(timer != NULL, ("no timer"));
 	InitializeListHead((&timer->k_header.dh_waitlisthead));
-	timer->k_callout = ExAllocatePool(sizeof(struct callout));
-	callout_init(timer->k_callout, CALLOUT_MPSAFE);
+	timer->u.k_callout = ExAllocatePool(sizeof(struct callout));
+	callout_init(timer->u.k_callout, CALLOUT_MPSAFE);
 }
 
 /*
@@ -3506,7 +3510,7 @@ static void
 ntoskrnl_dpc_thread(void *arg)
 {
 	struct kdpc_queue *kq = arg;
-	kdpc *d;
+	struct kdpc *d;
 	struct list_entry *l;
 	uint8_t irql;
 
@@ -3542,7 +3546,7 @@ ntoskrnl_dpc_thread(void *arg)
 
 		while (!IsListEmpty(&kq->kq_disp)) {
 			l = RemoveHeadList((&kq->kq_disp));
-			d = CONTAINING_RECORD(l, kdpc, k_dpclistentry);
+			d = CONTAINING_RECORD(l, struct kdpc, k_dpclistentry);
 			InitializeListHead((&d->k_dpclistentry));
 			KeReleaseSpinLockFromDpcLevel(&kq->kq_lock);
 			MSCALL4(d->k_deferedfunc, d, d->k_deferredctx,
@@ -3563,7 +3567,7 @@ static void
 ntoskrnl_destroy_dpc_threads(void)
 {
 	struct kdpc_queue *kq;
-	kdpc dpc;
+	struct kdpc dpc;
 	int i;
 
 	kq = kq_queues;
@@ -3583,13 +3587,13 @@ ntoskrnl_destroy_dpc_threads(void)
 }
 
 static uint8_t
-ntoskrnl_insert_dpc(struct list_entry *head, kdpc *dpc)
+ntoskrnl_insert_dpc(struct list_entry *head, struct kdpc *dpc)
 {
 	struct list_entry *l;
-	kdpc *d;
+	struct kdpc *d;
 
 	for (l = head->nle_flink; l != head; l = l->nle_flink) {
-		d = CONTAINING_RECORD(l, kdpc, k_dpclistentry);
+		d = CONTAINING_RECORD(l, struct kdpc, k_dpclistentry);
 		if (d == dpc)
 			return (FALSE);
 	}
@@ -3603,7 +3607,7 @@ ntoskrnl_insert_dpc(struct list_entry *head, kdpc *dpc)
 }
 
 void
-KeInitializeDpc(kdpc *dpc, void *dpcfunc, void *dpcctx)
+KeInitializeDpc(struct kdpc *dpc, void *dpcfunc, void *dpcctx)
 {
 	if (dpc == NULL)
 		return;
@@ -3616,7 +3620,7 @@ KeInitializeDpc(kdpc *dpc, void *dpcfunc, void *dpcctx)
 }
 
 uint8_t
-KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
+KeInsertQueueDpc(struct kdpc *dpc, void *sysarg1, void *sysarg2)
 {
 	uint8_t r;
 	uint8_t irql;
@@ -3654,7 +3658,7 @@ KeInsertQueueDpc(kdpc *dpc, void *sysarg1, void *sysarg2)
 }
 
 uint8_t
-KeRemoveQueueDpc(kdpc *dpc)
+KeRemoveQueueDpc(struct kdpc *dpc)
 {
 	struct kdpc_queue *kq;
 	uint8_t irql;
@@ -3687,7 +3691,7 @@ KeRemoveQueueDpc(kdpc *dpc)
 }
 
 void
-KeSetImportanceDpc(kdpc *dpc, uint32_t imp)
+KeSetImportanceDpc(struct kdpc *dpc, uint32_t imp)
 {
 	if (imp != KDPC_IMPORTANCE_LOW &&
 	    imp != KDPC_IMPORTANCE_MEDIUM &&
@@ -3698,7 +3702,7 @@ KeSetImportanceDpc(kdpc *dpc, uint32_t imp)
 }
 
 void
-KeSetTargetProcessorDpc(kdpc *dpc, uint8_t cpu)
+KeSetTargetProcessorDpc(struct kdpc *dpc, uint8_t cpu)
 {
 	if (cpu > mp_ncpus)
 		return;
@@ -3733,7 +3737,8 @@ KeGetCurrentProcessorNumber(void)
 }
 
 uint8_t
-KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
+KeSetTimerEx(struct ktimer *timer, int64_t duetime, uint32_t period,
+    struct kdpc *dpc)
 {
 	struct timeval tv;
 	uint64_t curtime;
@@ -3759,29 +3764,29 @@ KeSetTimerEx(ktimer *timer, int64_t duetime, uint32_t period, kdpc *dpc)
 			    (tv.tv_sec * 1000000);
 		}
 	}
-	return (callout_reset(timer->k_callout, tvtohz(&tv),
+	return (callout_reset(timer->u.k_callout, tvtohz(&tv),
 	    ntoskrnl_timercall, timer));
 }
 
 uint8_t
-KeSetTimer(ktimer *timer, int64_t duetime, kdpc *dpc)
+KeSetTimer(struct ktimer *timer, int64_t duetime, struct kdpc *dpc)
 {
 	return (KeSetTimerEx(timer, duetime, 0, dpc));
 }
 
 uint8_t
-KeCancelTimer(ktimer *timer)
+KeCancelTimer(struct ktimer *timer)
 {
 	KASSERT(timer != NULL, ("no timer"));
 
 	timer->k_period = 0;
-	return (callout_stop(timer->k_callout));
+	return (callout_stop(timer->u.k_callout));
 }
 
 static uint8_t
-KeReadStateTimer(ktimer *timer)
+KeReadStateTimer(struct ktimer *timer)
 {
-	return (callout_pending(timer->k_callout));
+	return (callout_pending(timer->u.k_callout));
 }
 
 static int32_t

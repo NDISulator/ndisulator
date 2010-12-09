@@ -90,8 +90,8 @@ static void	NdisMQueryInformationComplete(struct ndis_miniport_block *,
 static void	NdisMResetComplete(struct ndis_miniport_block *, int32_t,
 		    uint8_t);
 static void	NdisMSendResourcesAvailable(struct ndis_miniport_block *);
-static void	ndis_interrupt_setup(kdpc *, struct device_object *, irp *,
-		    struct ndis_softc *);
+static void	ndis_interrupt_setup(struct kdpc *, struct device_object *,
+		    struct irp *, struct ndis_softc *);
 static void	ndis_return_packet_nic(struct device_object *,
 		    struct ndis_miniport_block *);
 
@@ -938,8 +938,8 @@ ndis_init_nic(struct ndis_softc *sc)
 }
 
 static void
-ndis_interrupt_setup(kdpc *dpc, struct device_object *dobj, irp *ip,
-    struct ndis_softc *sc)
+ndis_interrupt_setup(struct kdpc *dpc, struct device_object *dobj,
+    struct irp *ip, struct ndis_softc *sc)
 {
 	struct ndis_miniport_interrupt *intr;
 

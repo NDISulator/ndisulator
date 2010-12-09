@@ -1806,12 +1806,12 @@ struct ndis_packet {
 };
 
 struct ndis_packet_pool {
-	slist_header	head;
-	nt_kevent	event;
-	unsigned long	lock;
-	uint32_t	cnt;
-	uint32_t	len;
-	void		*pktmem;
+	union slist_header	head;
+	struct nt_kevent	event;
+	unsigned long		lock;
+	uint32_t		cnt;
+	uint32_t		len;
+	void			*pktmem;
 };
 
 struct ndis_filter_dbs {
@@ -2046,12 +2046,12 @@ struct ndis_miniport_block {
 	struct list_entry		parmlist;
 	struct cm_partial_resource_list	*rlist;
 	int32_t				getstat;
-	nt_kevent			getevent;
+	struct nt_kevent		getevent;
 	int32_t				setstat;
-	nt_kevent			setevent;
+	struct nt_kevent		setevent;
 	int32_t				resetstat;
-	nt_kevent			resetevent;
-	io_workitem			*returnitem;
+	struct nt_kevent		resetevent;
+	struct io_workitem		*returnitem;
 	struct ndis_packet_pool		*rxpool;
 	struct list_entry		returnlist;
 	unsigned long			returnlock;

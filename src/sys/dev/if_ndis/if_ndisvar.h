@@ -169,11 +169,11 @@ struct ndis_softc {
 	uint32_t			ndis_devidx;
 	enum ndis_bus_type		ndis_bus_type;
 	struct driver_object		*ndis_dobj;
-	io_workitem			*ndis_tickitem;
-	io_workitem			*ndis_startitem;
-	io_workitem			*ndis_resetitem;
-	io_workitem			*ndis_inputitem;
-	kdpc				ndis_rxdpc;
+	struct io_workitem		*ndis_tickitem;
+	struct io_workitem		*ndis_startitem;
+	struct io_workitem		*ndis_resetitem;
+	struct io_workitem		*ndis_inputitem;
+	struct kdpc			ndis_rxdpc;
 	bus_dma_tag_t			ndis_parent_tag;
 	struct list_entry		ndis_shlist;
 	bus_dma_tag_t			ndis_mtag;
@@ -200,10 +200,10 @@ struct ndis_softc {
 	((UE_GET_DIR(addr) >> 7) | (UE_GET_ADDR(addr) << 1))
 #define	NDISUSB_ENDPT_MAX	((UE_ADDR + 1) * 2)
 	struct ndisusb_ep		ndisusb_ep[NDISUSB_ENDPT_MAX];
-	io_workitem			*ndisusb_xferdoneitem;
+	struct io_workitem		*ndisusb_xferdoneitem;
 	struct list_entry		ndisusb_xferdonelist;
 	unsigned long			ndisusb_xferdonelock;
-	io_workitem			*ndisusb_taskitem;
+	struct io_workitem		*ndisusb_taskitem;
 	struct list_entry		ndisusb_tasklist;
 	unsigned long			ndisusb_tasklock;
 	int				ndisusb_status;

@@ -104,27 +104,28 @@ static struct usb_config usbd_default_epconfig[USBD_CTRL_MAX_PIPE] = {
 	}
 };
 
-static int32_t usbd_func_bulkintr(irp *);
-static int32_t usbd_func_vendorclass(irp *);
-static int32_t usbd_func_selconf(irp *);
-static int32_t usbd_func_abort_pipe(irp *);
-static usb_error_t usbd_setup_endpoint(irp *, uint8_t,
+static int32_t usbd_func_bulkintr(struct irp *);
+static int32_t usbd_func_vendorclass(struct irp *);
+static int32_t usbd_func_selconf(struct irp *);
+static int32_t usbd_func_abort_pipe(struct irp *);
+static usb_error_t usbd_setup_endpoint(struct irp *, uint8_t,
     struct usb_endpoint_descriptor *);
-static usb_error_t usbd_setup_endpoint_default(irp *, uint8_t);
-static usb_error_t usbd_setup_endpoint_one(irp *, uint8_t,
+static usb_error_t usbd_setup_endpoint_default(struct irp *, uint8_t);
+static usb_error_t usbd_setup_endpoint_one(struct irp *, uint8_t,
     struct ndisusb_ep *, struct usb_config *);
-static int32_t usbd_func_getdesc(irp *);
-static union usbd_urb *usbd_geturb(irp *);
-static struct ndisusb_ep*usbd_get_ndisep(irp *, usb_endpoint_descriptor_t *);
-static int32_t usbd_iodispatch(struct device_object *, irp *);
-static int32_t usbd_ioinvalid(struct device_object *, irp *);
-static int32_t usbd_pnp(struct device_object *, irp *);
-static int32_t usbd_power(struct device_object *, irp *);
-static void usbd_irpcancel(struct device_object *, irp *);
-static int32_t usbd_submit_urb(irp *);
+static int32_t usbd_func_getdesc(struct irp *);
+static union usbd_urb *usbd_geturb(struct irp *);
+static struct ndisusb_ep*usbd_get_ndisep(struct irp *,
+    usb_endpoint_descriptor_t *);
+static int32_t usbd_iodispatch(struct device_object *, struct irp *);
+static int32_t usbd_ioinvalid(struct device_object *, struct irp *);
+static int32_t usbd_pnp(struct device_object *, struct irp *);
+static int32_t usbd_power(struct device_object *, struct irp *);
+static void usbd_irpcancel(struct device_object *, struct irp *);
+static int32_t usbd_submit_urb(struct irp *);
 static int32_t usbd_urb2nt(int32_t);
 static void usbd_task(struct device_object *, struct ndis_softc *);
-static int32_t usbd_taskadd(irp *, unsigned);
+static int32_t usbd_taskadd(struct irp *, unsigned);
 static void usbd_xfertask(struct device_object *, struct ndis_softc *);
 static void dummy(void);
 
@@ -204,7 +205,7 @@ usbd_libfini(void)
 }
 
 static int32_t
-usbd_iodispatch(struct device_object *dobj, irp *ip)
+usbd_iodispatch(struct device_object *dobj, struct irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -232,7 +233,7 @@ usbd_iodispatch(struct device_object *dobj, irp *ip)
 }
 
 static int32_t
-usbd_ioinvalid(struct device_object *dobj, irp *ip)
+usbd_ioinvalid(struct device_object *dobj, struct irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -250,7 +251,7 @@ usbd_ioinvalid(struct device_object *dobj, irp *ip)
 }
 
 static int32_t
-usbd_pnp(struct device_object *dobj, irp *ip)
+usbd_pnp(struct device_object *dobj, struct irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -268,7 +269,7 @@ usbd_pnp(struct device_object *dobj, irp *ip)
 }
 
 static int32_t
-usbd_power(struct device_object *dobj, irp *ip)
+usbd_power(struct device_object *dobj, struct irp *ip)
 {
 	struct io_stack_location *sl;
 	device_t dev = dobj->devext;
@@ -342,7 +343,7 @@ usbd_usb2urb(int status)
 }
 
 static union usbd_urb *
-usbd_geturb(irp *ip)
+usbd_geturb(struct irp *ip)
 {
 	struct io_stack_location *sl;
 
@@ -352,7 +353,7 @@ usbd_geturb(irp *ip)
 }
 
 static int32_t
-usbd_submit_urb(irp *ip)
+usbd_submit_urb(struct irp *ip)
 {
 	device_t dev;
 	int32_t status;
@@ -406,7 +407,7 @@ usbd_submit_urb(irp *ip)
 }
 
 static int32_t
-usbd_func_getdesc(irp *ip)
+usbd_func_getdesc(struct irp *ip)
 {
 #define	NDISUSB_GETDESC_MAXRETRIES 3
 	device_t dev;
@@ -467,7 +468,7 @@ exit:
 }
 
 static int32_t
-usbd_func_selconf(irp *ip)
+usbd_func_selconf(struct irp *ip)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -549,7 +550,7 @@ usbd_func_selconf(irp *ip)
 }
 
 static usb_error_t
-usbd_setup_endpoint_one(irp *ip, uint8_t ifidx, struct ndisusb_ep *ne,
+usbd_setup_endpoint_one(struct irp *ip, uint8_t ifidx, struct ndisusb_ep *ne,
     struct usb_config *epconf)
 {
 	device_t dev;
@@ -578,7 +579,7 @@ usbd_setup_endpoint_one(irp *ip, uint8_t ifidx, struct ndisusb_ep *ne,
 }
 
 static usb_error_t
-usbd_setup_endpoint_default(irp *ip, uint8_t ifidx)
+usbd_setup_endpoint_default(struct irp *ip, uint8_t ifidx)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -602,7 +603,8 @@ usbd_setup_endpoint_default(irp *ip, uint8_t ifidx)
 }
 
 static usb_error_t
-usbd_setup_endpoint(irp *ip, uint8_t ifidx, struct usb_endpoint_descriptor *ep)
+usbd_setup_endpoint(struct irp *ip, uint8_t ifidx,
+    struct usb_endpoint_descriptor *ep)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -660,7 +662,7 @@ usbd_setup_endpoint(irp *ip, uint8_t ifidx, struct usb_endpoint_descriptor *ep)
 }
 
 static int32_t
-usbd_func_abort_pipe(irp *ip)
+usbd_func_abort_pipe(struct irp *ip)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -686,7 +688,7 @@ usbd_func_abort_pipe(irp *ip)
 }
 
 static int32_t
-usbd_func_vendorclass(irp *ip)
+usbd_func_vendorclass(struct irp *ip)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -742,7 +744,7 @@ usbd_func_vendorclass(irp *ip)
 }
 
 static void
-usbd_irpcancel(struct device_object *dobj, irp *ip)
+usbd_irpcancel(struct device_object *dobj, struct irp *ip)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -823,7 +825,7 @@ usbd_non_isoc_callback(struct usb_xfer *xfer, usb_error_t error)
 	struct ndisusb_xfer *nx;
 	struct usbd_urb_bulk_or_intr_transfer *ubi;
 	struct usb_page_cache *pc;
-	irp *ip;
+	struct irp *ip;
 	usb_endpoint_descriptor_t *ep;
 	uint32_t len;
 	uint8_t irql;
@@ -922,7 +924,7 @@ extra:
 static void
 usbd_ctrl_callback(struct usb_xfer *xfer, usb_error_t error)
 {
-	irp *ip;
+	struct irp *ip;
 	struct ndis_softc *sc;
 	struct ndisusb_ep *ne;
 	struct ndisusb_xfer *nx;
@@ -1068,7 +1070,7 @@ next:
 }
 
 static struct ndisusb_ep *
-usbd_get_ndisep(irp *ip, usb_endpoint_descriptor_t *ep)
+usbd_get_ndisep(struct irp *ip, usb_endpoint_descriptor_t *ep)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -1087,7 +1089,7 @@ usbd_get_ndisep(irp *ip, usb_endpoint_descriptor_t *ep)
 static void
 usbd_xfertask(struct device_object *dobj, struct ndis_softc *sc)
 {
-	irp *ip;
+	struct irp *ip;
 	device_t dev;
 	struct list_entry *l;
 	struct ndisusb_xferdone *nd;
@@ -1164,7 +1166,7 @@ usbd_xfertask(struct device_object *dobj, struct ndis_softc *sc)
  * we don't want to be in the scope of HAL lock.
  */
 static int32_t
-usbd_taskadd(irp *ip, unsigned type)
+usbd_taskadd(struct irp *ip, unsigned type)
 {
 	device_t dev;
 	struct ndis_softc *sc;
@@ -1192,7 +1194,7 @@ usbd_taskadd(irp *ip, unsigned type)
 static void
 usbd_task(struct device_object *dobj, struct ndis_softc *sc)
 {
-	irp *ip;
+	struct irp *ip;
 	struct list_entry *l;
 	struct ndisusb_ep *ne;
 	struct ndisusb_task *nt;
@@ -1250,7 +1252,7 @@ exit:
 }
 
 static int32_t
-usbd_func_bulkintr(irp *ip)
+usbd_func_bulkintr(struct irp *ip)
 {
 	int32_t error;
 	struct ndisusb_ep *ne;
