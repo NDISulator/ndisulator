@@ -310,12 +310,7 @@ ntoskrnl_libinit(void)
 
 	InitializeListHead(&ntoskrnl_intlist);
 
-	kq_queues = ExAllocatePool(
-#ifdef NTOSKRNL_MULTIPLE_DPCS
-	    sizeof(struct kdpc_queue) * mp_ncpus);
-#else
-	    sizeof(struct kdpc_queue));
-#endif
+	kq_queues = ExAllocatePool(sizeof(struct kdpc_queue));
 	if (kq_queues == NULL)
 		panic("failed to allocate kq_queues");
 
@@ -323,20 +318,10 @@ ntoskrnl_libinit(void)
 	if (wq_queues == NULL)
 		panic("failed to allocate wq_queues");
 
-	/*
-	 * Launch the DPC threads.
-	 */
-#ifdef NTOSKRNL_MULTIPLE_DPCS
-	for (i = 0; i < mp_ncpus; i++) {
-#else
-	for (i = 0; i < 1; i++) {
-#endif
-		kq = kq_queues + i;
-		kq->kq_cpu = i;
-		if (kproc_kthread_add(ntoskrnl_dpc_thread, kq, &ndisproc,
-		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "dpc%d", i))
-			panic("failed to launch DPC thread");
-	}
+	kq = kq_queues;
+	if (kproc_kthread_add(ntoskrnl_dpc_thread, kq, &ndisproc,
+	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "dpc"))
+		panic("failed to launch DPC thread");
 
 	/*
 	 * Launch the workitem threads.
@@ -2412,7 +2397,7 @@ ntoskrnl_workitem_thread(void *arg)
 
 	InitializeListHead(&kq->kq_disp);
 	kq->kq_td = curthread;
-	kq->kq_exit = 0;
+	kq->kq_exit = FALSE;
 	KeInitializeSpinLock(&kq->kq_lock);
 	KeInitializeEvent(&kq->kq_proc, EVENT_TYPE_SYNC, FALSE);
 
@@ -2421,7 +2406,7 @@ ntoskrnl_workitem_thread(void *arg)
 		KeAcquireSpinLock(&kq->kq_lock, &irql);
 
 		if (kq->kq_exit) {
-			kq->kq_exit = 0;
+			kq->kq_exit = FALSE;
 			KeReleaseSpinLock(&kq->kq_lock, irql);
 			break;
 		}
@@ -2452,7 +2437,7 @@ ntoskrnl_destroy_workitem_threads(void)
 
 	for (i = 0; i < WORKITEM_THREADS; i++) {
 		kq = wq_queues + i;
-		kq->kq_exit = 1;
+		kq->kq_exit = TRUE;
 		KeSetEvent(&kq->kq_proc, IO_NO_INCREMENT, FALSE);
 		while (kq->kq_exit)
 			tsleep(kq->kq_td->td_proc, PWAIT, "waitiw", hz/10);
@@ -3499,7 +3484,7 @@ ntoskrnl_dpc_thread(void *arg)
 
 	InitializeListHead(&kq->kq_disp);
 	kq->kq_td = curthread;
-	kq->kq_exit = 0;
+	kq->kq_exit = FALSE;
 	kq->kq_running = FALSE;
 	KeInitializeSpinLock(&kq->kq_lock);
 	KeInitializeEvent(&kq->kq_proc, EVENT_TYPE_SYNC, FALSE);
@@ -3520,7 +3505,7 @@ ntoskrnl_dpc_thread(void *arg)
 		KeAcquireSpinLock(&kq->kq_lock, &irql);
 
 		if (kq->kq_exit) {
-			kq->kq_exit = 0;
+			kq->kq_exit = FALSE;
 			KeReleaseSpinLock(&kq->kq_lock, irql);
 			break;
 		}
@@ -3551,22 +3536,14 @@ ntoskrnl_destroy_dpc_threads(void)
 {
 	struct kdpc_queue *kq;
 	struct kdpc dpc;
-	int i;
 
 	kq = kq_queues;
-#ifdef NTOSKRNL_MULTIPLE_DPCS
-	for (i = 0; i < mp_ncpus; i++) {
-#else
-	for (i = 0; i < 1; i++) {
-#endif
-		kq += i;
-		kq->kq_exit = 1;
-		KeInitializeDpc(&dpc, NULL, NULL);
-		KeSetTargetProcessorDpc(&dpc, i);
-		KeInsertQueueDpc(&dpc, NULL, NULL);
-		while (kq->kq_exit)
-			tsleep(kq->kq_td->td_proc, PWAIT, "dpcw", hz/10);
-	}
+	kq->kq_exit = TRUE;
+	KeInitializeDpc(&dpc, NULL, NULL);
+	KeSetTargetProcessorDpc(&dpc, 0);
+	KeInsertQueueDpc(&dpc, NULL, NULL);
+	while (kq->kq_exit)
+		tsleep(kq->kq_td->td_proc, PWAIT, "dpcw", hz/10);
 }
 
 static uint8_t
@@ -3610,21 +3587,7 @@ KeInsertQueueDpc(struct kdpc *dpc, void *sysarg1, void *sysarg2)
 
 	KASSERT(dpc != NULL, ("no dpc"));
 
-#ifdef NTOSKRNL_MULTIPLE_DPCS
-	KeRaiseIrql(DISPATCH_LEVEL, &irql);
-
-	/*
-	 * By default, the DPC is queued to run on the same CPU
-	 * that scheduled it.
-	 */
-	if (dpc->k_num == KDPC_CPU_DEFAULT)
-		kq_queues += curthread->td_oncpu;
-	else
-		kq_queues += dpc->k_num;
-	KeAcquireSpinLockAtDpcLevel(&kq_queues->kq_lock);
-#else
 	KeAcquireSpinLock(&kq_queues->kq_lock, &irql);
-#endif
 	r = ntoskrnl_insert_dpc(&kq_queues->kq_disp, dpc);
 	if (r == TRUE) {
 		dpc->k_sysarg1 = sysarg1;
@@ -3649,19 +3612,10 @@ KeRemoveQueueDpc(struct kdpc *dpc)
 	if (dpc == NULL)
 		return (FALSE);
 
-#ifdef NTOSKRNL_MULTIPLE_DPCS
-	KeRaiseIrql(DISPATCH_LEVEL, &irql);
-
-	kq = kq_queues + dpc->k_num;
-
-	KeAcquireSpinLockAtDpcLevel(&kq->kq_lock);
-#else
 	kq = kq_queues;
 	KeAcquireSpinLock(&kq->kq_lock, &irql);
-#endif
 	if (dpc->k_dpclistentry.nle_flink == &dpc->k_dpclistentry) {
-		KeReleaseSpinLockFromDpcLevel(&kq->kq_lock);
-		KeLowerIrql(irql);
+		KeReleaseSpinLock(&kq->kq_lock, irql);
 		return (FALSE);
 	}
 
@@ -3692,20 +3646,10 @@ void
 KeFlushQueuedDpcs(void)
 {
 	struct kdpc_queue *kq;
-	int i;
 
-	/*
-	 * Poke each DPC queue and wait for them to drain.
-	 */
-#ifdef NTOSKRNL_MULTIPLE_DPCS
-	for (i = 0; i < mp_ncpus; i++) {
-#else
-	for (i = 0; i < 1; i++) {
-#endif
-		kq = kq_queues + i;
-		KeSetEvent(&kq->kq_proc, IO_NO_INCREMENT, FALSE);
-		KeWaitForSingleObject(&kq->kq_done, 0, 0, TRUE, NULL);
-	}
+	kq = kq_queues;
+	KeSetEvent(&kq->kq_proc, IO_NO_INCREMENT, FALSE);
+	KeWaitForSingleObject(&kq->kq_done, 0, 0, TRUE, NULL);
 }
 
 static uint32_t
