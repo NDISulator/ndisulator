@@ -2464,6 +2464,7 @@ IoAllocateWorkItem(struct device_object *dobj)
 {
 	struct io_workitem *iw;
 
+	TRACE(NDBG_WORK, "dobj %p\n", dobj);
 	iw = uma_zalloc(iw_zone, M_NOWAIT|M_ZERO);
 	if (iw == NULL)
 		return (NULL);
@@ -2482,6 +2483,7 @@ IoAllocateWorkItem(struct device_object *dobj)
 void
 IoFreeWorkItem(struct io_workitem *iw)
 {
+	TRACE(NDBG_WORK, "workitem %p\n", iw);
 	uma_zfree(iw_zone, iw);
 }
 
@@ -2534,8 +2536,8 @@ ntoskrnl_workitem(struct device_object *dobj, void *arg)
 	work_item_func f;
 
 	w = (struct work_queue_item *)dobj;
-	f = (work_item_func)w->wqi_func;
-	uma_zfree(iw_zone, iw);
+	f = w->wqi_func;
+	IoFreeWorkItem(iw);
 	MSCALL2(f, w, w->wqi_ctx);
 }
 
@@ -2564,7 +2566,7 @@ ntoskrnl_workitem(struct device_object *dobj, void *arg)
  * be queued twice. If it's already pending, we silently return
  */
 void
-ExQueueWorkItem(struct work_queue_item *w, enum work_queue_type qtype)
+ExQueueWorkItem(struct work_queue_item *w, enum work_queue_type type)
 {
 	struct io_workitem *iw, *cur;
 	io_workitem_func iwf;
@@ -2600,7 +2602,7 @@ ExQueueWorkItem(struct work_queue_item *w, enum work_queue_type qtype)
 
 	iw->iw_idx = WORKITEM_LEGACY_THREAD;
 	iwf = (io_workitem_func)ntoskrnl_workitem_wrap;
-	IoQueueWorkItem(iw, iwf, qtype, iw);
+	IoQueueWorkItem(iw, iwf, type, iw);
 }
 
 static int32_t
