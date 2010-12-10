@@ -2490,9 +2490,6 @@ ndis_resettask(struct device_object *d, void *arg)
 	ndis_reset_nic(sc);
 }
 
-/*
- * Stop the adapter and free any mbufs allocated to the RX and TX lists.
- */
 static void
 ndis_stop(struct ndis_softc *sc)
 {
