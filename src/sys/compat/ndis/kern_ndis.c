@@ -990,9 +990,9 @@ ndis_load_driver(struct driver_object *drv, struct device_object *pdo)
 	block->nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
 	KeInitializeSpinLock(&block->lock);
 	KeInitializeSpinLock(&block->returnlock);
-	KeInitializeEvent(&block->getevent, EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeEvent(&block->setevent, EVENT_TYPE_NOTIFY, TRUE);
-	KeInitializeEvent(&block->resetevent, EVENT_TYPE_NOTIFY, TRUE);
+	KeInitializeEvent(&block->getevent, NOTIFICATION_EVENT, TRUE);
+	KeInitializeEvent(&block->setevent, NOTIFICATION_EVENT, TRUE);
+	KeInitializeEvent(&block->resetevent, NOTIFICATION_EVENT, TRUE);
 	InitializeListHead(&block->parmlist);
 	InitializeListHead(&block->returnlist);
 	block->returnitem = IoAllocateWorkItem(fdo);

@@ -266,9 +266,6 @@ struct nt_objref {
 };
 TAILQ_HEAD(nt_objref_head, nt_objref);
 
-#define	EVENT_TYPE_NOTIFY 0
-#define	EVENT_TYPE_SYNC 1
-
 struct ktimer {
 	struct nt_dispatch_header	k_header;
 	uint64_t			k_duetime;

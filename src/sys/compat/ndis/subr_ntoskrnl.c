@@ -669,7 +669,7 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 	dev->alignreq = 1;
 	dev->characteristics = devchars;
 	dev->iotimer = NULL;
-	KeInitializeEvent(&dev->devlock, EVENT_TYPE_SYNC, TRUE);
+	KeInitializeEvent(&dev->devlock, SYNCHRONIZATION_EVENT, TRUE);
 
 	/*
 	 * Vpd is used for disk/tape devices,
@@ -2399,7 +2399,7 @@ ntoskrnl_workitem_thread(void *arg)
 	kq->kq_td = curthread;
 	kq->kq_exit = FALSE;
 	KeInitializeSpinLock(&kq->kq_lock);
-	KeInitializeEvent(&kq->kq_proc, EVENT_TYPE_SYNC, FALSE);
+	KeInitializeEvent(&kq->kq_proc, SYNCHRONIZATION_EVENT, FALSE);
 
 	for (;;) {
 		KeWaitForSingleObject(&kq->kq_proc, 0, 0, TRUE, NULL);
@@ -3441,7 +3441,7 @@ void
 KeInitializeTimer(struct ktimer *timer)
 {
 	KASSERT(timer != NULL, ("no timer"));
-	KeInitializeTimerEx(timer,  EVENT_TYPE_NOTIFY);
+	KeInitializeTimerEx(timer,  NOTIFICATION_TIMER);
 }
 
 void
@@ -3487,8 +3487,8 @@ ntoskrnl_dpc_thread(void *arg)
 	kq->kq_exit = FALSE;
 	kq->kq_running = FALSE;
 	KeInitializeSpinLock(&kq->kq_lock);
-	KeInitializeEvent(&kq->kq_proc, EVENT_TYPE_SYNC, FALSE);
-	KeInitializeEvent(&kq->kq_done, EVENT_TYPE_SYNC, FALSE);
+	KeInitializeEvent(&kq->kq_proc, SYNCHRONIZATION_EVENT, FALSE);
+	KeInitializeEvent(&kq->kq_done, SYNCHRONIZATION_EVENT, FALSE);
 
 	/*
 	 * Elevate our priority. DPCs are used to run interrupt

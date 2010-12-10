@@ -1624,11 +1624,7 @@ static void
 NdisInitializeEvent(struct ndis_event *event)
 {
 	TRACE(NDBG_EVENT, "event %p\n", event);
-	/*
-	 * NDIS events are always notification events,
-	 * and should be initialized to the not signaled state.
-	 */
-	KeInitializeEvent(&event->kevent, EVENT_TYPE_NOTIFY, FALSE);
+	KeInitializeEvent(&event->kevent, NOTIFICATION_EVENT, FALSE);
 }
 
 static void
@@ -1766,8 +1762,7 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 	intr->isr_func = ch->isr_func;
 	intr->dpc_func = ch->interrupt_func;
 
-	KeInitializeEvent(&intr->dpcs_completed_event,
-	    EVENT_TYPE_NOTIFY, TRUE);
+	KeInitializeEvent(&intr->dpcs_completed_event, NOTIFICATION_EVENT, TRUE);
 	KeInitializeDpc(&intr->interrupt_dpc, ndis_intrhand_wrap, intr);
 	KeSetImportanceDpc(&intr->interrupt_dpc, IMPORTANCE_LOW);
 
