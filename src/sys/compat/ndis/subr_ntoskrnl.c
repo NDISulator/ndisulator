@@ -266,6 +266,8 @@ static int ntoskrnl_tolower(int);
 static funcptr ntoskrnl_findwrap(void *);
 static int32_t DbgPrint(const char *, ...);
 static void DbgBreakPoint(void);
+static void KeClearEvent(struct nt_kevent *);
+static int32_t KeReadStateEvent(struct nt_kevent *);
 static void KeBugCheck(uint32_t);
 static void KeBugCheckEx(uint32_t, unsigned long, unsigned long, unsigned long,
     unsigned long);
@@ -3145,13 +3147,13 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 	return (prevstate);
 }
 
-void
+static void
 KeClearEvent(struct nt_kevent *kevent)
 {
 	kevent->k_header.dh_sigstate = FALSE;
 }
 
-int32_t
+static int32_t
 KeReadStateEvent(struct nt_kevent *kevent)
 {
 	return (kevent->k_header.dh_sigstate);

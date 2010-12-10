@@ -610,7 +610,6 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 	 * finish before allowing another request to proceed.
 	 */
 	if (req == NDIS_REQUEST_QUERY_INFORMATION) {
-		KeResetEvent(&sc->ndis_block->getevent);
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
 		rval = MSCALL6(sc->ndis_chars->query_info_func,
 		    sc->ndis_block->miniport_adapter_ctx,
@@ -626,7 +625,6 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 		    "written %u needed %u rval %08X\n",
 		    req, sc, oid, buf, buflen, *written, *needed, rval);
 	} else if (req == NDIS_REQUEST_SET_INFORMATION) {
-		KeResetEvent(&sc->ndis_block->setevent);
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
 		rval = MSCALL6(sc->ndis_chars->set_info_func,
 		    sc->ndis_block->miniport_adapter_ctx,
@@ -797,7 +795,6 @@ ndis_reset_nic(struct ndis_softc *sc)
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	KASSERT(sc->ndis_chars->reset_func != NULL, ("no reset"));
-	KeResetEvent(&sc->ndis_block->resetevent);
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
 	rval = MSCALL2(sc->ndis_chars->reset_func,
@@ -990,9 +987,9 @@ ndis_load_driver(struct driver_object *drv, struct device_object *pdo)
 	block->nextdeviceobj = IoAttachDeviceToDeviceStack(fdo, pdo);
 	KeInitializeSpinLock(&block->lock);
 	KeInitializeSpinLock(&block->returnlock);
-	KeInitializeEvent(&block->getevent, NOTIFICATION_EVENT, TRUE);
-	KeInitializeEvent(&block->setevent, NOTIFICATION_EVENT, TRUE);
-	KeInitializeEvent(&block->resetevent, NOTIFICATION_EVENT, TRUE);
+	KeInitializeEvent(&block->getevent, SYNCHRONIZATION_EVENT, FALSE);
+	KeInitializeEvent(&block->setevent, SYNCHRONIZATION_EVENT, FALSE);
+	KeInitializeEvent(&block->resetevent, SYNCHRONIZATION_EVENT, FALSE);
 	InitializeListHead(&block->parmlist);
 	InitializeListHead(&block->returnlist);
 	block->returnitem = IoAllocateWorkItem(fdo);

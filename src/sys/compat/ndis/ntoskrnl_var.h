@@ -1249,8 +1249,6 @@ uint8_t	KeSetTimerEx(struct ktimer *, int64_t, uint32_t, struct kdpc *);
 uint8_t	KeCancelTimer(struct ktimer *);
 int32_t	KeWaitForSingleObject(void *, uint32_t, uint32_t, uint8_t, int64_t *);
 void	KeInitializeEvent(struct nt_kevent *, uint32_t, uint8_t);
-void	KeClearEvent(struct nt_kevent *);
-int32_t	KeReadStateEvent(struct nt_kevent *);
 int32_t	KeSetEvent(struct nt_kevent *, int32_t, uint8_t);
 int32_t	KeResetEvent(struct nt_kevent *);
 #ifdef __i386__
