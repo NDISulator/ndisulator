@@ -106,6 +106,9 @@ static void NdisInitializeWrapper(void **, struct driver_object *, void *,
 static int32_t NdisMRegisterMiniport(struct driver_object *,
     struct ndis_miniport_characteristics *, uint32_t);
 static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
+static struct io_workitem * NdisAllocateIoWorkItem(struct device_object *);
+static void NdisFreeIoWorkItem(struct io_workitem *);
+static void NdisQueueIoWorkItem(struct io_workitem *, io_workitem_func, void *);
 static int32_t NdisAllocateMemory(void **, uint32_t, uint32_t, uint64_t);
 static void NdisFreeMemory(void *, uint32_t, uint32_t);
 static int32_t NdisMSetAttributesEx(struct ndis_miniport_block *, void *,
@@ -353,6 +356,24 @@ NdisMRegisterMiniport(struct driver_object *drv,
 
 	memcpy(ch, characteristics, len);
 	return (NDIS_STATUS_SUCCESS);
+}
+
+static struct io_workitem *
+NdisAllocateIoWorkItem(struct device_object *dobj)
+{
+	return (IoAllocateWorkItem(dobj));
+}
+
+static void
+NdisFreeIoWorkItem(struct io_workitem *iw)
+{
+	IoFreeWorkItem(iw);
+}
+
+static void
+NdisQueueIoWorkItem(struct io_workitem *iw, io_workitem_func iw_func, void *ctx)
+{
+	IoQueueWorkItem(iw, iw_func, WORKQUEUE_DELAYED, ctx);
 }
 
 static int32_t
@@ -2578,6 +2599,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisAdjustBufferLength, 2),
 	IMPORT_SFUNC(NdisAllocateBuffer, 5),
 	IMPORT_SFUNC(NdisAllocateBufferPool, 3),
+	IMPORT_SFUNC(NdisAllocateIoWorkItem, 1),
 	IMPORT_SFUNC(NdisAllocateMemory, 4 + 1),
 	IMPORT_SFUNC(NdisAllocateMemoryWithTag, 3),
 	IMPORT_SFUNC(NdisAllocatePacket, 3),
@@ -2597,6 +2619,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisDprReleaseSpinLock, 1),
 	IMPORT_SFUNC(NdisFreeBuffer, 1),
 	IMPORT_SFUNC(NdisFreeBufferPool, 1),
+	IMPORT_SFUNC(NdisFreeIoWorkItem, 1),
 	IMPORT_SFUNC(NdisFreeMemory, 3),
 	IMPORT_SFUNC(NdisFreePacket, 1),
 	IMPORT_SFUNC(NdisFreePacketPool, 1),
@@ -2668,6 +2691,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisQueryBuffer, 3),
 	IMPORT_SFUNC(NdisQueryBufferOffset, 3),
 	IMPORT_SFUNC(NdisQueryBufferSafe, 4),
+	IMPORT_SFUNC(NdisQueueIoWorkItem, 3),
 	IMPORT_SFUNC(NdisReadConfiguration, 5),
 	IMPORT_SFUNC(NdisReadNetworkAddress, 4),
 	IMPORT_SFUNC(NdisReadPciSlotInformation, 5),
