@@ -1649,9 +1649,10 @@ NdisWaitEvent(struct ndis_event *event, uint32_t msecs)
 	TRACE(NDBG_EVENT, "event %p msecs %u\n", event, msecs);
 	duetime = ((int64_t)msecs * -10000);
 	ret = KeWaitForSingleObject(event, 0, 0, TRUE, msecs ? &duetime : NULL);
-	if (ret == NDIS_STATUS_TIMEOUT)
+	if (ret == NDIS_STATUS_SUCCESS)
+		return (TRUE);
+	else
 		return (FALSE);
-	return (TRUE);
 }
 
 static int32_t
