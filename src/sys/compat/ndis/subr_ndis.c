@@ -914,8 +914,7 @@ NdisSetTimer(struct ndis_timer *timer, uint32_t msecs)
 {
 	TRACE(NDBG_TIMER, "timer %p msecs %u\n", timer, msecs);
 	KASSERT(timer != NULL, ("no timer"));
-	KeSetTimer(&timer->ktimer,
-	    ((int64_t)msecs * -10000), &timer->kdpc);
+	KeSetTimer(&timer->ktimer, ((int64_t)msecs * -10000), &timer->kdpc);
 }
 
 static void
@@ -1645,13 +1644,12 @@ static uint8_t
 NdisWaitEvent(struct ndis_event *event, uint32_t msecs)
 {
 	int64_t duetime;
-	uint32_t rval;
+	uint32_t ret;
 
 	TRACE(NDBG_EVENT, "event %p msecs %u\n", event, msecs);
 	duetime = ((int64_t)msecs * -10000);
-	rval = KeWaitForSingleObject(event,
-	    0, 0, TRUE, msecs ? & duetime : NULL);
-	if (rval == NDIS_STATUS_TIMEOUT)
+	ret = KeWaitForSingleObject(event, 0, 0, TRUE, msecs ? &duetime : NULL);
+	if (ret == NDIS_STATUS_TIMEOUT)
 		return (FALSE);
 	return (TRUE);
 }
@@ -1792,8 +1790,7 @@ NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *intr)
 	/* Disconnect our ISR */
 	IoDisconnectInterrupt(intr->interrupt_object);
 
-	KeWaitForSingleObject(&intr->dpcs_completed_event,
-	    0, 0, FALSE, NULL);
+	KeWaitForSingleObject(&intr->dpcs_completed_event, 0, 0, FALSE, NULL);
 	KeResetEvent(&intr->dpcs_completed_event);
 }
 
