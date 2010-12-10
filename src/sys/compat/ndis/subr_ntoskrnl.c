@@ -2560,41 +2560,13 @@ ntoskrnl_workitem(struct device_object *dobj, void *arg)
  * of IoQueueWorkItem(). Workitem thread #3 is reserved exclusively
  * for ExQueueWorkItem() jobs, and we pass a pointer to the work
  * queue item (provided by the caller) in to IoAllocateWorkItem()
- * instead of the device_object. We need to save this pointer so
- * we can apply a sanity check: as with the DPC queue and other
- * workitem queues, we can't allow the same work queue item to
- * be queued twice. If it's already pending, we silently return
+ * instead of the device_object.
  */
 void
 ExQueueWorkItem(struct work_queue_item *w, enum work_queue_type type)
 {
-	struct io_workitem *iw, *cur;
+	struct io_workitem *iw;
 	io_workitem_func iwf;
-	struct kdpc_queue *kq;
-	struct list_entry *l;
-	uint8_t irql;
-
-	/*
-	 * We need to do a special sanity test to make sure
-	 * the ExQueueWorkItem() API isn't used to queue
-	 * the same workitem twice. Rather than checking the
-	 * io_workitem pointer itself, we test the attached
-	 * device object, which is really a pointer to the
-	 * legacy work queue item structure.
-	 */
-	kq = wq_queues + WORKITEM_LEGACY_THREAD;
-	KeAcquireSpinLock(&kq->kq_lock, &irql);
-	l = kq->kq_disp.nle_flink;
-	while (l != &kq->kq_disp) {
-		cur = CONTAINING_RECORD(l, struct io_workitem, iw_listentry);
-		if (cur->iw_dobj == (struct device_object *)w) {
-			/* Already queued -- do nothing. */
-			KeReleaseSpinLock(&kq->kq_lock, irql);
-			return;
-		}
-		l = l->nle_flink;
-	}
-	KeReleaseSpinLock(&kq->kq_lock, irql);
 
 	iw = IoAllocateWorkItem((struct device_object *)w);
 	if (iw == NULL)
