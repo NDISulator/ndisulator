@@ -682,6 +682,15 @@ struct ndis_object_header {
 #define	NDIS_OBJECT_TYPE_SHARED_MEMORY_PROVIDER_CHARACTERISTICS		0xB0
 #define	NDIS_OBJECT_TYPE_RSS_PROCESSOR_INFO				0xB1
 
+typedef void (*ndis_timer_function)(void *, void *, void *, void *);
+
+struct ndis_timer_characteristics {
+	struct ndis_object_header	header;
+	uint32_t			allocation_tag;
+	ndis_timer_function		timer_function;
+	void				*function_context;
+};
+
 union net_luid {
 	uint64_t	value;
 	struct {
@@ -1570,8 +1579,6 @@ struct ndis_timer {
 	struct ktimer	ktimer;
 	struct kdpc	kdpc;
 };
-
-typedef void (*ndis_timer_function)(void *, void *, void *, void *);
 
 struct ndis_miniport_timer {
 	struct ktimer			ktimer;
