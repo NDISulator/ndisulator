@@ -628,54 +628,32 @@ static void
 NdisAllocateSpinLock(struct ndis_spin_lock *lock)
 {
 	KeInitializeSpinLock(&lock->spinlock);
-	lock->kirql = 0;
+	lock->kirql = PASSIVE_LEVEL;
 }
 
-/*
- * Destroy a Windows spinlock. This is a no-op for now. There are two reasons
- * for this. One is that it's sort of superfluous: we don't have to do anything
- * special to deallocate the spinlock. The other is that there are some buggy
- * drivers which call NdisFreeSpinLock() _after_ calling NdisFreeMemory() on
- * the block of memory in which the spinlock resides. (Yes, ADMtek, I'm
- * talking to you.)
- */
 static void
 NdisFreeSpinLock(struct ndis_spin_lock *lock)
-{/*
-	KeInitializeSpinLock(&lock->spinlock);
-	lock->kirql = 0; */
+{
 }
 
-/*
- * Acquire a spinlock from IRQL <= DISPATCH_LEVEL.
- */
 static void
 NdisAcquireSpinLock(struct ndis_spin_lock *lock)
 {
 	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
 }
 
-/*
- * Release a spinlock from IRQL == DISPATCH_LEVEL.
- */
 static void
 NdisReleaseSpinLock(struct ndis_spin_lock *lock)
 {
 	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 }
 
-/*
- * Acquire a spinlock when already running at IRQL == DISPATCH_LEVEL.
- */
 static void
 NdisDprAcquireSpinLock(struct ndis_spin_lock *lock)
 {
 	KeAcquireSpinLockAtDpcLevel(&lock->spinlock);
 }
 
-/*
- * Release a spinlock without leaving IRQL == DISPATCH_LEVEL.
- */
 static void
 NdisDprReleaseSpinLock(struct ndis_spin_lock *lock)
 {
