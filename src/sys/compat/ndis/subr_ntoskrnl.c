@@ -90,8 +90,7 @@ struct wb_ext {
 	struct thread		*we_td;
 };
 
-static struct list_entry ntoskrnl_intlist;
-static unsigned long ntoskrnl_intlock;
+static struct list_entry nt_intlist;
 
 #ifdef __amd64__
 struct kuser_shared_data kuser_data;
@@ -280,11 +279,12 @@ static funcptr ntoskrnl_workitem_wrap;
 static funcptr ExFreePool_wrap;
 static funcptr ExAllocatePoolWithTag_wrap;
 static struct proc *ndisproc;
-static struct mtx ntoskrnl_dispatchlock;
-static struct mtx ntoskrnl_interlock;
-static unsigned long ntoskrnl_cancellock;
+static struct mtx nt_dispatchlock;
+static struct mtx nt_interlock;
+static unsigned long nt_cancellock;
+static unsigned long nt_intlock;
 static uint8_t ntoskrnl_kth;
-static struct nt_objref_head ntoskrnl_reflist;
+static struct nt_objref_head nt_reflist;
 static uma_zone_t mdl_zone;
 static uma_zone_t iw_zone;
 static struct kdpc_queue *kq_queues;
@@ -300,14 +300,13 @@ ntoskrnl_libinit(void)
 	struct kdpc_queue *kq;
 	int i;
 
-	mtx_init(&ntoskrnl_dispatchlock,
-	    "ntoskrnl dispatchlock", NULL, MTX_DEF | MTX_RECURSE);
-	mtx_init(&ntoskrnl_interlock, "ntoskrnl interlock", NULL, MTX_SPIN);
-	KeInitializeSpinLock(&ntoskrnl_cancellock);
-	KeInitializeSpinLock(&ntoskrnl_intlock);
-	TAILQ_INIT(&ntoskrnl_reflist);
+	mtx_init(&nt_dispatchlock, "dispatchlock", NULL, MTX_DEF | MTX_RECURSE);
+	mtx_init(&nt_interlock, "interlock", NULL, MTX_SPIN);
+	KeInitializeSpinLock(&nt_cancellock);
+	KeInitializeSpinLock(&nt_intlock);
+	TAILQ_INIT(&nt_reflist);
 
-	InitializeListHead(&ntoskrnl_intlist);
+	InitializeListHead(&nt_intlist);
 
 	kq_queues = ExAllocatePool(sizeof(struct kdpc_queue));
 	if (kq_queues == NULL)
@@ -377,8 +376,8 @@ ntoskrnl_libfini(void)
 	uma_zdestroy(mdl_zone);
 	uma_zdestroy(iw_zone);
 
-	mtx_destroy(&ntoskrnl_dispatchlock);
-	mtx_destroy(&ntoskrnl_interlock);
+	mtx_destroy(&nt_dispatchlock);
+	mtx_destroy(&nt_interlock);
 #ifdef notdef
 	callout_drain(&update_kuser);
 #endif
@@ -919,11 +918,11 @@ IoMakeAssociatedIrp(struct irp *ip, uint8_t stsize)
 	if (associrp == NULL)
 		return (NULL);
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 	associrp->flags |= IRP_ASSOCIATED_IRP;
 	associrp->tail.overlay.thread = ip->tail.overlay.thread;
 	associrp->assoc.master = ip;
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 
 	return (associrp);
 }
@@ -960,13 +959,13 @@ IoReuseIrp(struct irp *ip, uint32_t status)
 void
 IoAcquireCancelSpinLock(uint8_t *irql)
 {
-	KeAcquireSpinLock(&ntoskrnl_cancellock, irql);
+	KeAcquireSpinLock(&nt_cancellock, irql);
 }
 
 void
 IoReleaseCancelSpinLock(uint8_t irql)
 {
-	KeReleaseSpinLock(&ntoskrnl_cancellock, irql);
+	KeReleaseSpinLock(&nt_cancellock, irql);
 }
 
 static uint8_t
@@ -1096,16 +1095,16 @@ ntoskrnl_intr(void *arg)
 	uint8_t claimed;
 	struct list_entry *l;
 
-	KeAcquireSpinLock(&ntoskrnl_intlock, &irql);
-	l = ntoskrnl_intlist.flink;
-	while (l != &ntoskrnl_intlist) {
+	KeAcquireSpinLock(&nt_intlock, &irql);
+	l = nt_intlist.flink;
+	while (l != &nt_intlist) {
 		iobj = CONTAINING_RECORD(l, struct kinterrupt, ki_list);
 		claimed = MSCALL2(iobj->ki_svcfunc, iobj, iobj->ki_svcctx);
 		if (claimed == TRUE)
 			break;
 		l = l->flink;
 	}
-	KeReleaseSpinLock(&ntoskrnl_intlock, irql);
+	KeReleaseSpinLock(&nt_intlock, irql);
 }
 
 uint8_t
@@ -1175,9 +1174,9 @@ IoConnectInterrupt(struct kinterrupt **iobj, void *svcfunc, void *svcctx,
 	} else
 		(*iobj)->ki_lock = lock;
 
-	KeAcquireSpinLock(&ntoskrnl_intlock, &curirql);
-	InsertHeadList((&ntoskrnl_intlist), (&(*iobj)->ki_list));
-	KeReleaseSpinLock(&ntoskrnl_intlock, curirql);
+	KeAcquireSpinLock(&nt_intlock, &curirql);
+	InsertHeadList((&nt_intlist), (&(*iobj)->ki_list));
+	KeReleaseSpinLock(&nt_intlock, curirql);
 
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -1190,9 +1189,9 @@ IoDisconnectInterrupt(struct kinterrupt *iobj)
 	if (iobj == NULL)
 		return;
 
-	KeAcquireSpinLock(&ntoskrnl_intlock, &irql);
+	KeAcquireSpinLock(&nt_intlock, &irql);
 	RemoveEntryList((&iobj->ki_list));
-	KeReleaseSpinLock(&ntoskrnl_intlock, irql);
+	KeReleaseSpinLock(&nt_intlock, irql);
 
 	ExFreePool(iobj);
 }
@@ -1203,12 +1202,12 @@ IoAttachDeviceToDeviceStack(struct device_object *src,
 {
 	struct device_object *attached;
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 	attached = IoGetAttachedDevice(dst);
 	attached->attacheddev = src;
 	src->attacheddev = NULL;
 	src->stacksize = attached->stacksize + 1;
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 
 	return (attached);
 }
@@ -1218,12 +1217,12 @@ IoDetachDevice(struct device_object *topdev)
 {
 	struct device_object *tail;
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 
 	/* First, break the chain. */
 	tail = topdev->attacheddev;
 	if (tail == NULL) {
-		mtx_unlock(&ntoskrnl_dispatchlock);
+		mtx_unlock(&nt_dispatchlock);
 		return;
 	}
 	topdev->attacheddev = tail->attacheddev;
@@ -1232,7 +1231,7 @@ IoDetachDevice(struct device_object *topdev)
 	for (tail = topdev->attacheddev; tail != NULL; tail = tail->attacheddev)
 		tail->stacksize--;
 
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 }
 
 /*
@@ -1494,7 +1493,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	if (obj == NULL)
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 
 	cv_init(&we.we_cv, "KeWFS");
 	we.we_td = td;
@@ -1507,7 +1506,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 		/* Sanity check the signal state value. */
 		if (obj->sigstate != INT32_MIN) {
 			ntoskrnl_satisfy_wait(obj, curthread);
-			mtx_unlock(&ntoskrnl_dispatchlock);
+			mtx_unlock(&nt_dispatchlock);
 			return (NDIS_STATUS_SUCCESS);
 		} else {
 			/*
@@ -1516,7 +1515,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 			 * the limit, something is very wrong.
 			 */
 			if (obj->type == MUTANT_OBJECT) {
-				mtx_unlock(&ntoskrnl_dispatchlock);
+				mtx_unlock(&nt_dispatchlock);
 				panic("mutant limit exceeded");
 			}
 		}
@@ -1559,10 +1558,9 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	}
 
 	if (duetime == NULL)
-		cv_wait(&we.we_cv, &ntoskrnl_dispatchlock);
+		cv_wait(&we.we_cv, &nt_dispatchlock);
 	else
-		error = cv_timedwait(&we.we_cv,
-		    &ntoskrnl_dispatchlock, tvtohz(&tv));
+		error = cv_timedwait(&we.we_cv, &nt_dispatchlock, tvtohz(&tv));
 
 	RemoveEntryList(&w.wb_waitlist);
 
@@ -1570,10 +1568,10 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 
 	/* We timed out. Leave the object alone and return status. */
 	if (error == EWOULDBLOCK) {
-		mtx_unlock(&ntoskrnl_dispatchlock);
+		mtx_unlock(&nt_dispatchlock);
 		return (NDIS_STATUS_TIMEOUT);
 	}
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 
 	return (NDIS_STATUS_SUCCESS);
 /*
@@ -1601,7 +1599,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 	    (cnt > THREAD_WAIT_OBJECTS && wb_array == NULL))
 		return (NDIS_STATUS_INVALID_PARAMETER);
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 
 	cv_init(&we.we_cv, "KeWFM");
 	we.we_td = td;
@@ -1637,7 +1635,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 			 */
 			if (obj[i]->sigstate == INT32_MIN &&
 			    obj[i]->type == MUTANT_OBJECT) {
-				mtx_unlock(&ntoskrnl_dispatchlock);
+				mtx_unlock(&nt_dispatchlock);
 				panic("mutant limit exceeded");
 			}
 
@@ -1699,10 +1697,10 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 	while (wcnt) {
 		nanotime(&t1);
 		if (duetime == NULL)
-			cv_wait(&we.we_cv, &ntoskrnl_dispatchlock);
+			cv_wait(&we.we_cv, &nt_dispatchlock);
 		else
 			error = cv_timedwait(&we.we_cv,
-			    &ntoskrnl_dispatchlock, tvtohz(&tv));
+			    &nt_dispatchlock, tvtohz(&tv));
 
 		/* Wait with timeout expired. */
 		if (error) {
@@ -1721,7 +1719,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatch_header *obj[],
 				/* Sanity check the signal state value. */
 				if (cur->sigstate == INT32_MIN &&
 				    cur->type == MUTANT_OBJECT) {
-					mtx_unlock(&ntoskrnl_dispatchlock);
+					mtx_unlock(&nt_dispatchlock);
 					panic("mutant limit exceeded");
 				}
 				wcnt--;
@@ -1764,7 +1762,7 @@ wait_done:
 			RemoveEntryList(&whead[i].wb_waitlist);
 
 	}
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 
 	return (status);
 }
@@ -1958,9 +1956,9 @@ InterlockedPushEntrySList(union slist_header *head, struct slist_entry *entry)
 {
 	struct slist_entry *oldhead;
 
-	mtx_lock_spin(&ntoskrnl_interlock);
+	mtx_lock_spin(&nt_interlock);
 	oldhead = ntoskrnl_pushsl(head, entry);
-	mtx_unlock_spin(&ntoskrnl_interlock);
+	mtx_unlock_spin(&nt_interlock);
 
 	return (oldhead);
 }
@@ -1970,9 +1968,9 @@ InterlockedPopEntrySList(union slist_header *head)
 {
 	struct slist_entry *first;
 
-	mtx_lock_spin(&ntoskrnl_interlock);
+	mtx_lock_spin(&nt_interlock);
 	first = ntoskrnl_popsl(head);
-	mtx_unlock_spin(&ntoskrnl_interlock);
+	mtx_unlock_spin(&nt_interlock);
 
 	return (first);
 }
@@ -2001,9 +1999,9 @@ ExQueryDepthSList(union slist_header *head)
 {
 	uint16_t depth;
 
-	mtx_lock_spin(&ntoskrnl_interlock);
+	mtx_lock_spin(&nt_interlock);
 	depth = head->slh_list.slh_depth;
-	mtx_unlock_spin(&ntoskrnl_interlock);
+	mtx_unlock_spin(&nt_interlock);
 
 	return (depth);
 }
@@ -2058,10 +2056,10 @@ InterlockedExchange(volatile uint32_t *dst, uintptr_t val)
 {
 	uintptr_t r;
 
-	mtx_lock_spin(&ntoskrnl_interlock);
+	mtx_lock_spin(&nt_interlock);
 	r = *dst;
 	*dst = val;
-	mtx_unlock_spin(&ntoskrnl_interlock);
+	mtx_unlock_spin(&nt_interlock);
 
 	return (r);
 }
@@ -2085,9 +2083,9 @@ InterlockedDecrement(volatile int32_t *addend)
 static void
 ExInterlockedAddLargeStatistic(uint64_t *addend, uint32_t inc)
 {
-	mtx_lock_spin(&ntoskrnl_interlock);
+	mtx_lock_spin(&nt_interlock);
 	*addend += inc;
-	mtx_unlock_spin(&ntoskrnl_interlock);
+	mtx_unlock_spin(&nt_interlock);
 }
 
 struct mdl *
@@ -2454,11 +2452,11 @@ IoAllocateWorkItem(struct device_object *dobj)
 
 	InitializeListHead(&iw->iw_listentry);
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 	iw->iw_dobj = dobj;
 	iw->iw_idx = wq_idx;
 	WORKIDX_INC(wq_idx);
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 
 	return (iw);
 }
@@ -3046,10 +3044,10 @@ KeReleaseMutex(struct nt_kmutex *kmutex, uint8_t kwait)
 {
 	int32_t prevstate;
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 	prevstate = kmutex->header.sigstate;
 	if (kmutex->owner_thread != curthread) {
-		mtx_unlock(&ntoskrnl_dispatchlock);
+		mtx_unlock(&nt_dispatchlock);
 		return (NDIS_STATUS_MUTANT_NOT_OWNED);
 	}
 
@@ -3061,7 +3059,7 @@ KeReleaseMutex(struct nt_kmutex *kmutex, uint8_t kwait)
 		ntoskrnl_waittest(&kmutex->header, IO_NO_INCREMENT);
 	}
 
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 
 	return (prevstate);
 }
@@ -3086,10 +3084,10 @@ KeResetEvent(struct nt_kevent *kevent)
 {
 	int32_t prevstate;
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 	prevstate = kevent->header.sigstate;
 	kevent->header.sigstate = FALSE;
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 	return (prevstate);
 }
 
@@ -3102,7 +3100,7 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 	struct thread *td;
 	struct wb_ext *we;
 
-	mtx_lock(&ntoskrnl_dispatchlock);
+	mtx_lock(&nt_dispatchlock);
 	prevstate = kevent->header.sigstate;
 	dh = &kevent->header;
 	if (IsListEmpty(&dh->waitlisthead))
@@ -3139,7 +3137,7 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 			    w->wb_oldpri - (increment * 4) : PRI_MIN_KERN);
 		}
 	}
-	mtx_unlock(&ntoskrnl_dispatchlock);
+	mtx_unlock(&nt_dispatchlock);
 	return (prevstate);
 }
 
@@ -3203,7 +3201,7 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 	nr->header.type = THREAD_OBJECT;
 	nr->header.sigstate = 0;
 	nr->header.size = (uint8_t)(sizeof(struct thread) / sizeof(uint32_t));
-	TAILQ_INSERT_TAIL(&ntoskrnl_reflist, nr, link);
+	TAILQ_INSERT_TAIL(&nt_reflist, nr, link);
 	*object = nr;
 
 	return (NDIS_STATUS_SUCCESS);
@@ -3212,10 +3210,9 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 static void
 ObfDereferenceObject(void *object)
 {
-	struct nt_objref *nr;
+	struct nt_objref *nr = object;
 
-	nr = object;
-	TAILQ_REMOVE(&ntoskrnl_reflist, nr, link);
+	TAILQ_REMOVE(&nt_reflist, nr, link);
 	free(nr, M_NDIS_NTOSKRNL);
 }
 
