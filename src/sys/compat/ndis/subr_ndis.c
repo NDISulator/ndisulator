@@ -1709,20 +1709,18 @@ NdisMPciAssignResources(struct ndis_miniport_block *block, uint32_t slot,
 static uint8_t
 ndis_interrupt_nic(struct kinterrupt *iobj, struct ndis_softc *sc)
 {
-	uint8_t is_our_intr = FALSE;
-	int call_isr = 0;
+	uint8_t is_our_intr = FALSE, call_isr = FALSE;
 
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
 	if (sc->ndis_block->interrupt == NULL)
 		return (FALSE);
-	if (sc->ndis_block->interrupt->isr_requested == TRUE)
-		MSCALL3(sc->ndis_block->interrupt->isr_func,
-		    &is_our_intr, &call_isr,
-		    sc->ndis_block->miniport_adapter_ctx);
+	if (sc->ndis_block->interrupt->isr_requested)
+		MSCALL3(sc->ndis_block->interrupt->isr_func, &is_our_intr,
+		    &call_isr, sc->ndis_block->miniport_adapter_ctx);
 	else {
 		ndis_disable_interrupts_nic(sc);
-		call_isr = 1;
+		call_isr = TRUE;
 	}
 	if (call_isr)
 		IoRequestDpc(sc->ndis_block->deviceobj, NULL, sc);
@@ -1748,26 +1746,25 @@ ndis_intrhand(struct nt_kdpc *kdpc, struct ndis_miniport_interrupt *intr,
 		KeReleaseSpinLockFromDpcLevel(&intr->block->lock);
 
 	/*
-	 * Set the completion event if we've drained all
-	 * pending interrupts.
+	 * Set the completion event if we've drained all pending interrupts.
 	 */
 	KeAcquireSpinLockAtDpcLevel(&intr->dpc_count_lock);
 	intr->dpc_count--;
 	if (intr->dpc_count == 0)
-		KeSetEvent(&intr->dpcs_completed_event,
-		    IO_NO_INCREMENT, FALSE);
+		KeSetEvent(&intr->dpcs_completed_event, IO_NO_INCREMENT, FALSE);
 	KeReleaseSpinLockFromDpcLevel(&intr->dpc_count_lock);
 }
 
 static int32_t
 NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
-    struct ndis_miniport_block *block, uint32_t ivec, uint32_t ilevel,
-    uint8_t reqisr, uint8_t shared, enum ndis_interrupt_mode imode)
+    struct ndis_miniport_block *block, uint32_t vec, uint32_t level,
+    uint8_t reqisr, uint8_t shared, enum ndis_interrupt_mode mode)
 {
 	struct ndis_miniport_characteristics *ch;
 	struct ndis_softc *sc;
 
-	TRACE(NDBG_INTR, "intr %p block %p\n", intr, block);
+	TRACE(NDBG_INTR, "intr %p block %p vec %u level %u reqisr %u shared %u "
+	    "mode %d\n", intr, block, vec, level, reqisr, shared, mode);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	sc = device_get_softc(block->physdeviceobj->devext);
@@ -1788,7 +1785,7 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 
 	if (IoConnectInterrupt(&intr->interrupt_object,
 	    ndis_interrupt_nic_wrap, sc, NULL,
-	    ivec, ilevel, 0, imode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
+	    vec, level, 0, mode, shared, 0, FALSE) != NDIS_STATUS_SUCCESS)
 		return (NDIS_STATUS_FAILURE);
 
 	block->interrupt = intr;
@@ -1818,16 +1815,16 @@ NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *intr)
 
 static void
 NdisMRegisterAdapterShutdownHandler(struct ndis_miniport_block *block,
-    void *shutdownctx, ndis_shutdown_func shutdownfunc)
+    void *ctx, ndis_shutdown_func func)
 {
 	struct ndis_softc *sc;
 
-	TRACE(NDBG_INIT, "block %p\n", block);
+	TRACE(NDBG_INIT, "block %p ctx %p func %p\n", block, ctx, func);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	sc = device_get_softc(block->physdeviceobj->devext);
-	sc->ndis_chars->shutdown_func = shutdownfunc;
-	sc->ndis_chars->reserved0 = shutdownctx;
+	sc->ndis_chars->shutdown_func = func;
+	sc->ndis_chars->reserved0 = ctx;
 }
 
 static void
@@ -1979,13 +1976,11 @@ NdisInterlockedInsertTailList(struct list_entry *head, struct list_entry *entry,
 
 static uint8_t
 NdisMSynchronizeWithInterrupt(struct ndis_miniport_interrupt *intr,
-    void *syncfunc, void *syncctx)
+    void *func, void *ctx)
 {
-	TRACE(NDBG_INTR, "intr %p syncfunc %p syncctx %p\n",
-	    intr, syncfunc, syncctx);
+	TRACE(NDBG_INTR, "intr %p func %p ctx %p\n", intr, func, ctx);
 	KASSERT(intr != NULL, ("no intr"));
-	return (KeSynchronizeExecution(intr->interrupt_object,
-	    syncfunc, syncctx));
+	return (KeSynchronizeExecution(intr->interrupt_object, func, ctx));
 }
 
 static void
