@@ -80,7 +80,6 @@ struct kdpc_queue {
 	struct thread		*kq_td;
 	int			kq_cpu;
 	int			kq_exit;
-	int			kq_running;
 	unsigned long		kq_lock;
 	struct nt_kevent	kq_proc;
 	struct nt_kevent	kq_done;
@@ -108,8 +107,7 @@ static uint8_t RtlEqualString(const struct ansi_string *,
     const struct ansi_string *, uint8_t);
 static uint8_t RtlEqualUnicodeString(const struct unicode_string *,
     const struct unicode_string *, uint8_t);
-static void RtlCopyString(struct ansi_string *,
-    const struct ansi_string *);
+static void RtlCopyString(struct ansi_string *, const struct ansi_string *);
 static void RtlCopyUnicodeString(struct unicode_string *,
     const struct unicode_string *);
 static struct irp *IoBuildSynchronousFsdRequest(uint32_t,
@@ -204,8 +202,7 @@ static int32_t RtlCompareString(const struct ansi_string *,
 static int32_t RtlCompareUnicodeString(const struct unicode_string *,
     const struct unicode_string *, uint8_t);
 static int32_t RtlUnicodeStringToInteger(const struct unicode_string *,
-    uint32_t,
-    uint32_t *);
+    uint32_t, uint32_t *);
 static int atoi(const char *);
 static long atol(const char *);
 static int rand(void);
@@ -3487,7 +3484,6 @@ ntoskrnl_dpc_thread(void *arg)
 	InitializeListHead(&kq->kq_disp);
 	kq->kq_td = curthread;
 	kq->kq_exit = FALSE;
-	kq->kq_running = FALSE;
 	KeInitializeSpinLock(&kq->kq_lock);
 	KeInitializeEvent(&kq->kq_proc, SYNCHRONIZATION_EVENT, FALSE);
 	KeInitializeEvent(&kq->kq_done, SYNCHRONIZATION_EVENT, FALSE);
@@ -3512,8 +3508,6 @@ ntoskrnl_dpc_thread(void *arg)
 			break;
 		}
 
-		kq->kq_running = TRUE;
-
 		while (!IsListEmpty(&kq->kq_disp)) {
 			l = RemoveHeadList((&kq->kq_disp));
 			d = CONTAINING_RECORD(l, struct kdpc, k_dpclistentry);
@@ -3523,7 +3517,6 @@ ntoskrnl_dpc_thread(void *arg)
 			    d->k_sysarg1, d->k_sysarg2);
 			KeAcquireSpinLockAtDpcLevel(&kq->kq_lock);
 		}
-		kq->kq_running = FALSE;
 
 		KeReleaseSpinLock(&kq->kq_lock, irql);
 
