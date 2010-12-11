@@ -802,7 +802,7 @@ usbd_aq_getfirst(struct ndis_softc *sc, struct ndisusb_ep *ne)
 		KeReleaseSpinLockFromDpcLevel(&ne->ne_lock);
 		return (NULL);
 	}
-	nx = CONTAINING_RECORD(ne->ne_active.nle_flink, struct ndisusb_xfer,
+	nx = CONTAINING_RECORD(ne->ne_active.flink, struct ndisusb_xfer,
 	    nx_next);
 	RemoveEntryList(&nx->nx_next);
 	KeReleaseSpinLockFromDpcLevel(&ne->ne_lock);
@@ -872,7 +872,7 @@ next:
 			KeReleaseSpinLock(&ne->ne_lock, irql);
 			return;
 		}
-		nx = CONTAINING_RECORD(ne->ne_pending.nle_flink,
+		nx = CONTAINING_RECORD(ne->ne_pending.flink,
 		    struct ndisusb_xfer, nx_next);
 		RemoveEntryList(&nx->nx_next);
 		/* Add a entry to the active queue's tail.  */
@@ -958,7 +958,7 @@ next:
 			KeReleaseSpinLock(&ne->ne_lock, irql);
 			return;
 		}
-		nx = CONTAINING_RECORD(ne->ne_pending.nle_flink,
+		nx = CONTAINING_RECORD(ne->ne_pending.flink,
 		    struct ndisusb_xfer, nx_next);
 		RemoveEntryList(&nx->nx_next);
 		/* Add a entry to the active queue's tail.  */
@@ -1100,7 +1100,7 @@ usbd_xfertask(struct device_object *dobj, struct ndis_softc *sc)
 		return;
 
 	KeAcquireSpinLockAtDpcLevel(&sc->ndisusb_xferdonelock);
-	l = sc->ndisusb_xferdonelist.nle_flink;
+	l = sc->ndisusb_xferdonelist.flink;
 	while (l != &sc->ndisusb_xferdonelist) {
 		nd = CONTAINING_RECORD(l, struct ndisusb_xferdone, nd_donelist);
 		nq = nd->nd_xfer;
@@ -1140,7 +1140,7 @@ usbd_xfertask(struct device_object *dobj, struct ndis_softc *sc)
 			break;
 		}
 
-		l = l->nle_flink;
+		l = l->flink;
 		RemoveEntryList(&nd->nd_donelist);
 		free(nq, M_USBDEV);
 		free(nd, M_USBDEV);
@@ -1197,7 +1197,7 @@ usbd_task(struct device_object *dobj, struct ndis_softc *sc)
 		return;
 
 	KeAcquireSpinLockAtDpcLevel(&sc->ndisusb_tasklock);
-	l = sc->ndisusb_tasklist.nle_flink;
+	l = sc->ndisusb_tasklist.flink;
 	while (l != &sc->ndisusb_tasklist) {
 		nt = CONTAINING_RECORD(l, struct ndisusb_task, nt_tasklist);
 
@@ -1237,7 +1237,7 @@ exit:
 		NDISUSB_UNLOCK(sc);
 		KeAcquireSpinLockAtDpcLevel(&sc->ndisusb_tasklock);
 
-		l = l->nle_flink;
+		l = l->flink;
 		RemoveEntryList(&nt->nt_tasklist);
 		free(nt, M_USBDEV);
 	}

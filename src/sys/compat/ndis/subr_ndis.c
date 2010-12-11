@@ -163,8 +163,8 @@ static int32_t NdisScheduleWorkItem(struct ndis_work_item *);
 static void NdisMSetPeriodicTimer(struct ndis_miniport_timer *, uint32_t);
 static void NdisMSleep(uint32_t);
 static void NdisMCancelTimer(struct ndis_miniport_timer *, uint8_t *);
-static void ndis_timercall(struct kdpc *, struct ndis_miniport_timer *, void *,
-    void *);
+static void ndis_timercall(struct nt_kdpc *, struct ndis_miniport_timer *,
+    void *, void *);
 static void NdisMQueryAdapterResources(int32_t *, struct ndis_miniport_block *,
     struct cm_partial_resource_list *, uint32_t *);
 static int32_t NdisMRegisterIoPortRange(void **, struct ndis_miniport_block *,
@@ -271,7 +271,7 @@ static void NdisMIndicateStatusComplete(struct ndis_miniport_block *);
 static void NdisMIndicateStatus(struct ndis_miniport_block *, int32_t, void *,
     uint32_t);
 static uint8_t ndis_interrupt_nic(struct kinterrupt *, struct ndis_softc *);
-static void ndis_intrhand(struct kdpc *, struct ndis_miniport_interrupt *,
+static void ndis_intrhand(struct nt_kdpc *, struct ndis_miniport_interrupt *,
     void *, void *);
 static void NdisCopyFromPacketToPacket(struct ndis_packet *, uint32_t, uint32_t,
     struct ndis_packet *, uint32_t, uint32_t *);
@@ -882,7 +882,7 @@ NdisInitializeTimer(struct ndis_timer *timer, ndis_timer_function func,
 }
 
 static void
-ndis_timercall(struct kdpc *dpc, struct ndis_miniport_timer *timer,
+ndis_timercall(struct nt_kdpc *kdpc, struct ndis_miniport_timer *timer,
     void *sysarg1, void *sysarg2)
 {
 	/*
@@ -893,7 +893,7 @@ ndis_timercall(struct kdpc *dpc, struct ndis_miniport_timer *timer,
 	 */
 	if (NDIS_SERIALIZED(timer->block))
 		KeAcquireSpinLockAtDpcLevel(&timer->block->lock);
-	MSCALL4(timer->func, dpc, timer->ctx, sysarg1, sysarg2);
+	MSCALL4(timer->func, kdpc, timer->ctx, sysarg1, sysarg2);
 	if (NDIS_SERIALIZED(timer->block))
 		KeReleaseSpinLockFromDpcLevel(&timer->block->lock);
 }
@@ -919,7 +919,7 @@ NdisMInitializeTimer(struct ndis_miniport_timer *timer,
 	 */
 	KeInitializeTimer(&timer->ktimer);
 	KeInitializeDpc(&timer->kdpc, ndis_timercall_wrap, timer);
-	timer->ktimer.k_dpc = &timer->kdpc;
+	timer->ktimer.dpc = &timer->kdpc;
 }
 
 static void
@@ -1263,7 +1263,7 @@ NdisMFreeSharedMemory(struct ndis_miniport_block *block,
 		return;
 
 	NDIS_LOCK(sc);
-	l = sc->ndis_shlist.nle_flink;
+	l = sc->ndis_shlist.flink;
 	while (l != &sc->ndis_shlist) {
 		sh = CONTAINING_RECORD(l, struct ndis_shmem, ndis_list);
 		if (sh->ndis_saddr == vaddr)
@@ -1274,7 +1274,7 @@ NdisMFreeSharedMemory(struct ndis_miniport_block *block,
 		 */
 		if (sh->ndis_paddr == paddr)
 			break;
-		l = l->nle_flink;
+		l = l->flink;
 	}
 
 	if (sh == NULL) {
@@ -1493,7 +1493,7 @@ NdisUnchainBufferAtFront(struct ndis_packet *packet, struct mdl **buf)
 		priv->head = priv->tail = NULL;
 	} else {
 		*buf = priv->head;
-		priv->head = (*buf)->mdl_next;
+		priv->head = (*buf)->next;
 	}
 }
 
@@ -1513,10 +1513,10 @@ NdisUnchainBufferAtBack(struct ndis_packet *packet, struct mdl **buf)
 	} else {
 		*buf = priv->tail;
 		tmp = priv->head;
-		while (tmp->mdl_next != priv->tail)
-			tmp = tmp->mdl_next;
+		while (tmp->next != priv->tail)
+			tmp = tmp->next;
 		priv->tail = tmp;
-		tmp->mdl_next = NULL;
+		tmp->next = NULL;
 	}
 }
 
@@ -1730,7 +1730,7 @@ ndis_interrupt_nic(struct kinterrupt *iobj, struct ndis_softc *sc)
 }
 
 static void
-ndis_intrhand(struct kdpc *dpc, struct ndis_miniport_interrupt *intr,
+ndis_intrhand(struct nt_kdpc *kdpc, struct ndis_miniport_interrupt *intr,
     void *sysarg1, void *sysarg2)
 {
 	struct ndis_softc *sc;
@@ -1933,11 +1933,11 @@ NdisInterlockedInsertHeadList(struct list_entry *head, struct list_entry *entry,
 	struct list_entry *flink;
 
 	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
-	flink = head->nle_flink;
-	entry->nle_flink = flink;
-	entry->nle_blink = head;
-	flink->nle_blink = entry;
-	head->nle_flink = entry;
+	flink = head->flink;
+	entry->flink = flink;
+	entry->blink = head;
+	flink->blink = entry;
+	head->flink = entry;
 	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 
 	return (flink);
@@ -1951,10 +1951,10 @@ NdisInterlockedRemoveHeadList(struct list_entry *head,
 	struct list_entry *entry;
 
 	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
-	entry = head->nle_flink;
-	flink = entry->nle_flink;
-	head->nle_flink = flink;
-	flink->nle_blink = head;
+	entry = head->flink;
+	flink = entry->flink;
+	head->flink = flink;
+	flink->blink = head;
 	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 
 	return (entry);
@@ -1967,11 +1967,11 @@ NdisInterlockedInsertTailList(struct list_entry *head, struct list_entry *entry,
 	struct list_entry *blink;
 
 	KeAcquireSpinLock(&lock->spinlock, &lock->kirql);
-	blink = head->nle_blink;
-	entry->nle_flink = head;
-	entry->nle_blink = blink;
-	blink->nle_flink = entry;
-	head->nle_blink = entry;
+	blink = head->blink;
+	entry->flink = head;
+	entry->blink = blink;
+	blink->flink = entry;
+	head->blink = entry;
 	KeReleaseSpinLock(&lock->spinlock, lock->kirql);
 
 	return (blink);
@@ -2088,7 +2088,7 @@ NdisGetFirstBufferFromPacket(struct ndis_packet *packet, struct mdl **buf,
 	} else {
 		*firstva = MmGetMdlVirtualAddress(tmp);
 		*firstlen = *totlen = MmGetMdlByteCount(tmp);
-		for (tmp = tmp->mdl_next; tmp != NULL; tmp = tmp->mdl_next)
+		for (tmp = tmp->next; tmp != NULL; tmp = tmp->next)
 			*totlen += MmGetMdlByteCount(tmp);
 	}
 }
@@ -2455,7 +2455,7 @@ NdisCopyFromPacketToPacket(struct ndis_packet *dpkt, uint32_t doff,
 			break;
 		}
 		soff -= MmGetMdlByteCount(src);
-		src = src->mdl_next;
+		src = src->next;
 		if (src == NULL)
 			return;
 		sptr = MmGetMdlVirtualAddress(src);
@@ -2468,7 +2468,7 @@ NdisCopyFromPacketToPacket(struct ndis_packet *dpkt, uint32_t doff,
 			break;
 		}
 		doff -= MmGetMdlByteCount(dst);
-		dst = dst->mdl_next;
+		dst = dst->next;
 		if (dst == NULL)
 			return;
 		dptr = MmGetMdlVirtualAddress(dst);
@@ -2494,7 +2494,7 @@ NdisCopyFromPacketToPacket(struct ndis_packet *dpkt, uint32_t doff,
 
 		dcnt -= len;
 		if (dcnt == 0) {
-			dst = dst->mdl_next;
+			dst = dst->next;
 			if (dst == NULL)
 				break;
 			dptr = MmGetMdlVirtualAddress(dst);
@@ -2503,7 +2503,7 @@ NdisCopyFromPacketToPacket(struct ndis_packet *dpkt, uint32_t doff,
 
 		scnt -= len;
 		if (scnt == 0) {
-			src = src->mdl_next;
+			src = src->next;
 			if (src == NULL)
 				break;
 			sptr = MmGetMdlVirtualAddress(src);

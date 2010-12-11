@@ -90,7 +90,7 @@ static void	NdisMQueryInformationComplete(struct ndis_miniport_block *,
 static void	NdisMResetComplete(struct ndis_miniport_block *, int32_t,
 		    uint8_t);
 static void	NdisMSendResourcesAvailable(struct ndis_miniport_block *);
-static void	ndis_interrupt_setup(struct kdpc *, struct device_object *,
+static void	ndis_interrupt_setup(struct nt_kdpc *, struct device_object *,
 		    struct irp *, struct ndis_softc *);
 static void	ndis_return_packet_nic(struct device_object *,
 		    struct ndis_miniport_block *);
@@ -386,7 +386,7 @@ ndis_free_bufs(struct mdl *b0)
 	struct mdl *next;
 
 	while (b0 != NULL) {
-		next = b0->mdl_next;
+		next = b0->next;
 		IoFreeMdl(b0);
 		b0 = next;
 	}
@@ -492,7 +492,7 @@ ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 	buf = priv->head;
 	p->refcnt = 0;
 
-	for (buf = priv->head; buf != NULL; buf = buf->mdl_next) {
+	for (buf = priv->head; buf != NULL; buf = buf->next) {
 		if (buf == priv->head)
 			MGETHDR(m, M_DONTWAIT, MT_HEADER);
 		else
@@ -577,7 +577,7 @@ ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 		if (priv->head == NULL)
 			priv->head = buf;
 		else
-			prev->mdl_next = buf;
+			prev->next = buf;
 		prev = buf;
 	}
 
@@ -935,7 +935,7 @@ ndis_init_nic(struct ndis_softc *sc)
 }
 
 static void
-ndis_interrupt_setup(struct kdpc *dpc, struct device_object *dobj,
+ndis_interrupt_setup(struct nt_kdpc *dpc, struct device_object *dobj,
     struct irp *ip, struct ndis_softc *sc)
 {
 	struct ndis_miniport_interrupt *intr;

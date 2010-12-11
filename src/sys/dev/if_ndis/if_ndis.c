@@ -101,7 +101,7 @@ static void	NdisMSendComplete(struct ndis_miniport_block *,
 		    struct ndis_packet *, int32_t);
 static void	NdisMTransferDataComplete(struct ndis_miniport_block *,
 		    struct ndis_packet *, uint32_t, uint32_t);
-static void	ndis_rxeof_xfr(struct kdpc *, struct ndis_miniport_block *,
+static void	ndis_rxeof_xfr(struct nt_kdpc *, struct ndis_miniport_block *,
 		    void *, void *);
 
 /* We need to wrap these functions for amd64. */
@@ -1233,7 +1233,7 @@ NdisMEthIndicateReceiveComplete(struct ndis_miniport_block *block)
  * MiniportTransferData() handler, runs at DISPATCH_LEVEL.
  */
 static void
-ndis_rxeof_xfr(struct kdpc *dpc, struct ndis_miniport_block *block,
+ndis_rxeof_xfr(struct nt_kdpc *dpc, struct ndis_miniport_block *block,
     void *sysarg1, void *sysarg2)
 {
 	struct ndis_softc *sc;
@@ -1250,7 +1250,7 @@ ndis_rxeof_xfr(struct kdpc *dpc, struct ndis_miniport_block *block,
 
 	KeAcquireSpinLockAtDpcLevel(&block->lock);
 
-	l = block->packet_list.nle_flink;
+	l = block->packet_list.flink;
 	while (!IsListEmpty(&block->packet_list)) {
 		l = RemoveHeadList((&block->packet_list));
 		p = CONTAINING_RECORD(l, struct ndis_packet, list);
@@ -1289,7 +1289,7 @@ ndis_rxeof_xfr(struct kdpc *dpc, struct ndis_miniport_block *block,
 			m_freem(m);
 
 		/* Advance to next packet */
-		l = block->packet_list.nle_flink;
+		l = block->packet_list.flink;
 	}
 
 	KeReleaseSpinLockFromDpcLevel(&block->lock);

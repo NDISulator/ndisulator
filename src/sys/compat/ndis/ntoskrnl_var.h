@@ -70,14 +70,14 @@ struct ansi_string {
  *   touch it.
  */
 struct mdl {
-	struct mdl	*mdl_next;
-	uint16_t	mdl_size;
-	uint16_t	mdl_flags;
-	void		*mdl_process;
-	void		*mdl_mappedsystemva;
-	void		*mdl_startva;
-	uint32_t	mdl_bytecount;
-	uint32_t	mdl_byteoffset;
+	struct mdl	*next;
+	uint16_t	size;
+	uint16_t	flags;
+	void		*process;
+	void		*mappedsystemva;
+	void		*startva;
+	uint32_t	bytecount;
+	uint32_t	byteoffset;
 };
 
 /* MDL flags */
@@ -109,19 +109,19 @@ struct mdl {
 #define	MDL_PAGES(m) (vm_offset_t *)(m + 1)
 
 #define	MmInitializeMdl(b, baseva, len)					\
-	(b)->mdl_next = NULL;						\
-	(b)->mdl_size = (uint16_t)(sizeof(struct mdl) +			\
+	(b)->next = NULL;						\
+	(b)->size = (uint16_t)(sizeof(struct mdl) +			\
 		(sizeof(vm_offset_t) * SPAN_PAGES((baseva), (len))));	\
-	(b)->mdl_flags = 0;						\
-	(b)->mdl_startva = (void *)PAGE_ALIGN((baseva));		\
-	(b)->mdl_byteoffset = BYTE_OFFSET((baseva));			\
-	(b)->mdl_bytecount = (uint32_t)(len);
+	(b)->flags = 0;							\
+	(b)->startva = (void *)PAGE_ALIGN((baseva));			\
+	(b)->byteoffset = BYTE_OFFSET((baseva));			\
+	(b)->bytecount = (uint32_t)(len);
 
-#define	MmGetMdlByteOffset(mdl) ((mdl)->mdl_byteoffset)
-#define	MmGetMdlByteCount(mdl) ((mdl)->mdl_bytecount)
+#define	MmGetMdlByteOffset(mdl) ((mdl)->byteoffset)
+#define	MmGetMdlByteCount(mdl) ((mdl)->bytecount)
 #define	MmGetMdlVirtualAddress(mdl)					\
-	((void *)((char *)((mdl)->mdl_startva) + (mdl)->mdl_byteoffset))
-#define	MmGetMdlStartVa(mdl) ((mdl)->mdl_startva)
+	((void *)((char *)((mdl)->startva) + (mdl)->byteoffset))
+#define	MmGetMdlStartVa(mdl) ((mdl)->startva)
 #define	MmGetMdlPfnArray(mdl) MDL_PAGES(mdl)
 
 #define	WDM_MAJOR		1
@@ -145,22 +145,22 @@ union slist_header {  /* FIXME: amd64 */
 };
 
 struct list_entry {
-	struct list_entry	*nle_flink;
-	struct list_entry	*nle_blink;
+	struct list_entry	*flink;
+	struct list_entry	*blink;
 };
 
-#define	InitializeListHead(l) (l)->nle_flink = (l)->nle_blink = (l)
-#define	IsListEmpty(h) ((h)->nle_flink == (h))
+#define	InitializeListHead(l) (l)->flink = (l)->blink = (l)
+#define	IsListEmpty(h) ((h)->flink == (h))
 
-#define	RemoveEntryList(e)			\
-	do {					\
-		struct list_entry *b;		\
-		struct list_entry *f;		\
-						\
-		f = (e)->nle_flink;		\
-		b = (e)->nle_blink;		\
-		b->nle_flink = f;		\
-		f->nle_blink = b;		\
+#define	RemoveEntryList(e)		\
+	do {				\
+		struct list_entry *b;	\
+		struct list_entry *f;	\
+					\
+		f = (e)->flink;		\
+		b = (e)->blink;		\
+		b->flink = f;		\
+		f->blink = b;		\
 	} while (0)
 
 /* These two have to be inlined since they return things. */
@@ -170,10 +170,10 @@ RemoveHeadList(struct list_entry *l)
 	struct list_entry *f;
 	struct list_entry *e;
 
-	e = l->nle_flink;
-	f = e->nle_flink;
-	l->nle_flink = f;
-	f->nle_blink = l;
+	e = l->flink;
+	f = e->flink;
+	l->flink = f;
+	f->blink = l;
 
 	return (e);
 }
@@ -184,46 +184,46 @@ RemoveTailList(struct list_entry *l)
 	struct list_entry *b;
 	struct list_entry *e;
 
-	e = l->nle_blink;
-	b = e->nle_blink;
-	l->nle_blink = b;
-	b->nle_flink = l;
+	e = l->blink;
+	b = e->blink;
+	l->blink = b;
+	b->flink = l;
 
 	return (e);
 }
 
-#define	InsertTailList(l, e)			\
-	do {					\
-		struct list_entry *b;		\
-						\
-		b = l->nle_blink;		\
-		e->nle_flink = l;		\
-		e->nle_blink = b;		\
-		b->nle_flink = (e);		\
-		l->nle_blink = (e);		\
+#define	InsertTailList(l, e)		\
+	do {				\
+		struct list_entry *b;	\
+					\
+		b = l->blink;		\
+		e->flink = l;		\
+		e->blink = b;		\
+		b->flink = (e);		\
+		l->blink = (e);		\
 	} while (0)
 
-#define	InsertHeadList(l, e)			\
-	do {					\
-		struct list_entry *f;		\
-						\
-		f = l->nle_flink;		\
-		e->nle_flink = f;		\
-		e->nle_blink = l;		\
-		f->nle_blink = e;		\
-		l->nle_flink = e;		\
+#define	InsertHeadList(l, e)		\
+	do {				\
+		struct list_entry *f;	\
+					\
+		f = l->flink;		\
+		e->flink = f;		\
+		e->blink = l;		\
+		f->blink = e;		\
+		l->flink = e;		\
 	} while (0)
 
 #define	CONTAINING_RECORD(addr, type, field)	\
 	((type *)((vm_offset_t)(addr) - (vm_offset_t)(&((type *)0)->field)))
 
 struct nt_dispatch_header {
-	uint8_t			dh_type;
-	uint8_t			dh_abs;
-	uint8_t			dh_size;
-	uint8_t			dh_inserted;
-	int32_t			dh_sigstate;
-	struct list_entry	dh_waitlisthead;
+	uint8_t			type;
+	uint8_t			abs;
+	uint8_t			size;
+	uint8_t			inserted;
+	int32_t			sigstate;
+	struct list_entry	waitlisthead;
 };
 
 enum dispatch_header_type {
@@ -260,41 +260,40 @@ enum dispatch_header_type {
 #define	AT_HIGH_LEVEL(td) ((td)->td_critnest != 0)
 
 struct nt_objref {
-	struct nt_dispatch_header	no_dh;
-	void				*no_obj;
+	struct nt_dispatch_header	header;
+	void				*obj;
 	TAILQ_ENTRY(nt_objref)		link;
 };
 TAILQ_HEAD(nt_objref_head, nt_objref);
 
-struct ktimer {
-	struct nt_dispatch_header	k_header;
-	uint64_t			k_duetime;
+struct nt_ktimer {
+	struct nt_dispatch_header	header;
+	uint64_t			duetime;
 	union {
-		struct list_entry	k_timerlistentry;
-		struct callout		*k_callout;
+		struct list_entry	timerlistentry;
+		struct callout		*callout;
 	} u;
-	void				*k_dpc;
-	uint32_t 			k_period;
+	void				*dpc;
+	uint32_t 			period;
 };
 
 struct nt_kevent {
-	struct nt_dispatch_header	k_header;
+	struct nt_dispatch_header	header;
 };
 
-/* Kernel defered procedure call (i.e. timer callback) */
-struct kdpc;
-typedef void (*kdpc_func)(struct kdpc *, void *, void *, void *);
+struct nt_kdpc;
+typedef void (*nt_kdpc_func)(struct nt_kdpc *, void *, void *, void *);
 
-struct kdpc {
-	uint16_t		k_type;
-	uint8_t			k_num;		/* CPU number */
-	uint8_t			k_importance;	/* priority */
-	struct list_entry	k_dpclistentry;
-	void			*k_deferedfunc;
-	void			*k_deferredctx;
-	void			*k_sysarg1;
-	void			*k_sysarg2;
-	void			*k_lock;
+struct nt_kdpc {
+	uint16_t		type;
+	uint8_t			num;		/* CPU number */
+	uint8_t			importance;	/* priority */
+	struct list_entry	dpclistentry;
+	void			*deferedfunc;
+	void			*deferredctx;
+	void			*sysarg1;
+	void			*sysarg2;
+	void			*lock;
 };
 
 enum kdpc_importance {
@@ -305,23 +304,17 @@ enum kdpc_importance {
 
 #define	KDPC_CPU_DEFAULT 255
 
-/*
- * Note: the acquisition count is BSD-specific. The Microsoft
- * documentation says that mutexes can be acquired recursively
- * by a given thread, but that you must release the mutex as
- * many times as you acquired it before it will be set to the
- * signalled state (i.e. before any other threads waiting on
- * the object will be woken up). However the Windows KMUTANT
- * structure has no field for keeping track of the number of
- * acquisitions, so we need to add one ourselves. As long as
- * driver code treats the mutex as opaque, we should be ok.
- */
-struct kmutant {
-	struct nt_dispatch_header	km_header;
-	struct list_entry		km_listentry;
-	void				*km_ownerthread;
-	uint8_t				km_abandoned;
-	uint8_t				km_apcdisable;
+struct nt_kmutex {
+	struct nt_dispatch_header	header;
+	struct list_entry		list;
+	void				*owner_thread;
+	uint8_t				abandoned;
+	uint8_t				apc_disable;
+};
+
+struct nt_semaphore {
+	struct nt_dispatch_header	header;
+	int32_t				limit;
 };
 
 enum pool_type {
@@ -594,7 +587,7 @@ struct device_object {
 	} queue;
 	uint32_t		alignreq;
 	struct kdevice_queue	devqueue;
-	struct kdpc 		dpc;
+	struct nt_kdpc 		dpc;
 	uint32_t		activethreads;
 	void			*securitydesc;
 	struct			nt_kevent devlock;
@@ -1236,17 +1229,17 @@ void	RtlInitAnsiString(struct ansi_string *, const char *);
 void	RtlInitUnicodeString(struct unicode_string *, const uint16_t *);
 void	RtlFreeUnicodeString(struct unicode_string *);
 void	RtlFreeAnsiString(struct ansi_string *);
-void	KeInitializeDpc(struct kdpc *, void *, void *);
-uint8_t	KeInsertQueueDpc(struct kdpc *, void *, void *);
-uint8_t	KeRemoveQueueDpc(struct kdpc *);
-void	KeSetImportanceDpc(struct kdpc *, uint32_t);
-void	KeSetTargetProcessorDpc(struct kdpc *, uint8_t);
+void	KeInitializeDpc(struct nt_kdpc *, void *, void *);
+uint8_t	KeInsertQueueDpc(struct nt_kdpc *, void *, void *);
+uint8_t	KeRemoveQueueDpc(struct nt_kdpc *);
+void	KeSetImportanceDpc(struct nt_kdpc *, uint32_t);
+void	KeSetTargetProcessorDpc(struct nt_kdpc *, uint8_t);
 void	KeFlushQueuedDpcs(void);
-void	KeInitializeTimer(struct ktimer *);
-void	KeInitializeTimerEx(struct ktimer *, uint32_t);
-uint8_t	KeSetTimer(struct ktimer *, int64_t, struct kdpc *);
-uint8_t	KeSetTimerEx(struct ktimer *, int64_t, uint32_t, struct kdpc *);
-uint8_t	KeCancelTimer(struct ktimer *);
+void	KeInitializeTimer(struct nt_ktimer *);
+void	KeInitializeTimerEx(struct nt_ktimer *, uint32_t);
+uint8_t	KeSetTimer(struct nt_ktimer *, int64_t, struct nt_kdpc *);
+uint8_t	KeSetTimerEx(struct nt_ktimer *, int64_t, uint32_t, struct nt_kdpc *);
+uint8_t	KeCancelTimer(struct nt_ktimer *);
 int32_t	KeWaitForSingleObject(void *, uint32_t, uint32_t, uint8_t, int64_t *);
 void	KeInitializeEvent(struct nt_kevent *, uint32_t, uint8_t);
 int32_t	KeSetEvent(struct nt_kevent *, int32_t, uint8_t);

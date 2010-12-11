@@ -1576,13 +1576,13 @@ struct ndis_event {
 };
 
 struct ndis_timer {
-	struct ktimer	ktimer;
-	struct kdpc	kdpc;
+	struct nt_ktimer	ktimer;
+	struct nt_kdpc		kdpc;
 };
 
 struct ndis_miniport_timer {
-	struct ktimer			ktimer;
-	struct kdpc			kdpc;
+	struct nt_ktimer		ktimer;
+	struct nt_kdpc			kdpc;
 	ndis_timer_function		func;
 	void				*ctx;
 	struct ndis_miniport_block	*block;
@@ -1641,7 +1641,7 @@ struct ndis_miniport_interrupt {
 	void				*rsvd;
 	void				*isr_func;
 	void				*dpc_func;
-	struct kdpc			interrupt_dpc;
+	struct nt_kdpc			interrupt_dpc;
 	struct ndis_miniport_block	*block;
 	uint8_t				dpc_count;
 	uint8_t				filler1;
