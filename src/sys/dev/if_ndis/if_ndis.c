@@ -1081,18 +1081,12 @@ ndis_detach(device_t dev)
 	if (NDIS_INITIALIZED(sc))
 		ndis_halt_nic(sc);
 
-	if (sc->ndis_tickitem != NULL)
-		IoFreeWorkItem(sc->ndis_tickitem);
-	if (sc->ndis_startitem != NULL)
-		IoFreeWorkItem(sc->ndis_startitem);
-	if (sc->ndis_resetitem != NULL)
-		IoFreeWorkItem(sc->ndis_resetitem);
-	if (sc->ndis_inputitem != NULL)
-		IoFreeWorkItem(sc->ndis_inputitem);
-	if (sc->ndisusb_xferdoneitem != NULL)
-		IoFreeWorkItem(sc->ndisusb_xferdoneitem);
-	if (sc->ndisusb_taskitem != NULL)
-		IoFreeWorkItem(sc->ndisusb_taskitem);
+	IoFreeWorkItem(sc->ndis_tickitem);
+	IoFreeWorkItem(sc->ndis_startitem);
+	IoFreeWorkItem(sc->ndis_resetitem);
+	IoFreeWorkItem(sc->ndis_inputitem);
+	IoFreeWorkItem(sc->ndisusb_xferdoneitem);
+	IoFreeWorkItem(sc->ndisusb_taskitem);
 
 	ndis_unload_driver(sc);
 	bus_generic_detach(dev);
