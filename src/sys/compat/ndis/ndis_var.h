@@ -1636,7 +1636,7 @@ struct ndis_request {
 };
 
 struct ndis_miniport_interrupt {
-	struct kinterrupt		*interrupt_object;
+	struct nt_kinterrupt		*interrupt_object;
 	unsigned long			dpc_count_lock;
 	void				*rsvd;
 	void				*isr_func;

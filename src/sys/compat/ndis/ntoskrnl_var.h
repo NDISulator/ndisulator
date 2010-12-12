@@ -312,7 +312,7 @@ struct nt_kmutex {
 	uint8_t				apc_disable;
 };
 
-struct nt_semaphore {
+struct nt_ksemaphore {
 	struct nt_dispatch_header	header;
 	int32_t				limit;
 };
@@ -454,19 +454,14 @@ struct custom_extension {
 };
 
 /*
- * The KINTERRUPT structure in Windows is opaque to drivers.
- * We define our own custom version with things we need.
+ * Opaque.
  */
-struct kinterrupt {
-	struct list_entry	ki_list;
-	device_t		ki_dev;
-	int			ki_rid;
-	void			*ki_cookie;
-	struct resource 	*ki_irq;
-	unsigned long		ki_lock_priv;
-	unsigned long		*ki_lock;
-	void			*ki_svcfunc;
-	void			*ki_svcctx;
+struct nt_kinterrupt {
+	struct list_entry	list;
+	unsigned long		lock_priv;
+	unsigned long		*lock;
+	void			*func;
+	void			*ctx;
 };
 
 struct object_attributes {
@@ -1253,18 +1248,18 @@ void	KeAcquireSpinLockAtDpcLevel(unsigned long *);
 void	KeReleaseSpinLockFromDpcLevel(unsigned long *);
 #endif
 void	KeInitializeSpinLock(unsigned long *);
-uint8_t	KeAcquireInterruptSpinLock(struct kinterrupt *);
-void	KeReleaseInterruptSpinLock(struct kinterrupt *, uint8_t);
-uint8_t	KeSynchronizeExecution(struct kinterrupt *, void *, void *);
+uint8_t	KeAcquireInterruptSpinLock(struct nt_kinterrupt *);
+void	KeReleaseInterruptSpinLock(struct nt_kinterrupt *, uint8_t);
+uint8_t	KeSynchronizeExecution(struct nt_kinterrupt *, void *, void *);
 uintptr_t	InterlockedExchange(volatile uint32_t *, uintptr_t);
 void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
 void	*MmMapIoSpace(uint64_t, uint32_t, enum memory_caching_type);
 void	MmUnmapIoSpace(void *, size_t);
 void	MmBuildMdlForNonPagedPool(struct mdl *);
-void	IoDisconnectInterrupt(struct kinterrupt *);
+void	IoDisconnectInterrupt(struct nt_kinterrupt *);
 void	*IoGetDriverObjectExtension(struct driver_object *, void *);
-int32_t IoConnectInterrupt(struct kinterrupt **, void *, void *,
+int32_t IoConnectInterrupt(struct nt_kinterrupt **, void *, void *,
 	    unsigned long *, uint32_t, uint8_t, uint8_t, uint8_t, uint8_t,
 	    uint32_t, uint8_t);
 int32_t	IoAllocateDriverObjectExtension(struct driver_object *, void *,

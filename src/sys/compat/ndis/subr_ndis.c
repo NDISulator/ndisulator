@@ -270,7 +270,7 @@ static void NdisGetCurrentProcessorCounts(uint32_t *, uint32_t *, uint32_t *);
 static void NdisMIndicateStatusComplete(struct ndis_miniport_block *);
 static void NdisMIndicateStatus(struct ndis_miniport_block *, int32_t, void *,
     uint32_t);
-static uint8_t ndis_interrupt_nic(struct kinterrupt *, struct ndis_softc *);
+static uint8_t ndis_interrupt_nic(struct nt_kinterrupt *, struct ndis_softc *);
 static void ndis_intrhand(struct nt_kdpc *, struct ndis_miniport_interrupt *,
     void *, void *);
 static void NdisCopyFromPacketToPacket(struct ndis_packet *, uint32_t, uint32_t,
@@ -1707,7 +1707,7 @@ NdisMPciAssignResources(struct ndis_miniport_block *block, uint32_t slot,
 }
 
 static uint8_t
-ndis_interrupt_nic(struct kinterrupt *iobj, struct ndis_softc *sc)
+ndis_interrupt_nic(struct nt_kinterrupt *iobj, struct ndis_softc *sc)
 {
 	uint8_t is_our_intr = FALSE, call_isr = FALSE;
 
@@ -1800,9 +1800,9 @@ NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *intr)
 
 	TRACE(NDBG_INTR, "intr %p\n", intr);
 	/* Should really be KeSynchronizeExecution() */
-	KeAcquireSpinLock(intr->interrupt_object->ki_lock, &irql);
+	KeAcquireSpinLock(intr->interrupt_object->lock, &irql);
 	intr->block->interrupt = NULL;
-	KeReleaseSpinLock(intr->interrupt_object->ki_lock, irql);
+	KeReleaseSpinLock(intr->interrupt_object->lock, irql);
 /*
 	KeFlushQueuedDpcs();
 */

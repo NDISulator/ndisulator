@@ -1090,51 +1090,49 @@ IofCompleteRequest(struct irp *ip, uint8_t prioboost)
 void
 ntoskrnl_intr(void *arg)
 {
-	struct kinterrupt *iobj;
+	struct nt_kinterrupt *iobj;
 	uint8_t irql;
 	uint8_t claimed;
 	struct list_entry *l;
 
 	KeAcquireSpinLock(&nt_intlock, &irql);
-	l = nt_intlist.flink;
-	while (l != &nt_intlist) {
-		iobj = CONTAINING_RECORD(l, struct kinterrupt, ki_list);
-		claimed = MSCALL2(iobj->ki_svcfunc, iobj, iobj->ki_svcctx);
+	for (l = nt_intlist.flink; l != &nt_intlist; l = l->flink) {
+		iobj = CONTAINING_RECORD(l, struct nt_kinterrupt, list);
+		claimed = MSCALL2(iobj->func, iobj, iobj->ctx);
 		if (claimed == TRUE)
 			break;
-		l = l->flink;
 	}
 	KeReleaseSpinLock(&nt_intlock, irql);
 }
 
 uint8_t
-KeAcquireInterruptSpinLock(struct kinterrupt *iobj)
+KeAcquireInterruptSpinLock(struct nt_kinterrupt *iobj)
 {
 	uint8_t irql;
 
-	KeAcquireSpinLock(iobj->ki_lock, &irql);
+	KeAcquireSpinLock(iobj->lock, &irql);
 
 	return (irql);
 }
 
 void
-KeReleaseInterruptSpinLock(struct kinterrupt *iobj, uint8_t irql)
+KeReleaseInterruptSpinLock(struct nt_kinterrupt *iobj, uint8_t irql)
 {
-	KeReleaseSpinLock(iobj->ki_lock, irql);
+	KeReleaseSpinLock(iobj->lock, irql);
 }
 
 uint8_t
-KeSynchronizeExecution(struct kinterrupt *iobj, void *syncfunc, void *syncctx)
+KeSynchronizeExecution(struct nt_kinterrupt *iobj, void *func, void *ctx)
 {
 	uint8_t irql, rval;
 
 	KASSERT(iobj != NULL, ("no iobj"));
-	KASSERT(iobj->ki_lock != NULL, ("no lock"));
-	KASSERT(syncfunc != NULL, ("no syncfunc"));
-	KASSERT(syncctx != NULL, ("no syncctx"));
-	KeAcquireSpinLock(iobj->ki_lock, &irql);
-	rval = MSCALL1(syncfunc, syncctx);
-	KeReleaseSpinLock(iobj->ki_lock, irql);
+	KASSERT(iobj->lock != NULL, ("no lock"));
+	KASSERT(func != NULL, ("no func"));
+	KASSERT(ctx != NULL, ("no ctx"));
+	KeAcquireSpinLock(iobj->lock, &irql);
+	rval = MSCALL1(func, ctx);
+	KeReleaseSpinLock(iobj->lock, irql);
 
 	return (rval);
 }
@@ -1155,34 +1153,34 @@ KeSynchronizeExecution(struct kinterrupt *iobj, void *syncfunc, void *syncctx)
  * semantics of IoConnectInterrupt() and IoDisconnectInterrupt() properly.
  */
 int32_t
-IoConnectInterrupt(struct kinterrupt **iobj, void *svcfunc, void *svcctx,
+IoConnectInterrupt(struct nt_kinterrupt **iobj, void *func, void *ctx,
     unsigned long *lock, uint32_t vector, uint8_t irql, uint8_t syncirql,
     uint8_t imode, uint8_t shared, uint32_t affinity, uint8_t savefloat)
 {
 	uint8_t curirql;
 
-	*iobj = ExAllocatePool(sizeof(struct kinterrupt));
+	*iobj = ExAllocatePool(sizeof(struct nt_kinterrupt));
 	if (*iobj == NULL)
 		return (NDIS_STATUS_RESOURCES);
 
-	(*iobj)->ki_svcfunc = svcfunc;
-	(*iobj)->ki_svcctx = svcctx;
+	(*iobj)->func = func;
+	(*iobj)->ctx = ctx;
 
 	if (lock == NULL) {
-		KeInitializeSpinLock(&(*iobj)->ki_lock_priv);
-		(*iobj)->ki_lock = &(*iobj)->ki_lock_priv;
+		KeInitializeSpinLock(&(*iobj)->lock_priv);
+		(*iobj)->lock = &(*iobj)->lock_priv;
 	} else
-		(*iobj)->ki_lock = lock;
+		(*iobj)->lock = lock;
 
 	KeAcquireSpinLock(&nt_intlock, &curirql);
-	InsertHeadList((&nt_intlist), (&(*iobj)->ki_list));
+	InsertHeadList((&nt_intlist), (&(*iobj)->list));
 	KeReleaseSpinLock(&nt_intlock, curirql);
 
 	return (NDIS_STATUS_SUCCESS);
 }
 
 void
-IoDisconnectInterrupt(struct kinterrupt *iobj)
+IoDisconnectInterrupt(struct nt_kinterrupt *iobj)
 {
 	uint8_t irql;
 
@@ -1190,7 +1188,7 @@ IoDisconnectInterrupt(struct kinterrupt *iobj)
 		return;
 
 	KeAcquireSpinLock(&nt_intlock, &irql);
-	RemoveEntryList((&iobj->ki_list));
+	RemoveEntryList((&iobj->list));
 	KeReleaseSpinLock(&nt_intlock, irql);
 
 	ExFreePool(iobj);
