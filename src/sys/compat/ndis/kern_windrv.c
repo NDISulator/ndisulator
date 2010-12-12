@@ -308,7 +308,7 @@ windrv_load(module_t mod, vm_offset_t img, size_t len,
 	struct drvdb_ent *new;
 	struct driver_object *drv;
 	uint32_t *ptr;
-	int32_t rval;
+	int32_t ret;
 
 	if (pe_validate_header(img))
 		return (ENOEXEC);
@@ -381,13 +381,13 @@ skipreloc:
 	}
 
 	/* Now call the DriverEntry() function. */
-	rval = MSCALL2(entry, drv, &drv->driver_name);
-	if (rval) {
+	ret = MSCALL2(entry, drv, &drv->driver_name);
+	if (ret) {
 		RtlFreeUnicodeString(&drv->driver_name);
 		free(drv->driver_extension, M_NDIS_WINDRV);
 		free(drv, M_NDIS_WINDRV);
 		free(new, M_NDIS_WINDRV);
-		printf("NDIS: driver entry failed; status: 0x%08X\n", rval);
+		printf("NDIS: driver entry failed; status: 0x%08X\n", ret);
 		return (ENODEV);
 	}
 
@@ -411,7 +411,7 @@ int32_t
 windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 {
 	struct device_object *dev;
-	int32_t rval;
+	int32_t ret;
 
 	/*
 	 * This is a new physical device object, which technically
@@ -419,11 +419,11 @@ windrv_create_pdo(struct driver_object *drv, device_t bsddev)
 	 * an IoAttachDeviceToDeviceStack() here.
 	 */
 	mtx_lock(&drvdb_mtx);
-	rval = IoCreateDevice(drv, 0, NULL, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
+	ret = IoCreateDevice(drv, 0, NULL, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
 	mtx_unlock(&drvdb_mtx);
 
-	if (rval)
-		return (rval);
+	if (ret)
+		return (ret);
 	dev->devext = bsddev;	/* Stash pointer to our BSD device handle. */
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -452,13 +452,11 @@ windrv_find_pdo(const struct driver_object *drv, device_t bsddev)
 	struct device_object *pdo;
 
 	mtx_lock(&drvdb_mtx);
-	pdo = drv->device_object;
-	while (pdo != NULL) {
+	for (pdo = drv->device_object; pdo != NULL; pdo = pdo->nextdev) {
 		if (pdo->devext == bsddev) {
 			mtx_unlock(&drvdb_mtx);
 			return (pdo);
 		}
-		pdo = pdo->nextdev;
 	}
 	mtx_unlock(&drvdb_mtx);
 
@@ -537,52 +535,52 @@ uint64_t
 _x86_64_call1(void *fn, uint64_t a)
 {
 	struct fpu_kern_ctx fpu_ctx_save;
-	uint64_t rval;
+	uint64_t ret;
 
 	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
-	rval = x86_64_call1(fn, a);
+	ret = x86_64_call1(fn, a);
 	fpu_kern_leave(curthread, &fpu_ctx_save);
 
-	return (rval);
+	return (ret);
 }
 
 uint64_t
 _x86_64_call2(void *fn, uint64_t a, uint64_t b)
 {
 	struct fpu_kern_ctx fpu_ctx_save;
-	uint64_t rval;
+	uint64_t ret;
 
 	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
-	rval = x86_64_call2(fn, a, b);
+	ret = x86_64_call2(fn, a, b);
 	fpu_kern_leave(curthread, &fpu_ctx_save);
 
-	return (rval);
+	return (ret);
 }
 
 uint64_t
 _x86_64_call3(void *fn, uint64_t a, uint64_t b, uint64_t c)
 {
 	struct fpu_kern_ctx fpu_ctx_save;
-	uint64_t rval;
+	uint64_t ret;
 
 	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
-	rval = x86_64_call3(fn, a, b, c);
+	ret = x86_64_call3(fn, a, b, c);
 	fpu_kern_leave(curthread, &fpu_ctx_save);
 
-	return (rval);
+	return (ret);
 }
 
 uint64_t
 _x86_64_call4(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d)
 {
 	struct fpu_kern_ctx fpu_ctx_save;
-	uint64_t rval;
+	uint64_t ret;
 
 	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
-	rval = x86_64_call4(fn, a, b, c, d);
+	ret = x86_64_call4(fn, a, b, c, d);
 	fpu_kern_leave(curthread, &fpu_ctx_save);
 
-	return (rval);
+	return (ret);
 }
 
 uint64_t
@@ -590,13 +588,13 @@ _x86_64_call5(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
     uint64_t e)
 {
 	struct fpu_kern_ctx fpu_ctx_save;
-	uint64_t rval;
+	uint64_t ret;
 
 	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
-	rval = x86_64_call5(fn, a, b, c, d, e);
+	ret = x86_64_call5(fn, a, b, c, d, e);
 	fpu_kern_leave(curthread, &fpu_ctx_save);
 
-	return (rval);
+	return (ret);
 }
 
 uint64_t
@@ -604,13 +602,13 @@ _x86_64_call6(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
     uint64_t e, uint64_t f)
 {
 	struct fpu_kern_ctx fpu_ctx_save;
-	uint64_t rval;
+	uint64_t ret;
 
 	fpu_kern_enter(curthread, &fpu_ctx_save, FPU_KERN_NORMAL);
-	rval = x86_64_call6(fn, a, b, c, d, e, f);
+	ret = x86_64_call6(fn, a, b, c, d, e, f);
 	fpu_kern_leave(curthread, &fpu_ctx_save);
 
-	return (rval);
+	return (ret);
 }
 #endif /* __amd64__ */
 
