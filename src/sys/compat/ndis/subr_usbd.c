@@ -787,7 +787,7 @@ usbd_xfer_complete(struct ndis_softc *sc, struct ndisusb_ep *ne,
 	KeReleaseSpinLock(&sc->ndisusb_xferdonelock, irql);
 
 	IoQueueWorkItem(sc->ndisusb_xferdoneitem,
-	    (io_workitem_func)usbd_xfertask_wrap, WORKQUEUE_CRITICAL, sc);
+	    (io_workitem_func)usbd_xfertask_wrap, CRITICAL, sc);
 }
 
 static struct ndisusb_xfer *
@@ -1179,7 +1179,7 @@ usbd_taskadd(struct irp *ip, unsigned type)
 	KeReleaseSpinLockFromDpcLevel(&sc->ndisusb_tasklock);
 
 	IoQueueWorkItem(sc->ndisusb_taskitem,
-	    (io_workitem_func)usbd_task_wrap, WORKQUEUE_CRITICAL, sc);
+	    (io_workitem_func)usbd_task_wrap, CRITICAL, sc);
 
 	return (USBD_STATUS_SUCCESS);
 }

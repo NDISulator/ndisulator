@@ -1276,7 +1276,7 @@ ndis_rxeof_xfr(struct nt_kdpc *dpc, struct ndis_miniport_block *block,
 			KeReleaseSpinLockFromDpcLevel(&sc->ndis_rxlock);
 			IoQueueWorkItem(sc->ndis_inputitem,
 			    (io_workitem_func)ndis_inputtask_wrap,
-			    WORKQUEUE_CRITICAL, ifp);
+			    CRITICAL, ifp);
 		}
 
 		if (status == NDIS_STATUS_FAILURE)
@@ -1316,7 +1316,7 @@ NdisMTransferDataComplete(struct ndis_miniport_block *block,
 	_IF_ENQUEUE(&sc->ndis_rxqueue, m);
 	KeReleaseSpinLockFromDpcLevel(&sc->ndis_rxlock);
 	IoQueueWorkItem(sc->ndis_inputitem,
-	    (io_workitem_func)ndis_inputtask_wrap, WORKQUEUE_CRITICAL, ifp);
+	    (io_workitem_func)ndis_inputtask_wrap, CRITICAL, ifp);
 }
 
 /*
@@ -1413,7 +1413,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 			KeReleaseSpinLockFromDpcLevel(&sc->ndis_rxlock);
 			IoQueueWorkItem(sc->ndis_inputitem,
 			    (io_workitem_func)ndis_inputtask_wrap,
-			    WORKQUEUE_CRITICAL, ifp);
+			    CRITICAL, ifp);
 		}
 	}
 }
@@ -1486,7 +1486,7 @@ NdisMSendComplete(struct ndis_miniport_block *block, struct ndis_packet *packet,
 	NDIS_UNLOCK(sc);
 
 	IoQueueWorkItem(sc->ndis_startitem,
-	    (io_workitem_func)ndis_starttask_wrap, WORKQUEUE_CRITICAL, ifp);
+	    (io_workitem_func)ndis_starttask_wrap, CRITICAL, ifp);
 }
 
 static void
@@ -1576,15 +1576,13 @@ NdisMIndicateStatusComplete(struct ndis_miniport_block *block)
 	KASSERT(NDIS_INITIALIZED(sc), ("not initialized"));
 	if (sc->ndis_ifp->if_link_state == LINK_STATE_UP) {
 		IoQueueWorkItem(sc->ndis_tickitem,
-		    (io_workitem_func)ndis_ticktask_wrap,
-		    WORKQUEUE_CRITICAL, sc);
+		    (io_workitem_func)ndis_ticktask_wrap, CRITICAL, sc);
 		IoQueueWorkItem(sc->ndis_startitem,
 		    (io_workitem_func)ndis_starttask_wrap,
-		    WORKQUEUE_CRITICAL, sc->ndis_ifp);
+		    CRITICAL, sc->ndis_ifp);
 	} else if (sc->ndis_ifp->if_link_state == LINK_STATE_DOWN) {
 		IoQueueWorkItem(sc->ndis_tickitem,
-		    (io_workitem_func)ndis_ticktask_wrap,
-		    WORKQUEUE_CRITICAL, sc);
+		    (io_workitem_func)ndis_ticktask_wrap, CRITICAL, sc);
 	}
 }
 
@@ -1595,19 +1593,17 @@ ndis_tick(void *xsc)
 
 	if (sc->ndis_hang_timer && --sc->ndis_hang_timer == 0) {
 		IoQueueWorkItem(sc->ndis_tickitem,
-		    (io_workitem_func)ndis_ticktask_wrap,
-		    WORKQUEUE_CRITICAL, sc);
+		    (io_workitem_func)ndis_ticktask_wrap, CRITICAL, sc);
 		sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	}
 	if (sc->ndis_tx_timer && --sc->ndis_tx_timer == 0) {
 		sc->ndis_ifp->if_oerrors++;
 		device_printf(sc->ndis_dev, "watchdog timeout\n");
 		IoQueueWorkItem(sc->ndis_resetitem,
-		    (io_workitem_func)ndis_resettask_wrap,
-		    WORKQUEUE_CRITICAL, sc);
+		    (io_workitem_func)ndis_resettask_wrap, CRITICAL, sc);
 		IoQueueWorkItem(sc->ndis_startitem,
 		    (io_workitem_func)ndis_starttask_wrap,
-		    WORKQUEUE_CRITICAL, sc->ndis_ifp);
+		    CRITICAL, sc->ndis_ifp);
 	}
 	callout_reset(&sc->ndis_stat_callout, hz, ndis_tick, sc);
 }

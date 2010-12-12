@@ -133,9 +133,9 @@ static int ntoskrnl_is_signalled(struct nt_dispatch_header *, struct thread *);
 static void ntoskrnl_timercall(void *);
 static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_destroy_dpc_threads(void);
-static void ntoskrnl_destroy_workitem_threads(void);
-static void ntoskrnl_workitem_thread(void *);
-static void ntoskrnl_workitem(struct device_object *, void *);
+static void ntoskrnl_destroy_worker_threads(void);
+static void ntoskrnl_worker_thread(void *);
+static void ntoskrnl_worker(struct device_object *, void *);
 static void ntoskrnl_unicode_to_ascii(uint16_t *, char *, int);
 static void ntoskrnl_ascii_to_unicode(char *, uint16_t *, int);
 static uint8_t ntoskrnl_insert_dpc(struct list_entry *, struct nt_kdpc *);
@@ -275,7 +275,7 @@ static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static int32_t KeQueryPriorityThread(struct thread *);
 static void dummy(void);
 
-static funcptr ntoskrnl_workitem_wrap;
+static funcptr ntoskrnl_worker_wrap;
 static funcptr ExFreePool_wrap;
 static funcptr ExAllocatePoolWithTag_wrap;
 static struct proc *ndisproc;
@@ -322,17 +322,17 @@ ntoskrnl_libinit(void)
 		panic("failed to launch DPC thread");
 
 	/*
-	 * Launch the workitem threads.
+	 * Launch the worker threads.
 	 */
 	for (i = 0; i < WORKITEM_THREADS; i++) {
 		kq = wq_queues + i;
-		if (kproc_kthread_add(ntoskrnl_workitem_thread, kq, &ndisproc,
-		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "workitem%d", i))
-			panic("failed to launch workitem thread");
+		if (kproc_kthread_add(ntoskrnl_worker_thread, kq, &ndisproc,
+		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "worker%d", i))
+			panic("failed to launch worker thread");
 	}
 
-	windrv_wrap((funcptr)ntoskrnl_workitem,
-	    &ntoskrnl_workitem_wrap, 2, STDCALL);
+	windrv_wrap((funcptr)ntoskrnl_worker,
+	    &ntoskrnl_worker_wrap, 2, STDCALL);
 	windrv_wrap_table(ntoskrnl_functbl);
 	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
 	ExFreePool_wrap = ntoskrnl_findwrap(ExFreePool);
@@ -365,9 +365,9 @@ void
 ntoskrnl_libfini(void)
 {
 	windrv_unwrap_table(ntoskrnl_functbl);
-	windrv_unwrap(ntoskrnl_workitem_wrap);
+	windrv_unwrap(ntoskrnl_worker_wrap);
 
-	ntoskrnl_destroy_workitem_threads();
+	ntoskrnl_destroy_worker_threads();
 	ntoskrnl_destroy_dpc_threads();
 
 	ExFreePool(kq_queues);
@@ -2377,12 +2377,12 @@ ntoskrnl_finddev(device_t dev, uint64_t paddr, struct resource **res)
 }
 
 /*
- * Workitems are unlike DPCs, in that they run in a user-mode thread
+ * Workers are unlike DPCs, in that they run in a user-mode thread
  * context rather than at DISPATCH_LEVEL in kernel context. In our
  * case we run them in kernel context anyway.
  */
 static void
-ntoskrnl_workitem_thread(void *arg)
+ntoskrnl_worker_thread(void *arg)
 {
 	struct kdpc_queue *kq = arg;
 	struct list_entry *l;
@@ -2424,7 +2424,7 @@ ntoskrnl_workitem_thread(void *arg)
 }
 
 static void
-ntoskrnl_destroy_workitem_threads(void)
+ntoskrnl_destroy_worker_threads(void)
 {
 	struct kdpc_queue *kq;
 	int i;
@@ -2498,7 +2498,7 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func iw_func,
 	iw->iw_func = iw_func;
 	iw->iw_ctx = ctx;
 
-	if (type == WORKQUEUE_DELAYED)
+	if (type == DELAYED)
 		InsertTailList((&kq->kq_disp), (&iw->iw_listentry));
 	else
 		InsertHeadList((&kq->kq_disp), (&iw->iw_listentry));
@@ -2508,7 +2508,7 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func iw_func,
 }
 
 static void
-ntoskrnl_workitem(struct device_object *dobj, void *arg)
+ntoskrnl_worker(struct device_object *dobj, void *arg)
 {
 	struct io_workitem *iw = arg;
 	struct work_queue_item *w;
@@ -2552,7 +2552,7 @@ ExQueueWorkItem(struct work_queue_item *w, enum work_queue_type type)
 		return;
 
 	iw->iw_idx = WORKITEM_LEGACY_THREAD;
-	iwf = (io_workitem_func)ntoskrnl_workitem_wrap;
+	iwf = (io_workitem_func)ntoskrnl_worker_wrap;
 	IoQueueWorkItem(iw, iwf, type, iw);
 }
 

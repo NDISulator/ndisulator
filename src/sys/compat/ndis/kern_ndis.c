@@ -122,12 +122,12 @@ MALLOC_DEFINE(M_NDIS_KERN, "ndis_kern", "ndis_kern buffers");
  * importance is:
  *
  * HAL - spinlocks and IRQL manipulation
- * ntoskrnl - DPC and workitem threads, object waiting
+ * ntoskrnl - DPC and worker threads, object waiting
  * windrv - driver/device registration
  *
  * The HAL should also be the last thing shut down, since
  * the ntoskrnl subsystem will use spinlocks right up until
- * the DPC and workitem threads are terminated.
+ * the DPC and worker threads are terminated.
  */
 static int
 ndis_modevent(module_t mod, int cmd, void *arg)
@@ -376,8 +376,7 @@ ndis_return_packet(void *buf, void *arg)
 	KeReleaseSpinLockFromDpcLevel(&block->returnlock);
 
 	IoQueueWorkItem(block->returnitem,
-	    (io_workitem_func)kernndis_functbl[7].wrap,
-	    WORKQUEUE_CRITICAL, block);
+	    (io_workitem_func)kernndis_functbl[7].wrap, CRITICAL, block);
 }
 
 static void

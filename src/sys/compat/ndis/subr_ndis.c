@@ -373,7 +373,7 @@ NdisFreeIoWorkItem(struct io_workitem *iw)
 static void
 NdisQueueIoWorkItem(struct io_workitem *iw, io_workitem_func iw_func, void *ctx)
 {
-	IoQueueWorkItem(iw, iw_func, WORKQUEUE_DELAYED, ctx);
+	IoQueueWorkItem(iw, iw_func, DELAYED, ctx);
 }
 
 static int32_t
@@ -1239,7 +1239,7 @@ NdisMAllocateSharedMemoryAsync(struct ndis_miniport_block *block,
 	w->na_iw = iw;
 
 	ifw = (io_workitem_func)ndis_asyncmem_complete_wrap;
-	IoQueueWorkItem(iw, ifw, WORKQUEUE_DELAYED, w);
+	IoQueueWorkItem(iw, ifw, DELAYED, w);
 
 	return (NDIS_STATUS_PENDING);
 }
@@ -2418,7 +2418,7 @@ NdisScheduleWorkItem(struct ndis_work_item *work)
 	TRACE(NDBG_WORK, "work %p\n", work);
 	wqi = (struct work_queue_item *)work->wraprsvd;
 	ExInitializeWorkItem(wqi, (work_item_func)work->func, work->ctx);
-	ExQueueWorkItem(wqi, WORKQUEUE_DELAYED);
+	ExQueueWorkItem(wqi, DELAYED);
 
 	return (NDIS_STATUS_SUCCESS);
 }
