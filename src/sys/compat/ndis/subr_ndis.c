@@ -1178,10 +1178,10 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 }
 
 struct ndis_allocwork {
-	uint32_t		na_len;
-	uint8_t			na_cached;
-	void			*na_ctx;
-	struct io_workitem	*na_iw;
+	uint32_t		len;
+	uint8_t			cached;
+	void			*ctx;
+	struct io_workitem	*iw;
 };
 
 static void
@@ -1189,26 +1189,24 @@ ndis_asyncmem_complete(struct device_object *dobj, void *arg)
 {
 	struct ndis_miniport_block *block;
 	struct ndis_softc *sc;
-	struct ndis_allocwork *w;
+	struct ndis_allocwork *w = arg;
 	uint64_t paddr;
 	void *vaddr;
 
-	w = arg;
 	block = (struct ndis_miniport_block *)dobj->devext;
+	KASSERT(block != NULL, ("no block"));
 	sc = device_get_softc(block->physdeviceobj->devext);
 
 	vaddr = NULL;
 	paddr = 0;
 
-	NdisMAllocateSharedMemory(block, w->na_len,
-	    w->na_cached, &vaddr, &paddr);
-	KASSERT(block != NULL, ("no block"));
+	NdisMAllocateSharedMemory(block, w->len, w->cached, &vaddr, &paddr);
 	KASSERT(sc->ndis_chars->allocate_complete_func != NULL,
 	    ("no allocate_complete"));
 	MSCALL5(sc->ndis_chars->allocate_complete_func,
-	    block, vaddr, &paddr, w->na_len, w->na_ctx);
+	    block, vaddr, &paddr, w->len, w->ctx);
 
-	IoFreeWorkItem(w->na_iw);
+	IoFreeWorkItem(w->iw);
 	free(w, M_NDIS_SUBR);
 }
 
@@ -1233,10 +1231,10 @@ NdisMAllocateSharedMemoryAsync(struct ndis_miniport_block *block,
 		return (NDIS_STATUS_FAILURE);
 	}
 
-	w->na_cached = cached;
-	w->na_len = len;
-	w->na_ctx = ctx;
-	w->na_iw = iw;
+	w->cached = cached;
+	w->len = len;
+	w->ctx = ctx;
+	w->iw = iw;
 
 	ifw = (io_workitem_func)ndis_asyncmem_complete_wrap;
 	IoQueueWorkItem(iw, ifw, DELAYED, w);
