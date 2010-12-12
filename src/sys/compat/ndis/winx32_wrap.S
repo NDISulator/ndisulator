@@ -62,38 +62,6 @@
  *
  * _regparm(3): Used for certain assembly routines. All arguments
  * passed in %eax, %ecx and %edx.
- *
- * Furthermore, there is an additional wrinkle that's not obvious
- * with all code: Microsoft supports the use of exceptions in C
- * (__try/__except) both in user _and_ kernel mode. Sadly, Windows
- * structured exception handling uses machine-specific features
- * that conflict rather badly with FreeBSD. (See utility routines
- * at the end of this module for more details.)
- *
- * We want to support these calling conventions in as portable a manner
- * as possible. The trick is doing it not only with different versions
- * of GNU C, but with compilers other than GNU C (e.g. the Solaris
- * SunOne C compiler). The only sure fire method is with assembly
- * language trampoline code which both fixes up the argument passing,
- * stack unwinding and exception/thread context all at once.
- *
- * You'll notice that we call the thunk/unthunk routines in the
- * *_wrap() functions in an awkward way. Rather than branching
- * directly to the address, we load the address into a register
- * first as a literal value, then we branch to it. This is done
- * to insure that the assembler doesn't translate the branch into
- * a relative branch. We use the *_wrap() routines here as templates
- * and create the actual trampolines at run time, at which point
- * we only know the absolute addresses of the thunk and unthunk
- * routines. So we need to make sure the templates have enough
- * room in them for the full address.
- *
- * Also note that when we call the a thunk/unthunk routine after
- * invoking a wrapped function, we have to make sure to preserve
- * the value returned from that function. Most functions return
- * a 32-bit value in %eax, however some routines return 64-bit
- * values, which span both %eax and %edx. Consequently, we have
- * to preserve both registers.
  */
 
 /*
@@ -119,20 +87,9 @@ ENTRY(x86_stdcall_wrap)
 	rep
 	movsl
 
-	movl	$ctxsw_wtou, %eax
-	call	*%eax           # unthunk
-
 x86_stdcall_wrap_call:
         movl	$0,%eax
 	call	*%eax		# jump to routine
-	push	%eax		# preserve return val
-	push	%edx
-
-	movl	$ctxsw_utow, %eax
-	call	*%eax		# thunk
-
-	pop	%edx
-	pop	%eax		# restore return val
 
 	add	$64,%esp	# clean the stack
 	pop	%edi
@@ -161,16 +118,8 @@ ENTRY(x86_stdcall_call)
 	rep			# do the copy
 	movsl
 
-	call	ctxsw_utow	# thunk
-
 	call	*12(%edi)	# branch to stdcall routine
-	push	%eax		# preserve return val
-	push	%edx
 
-	call	ctxsw_wtou	# unthunk
-
-	pop	%edx
-	pop	%eax		# restore return val
 	mov	%edi,%esp	# restore stack
 	pop	%edi		# restore %edi
 	pop	%esi		# and %esi
@@ -194,20 +143,9 @@ ENTRY(x86_fastcall_wrap)
 	push	%edx
 	push	%ecx
 
-	movl	$ctxsw_wtou, %eax
-	call	*%eax		# unthunk
-
 x86_fastcall_wrap_call:
 	mov	$0,%eax
 	call	*%eax		# branch to fastcall routine
-	push	%eax		# preserve return val
-	push	%edx
-
-	movl	$ctxsw_utow, %eax
-	call	*%eax		# thunk
-
-	pop	%edx
-	pop	%eax		# restore return val
 	add	$12,%esp	# clean the stack
 x86_fastcall_wrap_arg:
 	ret	$0xFF
@@ -223,18 +161,9 @@ ENTRY(x86_fastcall_call)
 	mov	4(%esp),%eax
 	push	16(%esp)
 
-	call	ctxsw_utow	# thunk
-
 	mov	12(%esp),%ecx
 	mov	16(%esp),%edx
 	call	*8(%esp)	# branch to fastcall routine
-	push	%eax		# preserve return val
-	push	%edx
-
-	call	ctxsw_wtou	# unthunk
-
-	pop	%edx
-	pop	%eax		# restore return val
 	add	$4,%esp		# clean the stack
 	ret
 
@@ -253,20 +182,10 @@ ENTRY(x86_regparm_wrap)
 	push	%edx
 	push	%eax
 
-	movl	$ctxsw_wtou, %eax
-	call	*%eax		# unthunk
-
 x86_regparm_wrap_call:
 	movl	$0,%eax
 	call	*%eax		# jump to routine
-	push	%eax		# preserve return val
-	push	%edx		# preserve return val
 
-	movl	$ctxsw_utow, %eax
-	call	*%eax		# thunk
-
-	pop	%edx		# restore return val
-	pop	%eax		# restore return val
 	add	$12,%esp	# restore stack
 	ret
 x86_regparm_wrap_end:
@@ -278,92 +197,8 @@ x86_regparm_wrap_end:
  * to round out the API, and for testing purposes.
  */
 ENTRY(x86_regparm_call)
-	call	ctxsw_utow	# thunk
-
 	mov	8(%esp),%eax
 	mov	12(%esp),%edx
 	mov	16(%esp),%ecx
 	call	*4(%esp)	# branch to fastcall routine
-	push	%eax		# preserve return val
-	push	%edx		# preserve return val
-
-	call	ctxsw_wtou	# unthunk
-
-	pop	%edx		# restore return val
-	pop	%eax		# restore return val
-	ret
-
-/*
- * Ugly hack alert:
- *
- * On Win32/i386, using __try/__except results in code that tries to
- * manipulate what's supposed to be the Windows Threads Environment
- * Block (TEB), which one accesses via the %fs register. In particular,
- * %fs:0 (the first DWORD in the TEB) points to the exception
- * registration list. Unfortunately, FreeBSD uses %fs for the
- * per-cpu data structure (pcpu), and we can't allow Windows code
- * to muck with that. I don't even know what Solaris uses %fs for
- * (or if it even uses it at all).
- *
- * Even worse, in 32-bit protected mode, %fs is a selector that
- * refers to an entry in either the GDT or the LDT. Ideally, we would
- * like to be able to temporarily point it at another descriptor
- * while Windows code executes, but to do that we need a separate
- * descriptor entry of our own to play with.
- *
- * Therefore, we go to some trouble to learn the existing layout of
- * the GDT and update it to include an extra entry that we can use.
- * We need the following utility routines to help us do that. On
- * FreeBSD, index #7 in the GDT happens to be unused, so we turn
- * this into our own data segment descriptor. It would be better
- * if we could use a private LDT entry, but there's no easy way to
- * do that in SMP mode because of the way FreeBSD handles user LDTs.
- *
- * Once we have a custom descriptor, we have to thunk/unthunk whenever
- * we cross between FreeBSD code and Windows code. The thunking is
- * based on the premise that when executing instructions in the
- * Windows binary itself, we won't go to sleep. This is because in
- * order to yield the CPU, the code has to call back out to a FreeBSD
- * routine first, and when that happens we can unthunk in order to
- * restore FreeBSD context. What we're desperately trying to avoid is
- * being involuntarily pre-empted with the %fs register still pointing
- * to our fake TIB: if FreeBSD code runs with %fs pointing at our
- * Windows TIB instead of pcpu, we'll panic the kernel. Fortunately,
- * the only way involuntary preemption can occur is if an interrupt
- * fires, and the trap handler saves/restores %fs for us.
- *
- * The thunking routines themselves, ctxsw_utow() (Context SWitch UNIX
- * to Windows) and ctxsw_wtou() (Context SWitch Windows to UNIX), are
- * external to this module. This is done simply because it's easier
- * to manipulate data structures in C rather than assembly.
- */
-ENTRY(x86_getldt)
-	movl	4(%esp),%eax
-	sgdtl	(%eax)
-	movl	8(%esp),%eax
-	sldt	(%eax)
-	xor	%eax,%eax
-	ret
-
-ENTRY(x86_setldt)
-	movl	4(%esp),%eax
-	lgdt	(%eax)
-	jmp	1f
-	nop
-1:
-	movl	8(%esp),%eax
-	lldt	%ax
-	xor	%eax,%eax
-	ret
-
-ENTRY(x86_getfs)
-	mov	%fs,%ax
-	ret
-
-ENTRY(x86_setfs)
-	mov	4(%esp),%fs
-	ret
-
-ENTRY(x86_gettid)
-	mov	%fs:12,%eax
 	ret

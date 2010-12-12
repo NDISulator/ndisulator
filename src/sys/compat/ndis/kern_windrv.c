@@ -50,9 +50,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/smp.h>
 #include <sys/queue.h>
 
-#ifdef __i386__
-#include <machine/segments.h>
-#endif
 #ifdef __amd64__
 #include <machine/fpu.h>
 #endif
@@ -72,19 +69,6 @@ static STAILQ_HEAD(drvdb, drvdb_ent) drvdb_head;
 static struct driver_object fake_pci_driver; /* serves both PCI and cardbus */
 static struct driver_object fake_pccard_driver;
 
-#ifdef __i386__
-static void x86_oldldt(void *);
-static void x86_newldt(void *);
-
-struct tid {
-	void		*tid_except_list;	/* 0x00 */
-	uint32_t	tid_oldfs;		/* 0x04 */
-	uint32_t	tid_selector;		/* 0x08 */
-	struct tid	*tid_self;		/* 0x0C */
-};
-static struct tid *my_tids;
-#endif /* __i386__ */
-
 MALLOC_DEFINE(M_NDIS_WINDRV, "ndis_windrv", "ndis_windrv buffers");
 
 #define	DUMMY_REGISTRY_PATH "\\\\some\\bogus\\path"
@@ -93,8 +77,7 @@ void
 windrv_libinit(void)
 {
 	STAILQ_INIT(&drvdb_head);
-	mtx_init(&drvdb_mtx, "Windows driver DB lock",
-	    "Windows internal lock", MTX_DEF);
+	mtx_init(&drvdb_mtx, "drvdb_mtx", NULL, MTX_DEF);
 
 	/*
 	 * PCI and pccard devices don't need to use IRPs to
@@ -107,18 +90,6 @@ windrv_libinit(void)
 	 */
 	windrv_bus_attach(&fake_pci_driver, "PCI Bus");
 	windrv_bus_attach(&fake_pccard_driver, "PCCARD Bus");
-#ifdef __i386__
-	/*
-	 * In order to properly support SMP machines, we have
-	 * to modify the GDT on each CPU, since we never know
-	 * on which one we'll end up running.
-	 */
-	my_tids = malloc(sizeof(struct tid) * mp_ncpus,
-	    M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
-	if (my_tids == NULL)
-		panic("failed to allocate thread info blocks");
-	smp_rendezvous(NULL, x86_newldt, NULL, NULL);
-#endif
 }
 
 void
@@ -138,10 +109,6 @@ windrv_libfini(void)
 	RtlFreeUnicodeString(&fake_pccard_driver.driver_name);
 
 	mtx_destroy(&drvdb_mtx);
-#ifdef __i386__
-	smp_rendezvous(NULL, x86_oldldt, NULL, NULL);
-	free(my_tids, M_NDIS_WINDRV);
-#endif
 }
 
 /*
@@ -611,101 +578,7 @@ _x86_64_call6(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
 	return (ret);
 }
 #endif /* __amd64__ */
-
-
 #ifdef __i386__
-struct x86desc {
-	uint16_t	x_lolimit;
-	uint16_t	x_base0;
-	uint8_t		x_base1;
-	uint8_t		x_flags;
-	uint8_t		x_hilimit;
-	uint8_t		x_base2;
-};
-
-struct gdt {
-	uint16_t		limit;
-	void			*base;
-} __attribute__((__packed__));
-
-extern uint16_t x86_getfs(void);
-extern void x86_setfs(uint16_t);
-extern void *x86_gettid(void);
-extern void x86_getldt(struct gdt *, uint16_t *);
-extern void x86_setldt(struct gdt *, uint16_t);
-
-#define	SEL_LDT	4		/* local descriptor table */
-#define	SEL_TO_FS(x)		(((x) << 3))
-
-/*
- * FreeBSD has a special GDT segment reserved specifically for us.
- */
-#define	FREEBSD_EMPTYSEL	GNDIS_SEL
-
-/*
- * The meanings of various bits in a descriptor vary a little
- * depending on whether the descriptor will be used as a
- * code, data or system descriptor. (And that in turn depends
- * on which segment register selects the descriptor.)
- * We're only trying to create a data segment, so the definitions
- * below are the ones that apply to a data descriptor.
- */
-#define	SEGFLAGLO_PRESENT	0x80	/* segment is present */
-#define	SEGFLAGLO_PRIVLVL	0x60	/* privlevel needed for this seg */
-#define	SEGFLAGLO_CD		0x10	/* 1 = code/data, 0 = system */
-#define	SEGFLAGLO_MBZ		0x08	/* must be zero */
-#define	SEGFLAGLO_EXPANDDOWN	0x04	/* limit expands down */
-#define	SEGFLAGLO_WRITEABLE	0x02	/* segment is writeable */
-#define	SEGGLAGLO_ACCESSED	0x01	/* segment has been accessed */
-
-#define	SEGFLAGHI_GRAN		0x80	/* granularity, 1 = byte, 0 = page */
-#define	SEGFLAGHI_BIG		0x40	/* 1 = 32 bit stack, 0 = 16 bit */
-
-/*
- * Context switch from UNIX to Windows. Save the existing value of %fs
- * for this processor, then change it to point to our fake TID.
- */
-void
-ctxsw_utow(void)
-{
-	struct tid *t;
-
-	sched_pin();
-	critical_enter();
-	t = &my_tids[curthread->td_oncpu];
-	/*
-	 * Ugly hack. During system bootstrap (cold == 1), only CPU 0
-	 * is running. So if we were loaded at bootstrap, only CPU 0
-	 * will have our special GDT entry. This is a problem for SMP
-	 * systems, so to deal with this, we check here to make sure
-	 * the TID for this processor has been initialized, and if it
-	 * hasn't, we need to do it right now or else things will explode.
-	 */
-	if (t->tid_self != t)
-		x86_newldt(NULL);
-	t->tid_oldfs = x86_getfs();
-	x86_setfs(SEL_TO_FS(t->tid_selector));
-
-	/* Now entering Windows land, population: you. */
-}
-
-/*
- * Context switch from Windows back to UNIX. Restore %fs to its
- * previous value. This always occurs after a call to ctxsw_utow().
- */
-void
-ctxsw_wtou(void)
-{
-	struct tid *t;
-
-	t = x86_gettid();
-	x86_setfs(t->tid_oldfs);
-	critical_exit();
-	sched_unpin();
-
-	/* Welcome back to UNIX land, we missed you. */
-}
-
 static void windrv_wrap_fastcall(funcptr, funcptr *, uint8_t);
 static void windrv_wrap_stdcall(funcptr, funcptr *, uint8_t);
 static void windrv_wrap_regparm(funcptr, funcptr *);
@@ -834,72 +707,6 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt,
 	default:
 		break;
 	}
-}
-
-static void
-x86_oldldt(void *dummy)
-{
-	struct x86desc *gdt;
-	struct gdt gtable;
-	uint16_t ltable;
-
-	mtx_lock_spin(&dt_lock);
-
-	/* Grab location of existing GDT. */
-	x86_getldt(&gtable, &ltable);
-
-	/* Find the slot we updated. */
-	gdt = gtable.base;
-	gdt += FREEBSD_EMPTYSEL;
-
-	/* Empty it out. */
-	bzero((char *)gdt, sizeof(struct x86desc));
-
-	/* Restore GDT. */
-	x86_setldt(&gtable, ltable);
-
-	mtx_unlock_spin(&dt_lock);
-}
-
-static void
-x86_newldt(void *dummy)
-{
-	struct gdt gtable;
-	uint16_t ltable;
-	struct x86desc *l;
-	struct thread *t;
-
-	t = curthread;
-
-	mtx_lock_spin(&dt_lock);
-
-	/* Grab location of existing GDT. */
-	x86_getldt(&gtable, &ltable);
-
-	/* Get pointer to the GDT table. */
-	l = gtable.base;
-
-	/* Get pointer to empty slot */
-	l += FREEBSD_EMPTYSEL;
-
-	/* Initialize TID for this CPU. */
-	my_tids[t->td_oncpu].tid_selector = FREEBSD_EMPTYSEL;
-	my_tids[t->td_oncpu].tid_self = &my_tids[t->td_oncpu];
-
-	/* Set up new GDT entry. */
-	l->x_lolimit = sizeof(struct tid);
-	l->x_hilimit = SEGFLAGHI_GRAN|SEGFLAGHI_BIG;
-	l->x_base0 = (vm_offset_t)(&my_tids[t->td_oncpu]) & 0xFFFF;
-	l->x_base1 = ((vm_offset_t)(&my_tids[t->td_oncpu]) >> 16) & 0xFF;
-	l->x_base2 = ((vm_offset_t)(&my_tids[t->td_oncpu]) >> 24) & 0xFF;
-	l->x_flags = SEGFLAGLO_PRESENT|SEGFLAGLO_CD|SEGFLAGLO_WRITEABLE;
-
-	/* Update the GDT. */
-	x86_setldt(&gtable, ltable);
-
-	mtx_unlock_spin(&dt_lock);
-
-	/* Whew. */
 }
 #endif /* __i386__ */
 
