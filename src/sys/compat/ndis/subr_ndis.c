@@ -962,6 +962,7 @@ NdisMQueryAdapterResources(int32_t *status, struct ndis_miniport_block *block,
 	struct ndis_softc *sc;
 	uint32_t rsclen;
 
+	TRACE(NDBG_INIT, "block %p list %p buflen %p\n", block, list, buflen);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	sc = device_get_softc(block->physdeviceobj->devext);
@@ -1698,6 +1699,7 @@ static int32_t
 NdisMPciAssignResources(struct ndis_miniport_block *block, uint32_t slot,
     struct cm_partial_resource_list **list)
 {
+	TRACE(NDBG_PCI, "block %p slot %u list %p\n", block, slot, list);
 	KASSERT(block != NULL, ("no block"));
 	*list = block->rlist;
 
@@ -2554,6 +2556,7 @@ NdisMQueryAdapterInstanceName(struct unicode_string *name,
 {
 	struct ansi_string as;
 
+	TRACE(NDBG_INIT, "name %p block %p\n", name, block);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
 	RtlInitAnsiString(&as, device_get_nameunit(block->physdeviceobj->devext));
