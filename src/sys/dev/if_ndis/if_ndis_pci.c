@@ -156,9 +156,8 @@ ndis_attach_pci(device_t dev)
 		switch (rle->type) {
 		case SYS_RES_IOPORT:
 			sc->ndis_io_rid = rle->rid;
-			sc->ndis_res_io = bus_alloc_resource(dev,
-			    SYS_RES_IOPORT, &sc->ndis_io_rid,
-			    0, ~0, 1, RF_ACTIVE);
+			sc->ndis_res_io = bus_alloc_resource_any(dev,
+			    SYS_RES_IOPORT, &sc->ndis_io_rid, RF_ACTIVE);
 			if (sc->ndis_res_io == NULL) {
 				device_printf(dev, "no ioport\n");
 				error = ENXIO;
@@ -175,9 +174,9 @@ ndis_attach_pci(device_t dev)
 			}
 			if (sc->ndis_res_mem) {
 				sc->ndis_altmem_rid = rle->rid;
-				sc->ndis_res_altmem = bus_alloc_resource(dev,
-				    SYS_RES_MEMORY, &sc->ndis_altmem_rid,
-				    0, ~0, 1, RF_ACTIVE);
+				sc->ndis_res_altmem = bus_alloc_resource_any(
+				    dev, SYS_RES_MEMORY, &sc->ndis_altmem_rid,
+				    RF_ACTIVE);
 				if (sc->ndis_res_altmem == NULL) {
 					device_printf(dev, "no map alt\n");
 					error = ENXIO;
@@ -185,9 +184,9 @@ ndis_attach_pci(device_t dev)
 				}
 			} else {
 				sc->ndis_mem_rid = rle->rid;
-				sc->ndis_res_mem = bus_alloc_resource(dev,
+				sc->ndis_res_mem = bus_alloc_resource_any(dev,
 				    SYS_RES_MEMORY, &sc->ndis_mem_rid,
-				    0, ~0, 1, RF_ACTIVE);
+				    RF_ACTIVE);
 				if (sc->ndis_res_mem == NULL) {
 					device_printf(dev, "no map\n");
 					error = ENXIO;
@@ -198,8 +197,8 @@ ndis_attach_pci(device_t dev)
 			break;
 		case SYS_RES_IRQ:
 			rid = rle->rid;
-			sc->ndis_irq = bus_alloc_resource(dev, SYS_RES_IRQ,
-			    &rid, 0, ~0, 1, RF_SHAREABLE | RF_ACTIVE);
+			sc->ndis_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ,
+			    &rid, RF_SHAREABLE | RF_ACTIVE);
 			if (sc->ndis_irq == NULL) {
 				device_printf(dev, "no irq\n");
 				error = ENXIO;
@@ -217,13 +216,13 @@ ndis_attach_pci(device_t dev)
 	 * the resource traversal code above will fail to set up
 	 * an IRQ resource. This is usually a bad thing, so try to
 	 * force the allocation of an interrupt here. If one was
-	 * not assigned to us by the BIOS, bus_alloc_resource()
+	 * not assigned to us by the BIOS, bus_alloc_resource_any()
 	 * should route one for us.
 	 */
 	if (sc->ndis_irq == NULL) {
 		rid = 0;
-		sc->ndis_irq = bus_alloc_resource(dev, SYS_RES_IRQ,
-		    &rid, 0, ~0, 1, RF_SHAREABLE | RF_ACTIVE);
+		sc->ndis_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ,
+		    &rid, RF_SHAREABLE | RF_ACTIVE);
 		if (sc->ndis_irq == NULL) {
 			device_printf(dev, "couldn't route interrupt\n");
 			error = ENXIO;
