@@ -2371,9 +2371,6 @@ NdisGetCurrentProcessorCounts(uint32_t *idle_count, uint32_t *kernel_and_user,
 	*kernel_and_user = pcpu->pc_cp_time[CP_INTR];
 }
 
-typedef void (*ndis_status_func)(void *, int32_t, void *, uint32_t);
-typedef void (*ndis_status_done_func)(void *);
-
 static void
 NdisMIndicateStatusComplete(struct ndis_miniport_block *block)
 {

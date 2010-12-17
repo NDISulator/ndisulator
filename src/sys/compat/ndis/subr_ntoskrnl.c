@@ -1122,7 +1122,8 @@ KeReleaseInterruptSpinLock(struct nt_kinterrupt *iobj, uint8_t irql)
 }
 
 uint8_t
-KeSynchronizeExecution(struct nt_kinterrupt *iobj, void *func, void *ctx)
+KeSynchronizeExecution(struct nt_kinterrupt *iobj, synchronize_func func,
+    void *ctx)
 {
 	uint8_t irql, rval;
 

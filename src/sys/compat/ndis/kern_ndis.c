@@ -687,8 +687,6 @@ ndis_set_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
 	    sc, oid, buf, buflen, written, needed));
 }
 
-typedef void (*ndis_send_done_func) (void *, struct ndis_packet *, int32_t);
-
 void
 ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
 {
@@ -1021,8 +1019,8 @@ ndis_load_driver(struct driver_object *drv, struct device_object *pdo)
 	KeSetImportanceDpc(&fdo->dpc, IMPORTANCE_HIGH);
 
 	/* Finish up BSD-specific setup. */
-	block->status_func = kernndis_functbl[0].wrap;
-	block->status_done_func = kernndis_functbl[1].wrap;
+	block->status_func = (ndis_status_func)kernndis_functbl[0].wrap;
+	block->status_done_func = (ndis_status_done_func)kernndis_functbl[1].wrap;
 	block->set_done_func = kernndis_functbl[2].wrap;
 	block->query_done_func = kernndis_functbl[3].wrap;
 	block->reset_done_func = kernndis_functbl[4].wrap;

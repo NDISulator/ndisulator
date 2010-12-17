@@ -1635,12 +1635,15 @@ struct ndis_request {
 	uint8_t		miniport_rsvd[2 * sizeof(void *)];
 };
 
+typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, void *);
+typedef void (*ndis_interrupt_func)(void *);
+
 struct ndis_miniport_interrupt {
 	struct nt_kinterrupt		*interrupt_object;
 	unsigned long			dpc_count_lock;
 	void				*rsvd;
-	void				*isr_func;
-	void				*dpc_func;
+	ndis_isr_func			isr_func;
+	ndis_interrupt_func		dpc_func;
 	struct nt_kdpc			interrupt_dpc;
 	struct ndis_miniport_block	*block;
 	uint8_t				dpc_count;
@@ -1841,51 +1844,72 @@ struct ndis_map_arg {
 	int			max;
 };
 
+typedef uint8_t (*ndis_check_hang_func)(void *);
+typedef void (*ndis_disable_interrupts_func)(void *);
+typedef void (*ndis_enable_interrupts_func)(void *);
+typedef void (*ndis_halt_func)(void *);
+typedef int32_t (*ndis_init_func)(int32_t *, uint32_t *, enum ndis_medium *,
+    uint32_t, void *, void *);
+typedef int32_t (*ndis_query_info_func)(void *, uint32_t, void *, uint32_t,
+    uint32_t *, uint32_t *);
+typedef int32_t (*ndis_reset_func)(uint8_t *, void *);
+typedef int32_t (*ndis_send_func)(void *, struct ndis_packet *, uint32_t);
+typedef int32_t (*ndis_set_info_func)(void *, uint32_t, void *,
+    uint32_t, uint32_t *, uint32_t *);
+typedef int32_t (*ndis_transfer_data_func)(void *, uint32_t *, void *, void *,
+    uint32_t, uint32_t);
+typedef void (*ndis_return_packet_func)(void *, struct ndis_packet *);
+typedef void (*ndis_send_packets_func)(void *, struct ndis_packet **,
+    uint32_t);
+typedef void (*ndis_allocate_complete_func)(void *, void *, uint64_t *,
+    uint32_t, void *);
+typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
+typedef void (*ndis_shutdown_func)(void *);
 /*
  * Miniport characteristics were originally defined in the NDIS 3.0
  * spec and then extended twice, in NDIS 4.0 and 5.0.
  */
 struct ndis_miniport_characteristics {
 	/* NDIS 3.0 */
-	uint8_t		version_major;
-	uint8_t		version_minor;
-	uint16_t	pad;
-	uint32_t	rsvd;
-	void *		check_hang_func;
-	void *		disable_interrupts_func;
-	void *		enable_interrupts_func;
-	void *		halt_func;
-	void *		interrupt_func;
-	void *		init_func;
-	void *		isr_func;
-	void *		query_info_func;
-	void *		reconfig_func;
-	void *		reset_func;
-	void *		send_func;
-	void *		set_info_func;
-	void *		transfer_data_func;
+	uint8_t					version_major;
+	uint8_t					version_minor;
+	uint16_t				pad;
+	uint32_t				rsvd;
+	ndis_check_hang_func			check_hang_func;
+	ndis_disable_interrupts_func		disable_interrupts_func;
+	ndis_enable_interrupts_func		enable_interrupts_func;
+	ndis_halt_func				halt_func;
+	ndis_interrupt_func			interrupt_func;
+	ndis_init_func				init_func;
+	ndis_isr_func				isr_func;
+	ndis_query_info_func			query_info_func;
+	void *					reconfig_func;
+	ndis_reset_func				reset_func;
+	ndis_send_func				send_func;
+	ndis_set_info_func			set_info_func;
+	ndis_transfer_data_func			transfer_data_func;
 
 	/* NDIS 4.0 extentions */
-	void *		return_packet_func;
-	void *		send_packets_func;
-	void *		allocate_complete_func;
+	ndis_return_packet_func			return_packet_func;
+	ndis_send_packets_func			send_packets_func;
+	ndis_allocate_complete_func		allocate_complete_func;
 
 	/* NDIS 5.0 extensions */
-	void *		co_create_vc_func;
-	void *		co_delete_vc_func;
-	void *		co_activate_vc_func;
-	void *		co_deactivate_vc_func;
-	void *		co_send_packets_func;
-	void *		co_request_func;
+	void *					co_create_vc_func;
+	void *					co_delete_vc_func;
+	void *					co_activate_vc_func;
+	void *					co_deactivate_vc_func;
+	void *					co_send_packets_func;
+	void *					co_request_func;
 
 	/* NDIS 5.1 extentions */
-	void *		cancel_send_packets_func;
-	void *		pnp_event_notify_func;
-	void *		shutdown_func;
-	void *		reserved0;
-	void *		reserved1;
-	void *		reserved2;
-	void *		reserved3;
+	void *					cancel_send_packets_func;
+	ndis_pnp_event_notify_func		pnp_event_notify_func;
+	ndis_shutdown_func			shutdown_func;
+	void *					reserved0;
+	void *					reserved1;
+	void *					reserved2;
+	void *					reserved3;
 };
 
 /* NDIS 6.20 */
@@ -1939,6 +1963,10 @@ struct ndis_file_handle {
 	void		*map;
 	uint32_t	maplen;
 };
+
+typedef void (*ndis_send_done_func)(void *, struct ndis_packet *, int32_t);
+typedef void (*ndis_status_func)(void *, int32_t, void *, uint32_t);
+typedef void (*ndis_status_done_func)(void *);
 
 /*
  * The miniport block is basically the internal NDIS handle. We need
@@ -2002,7 +2030,7 @@ struct ndis_miniport_block {
 	void				*reset_open;
 	struct ndis_filter_dbs		filter_dbs;
 	void				*packet_indicate_func;
-	void				*send_done_func;
+	ndis_send_done_func		send_done_func;
 	void				*send_rsrc_func;
 	void				*reset_done_func;
 	enum ndis_medium		media_type;
@@ -2039,8 +2067,8 @@ struct ndis_miniport_block {
 	void				*ethrx_done_func;
 	void				*txrx_done_func;
 	void				*fddirxcond_func;
-	void				*status_func;
-	void				*status_done_func;
+	ndis_status_func		status_func;
+	ndis_status_done_func		status_done_func;
 	void				*tdcond_func;
 	void				*query_done_func;
 	void				*set_done_func;
@@ -2088,29 +2116,6 @@ struct ndis_usb_type {
 };
 
 typedef int32_t (*driver_entry)(void *, struct unicode_string *);
-typedef uint8_t (*ndis_checkforhang_func)(void *);
-typedef void (*ndis_disable_interrupts_func)(void *);
-typedef void (*ndis_enable_interrupts_func)(void *);
-typedef void (*ndis_halt_func)(void *);
-typedef void (*ndis_interrupt_func)(void *);
-typedef int32_t (*ndis_init_func)(int32_t *, uint32_t *, enum ndis_medium *,
-    uint32_t, void *, void *);
-typedef void (*ndis_isr_func)(uint8_t *, uint8_t *, void *);
-typedef int32_t (*ndis_query_info_func)(void *, uint32_t, void *,
-    uint32_t, uint32_t *, uint32_t *);
-typedef int (*ndis_reset_func)(uint8_t *, void *);
-typedef int32_t (*ndis_send_func)(void *, struct ndis_packet *, uint32_t);
-typedef int32_t (*ndis_set_info_func)(void *, uint32_t, void *,
-    uint32_t, uint32_t *, uint32_t *);
-typedef int32_t (*ndis_transfer_data_func)(void *, struct ndis_packet *,
-    uint32_t *, uint32_t);
-typedef void (*ndis_return_func)(void *, struct ndis_packet *);
-typedef void (*ndis_send_packets_func)(void *, struct ndis_packet **,
-    uint32_t);
-typedef void (*ndis_allocate_complete_func)(void *, void *,
-    uint64_t *, uint32_t, void *);
-typedef void (*ndis_pnp_event_notify_func)(void *, int, void *, uint32_t);
-typedef void (*ndis_shutdown_func)(void *);
 extern struct image_patch_table ndis_functbl[];
 
 void	ndis_libinit(void);

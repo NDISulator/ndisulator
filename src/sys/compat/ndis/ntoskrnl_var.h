@@ -289,7 +289,7 @@ struct nt_kdpc {
 	uint8_t			num;		/* CPU number */
 	uint8_t			importance;	/* priority */
 	struct list_entry	dpclistentry;
-	void			*deferedfunc;
+	nt_kdpc_func		deferedfunc;
 	void			*deferredctx;
 	void			*sysarg1;
 	void			*sysarg2;
@@ -453,14 +453,15 @@ struct custom_extension {
 	void			*ce_clid;
 };
 
-/*
- * Opaque.
- */
+struct nt_kinterrupt;
+typedef uint8_t (*service_func)(struct nt_kinterrupt *interrupt, void *ctx);
+typedef uint8_t (*synchronize_func)(void *ctx);
+
 struct nt_kinterrupt {
 	struct list_entry	list;
 	unsigned long		lock_priv;
 	unsigned long		*lock;
-	void			*func;
+	service_func		func;
 	void			*ctx;
 };
 
@@ -1250,7 +1251,8 @@ void	KeReleaseSpinLockFromDpcLevel(unsigned long *);
 void	KeInitializeSpinLock(unsigned long *);
 uint8_t	KeAcquireInterruptSpinLock(struct nt_kinterrupt *);
 void	KeReleaseInterruptSpinLock(struct nt_kinterrupt *, uint8_t);
-uint8_t	KeSynchronizeExecution(struct nt_kinterrupt *, void *, void *);
+uint8_t	KeSynchronizeExecution(struct nt_kinterrupt *, synchronize_func,
+	    void *);
 uintptr_t	InterlockedExchange(volatile uint32_t *, uintptr_t);
 void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
