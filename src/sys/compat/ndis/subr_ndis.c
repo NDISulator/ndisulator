@@ -1751,7 +1751,7 @@ ndis_intrhand(struct nt_kdpc *kdpc, struct ndis_miniport_interrupt *intr,
 	KeAcquireSpinLockAtDpcLevel(&intr->dpc_count_lock);
 	intr->dpc_count--;
 	if (intr->dpc_count == 0)
-		KeSetEvent(&intr->dpcs_completed_event, IO_NO_INCREMENT, FALSE);
+		KeSetEvent(&intr->dpc_completed_event, IO_NO_INCREMENT, FALSE);
 	KeReleaseSpinLockFromDpcLevel(&intr->dpc_count_lock);
 }
 
@@ -1779,7 +1779,7 @@ NdisMRegisterInterrupt(struct ndis_miniport_interrupt *intr,
 	intr->isr_func = ch->isr_func;
 	intr->dpc_func = ch->interrupt_func;
 
-	KeInitializeEvent(&intr->dpcs_completed_event, NOTIFICATION_EVENT, TRUE);
+	KeInitializeEvent(&intr->dpc_completed_event, NOTIFICATION_EVENT, TRUE);
 	KeInitializeDpc(&intr->interrupt_dpc, ndis_intrhand_wrap, intr);
 	KeSetImportanceDpc(&intr->interrupt_dpc, IMPORTANCE_LOW);
 
@@ -1809,8 +1809,8 @@ NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *intr)
 	/* Disconnect our ISR */
 	IoDisconnectInterrupt(intr->interrupt_object);
 
-	KeWaitForSingleObject(&intr->dpcs_completed_event, 0, 0, FALSE, NULL);
-	KeResetEvent(&intr->dpcs_completed_event);
+	KeWaitForSingleObject(&intr->dpc_completed_event, 0, 0, FALSE, NULL);
+	KeResetEvent(&intr->dpc_completed_event);
 }
 
 static void

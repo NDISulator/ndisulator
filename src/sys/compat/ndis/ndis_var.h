@@ -1648,7 +1648,7 @@ struct ndis_miniport_interrupt {
 	struct ndis_miniport_block	*block;
 	uint8_t				dpc_count;
 	uint8_t				filler1;
-	struct nt_kevent		dpcs_completed_event;
+	struct nt_kevent		dpc_completed_event;
 	uint8_t				shared_interrupt;
 	uint8_t				isr_requested;
 };

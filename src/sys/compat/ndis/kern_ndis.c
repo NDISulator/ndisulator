@@ -942,7 +942,7 @@ ndis_interrupt_setup(struct nt_kdpc *dpc, struct device_object *dobj,
 	KASSERT(sc->ndis_block->interrupt != NULL, ("no interrupt"));
 	intr = sc->ndis_block->interrupt;
 	KeAcquireSpinLockAtDpcLevel(&intr->dpc_count_lock);
-	KeResetEvent(&intr->dpcs_completed_event);
+	KeResetEvent(&intr->dpc_completed_event);
 	if (KeInsertQueueDpc(&intr->interrupt_dpc, NULL, NULL) == TRUE)
 		intr->dpc_count++;
 	KeReleaseSpinLockFromDpcLevel(&intr->dpc_count_lock);
