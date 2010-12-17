@@ -1693,7 +1693,8 @@ ndis_start(struct ifnet *ifp)
 	struct mbuf *m = NULL;
 	struct ndis_packet **p0 = NULL, *p = NULL;
 	struct ndis_tcpip_csum *csum;
-	int pcnt = 0, status;
+	uint32_t pcnt = 0;
+	int32_t status;
 
 	if (ifp->if_drv_flags & IFF_DRV_OACTIVE)
 		return;

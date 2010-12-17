@@ -688,7 +688,8 @@ ndis_set_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
 }
 
 void
-ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets, int cnt)
+ndis_send_packets(struct ndis_softc *sc, struct ndis_packet **packets,
+    uint32_t cnt)
 {
 	int i;
 	struct ndis_packet *p;

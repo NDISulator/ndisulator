@@ -2133,7 +2133,7 @@ int	ndis_set(struct ndis_softc *, uint32_t, void *, uint32_t);
 int	ndis_set_int(struct ndis_softc *, uint32_t, uint32_t);
 int	ndis_set_info(struct ndis_softc *, uint32_t, void *, uint32_t,
 	    uint32_t *, uint32_t *);
-void	ndis_send_packets(struct ndis_softc *, struct ndis_packet **, int);
+void	ndis_send_packets(struct ndis_softc *, struct ndis_packet **, uint32_t);
 int32_t	ndis_send_packet(struct ndis_softc *, struct ndis_packet *);
 int	ndis_convert_res(struct ndis_softc *);
 void	ndis_free_packet(struct ndis_packet *);
