@@ -163,7 +163,6 @@ ndis_attach_pci(device_t dev)
 				error = ENXIO;
 				goto fail;
 			}
-			pci_enable_io(dev, SYS_RES_IOPORT);
 			break;
 		case SYS_RES_MEMORY:
 			if (sc->ndis_res_altmem != NULL &&
@@ -193,7 +192,6 @@ ndis_attach_pci(device_t dev)
 					goto fail;
 				}
 			}
-			pci_enable_io(dev, SYS_RES_MEMORY);
 			break;
 		case SYS_RES_IRQ:
 			rid = rle->rid;
