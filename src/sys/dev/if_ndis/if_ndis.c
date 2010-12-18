@@ -233,8 +233,6 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		if (ndisdrv_loaded == 0)
 			break;
 		ndisdrv_loaded = 0;
-		/* fallthrough */
-	case MOD_SHUTDOWN:
 		windrv_unwrap(ndis_inputtask_wrap);
 		windrv_unwrap(ndis_linksts_done_wrap);
 		windrv_unwrap(ndis_linksts_wrap);
@@ -247,6 +245,8 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		windrv_unwrap(ndis_starttask_wrap);
 		windrv_unwrap(ndis_ticktask_wrap);
 		windrv_unwrap(ndis_txeof_wrap);
+		break;
+	case MOD_SHUTDOWN:
 		break;
 	default:
 		return (ENOTSUP);
