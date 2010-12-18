@@ -1170,9 +1170,6 @@ struct ndis_network_address_list {
 	struct ndis_network_address	address[1];
 };
 
-typedef uint32_t ndis_80211_power;	/* Power in milliwatts */
-typedef int32_t ndis_80211_rssi;	/* Signal strength in dBm */
-
 struct ndis_80211_config_fh {
 	uint32_t	len;
 	uint32_t	hoppatterh;
@@ -1211,10 +1208,6 @@ struct ndis_80211_wep {
 	uint8_t		keydata[32];
 };
 
-typedef uint8_t ndis_80211_rates[8];
-typedef uint8_t ndis_80211_rates_ex[16];
-typedef uint8_t ndis_80211_macaddr[6];
-
 struct ndis_80211_ssid {
 	uint32_t	len;
 	uint8_t		ssid[32];
@@ -1222,15 +1215,15 @@ struct ndis_80211_ssid {
 
 struct ndis_wlan_bssid {
 	uint32_t			len;
-	ndis_80211_macaddr		macaddr;
+	uint8_t				macaddr[6];
 	uint8_t				reserved[2];
 	struct ndis_80211_ssid		ssid;
 	uint32_t			privacy;
-	ndis_80211_rssi			rssi;
+	int32_t				rssi;
 	uint32_t			nettype;
 	struct ndis_80211_config	config;
 	uint32_t			netinfra;
-	ndis_80211_rates		supportedrates;
+	uint8_t				supportedrates[8];
 };
 
 struct ndis_80211_bssid_list {
@@ -1240,15 +1233,15 @@ struct ndis_80211_bssid_list {
 
 struct ndis_wlan_bssid_ex {
 	uint32_t			len;
-	ndis_80211_macaddr		macaddr;
+	uint8_t				macaddr[6];
 	uint8_t				reserved[2];
 	struct ndis_80211_ssid		ssid;
 	uint32_t			privacy;
-	ndis_80211_rssi			rssi;
+	int32_t				rssi;
 	uint32_t			nettype;
 	struct ndis_80211_config	config;
 	uint32_t			netinfra;
-	ndis_80211_rates_ex		supportedrates;
+	uint8_t				supportedrates[16];
 	uint32_t			ielen;
 	uint8_t				ies[1];
 };
@@ -1290,7 +1283,7 @@ struct ndis_80211_radio_status_indication {
 
 struct ndis_80211_auth_request {
 	uint32_t		len;
-	ndis_80211_macaddr	bssid;
+	uint8_t			bssid[6];
 	uint32_t		flags;
 };
 
@@ -1298,7 +1291,7 @@ struct ndis_80211_key {
 	uint32_t		len;
 	uint32_t		keyidx;
 	uint32_t		keylen;
-	ndis_80211_macaddr	bssid;
+	uint8_t			bssid[6];
 	uint8_t			pad[6];
 	uint64_t		keyrsc;
 	uint8_t			keydata[32];
@@ -1307,7 +1300,7 @@ struct ndis_80211_key {
 struct ndis_80211_remove_key {
 	uint32_t		len;
 	uint32_t		keyidx;
-	ndis_80211_macaddr	bssid;
+	uint8_t			bssid[6];
 };
 
 #define	NDIS_802_11_AI_REQFI_CAPABILITIES		0x00000001
@@ -1321,7 +1314,7 @@ struct ndis_80211_remove_key {
 struct ndis_80211_ai_reqfi {
 	uint16_t		caps;
 	uint16_t		listentint;
-	ndis_80211_macaddr	currentapaddr;
+	uint8_t			currentapaddr[6];
 };
 
 struct ndis_80211_ai_resfi {
@@ -1369,7 +1362,7 @@ struct ndis_80211_caps {
 };
 
 struct ndis_80211_bssidinfo {
-	ndis_80211_macaddr	bssid;
+	uint8_t			bssid[6];
 	uint8_t			pmkid[16];
 };
 
@@ -1380,7 +1373,7 @@ struct ndis_80211_pmkid {
 };
 
 struct ndis_80211_pmkid_cand {
-	ndis_80211_macaddr	bssid;
+	uint8_t			bssid[6];
 	uint32_t		flags;
 };
 

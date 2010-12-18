@@ -161,7 +161,7 @@ static void	ndis_scan_mindwell(struct ieee80211_scan_state *);
 static void	ndis_scan_start(struct ieee80211com *);
 static int	ndis_send_mgmt(struct ieee80211_node *, int, int);
 static int	ndis_set_authmode(struct ndis_softc *, uint32_t);
-static void	ndis_set_bssid(struct ndis_softc *, ndis_80211_macaddr);
+static void	ndis_set_bssid(struct ndis_softc *, uint8_t *);
 static void	ndis_set_channel(struct ieee80211com *);
 static int	ndis_set_cipher(struct ndis_softc *, int);
 static int	ndis_set_encryption(struct ndis_softc *, uint32_t);
@@ -284,7 +284,7 @@ static int
 ndis_set_txpower(struct ndis_softc *sc)
 {
 	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
-	ndis_80211_power power;
+	int32_t power;
 
 	power = dBm2mW[ic->ic_txpowlimit];
 	if (ndis_set_int(sc, OID_802_11_TX_POWER_LEVEL, power))
@@ -774,7 +774,7 @@ ndis_attach(device_t dev)
 	/* Do media setup */
 	if (NDIS_80211(sc)) {
 		struct ieee80211com *ic = ifp->if_l2com;
-		ndis_80211_rates_ex rates;
+		uint8_t rates[16];
 		struct ndis_80211_network_type_list *ntl;
 		uint32_t arg;
 
@@ -1992,7 +1992,7 @@ ndis_setstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
 	const struct ieee80211_txparam *tp;
-	ndis_80211_rates_ex rates;
+	uint8_t rates[16];
 	int i;
 	uint32_t len;
 
@@ -2040,7 +2040,7 @@ ndis_set_infra(struct ndis_softc *sc, int opmode)
 }
 
 static void
-ndis_set_bssid(struct ndis_softc *sc, ndis_80211_macaddr bssid)
+ndis_set_bssid(struct ndis_softc *sc, uint8_t *bssid)
 {
 	ndis_set(sc, OID_802_11_BSSID, bssid, IEEE80211_ADDR_LEN);
 }
