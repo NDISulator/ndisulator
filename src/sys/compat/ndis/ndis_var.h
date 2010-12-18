@@ -2115,7 +2115,7 @@ struct ndis_usb_type {
 	char		*name;
 };
 
-typedef int32_t (*driver_entry)(void *, struct unicode_string *);
+typedef int32_t (*driver_entry)(struct driver_object *, struct unicode_string *);
 extern struct image_patch_table ndis_functbl[];
 
 void	ndis_libinit(void);
