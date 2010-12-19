@@ -217,16 +217,16 @@ RemoveTailList(struct list_entry *l)
 #define	CONTAINING_RECORD(addr, type, field)	\
 	((type *)((vm_offset_t)(addr) - (vm_offset_t)(&((type *)0)->field)))
 
-struct nt_dispatch_header {
+struct nt_dispatcher_header {
 	uint8_t			type;
-	uint8_t			abs;
+	uint8_t			absolute;
 	uint8_t			size;
 	uint8_t			inserted;
-	int32_t			sigstate;
-	struct list_entry	waitlisthead;
+	int32_t			signal_state;
+	struct list_entry	wait_list_head;
 };
 
-enum dispatch_header_type {
+enum dispatcher_header_type {
 	NOTIFICATION_EVENT_OBJECT,
 	SYNCHRONIZATION_EVENT_OBJECT,
 	MUTANT_OBJECT,
@@ -260,14 +260,14 @@ enum dispatch_header_type {
 #define	AT_HIGH_LEVEL(td) ((td)->td_critnest != 0)
 
 struct nt_objref {
-	struct nt_dispatch_header	header;
+	struct nt_dispatcher_header	header;
 	void				*obj;
 	TAILQ_ENTRY(nt_objref)		link;
 };
 TAILQ_HEAD(nt_objref_head, nt_objref);
 
 struct nt_ktimer {
-	struct nt_dispatch_header	header;
+	struct nt_dispatcher_header	header;
 	uint64_t			duetime;
 	union {
 		struct list_entry	timerlistentry;
@@ -278,7 +278,7 @@ struct nt_ktimer {
 };
 
 struct nt_kevent {
-	struct nt_dispatch_header	header;
+	struct nt_dispatcher_header	header;
 };
 
 struct nt_kdpc;
@@ -305,7 +305,7 @@ enum kdpc_importance {
 #define	KDPC_CPU_DEFAULT 255
 
 struct nt_kmutex {
-	struct nt_dispatch_header	header;
+	struct nt_dispatcher_header	header;
 	struct list_entry		list;
 	void				*owner_thread;
 	uint8_t				abandoned;
@@ -313,7 +313,7 @@ struct nt_kmutex {
 };
 
 struct nt_ksemaphore {
-	struct nt_dispatch_header	header;
+	struct nt_dispatcher_header	header;
 	int32_t				limit;
 };
 
@@ -405,7 +405,7 @@ struct wait_ctx_block {
 struct wait_block {
 	struct list_entry		wb_waitlist;
 	void				*wb_kthread;
-	struct nt_dispatch_header	*wb_object;
+	struct nt_dispatcher_header	*wb_object;
 	struct wait_block		*wb_next;
 	uint8_t				wb_waitkey;
 	uint8_t				wb_waittype;
