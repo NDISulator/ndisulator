@@ -1263,10 +1263,6 @@ struct ndis_80211_variable_ies {
 	uint8_t		data[1];
 };
 
-typedef uint32_t ndis_80211_fragthresh;
-typedef uint32_t ndis_80211_rtsthresh;
-typedef uint32_t ndis_80211_antenna;
-
 struct ndis_80211_status_indication {
 	enum ndis_80211_status_type	status_type;
 };

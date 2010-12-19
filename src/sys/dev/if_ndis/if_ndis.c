@@ -313,7 +313,7 @@ ndis_set_powerstate(struct ndis_softc *sc, enum ndis_device_power_state nstate)
 static int
 ndis_set_rtsthreshold(struct ndis_softc *sc, uint16_t nrts)
 {
-	ndis_80211_rtsthresh rts = nrts;
+	uint32_t rts = nrts;
 
 	return (ndis_set_int(sc, OID_802_11_RTS_THRESHOLD, rts));
 }
@@ -321,7 +321,7 @@ ndis_set_rtsthreshold(struct ndis_softc *sc, uint16_t nrts)
 static int
 ndis_set_fragthreshold(struct ndis_softc *sc, uint16_t nfrag)
 {
-	ndis_80211_fragthresh frag = nfrag;
+	uint32_t frag = nfrag;
 
 	return (ndis_set_int(sc, OID_802_11_FRAGMENTATION_THRESHOLD, frag));
 }
@@ -1655,9 +1655,7 @@ ndis_raw_xmit(struct ieee80211_node *ni, struct mbuf *m,
 static void
 ndis_update_mcast(struct ifnet *ifp)
 {
-	struct ndis_softc *sc = ifp->if_softc;
-
-	ndis_set_multi(sc);
+	ndis_set_multi(ifp->if_softc);
 }
 
 static void
@@ -2048,12 +2046,15 @@ ndis_set_bssid(struct ndis_softc *sc, uint8_t *bssid)
 static void
 ndis_set_ssid(struct ndis_softc *sc, uint8_t *essid, uint8_t esslen)
 {
-	struct ndis_80211_ssid ssid;
+	struct ndis_80211_ssid *s;
 
-	memset(&ssid, 0, sizeof(ssid));
-	memcpy(ssid.ssid, essid, esslen);
-	ssid.len = esslen;
-	ndis_set(sc, OID_802_11_SSID, &ssid, sizeof(ssid));
+	s = malloc(sizeof(struct ndis_80211_ssid), M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	if (s == NULL)
+		return;
+	memcpy(s->ssid, essid, esslen);
+	s->len = esslen;
+	ndis_set(sc, OID_802_11_SSID, s, sizeof(struct ndis_80211_ssid));
+	free(s, M_NDIS_DEV);
 }
 
 static void
