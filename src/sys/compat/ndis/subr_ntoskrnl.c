@@ -273,6 +273,10 @@ static uint8_t KeReadStateTimer(struct nt_ktimer *);
 static int32_t KeDelayExecutionThread(uint8_t, uint8_t, int64_t *);
 static int32_t KeSetPriorityThread(struct thread *, int32_t);
 static int32_t KeQueryPriorityThread(struct thread *);
+static void KeInitializeSemaphore(struct nt_ksemaphore *, int32_t, int32_t);
+static int32_t KeReleaseSemaphore(struct nt_ksemaphore *, int32_t, int32_t,
+    uint8_t);
+static int32_t KeReadStateSemaphore(struct nt_ksemaphore *);
 static void dummy(void);
 
 static funcptr ntoskrnl_worker_wrap;
@@ -3035,7 +3039,7 @@ KeInitializeMutex(struct nt_kmutex *kmutex, uint32_t level)
 	kmutex->abandoned = FALSE;
 	kmutex->header.sigstate = TRUE;
 	kmutex->header.type = MUTANT_OBJECT;
-	kmutex->header.size = sizeof(struct nt_kmutex) / sizeof(uint32_t);
+	kmutex->header.size = sizeof(struct nt_kmutex);
 }
 
 static int32_t
@@ -3075,7 +3079,7 @@ KeInitializeEvent(struct nt_kevent *kevent, enum event_type type, uint8_t state)
 	InitializeListHead((&kevent->header.waitlisthead));
 	kevent->header.sigstate = state;
 	kevent->header.type = NOTIFICATION_EVENT_OBJECT + type;
-	kevent->header.size = sizeof(struct nt_kevent) / sizeof(uint32_t);
+	kevent->header.size = sizeof(struct nt_kevent);
 }
 
 int32_t
@@ -3199,7 +3203,7 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 	nr->obj = handle;
 	nr->header.type = THREAD_OBJECT;
 	nr->header.sigstate = 0;
-	nr->header.size = (uint8_t)(sizeof(struct thread) / sizeof(uint32_t));
+	nr->header.size = sizeof(struct thread);
 	TAILQ_INSERT_TAIL(&nt_reflist, nr, link);
 	*object = nr;
 
@@ -3446,7 +3450,7 @@ KeInitializeTimerEx(struct nt_ktimer *timer, enum timer_type type)
 	timer->header.sigstate = FALSE;
 	timer->header.inserted = FALSE;
 	timer->header.type = NOTIFICATION_TIMER_OBJECT + type;
-	timer->header.size = sizeof(struct nt_ktimer) / sizeof(uint32_t);
+	timer->header.size = sizeof(struct nt_ktimer);
 	timer->u.callout = ExAllocatePool(sizeof(struct callout));
 	callout_init(timer->u.callout, CALLOUT_MPSAFE);
 }
@@ -3787,6 +3791,41 @@ KeQueryPriorityThread(struct thread *thread)
 }
 
 static void
+KeInitializeSemaphore(struct nt_ksemaphore *semaphore, int32_t count,
+    int32_t limit)
+{
+	InitializeListHead(&semaphore->header.waitlisthead);
+	semaphore->limit = limit;
+	semaphore->header.sigstate = count;
+	semaphore->header.type = SEMAPHORE_OBJECT;
+	semaphore->header.size = sizeof(struct nt_ksemaphore);
+}
+
+static int32_t
+KeReleaseSemaphore(struct nt_ksemaphore *semaphore, int32_t priority,
+    int32_t adjustment, uint8_t wait)
+{
+	int32_t ret;
+
+	mtx_lock(&nt_dispatchlock);
+	ret = semaphore->header.sigstate;
+	if (semaphore->header.sigstate + adjustment <= semaphore->limit)
+		semaphore->header.sigstate += adjustment;
+	else
+		semaphore->header.sigstate = semaphore->limit;
+	if (semaphore->header.sigstate > 0)
+		ntoskrnl_waittest(&semaphore->header, IO_NO_INCREMENT);
+	mtx_unlock(&nt_dispatchlock);
+	return (ret);
+}
+
+static int32_t
+KeReadStateSemaphore(struct nt_ksemaphore *semaphore)
+{
+	return (semaphore->header.sigstate);
+}
+
+static void
 dummy(void)
 {
 	printf("ntoskrnl dummy called...\n");
@@ -3916,6 +3955,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(KeInitializeDpc, 3),
 	IMPORT_SFUNC(KeInitializeEvent, 3),
 	IMPORT_SFUNC(KeInitializeMutex, 2),
+	IMPORT_SFUNC(KeInitializeSemaphore, 3),
 	IMPORT_SFUNC(KeInitializeSpinLock, 1),
 	IMPORT_SFUNC(KeInitializeTimer, 1),
 	IMPORT_SFUNC(KeInitializeTimerEx, 2),
@@ -3928,9 +3968,11 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(KeQueryTimeIncrement, 0),
 	IMPORT_SFUNC(KeReadStateEvent, 1),
 	IMPORT_SFUNC(KeReadStateMutex, 1),
+	IMPORT_SFUNC(KeReadStateSemaphore, 1),
 	IMPORT_SFUNC(KeReadStateTimer, 1),
 	IMPORT_SFUNC(KeReleaseInterruptSpinLock, 2),
 	IMPORT_SFUNC(KeReleaseMutex, 2),
+	IMPORT_SFUNC(KeReleaseSemaphore, 4),
 	IMPORT_SFUNC(KeRemoveQueueDpc, 1),
 	IMPORT_SFUNC(KeResetEvent, 1),
 	IMPORT_SFUNC(KeSetEvent, 3),
