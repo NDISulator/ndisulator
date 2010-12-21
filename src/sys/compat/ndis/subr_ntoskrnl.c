@@ -3705,7 +3705,7 @@ KeCancelTimer(struct nt_ktimer *timer)
 static uint8_t
 KeReadStateTimer(struct nt_ktimer *timer)
 {
-	return (callout_pending(timer->u.callout));
+	return (timer->header.signal_state);
 }
 
 static int32_t
