@@ -35,15 +35,6 @@
 #ifndef _HAL_VAR_H_
 #define	_HAL_VAR_H_
 
-#ifdef __amd64__
-#define	NDIS_BUS_SPACE_IO	AMD64_BUS_SPACE_IO
-#define	NDIS_BUS_SPACE_MEM	AMD64_BUS_SPACE_MEM
-#endif
-#ifdef __i386__
-#define	NDIS_BUS_SPACE_IO	I386_BUS_SPACE_IO
-#define	NDIS_BUS_SPACE_MEM	I386_BUS_SPACE_MEM
-#endif
-
 extern struct image_patch_table hal_functbl[];
 
 void	hal_libfini(void);

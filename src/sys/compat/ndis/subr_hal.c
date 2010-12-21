@@ -99,28 +99,28 @@ static void
 WRITE_PORT_ULONG(uint32_t *port, uint32_t value)
 {
 	TRACE(NDBG_HAL, "port %p value %u\n", port, value);
-	bus_space_write_4(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
+	bus_space_write_4(X86_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
 }
 
 static void
 WRITE_PORT_USHORT(uint16_t *port, uint16_t value)
 {
 	TRACE(NDBG_HAL, "port %p value %u\n", port, value);
-	bus_space_write_2(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
+	bus_space_write_2(X86_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
 }
 
 static void
 WRITE_PORT_UCHAR(uint8_t *port, uint8_t value)
 {
 	TRACE(NDBG_HAL, "port %p value %u\n", port, value);
-	bus_space_write_1(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
+	bus_space_write_1(X86_BUS_SPACE_IO, 0x0, (bus_size_t)port, value);
 }
 
 static void
 WRITE_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *buffer, uint32_t count)
 {
 	TRACE(NDBG_HAL, "port %p buffer %p count %u\n", port, buffer, count);
-	bus_space_write_multi_4(NDIS_BUS_SPACE_IO, 0x0,
+	bus_space_write_multi_4(X86_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, buffer, count);
 }
 
@@ -128,7 +128,7 @@ static void
 WRITE_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *buffer, uint32_t count)
 {
 	TRACE(NDBG_HAL, "port %p buffer %p count %u\n", port, buffer, count);
-	bus_space_write_multi_2(NDIS_BUS_SPACE_IO, 0x0,
+	bus_space_write_multi_2(X86_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, buffer, count);
 }
 
@@ -136,7 +136,7 @@ static void
 WRITE_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *buffer, uint32_t count)
 {
 	TRACE(NDBG_HAL, "port %p buffer %p count %u\n", port, buffer, count);
-	bus_space_write_multi_1(NDIS_BUS_SPACE_IO, 0x0,
+	bus_space_write_multi_1(X86_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, buffer, count);
 }
 
@@ -144,28 +144,28 @@ static uint16_t
 READ_PORT_USHORT(uint16_t *port)
 {
 	TRACE(NDBG_HAL, "port %p\n", port);
-	return (bus_space_read_2(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port));
+	return (bus_space_read_2(X86_BUS_SPACE_IO, 0x0, (bus_size_t)port));
 }
 
 static uint32_t
 READ_PORT_ULONG(uint32_t *port)
 {
 	TRACE(NDBG_HAL, "port %p\n", port);
-	return (bus_space_read_4(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port));
+	return (bus_space_read_4(X86_BUS_SPACE_IO, 0x0, (bus_size_t)port));
 }
 
 static uint8_t
 READ_PORT_UCHAR(uint8_t *port)
 {
 	TRACE(NDBG_HAL, "port %p\n", port);
-	return (bus_space_read_1(NDIS_BUS_SPACE_IO, 0x0, (bus_size_t)port));
+	return (bus_space_read_1(X86_BUS_SPACE_IO, 0x0, (bus_size_t)port));
 }
 
 static void
 READ_PORT_BUFFER_ULONG(uint32_t *port, uint32_t *buffer, uint32_t count)
 {
 	TRACE(NDBG_HAL, "port %p count %u\n", port, count);
-	bus_space_read_multi_4(NDIS_BUS_SPACE_IO, 0x0,
+	bus_space_read_multi_4(X86_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, buffer, count);
 }
 
@@ -173,7 +173,7 @@ static void
 READ_PORT_BUFFER_USHORT(uint16_t *port, uint16_t *buffer, uint32_t count)
 {
 	TRACE(NDBG_HAL, "port %p count %u\n", port, count);
-	bus_space_read_multi_2(NDIS_BUS_SPACE_IO, 0x0,
+	bus_space_read_multi_2(X86_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, buffer, count);
 }
 
@@ -181,7 +181,7 @@ static void
 READ_PORT_BUFFER_UCHAR(uint8_t *port, uint8_t *buffer, uint32_t count)
 {
 	TRACE(NDBG_HAL, "port %p count %u\n", port, count);
-	bus_space_read_multi_1(NDIS_BUS_SPACE_IO, 0x0,
+	bus_space_read_multi_1(X86_BUS_SPACE_IO, 0x0,
 	    (bus_size_t)port, buffer, count);
 }
 

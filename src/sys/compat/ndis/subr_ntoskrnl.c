@@ -1776,37 +1776,37 @@ wait_done:
 static void
 WRITE_REGISTER_USHORT(uint16_t *reg, uint16_t val)
 {
-	bus_space_write_2(NDIS_BUS_SPACE_MEM, 0x0, (bus_size_t)reg, val);
+	bus_space_write_2(X86_BUS_SPACE_MEM, 0x0, (bus_size_t)reg, val);
 }
 
 static uint16_t
 READ_REGISTER_USHORT(uint16_t *reg)
 {
-	return (bus_space_read_2(NDIS_BUS_SPACE_MEM, 0x0, (bus_size_t)reg));
+	return (bus_space_read_2(X86_BUS_SPACE_MEM, 0x0, (bus_size_t)reg));
 }
 
 static void
 WRITE_REGISTER_ULONG(uint32_t *reg, uint32_t val)
 {
-	bus_space_write_4(NDIS_BUS_SPACE_MEM, 0x0, (bus_size_t)reg, val);
+	bus_space_write_4(X86_BUS_SPACE_MEM, 0x0, (bus_size_t)reg, val);
 }
 
 static uint32_t
 READ_REGISTER_ULONG(uint32_t *reg)
 {
-	return (bus_space_read_4(NDIS_BUS_SPACE_MEM, 0x0, (bus_size_t)reg));
+	return (bus_space_read_4(X86_BUS_SPACE_MEM, 0x0, (bus_size_t)reg));
 }
 
 static uint8_t
 READ_REGISTER_UCHAR(uint8_t *reg)
 {
-	return (bus_space_read_1(NDIS_BUS_SPACE_MEM, 0x0, (bus_size_t)reg));
+	return (bus_space_read_1(X86_BUS_SPACE_MEM, 0x0, (bus_size_t)reg));
 }
 
 static void
 WRITE_REGISTER_UCHAR(uint8_t *reg, uint8_t val)
 {
-	bus_space_write_1(NDIS_BUS_SPACE_MEM, 0x0, (bus_size_t)reg, val);
+	bus_space_write_1(X86_BUS_SPACE_MEM, 0x0, (bus_size_t)reg, val);
 }
 
 static int64_t
