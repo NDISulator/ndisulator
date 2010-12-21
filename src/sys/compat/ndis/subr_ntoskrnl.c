@@ -3451,7 +3451,6 @@ KeInitializeTimerEx(struct nt_ktimer *timer, enum timer_type type)
 	KASSERT(timer != NULL, ("no timer"));
 	InitializeListHead((&timer->header.wait_list_head));
 	timer->header.signal_state = FALSE;
-	timer->header.inserted = FALSE;
 	timer->header.type = NOTIFICATION_TIMER_OBJECT + type;
 	timer->header.size = sizeof(struct nt_ktimer);
 	timer->u.callout = ExAllocatePool(sizeof(struct callout));
@@ -3665,7 +3664,6 @@ KeSetTimerEx(struct nt_ktimer *timer, int64_t duetime, uint32_t period,
 	KASSERT(timer != NULL, ("no timer"));
 
 	timer->header.signal_state = FALSE;
-	timer->header.inserted = TRUE;
 	timer->duetime = duetime;
 	timer->period = period;
 	timer->dpc = dpc;
@@ -3700,7 +3698,6 @@ KeCancelTimer(struct nt_ktimer *timer)
 	KASSERT(timer != NULL, ("no timer"));
 
 	timer->period = 0;
-	timer->header.inserted = FALSE;
 	timer->header.signal_state = FALSE;
 	return (callout_stop(timer->u.callout));
 }
