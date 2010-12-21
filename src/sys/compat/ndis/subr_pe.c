@@ -213,10 +213,8 @@ pe_directory_offset(vm_offset_t imgbase, enum image_directory_entry diridx)
 	vm_offset_t dir;
 
 	pe_get_optional_header(imgbase, &opt_hdr);
-
 	if (diridx >= opt_hdr->number_of_rva_and_sizes)
 		return (0);
-
 	dir = opt_hdr->data_directory[diridx].virtual_address;
 
 	return (pe_translate_addr(imgbase, dir));
@@ -248,8 +246,7 @@ pe_translate_addr(vm_offset_t imgbase, vm_offset_t rva)
 		    sect_hdr->misc.virtual_size) &
 		    (opt_hdr->section_aligment - 1);
 		if (sect_hdr->virtual_address <= (uint32_t)rva &&
-		    (sect_hdr->virtual_address + fixedlen) >
-		    (uint32_t)rva)
+		    (sect_hdr->virtual_address + fixedlen) > (uint32_t)rva)
 			break;
 		sect_hdr++;
 	}
@@ -325,8 +322,7 @@ pe_relocate(vm_offset_t imgbase)
 				lloc = (uint32_t *)pe_translate_addr(imgbase,
 				    relhdr->virtual_address +
 				    IMR_RELOFFSET(rel));
-				*lloc = pe_translate_addr(imgbase,
-				    (*lloc - base));
+				*lloc = pe_translate_addr(imgbase, (*lloc - base));
 				break;
 			case IMAGE_REL_BASED_HIGH:
 				sloc = (uint16_t *)pe_translate_addr(imgbase,
@@ -344,12 +340,10 @@ pe_relocate(vm_offset_t imgbase)
 				qloc = (uint64_t *)pe_translate_addr(imgbase,
 				    relhdr->virtual_address +
 				    IMR_RELOFFSET(rel));
-				*qloc = pe_translate_addr(imgbase,
-				    (*qloc - base));
+				*qloc = pe_translate_addr(imgbase, (*qloc - base));
 				break;
 			default:
-				printf("[%d]reloc type: %d\n",i,
-				    IMR_RELTYPE(rel));
+				printf("[%d]reloc type: %d\n", i, IMR_RELTYPE(rel));
 				break;
 			}
 		}
@@ -382,15 +376,12 @@ pe_get_import_descriptor(vm_offset_t imgbase,
 	if (offset == 0)
 		return (ENOENT);
 
-	imp_desc = (void *)offset;
-
-	while (imp_desc->name) {
+	for (imp_desc = (void *)offset; imp_desc->name; imp_desc++) {
 		modname = (char *)pe_translate_addr(imgbase, imp_desc->name);
 		if (!strncasecmp(module, modname, strlen(module))) {
 			*desc = imp_desc;
 			return (0);
 		}
-		imp_desc++;
 	}
 	return (ENOENT);
 }
@@ -530,8 +521,7 @@ pe_patch_imports(vm_offset_t imgbase, const char *module,
 
 	nptr = (vm_offset_t *)pe_translate_addr(imgbase,
 	    imp_desc->u.original_first_thunk);
-	fptr = (vm_offset_t *)pe_translate_addr(imgbase,
-	    imp_desc->first_thunk);
+	fptr = (vm_offset_t *)pe_translate_addr(imgbase, imp_desc->first_thunk);
 
 	while (nptr != NULL && pe_translate_addr(imgbase, *nptr)) {
 		name = (char *)pe_translate_addr(imgbase,
