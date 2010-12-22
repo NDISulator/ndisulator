@@ -27,8 +27,8 @@ clean:
 	cd /usr/src/sys/modules/if_ndis && make clean
 	cd /usr/src/usr.sbin/ndiscvt && make clean
 load:
-	kldload /usr/src/sys/modules/ndis/ndis.ko
-	kldload /usr/src/sys/modules/if_ndis/if_ndis.ko
+	cd /usr/src/sys/modules/ndis && make load
+	cd /usr/src/sys/modules/if_ndis && make load
 unload:
-	kldunload if_ndis.ko
-	kldunload ndis.ko
+	cd /usr/src/sys/modules/ndis && make unload
+	cd /usr/src/sys/modules/if_ndis && make unload
