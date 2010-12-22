@@ -48,7 +48,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/proc.h>
 #include <sys/sched.h>
 #include <sys/smp.h>
-#include <sys/queue.h>
 
 #ifdef __amd64__
 #include <machine/fpu.h>
