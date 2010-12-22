@@ -1126,11 +1126,11 @@ enum device_type {
 typedef void (*io_workitem_func)(struct device_object *, void *);
 
 struct io_workitem {
-	io_workitem_func	iw_func;
-	void			*iw_ctx;
-	struct list_entry	iw_listentry;
-	struct device_object	*iw_dobj;
-	int			iw_idx;
+	io_workitem_func	func;
+	void			*ctx;
+	struct list_entry	list;
+	struct device_object	*dobj;
+	int			idx;
 };
 
 enum work_queue_type {
@@ -1139,29 +1139,8 @@ enum work_queue_type {
 	HYPERCRITICAL
 };
 
-#define	WORKITEM_THREADS	4
-#define	WORKITEM_LEGACY_THREAD	3
-#define	WORKIDX_INC(x)		(x) = (x + 1) % WORKITEM_LEGACY_THREAD
-
-/*
- * Older, deprecated work item API, needed to support NdisQueueWorkItem().
- */
-struct work_queue_item;
-
-typedef void (*work_item_func)(struct work_queue_item *, void *);
-
-struct work_queue_item {
-	struct list_entry	wqi_entry;
-	work_item_func		wqi_func;
-	void			*wqi_ctx;
-};
-
-#define	ExInitializeWorkItem(w, func, ctx)		\
-	do {						\
-		(w)->wqi_func = (func);			\
-		(w)->wqi_ctx = (ctx);			\
-		InitializeListHead(&((w)->wqi_entry));	\
-	} while (0)
+#define	WORKITEM_THREADS	3
+#define	WORKIDX_INC(x)		(x) = (x + 1) % WORKITEM_THREADS
 
 /*
  * FreeBSD's kernel stack is 2 pages in size by default. The
@@ -1205,12 +1184,12 @@ void	windrv_wrap(funcptr, funcptr *, uint8_t, enum windrv_wrap_type);
 void	windrv_unwrap(funcptr);
 void	windrv_wrap_table(struct image_patch_table *);
 void	windrv_unwrap_table(struct image_patch_table *);
-void	ctxsw_utow(void);
-void	ctxsw_wtou(void);
 void	ntoskrnl_libinit(void);
 void	ntoskrnl_libfini(void);
 void	ntoskrnl_intr(void *);
 void	ntoskrnl_time(uint64_t *);
+void	schedule_ndis_work_item(void *);
+void	flush_queued_dpcs(void);
 uint16_t ExQueryDepthSList(union slist_header *);
 struct slist_entry *InterlockedPushEntrySList(union slist_header *,
 	    struct slist_entry *);
@@ -1230,7 +1209,6 @@ uint8_t	KeInsertQueueDpc(struct nt_kdpc *, void *, void *);
 uint8_t	KeRemoveQueueDpc(struct nt_kdpc *);
 void	KeSetImportanceDpc(struct nt_kdpc *, uint32_t);
 void	KeSetTargetProcessorDpc(struct nt_kdpc *, uint8_t);
-void	KeFlushQueuedDpcs(void);
 void	KeInitializeTimer(struct nt_ktimer *);
 void	KeInitializeTimerEx(struct nt_ktimer *, uint32_t);
 uint8_t	KeSetTimer(struct nt_ktimer *, int64_t, struct nt_kdpc *);
@@ -1277,7 +1255,6 @@ void	IoReleaseCancelSpinLock(uint8_t);
 void	IoDetachDevice(struct device_object *);
 struct mdl *IoAllocateMdl(void *, uint32_t, uint8_t, uint8_t, struct irp *);
 void	IoFreeMdl(struct mdl *);
-void	ExQueueWorkItem(struct work_queue_item *, enum work_queue_type);
 void	IoFreeWorkItem(struct io_workitem *);
 void	IoQueueWorkItem(struct io_workitem *, io_workitem_func,
 	    enum work_queue_type, void *);

@@ -85,18 +85,8 @@ static struct ndis_usb_type ndis_devs_usb[] = {
 extern uint8_t DRV_DATA_START;
 extern uint8_t DRV_DATA_END;
 
-/*
- * The following is stub code that makes it look as though we want
- * to be a child device of all the buses that our supported devices
- * might want to attach to. Our probe routine always fails. The
- * reason we need this code is so that loading an ELF-ified Windows
- * driver module will trigger a bus reprobe.
- */
-#define	MODULE_DECL(x)				\
-	MODULE_DEPEND(x, ndisapi, 2, 2, 2);	\
-	MODULE_DEPEND(x, ndis, 2, 2, 2)
-
-MODULE_DECL(DRV_NAME);
+MODULE_DEPEND(DRV_NAME, ndisapi, 3, 3, 3);
+MODULE_DEPEND(DRV_NAME, ndis, 3, 3, 3);
 
 static int	windrv_modevent(module_t, int, void *);
 static int	windrv_probe(device_t);
@@ -146,6 +136,10 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 	drv_data_end = (vm_offset_t)&DRV_DATA_END;
 	drv_data_len = drv_data_end - drv_data_start;
 
+	if (cold) {
+		printf("WARNING: Loading driver before boot is not possible\n");
+		return (EAGAIN);
+	}
 	switch (cmd) {
 	case MOD_LOAD:
 		if (windrv_loaded == 1)

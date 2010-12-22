@@ -172,7 +172,7 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 	return (0);
 }
 DEV_MODULE(ndisapi, ndis_modevent, NULL);
-MODULE_VERSION(ndisapi, 2);
+MODULE_VERSION(ndisapi, 3);
 
 static void
 NdisMSendResourcesAvailable(struct ndis_miniport_block *block)
@@ -851,8 +851,7 @@ void
 ndis_halt_nic(struct ndis_softc *sc)
 {
 
-	if (!cold)
-		KeFlushQueuedDpcs();
+	flush_queued_dpcs();
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));
@@ -861,8 +860,7 @@ ndis_halt_nic(struct ndis_softc *sc)
 	NDIS_LOCK(sc);
 	sc->ndis_block->device_ctx = NULL;
 	NDIS_UNLOCK(sc);
-	MSCALL1(sc->ndis_chars->halt_func,
-	    sc->ndis_block->miniport_adapter_ctx);
+	MSCALL1(sc->ndis_chars->halt_func, sc->ndis_block->miniport_adapter_ctx);
 }
 
 void

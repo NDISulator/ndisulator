@@ -2181,41 +2181,12 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 
 	fh->name = afilename;
 
-	/*
-	 * During system bootstrap, it's impossible to load files
-	 * from the rootfs since it's not mounted yet. We therefore
-	 * offer the possibility of opening files that have been
-	 * preloaded as modules instead. Both choices will work
-	 * when kldloading a module from multiuser, but only the
-	 * module option will work during bootstrap. The module
-	 * loading option works by using the ndiscvt(8) utility
-	 * to convert the arbitrary file into a .ko using objcopy(1).
-	 * This file will contain two special symbols: filename_start
-	 * and filename_end. All we have to do is traverse the KLD
-	 * list in search of those symbols and we've found the file
-	 * data. As an added bonus, ndiscvt(8) will also generate
-	 * a normal .o file which can be linked statically with
-	 * the kernel. This means that the symbols will actual reside
-	 * in the kernel's symbol table, but that doesn't matter to
-	 * us since the kernel appears to us as just another module.
-	 */
 	nc.afilename = afilename;
 	nc.fh = fh;
 	if (linker_file_foreach(ndis_check_module, &nc)) {
 		*filelength = fh->maplen;
 		*filehandle = fh;
 		*status = NDIS_STATUS_SUCCESS;
-		return;
-	}
-
-	if (TAILQ_EMPTY(&mountlist)) {
-		free(fh, M_NDIS_SUBR);
-		*status = NDIS_STATUS_FILE_NOT_FOUND;
-		printf("NDIS: could not find file %s in linker list\n",
-		    afilename);
-		printf("NDIS: and no filesystems mounted yet, "
-		    "aborting NdisOpenFile()\n");
-		free(afilename, M_NDIS_SUBR);
 		return;
 	}
 
@@ -2388,35 +2359,11 @@ NdisMIndicateStatus(struct ndis_miniport_block *block, int32_t status,
 	MSCALL4(block->status_func, block, status, sbuf, slen);
 }
 
-/*
- * The DDK documentation says that you should use IoQueueWorkItem()
- * instead of ExQueueWorkItem(). The problem is, IoQueueWorkItem()
- * is fundamentally incompatible with NdisScheduleWorkItem(), which
- * depends on the API semantics of ExQueueWorkItem(). In our world,
- * ExQueueWorkItem() is implemented on top of IoAllocateQueueItem()
- * anyway.
- *
- * There are actually three distinct APIs here. NdisScheduleWorkItem()
- * takes a pointer to an NDIS_WORK_ITEM. ExQueueWorkItem() takes a pointer
- * to a WORK_QUEUE_ITEM. And finally, IoQueueWorkItem() takes a pointer
- * to an opaque work item thingie which you get from IoAllocateWorkItem().
- * An NDIS_WORK_ITEM is not the same as a WORK_QUEUE_ITEM. However,
- * the NDIS_WORK_ITEM has some opaque storage at the end of it, and we
- * (ab)use this storage as a WORK_QUEUE_ITEM, which is what we submit
- * to ExQueueWorkItem().
- *
- * Got all that? (Sheesh.)
- */
 static int32_t
 NdisScheduleWorkItem(struct ndis_work_item *work)
 {
-	struct work_queue_item *wqi;
-
 	TRACE(NDBG_WORK, "work %p\n", work);
-	wqi = (struct work_queue_item *)work->wraprsvd;
-	ExInitializeWorkItem(wqi, (work_item_func)work->func, work->ctx);
-	ExQueueWorkItem(wqi, DELAYED);
-
+	schedule_ndis_work_item(work);
 	return (NDIS_STATUS_SUCCESS);
 }
 

@@ -1646,9 +1646,9 @@ struct ndis_work_item;
 typedef void (*ndis_proc)(struct ndis_work_item *, void *);
 
 struct ndis_work_item {
-	void		*ctx;
-	ndis_proc	func;
-	uint8_t		wraprsvd[sizeof(void *) * 8];
+	void			*ctx;
+	ndis_proc		func;
+	struct list_entry	list;
 };
 
 struct ndis_sc_element {
