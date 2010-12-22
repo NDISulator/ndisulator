@@ -1142,12 +1142,7 @@ enum work_queue_type {
 #define	WORKITEM_THREADS	3
 #define	WORKIDX_INC(x)		(x) = (x + 1) % WORKITEM_THREADS
 
-/*
- * FreeBSD's kernel stack is 2 pages in size by default. The
- * Windows stack is larger, so we need to give our threads more
- * stack pages. 4 should be enough, we use 8 just to extra safe.
- */
-#define	NDIS_KSTACK_PAGES	8
+#define	NDIS_KSTACK_PAGES	12
 
 enum windrv_wrap_type {
 	STDCALL	= 1,
