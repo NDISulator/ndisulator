@@ -144,15 +144,6 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		TAILQ_INIT(&ndis_devhead);
 		break;
 	case MOD_SHUTDOWN:
-		if (TAILQ_FIRST(&ndis_devhead) == NULL) {
-			usbd_libfini();
-			ndis_libfini();
-			windrv_libfini();
-			ntoskrnl_libfini();
-			hal_libfini();
-
-			windrv_unwrap_table(kernndis_functbl);
-		}
 		break;
 	case MOD_UNLOAD:
 		usbd_libfini();
