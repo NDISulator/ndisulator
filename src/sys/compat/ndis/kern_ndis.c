@@ -37,9 +37,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/systm.h>
 #include <sys/unistd.h>
 #include <sys/errno.h>
-#include <sys/callout.h>
 #include <sys/socket.h>
-#include <sys/queue.h>
 #include <sys/sysctl.h>
 #include <sys/proc.h>
 #include <sys/malloc.h>
@@ -146,15 +144,6 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		TAILQ_INIT(&ndis_devhead);
 		break;
 	case MOD_SHUTDOWN:
-		if (TAILQ_FIRST(&ndis_devhead) == NULL) {
-			usbd_libfini();
-			ndis_libfini();
-			windrv_libfini();
-			ntoskrnl_libfini();
-			hal_libfini();
-
-			windrv_unwrap_table(kernndis_functbl);
-		}
 		break;
 	case MOD_UNLOAD:
 		usbd_libfini();
@@ -643,21 +632,21 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 	return (rval);
 }
 
-inline int
+int
 ndis_get(struct ndis_softc *sc, uint32_t oid, void *val, uint32_t len)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
 	    sc, oid, val, len, NULL, NULL));
 }
 
-inline int
+int
 ndis_get_int(struct ndis_softc *sc, uint32_t oid, uint32_t *val)
 {
 	return (ndis_request_info(NDIS_REQUEST_QUERY_INFORMATION,
 	    sc, oid, val, sizeof(uint32_t), NULL, NULL));
 }
 
-inline int
+int
 ndis_get_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
     uint32_t *written, uint32_t *needed)
 {
@@ -665,21 +654,21 @@ ndis_get_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
 	    sc, oid, buf, buflen, written, needed));
 }
 
-inline int
+int
 ndis_set(struct ndis_softc *sc, uint32_t oid, void *val, uint32_t len)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
 	    sc, oid, val, len, NULL, NULL));
 }
 
-inline int
+int
 ndis_set_int(struct ndis_softc *sc, uint32_t oid, uint32_t val)
 {
 	return (ndis_request_info(NDIS_REQUEST_SET_INFORMATION,
 	    sc, oid, &val, sizeof(uint32_t), NULL, NULL));
 }
 
-inline int
+int
 ndis_set_info(struct ndis_softc *sc, uint32_t oid, void *buf, uint32_t buflen,
     uint32_t *written, uint32_t *needed)
 {
