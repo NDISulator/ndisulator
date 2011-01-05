@@ -1170,10 +1170,8 @@ NdisMEthIndicateReceive(struct ndis_miniport_block *block, void *ctx,
 	struct ndis_ethpriv *priv;
 
 	m = m_getcl(M_DONTWAIT, MT_DATA, M_PKTHDR);
-	if (m == NULL) {
-		NdisFreePacket(p);
+	if (m == NULL)
 		return;
-	}
 
 	/* Save the data provided to us so far. */
 	m->m_len = lookaheadlen + hdrlen;
