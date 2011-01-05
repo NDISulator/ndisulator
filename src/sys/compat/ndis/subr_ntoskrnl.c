@@ -344,16 +344,26 @@ ntoskrnl_libinit(void)
 	if (wq_queues == NULL)
 		panic("failed to allocate wq_queues");
 
+	InitializeListHead(&kq_queue->disp);
+	KeInitializeSpinLock(&kq_queue->lock);
+	KeInitializeEvent(&kq_queue->proc, SYNCHRONIZATION_EVENT, FALSE);
+	KeInitializeEvent(&kq_queue->done, SYNCHRONIZATION_EVENT, FALSE);
 	if (kproc_kthread_add(ntoskrnl_dpc_thread, kq_queue, &ndisproc,
 	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "dpc"))
 		panic("failed to launch DPC thread");
 
+	InitializeListHead(&nq_queue->disp);
+	KeInitializeSpinLock(&nq_queue->lock);
+	KeInitializeEvent(&nq_queue->proc, SYNCHRONIZATION_EVENT, FALSE);
 	if (kproc_kthread_add(ndis_worker_thread, nq_queue, &ndisproc,
 	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "sched"))
 		panic("failed to launch scheduler thread");
 
 	for (i = 0; i < WORKITEM_THREADS; i++) {
 		wq = wq_queues + i;
+		InitializeListHead(&wq->disp);
+		KeInitializeSpinLock(&wq->lock);
+		KeInitializeEvent(&wq->proc, SYNCHRONIZATION_EVENT, FALSE);
 		if (kproc_kthread_add(ntoskrnl_worker_thread, wq, &ndisproc,
 		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "worker%d", i))
 			panic("failed to launch worker thread");
@@ -2418,11 +2428,8 @@ ntoskrnl_worker_thread(void *arg)
 	struct io_workitem *iw;
 	uint8_t irql;
 
-	InitializeListHead(&wq->disp);
 	wq->td = curthread;
 	wq->exit = FALSE;
-	KeInitializeSpinLock(&wq->lock);
-	KeInitializeEvent(&wq->proc, SYNCHRONIZATION_EVENT, FALSE);
 
 	for (;;) {
 		KeWaitForSingleObject(&wq->proc, 0, 0, TRUE, NULL);
@@ -2487,9 +2494,6 @@ ndis_worker_thread(void *arg)
 	struct ndis_work_item *wi;
 	uint8_t irql;
 
-	KeInitializeSpinLock(&nq->lock);
-	InitializeListHead(&nq->disp);
-	KeInitializeEvent(&nq->proc, SYNCHRONIZATION_EVENT, FALSE);
 	nq->td = curthread;
 	nq->exit = FALSE;
 
@@ -3512,13 +3516,8 @@ ntoskrnl_dpc_thread(void *arg)
 	struct list_entry *l;
 	uint8_t irql;
 
-	InitializeListHead(&kq->disp);
 	kq->td = curthread;
 	kq->exit = FALSE;
-	KeInitializeSpinLock(&kq->lock);
-	KeInitializeEvent(&kq->proc, SYNCHRONIZATION_EVENT, FALSE);
-	KeInitializeEvent(&kq->done, SYNCHRONIZATION_EVENT, FALSE);
-
 	/*
 	 * Elevate our priority. DPCs are used to run interrupt
 	 * handlers, and they should trigger as soon as possible
