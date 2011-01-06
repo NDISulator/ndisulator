@@ -1229,8 +1229,6 @@ uint8_t	KeSynchronizeExecution(struct nt_kinterrupt *, synchronize_func,
 uintptr_t	InterlockedExchange(volatile uint32_t *, uintptr_t);
 void	*ExAllocatePool(size_t);
 void	ExFreePool(void *);
-void	*MmMapIoSpace(uint64_t, uint32_t, enum memory_caching_type);
-void	MmUnmapIoSpace(void *, size_t);
 void	MmBuildMdlForNonPagedPool(struct mdl *);
 void	IoDisconnectInterrupt(struct nt_kinterrupt *);
 void	*IoGetDriverObjectExtension(struct driver_object *, void *);

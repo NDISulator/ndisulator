@@ -204,6 +204,8 @@ static uint32_t MmSizeOfMdl(void *, size_t);
 static void *MmMapLockedPages(struct mdl *, uint8_t);
 static void *MmMapLockedPagesSpecifyCache(struct mdl *, uint8_t,
     enum memory_caching_type, void *, uint32_t, uint32_t);
+static void * MmMapIoSpace(uint64_t, uint32_t, enum memory_caching_type);
+static void MmUnmapIoSpace(void *, size_t);
 static void MmUnmapLockedPages(void *, struct mdl *);
 static device_t ntoskrnl_finddev(device_t, uint64_t, struct resource **);
 static uint32_t RtlxAnsiStringToUnicodeSize(const struct ansi_string *);
@@ -2321,7 +2323,7 @@ MmIsAddressValid(void *vaddr)
 		return (FALSE);
 }
 
-void *
+static void *
 MmMapIoSpace(uint64_t paddr, uint32_t len, enum memory_caching_type type)
 {
 	devclass_t nexus_class;
@@ -2355,7 +2357,7 @@ MmMapIoSpace(uint64_t paddr, uint32_t len, enum memory_caching_type type)
 	return ((void *)v);
 }
 
-void
+static void
 MmUnmapIoSpace(void *vaddr, size_t len)
 {
 }
