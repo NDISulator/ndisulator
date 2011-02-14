@@ -840,7 +840,7 @@ void
 ndis_halt_nic(struct ndis_softc *sc)
 {
 
-	flush_queued_dpcs();
+	flush_queue();
 	KASSERT(sc->ndis_chars != NULL, ("no chars"));
 	KASSERT(sc->ndis_block != NULL, ("no block"));
 	KASSERT(sc->ndis_block->miniport_adapter_ctx != NULL, ("no adapter"));

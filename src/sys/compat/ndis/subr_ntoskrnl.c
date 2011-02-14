@@ -76,7 +76,6 @@ __FBSDID("$FreeBSD$");
 struct kdpc_queue {
 	struct list_entry	disp;
 	struct thread		*td;
-	int			cpu;
 	int			exit;
 	unsigned long		lock;
 	struct nt_kevent	proc;
@@ -89,15 +88,16 @@ struct ndis_queue {
 	int			exit;
 	unsigned long		lock;
 	struct nt_kevent	proc;
+	struct nt_kevent	done;
 };
 
 struct work_queue {
 	struct list_entry	disp;
 	struct thread		*td;
-	int			cpu;
 	int			exit;
 	unsigned long		lock;
 	struct nt_kevent	proc;
+	struct nt_kevent	done;
 };
 
 struct wb_ext {
@@ -151,7 +151,7 @@ static int ntoskrnl_is_signalled(struct nt_dispatcher_header *,
 static void ntoskrnl_timercall(void *);
 static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_destroy_dpc_thread(void);
-static void ntoskrnl_destroy_worker_threads(void);
+static void ntoskrnl_destroy_worker_thread(void);
 static void ntoskrnl_worker_thread(void *);
 static void ndis_destroy_worker_thread(void);
 static void ndis_worker_thread(void *);
@@ -314,8 +314,7 @@ static uma_zone_t mdl_zone;
 static uma_zone_t iw_zone;
 static struct kdpc_queue *kq_queue;
 static struct ndis_queue *nq_queue;
-static struct work_queue *wq_queues;
-static int wq_idx = 0;
+static struct work_queue *wq_queue;
 
 MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 
@@ -323,8 +322,6 @@ void
 ntoskrnl_libinit(void)
 {
 	struct thread *t;
-	struct work_queue *wq;
-	int i;
 
 	mtx_init(&nt_dispatchlock, "dispatchlock", NULL, MTX_DEF | MTX_RECURSE);
 	mtx_init(&nt_interlock, "interlock", NULL, MTX_SPIN);
@@ -342,9 +339,9 @@ ntoskrnl_libinit(void)
 	if (nq_queue == NULL)
 		panic("failed to allocate nq_queue");
 
-	wq_queues = ExAllocatePool(sizeof(struct work_queue) * WORKITEM_THREADS);
-	if (wq_queues == NULL)
-		panic("failed to allocate wq_queues");
+	wq_queue = ExAllocatePool(sizeof(struct work_queue));
+	if (wq_queue == NULL)
+		panic("failed to allocate wq_queue");
 
 	InitializeListHead(&kq_queue->disp);
 	KeInitializeSpinLock(&kq_queue->lock);
@@ -352,24 +349,23 @@ ntoskrnl_libinit(void)
 	KeInitializeEvent(&kq_queue->done, SYNCHRONIZATION_EVENT, FALSE);
 	if (kproc_kthread_add(ntoskrnl_dpc_thread, kq_queue, &ndisproc,
 	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "dpc"))
-		panic("failed to launch DPC thread");
+		panic("failed to launch dpc thread");
 
 	InitializeListHead(&nq_queue->disp);
 	KeInitializeSpinLock(&nq_queue->lock);
 	KeInitializeEvent(&nq_queue->proc, SYNCHRONIZATION_EVENT, FALSE);
+	KeInitializeEvent(&nq_queue->done, SYNCHRONIZATION_EVENT, FALSE);
 	if (kproc_kthread_add(ndis_worker_thread, nq_queue, &ndisproc,
 	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "sched"))
 		panic("failed to launch scheduler thread");
 
-	for (i = 0; i < WORKITEM_THREADS; i++) {
-		wq = wq_queues + i;
-		InitializeListHead(&wq->disp);
-		KeInitializeSpinLock(&wq->lock);
-		KeInitializeEvent(&wq->proc, SYNCHRONIZATION_EVENT, FALSE);
-		if (kproc_kthread_add(ntoskrnl_worker_thread, wq, &ndisproc,
-		    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "worker%d", i))
-			panic("failed to launch worker thread");
-	}
+	InitializeListHead(&wq_queue->disp);
+	KeInitializeSpinLock(&wq_queue->lock);
+	KeInitializeEvent(&wq_queue->proc, SYNCHRONIZATION_EVENT, FALSE);
+	KeInitializeEvent(&wq_queue->done, SYNCHRONIZATION_EVENT, FALSE);
+	if (kproc_kthread_add(ntoskrnl_worker_thread, wq_queue, &ndisproc,
+	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "worker"))
+		panic("failed to launch worker thread");
 
 	windrv_wrap_table(ntoskrnl_functbl);
 	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
@@ -405,13 +401,13 @@ ntoskrnl_libfini(void)
 	windrv_unwrap_table(ntoskrnl_functbl);
 	windrv_unwrap(ntoskrnl_worker_wrap);
 
-	ntoskrnl_destroy_worker_threads();
+	ntoskrnl_destroy_worker_thread();
 	ndis_destroy_worker_thread();
 	ntoskrnl_destroy_dpc_thread();
 
 	ExFreePool(kq_queue);
 	ExFreePool(nq_queue);
-	ExFreePool(wq_queues);
+	ExFreePool(wq_queue);
 
 	uma_zdestroy(mdl_zone);
 	uma_zdestroy(iw_zone);
@@ -2454,25 +2450,20 @@ ntoskrnl_worker_thread(void *arg)
 			KeAcquireSpinLock(&wq->lock, &irql);
 		}
 		KeReleaseSpinLock(&wq->lock, irql);
-	}
 
+		KeSetEvent(&wq->done, IO_NO_INCREMENT, FALSE);
+	}
 	kthread_exit();
 	/* notreached */
 }
 
 static void
-ntoskrnl_destroy_worker_threads(void)
+ntoskrnl_destroy_worker_thread(void)
 {
-	struct work_queue *wq;
-	int i;
-
-	for (i = 0; i < WORKITEM_THREADS; i++) {
-		wq = wq_queues + i;
-		wq->exit = TRUE;
-		KeSetEvent(&wq->proc, IO_NO_INCREMENT, FALSE);
-		while (wq->exit)
-			tsleep(wq->td->td_proc, PWAIT, "waitiw", hz/10);
-	}
+	wq_queue->exit = TRUE;
+	KeSetEvent(&wq_queue->proc, IO_NO_INCREMENT, FALSE);
+	while (wq_queue->exit)
+		tsleep(wq_queue->td->td_proc, PWAIT, "waitiw", hz/10);
 }
 
 void
@@ -2519,8 +2510,9 @@ ndis_worker_thread(void *arg)
 			KeAcquireSpinLock(&nq->lock, &irql);
 		}
 		KeReleaseSpinLock(&nq->lock, irql);
-	}
 
+		KeSetEvent(&nq->done, IO_NO_INCREMENT, FALSE);
+	}
 	kthread_exit();
 	/* notreached */
 }
@@ -2548,8 +2540,6 @@ IoAllocateWorkItem(struct device_object *dobj)
 
 	mtx_lock(&nt_dispatchlock);
 	iw->dobj = dobj;
-	iw->idx = wq_idx;
-	WORKIDX_INC(wq_idx);
 	mtx_unlock(&nt_dispatchlock);
 
 	return (iw);
@@ -2566,24 +2556,22 @@ void
 IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
     enum work_queue_type type, void *ctx)
 {
-	struct work_queue *wq;
 	struct list_entry *l;
 	uint8_t irql;
 
 	TRACE(NDBG_WORK, "iw %p func %p type %d ctx %p\n", iw, func, type, ctx);
-	wq = wq_queues + iw->idx;
 
-	KeAcquireSpinLock(&wq->lock, &irql);
+	KeAcquireSpinLock(&wq_queue->lock, &irql);
 
 	/*
 	 * Traverse the list and make sure this workitem hasn't
 	 * already been inserted. Queuing the same workitem
 	 * twice will hose the list but good.
 	 */
-	for (l = wq->disp.flink; l != &wq->disp; l = l->flink) {
+	for (l = wq_queue->disp.flink; l != &wq_queue->disp; l = l->flink) {
 		if (CONTAINING_RECORD(l, struct io_workitem, list) == iw) {
 			/* Already queued -- do nothing. */
-			KeReleaseSpinLock(&wq->lock, irql);
+			KeReleaseSpinLock(&wq_queue->lock, irql);
 			return;
 		}
 	}
@@ -2592,12 +2580,12 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
 	iw->ctx = ctx;
 
 	if (type == DELAYED)
-		InsertTailList((&wq->disp), (&iw->list));
+		InsertTailList((&wq_queue->disp), (&iw->list));
 	else
-		InsertHeadList((&wq->disp), (&iw->list));
-	KeReleaseSpinLock(&wq->lock, irql);
+		InsertHeadList((&wq_queue->disp), (&iw->list));
+	KeReleaseSpinLock(&wq_queue->lock, irql);
 
-	KeSetEvent(&wq->proc, IO_NO_INCREMENT, FALSE);
+	KeSetEvent(&wq_queue->proc, IO_NO_INCREMENT, FALSE);
 }
 
 static int32_t
@@ -3526,7 +3514,6 @@ ntoskrnl_dpc_thread(void *arg)
 	 * once scheduled by an ISR.
 	 */
 	thread_lock(curthread);
-	sched_bind(curthread, kq->cpu);
 	sched_prio(curthread, PRI_MIN_KERN);
 	thread_unlock(curthread);
 
@@ -3549,7 +3536,6 @@ ntoskrnl_dpc_thread(void *arg)
 			    d->sysarg1, d->sysarg2);
 			KeAcquireSpinLockAtDpcLevel(&kq->lock);
 		}
-
 		KeReleaseSpinLock(&kq->lock, irql);
 
 		KeSetEvent(&kq->done, IO_NO_INCREMENT, FALSE);
@@ -3665,10 +3651,14 @@ KeSetTargetProcessorDpc(struct nt_kdpc *dpc, uint8_t cpu)
 }
 
 void
-flush_queued_dpcs(void)
+flush_queue(void)
 {
 	KeSetEvent(&kq_queue->proc, IO_NO_INCREMENT, FALSE);
 	KeWaitForSingleObject(&kq_queue->done, 0, 0, TRUE, NULL);
+	KeSetEvent(&nq_queue->proc, IO_NO_INCREMENT, FALSE);
+	KeWaitForSingleObject(&nq_queue->done, 0, 0, TRUE, NULL);
+	KeSetEvent(&wq_queue->proc, IO_NO_INCREMENT, FALSE);
+	KeWaitForSingleObject(&wq_queue->done, 0, 0, TRUE, NULL);
 }
 
 static uint32_t

@@ -1130,7 +1130,6 @@ struct io_workitem {
 	void			*ctx;
 	struct list_entry	list;
 	struct device_object	*dobj;
-	int			idx;
 };
 
 enum work_queue_type {
@@ -1138,9 +1137,6 @@ enum work_queue_type {
 	DELAYED,
 	HYPERCRITICAL
 };
-
-#define	WORKITEM_THREADS	3
-#define	WORKIDX_INC(x)		(x) = (x + 1) % WORKITEM_THREADS
 
 #define	NDIS_KSTACK_PAGES	12
 
@@ -1184,7 +1180,7 @@ void	ntoskrnl_libfini(void);
 void	ntoskrnl_intr(void *);
 void	ntoskrnl_time(uint64_t *);
 void	schedule_ndis_work_item(void *);
-void	flush_queued_dpcs(void);
+void	flush_queue(void);
 uint16_t ExQueryDepthSList(union slist_header *);
 struct slist_entry *InterlockedPushEntrySList(union slist_header *,
 	    struct slist_entry *);
