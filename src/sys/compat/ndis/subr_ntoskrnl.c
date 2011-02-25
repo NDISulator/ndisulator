@@ -1319,7 +1319,7 @@ ntoskrnl_satisfy_wait(struct nt_dispatcher_header *obj, struct thread *td)
 	/* Synchronization objects get reset to unsignalled. */
 	case SYNCHRONIZATION_EVENT_OBJECT:
 	case SYNCHRONIZATION_TIMER_OBJECT:
-		obj->signal_state = 0;
+		obj->signal_state = FALSE;
 		break;
 	case SEMAPHORE_OBJECT:
 		obj->signal_state--;
@@ -3138,7 +3138,7 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		 * If there's nobody in the waitlist, just set
 		 * the state to signalled.
 		 */
-		dh->signal_state = 1;
+		dh->signal_state = TRUE;
 	else {
 		/*
 		 * Get the first waiter. If this is a synchronization
@@ -3146,7 +3146,7 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		 * setting the state to signalled since we're supposed
 		 * to automatically clear synchronization events anyway).
 		 *
-		 * If it's a notification event, or the the first
+		 * If it's a notification event, or the first
 		 * waiter is doing a WAIT_ALL wait, go through
 		 * the full wait satisfaction process.
 		 */
@@ -3156,8 +3156,8 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		td = we->we_td;
 		if (kevent->header.type == NOTIFICATION_EVENT_OBJECT ||
 		    w->wb_waittype == WAIT_ALL) {
-			if (prevstate == 0) {
-				dh->signal_state = 1;
+			if (prevstate == FALSE) {
+				dh->signal_state = TRUE;
 				ntoskrnl_waittest(dh, increment);
 			}
 		} else {
