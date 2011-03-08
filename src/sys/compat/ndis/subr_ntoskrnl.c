@@ -86,7 +86,7 @@ struct ndis_queue {
 	struct list_entry	disp;
 	struct thread		*td;
 	int			exit;
-	unsigned long		lock;
+	struct mtx		lock;
 	struct nt_kevent	proc;
 	struct nt_kevent	done;
 };
@@ -352,7 +352,7 @@ ntoskrnl_libinit(void)
 		panic("failed to launch dpc thread");
 
 	InitializeListHead(&nq_queue->disp);
-	KeInitializeSpinLock(&nq_queue->lock);
+	mtx_init(&nq_queue->lock, "nq_queue", NULL, MTX_SPIN);
 	KeInitializeEvent(&nq_queue->proc, SYNCHRONIZATION_EVENT, FALSE);
 	KeInitializeEvent(&nq_queue->done, SYNCHRONIZATION_EVENT, FALSE);
 	if (kproc_kthread_add(ndis_worker_thread, nq_queue, &ndisproc,
@@ -2470,11 +2470,10 @@ void
 schedule_ndis_work_item(void *arg)
 {
 	struct ndis_work_item *work = arg;
-	uint8_t irql;
 
-	KeAcquireSpinLock(&nq_queue->lock, &irql);
+	mtx_lock_spin(&nq_queue->lock);
 	InsertTailList((&nq_queue->disp), (&work->list));
-	KeReleaseSpinLock(&nq_queue->lock, irql);
+	mtx_unlock_spin(&nq_queue->lock);
 
 	KeSetEvent(&nq_queue->proc, IO_NO_INCREMENT, FALSE);
 }
@@ -2485,18 +2484,17 @@ ndis_worker_thread(void *arg)
 	struct ndis_queue *nq = arg;
 	struct list_entry *l;
 	struct ndis_work_item *wi;
-	uint8_t irql;
 
 	nq->td = curthread;
 	nq->exit = FALSE;
 
 	for (;;) {
 		KeWaitForSingleObject(&nq->proc, 0, 0, TRUE, NULL);
-		KeAcquireSpinLock(&nq->lock, &irql);
+		mtx_lock_spin(&nq->lock);
 
 		if (nq->exit) {
 			nq->exit = FALSE;
-			KeReleaseSpinLock(&nq->lock, irql);
+			mtx_unlock_spin(&nq->lock);
 			break;
 		}
 
@@ -2505,11 +2503,11 @@ ndis_worker_thread(void *arg)
 			wi = CONTAINING_RECORD(l, struct ndis_work_item, list);
 			if (wi->func == NULL)
 				continue;
-			KeReleaseSpinLock(&nq->lock, irql);
+			mtx_unlock_spin(&nq->lock);
 			MSCALL2(wi->func, wi, wi->ctx);
-			KeAcquireSpinLock(&nq->lock, &irql);
+			mtx_lock_spin(&nq->lock);
 		}
-		KeReleaseSpinLock(&nq->lock, irql);
+		mtx_unlock_spin(&nq->lock);
 
 		KeSetEvent(&nq->done, IO_NO_INCREMENT, FALSE);
 	}
