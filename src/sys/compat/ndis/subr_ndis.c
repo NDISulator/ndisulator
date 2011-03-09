@@ -1298,10 +1298,21 @@ static int32_t
 NdisMMapIoSpace(void **vaddr, struct ndis_miniport_block *block,
     uint64_t paddr, uint32_t len)
 {
-	*vaddr = MmMapIoSpace(paddr, len, 0);
-	TRACE(NDBG_MM, "vaddr %p block %p paddr %llu len %u\n",
-	    *vaddr, block, paddr, len);
-	if (*vaddr == NULL)
+	struct ndis_softc *sc;
+
+	TRACE(NDBG_MM, "vaddr %p block %p len %u\n", vaddr, block, len);
+
+	sc = device_get_softc(block->physdeviceobj->devext);
+	if (sc->ndis_res_mem != NULL &&
+	    paddr == rman_get_start(sc->ndis_res_mem))
+		*vaddr = (void *)rman_get_virtual(sc->ndis_res_mem);
+	else if (sc->ndis_res_altmem != NULL &&
+	    paddr == rman_get_start(sc->ndis_res_altmem))
+		*vaddr = (void *)rman_get_virtual(sc->ndis_res_altmem);
+	else if (sc->ndis_res_am != NULL &&
+	    paddr == rman_get_start(sc->ndis_res_am))
+		*vaddr = (void *)rman_get_virtual(sc->ndis_res_am);
+	else
 		return (NDIS_STATUS_FAILURE);
 	return (NDIS_STATUS_SUCCESS);
 }
@@ -1310,7 +1321,6 @@ static void
 NdisMUnmapIoSpace(struct ndis_miniport_block *block, void *vaddr, uint32_t len)
 {
 	TRACE(NDBG_MM, "block %p vaddr %p len %u\n", block, vaddr, len);
-	MmUnmapIoSpace(vaddr, len);
 }
 
 static uint32_t
