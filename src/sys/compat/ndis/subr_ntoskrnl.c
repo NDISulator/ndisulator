@@ -2535,10 +2535,7 @@ IoAllocateWorkItem(struct device_object *dobj)
 		return (NULL);
 
 	InitializeListHead(&iw->list);
-
-	mtx_lock(&nt_dispatchlock);
 	iw->dobj = dobj;
-	mtx_unlock(&nt_dispatchlock);
 
 	return (iw);
 }
