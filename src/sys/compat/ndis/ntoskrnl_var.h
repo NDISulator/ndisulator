@@ -163,8 +163,7 @@ struct list_entry {
 		f->blink = b;		\
 	} while (0)
 
-/* These two have to be inlined since they return things. */
-static __inline__ struct list_entry *
+static inline struct list_entry *
 RemoveHeadList(struct list_entry *l)
 {
 	struct list_entry *f;
@@ -178,7 +177,7 @@ RemoveHeadList(struct list_entry *l)
 	return (e);
 }
 
-static __inline__ struct list_entry *
+static inline struct list_entry *
 RemoveTailList(struct list_entry *l)
 {
 	struct list_entry *b;
