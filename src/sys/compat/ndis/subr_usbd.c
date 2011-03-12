@@ -719,7 +719,7 @@ usbd_func_vendorclass(struct irp *ip)
 	nx->nx_ep = ne;
 	nx->nx_priv = ip;
 	KeAcquireSpinLockAtDpcLevel(&ne->ne_lock);
-	InsertTailList((&ne->ne_pending), (&nx->nx_next));
+	InsertTailList(&ne->ne_pending, &nx->nx_next);
 	KeReleaseSpinLockFromDpcLevel(&ne->ne_lock);
 
 	/* We've done to setup xfer.  Let's transfer it.  */
@@ -782,7 +782,7 @@ usbd_xfer_complete(struct ndis_softc *sc, struct ndisusb_ep *ne,
 	nd->nd_status = status;
 
 	KeAcquireSpinLock(&sc->ndisusb_xferdonelock, &irql);
-	InsertTailList((&sc->ndisusb_xferdonelist), (&nd->nd_donelist));
+	InsertTailList(&sc->ndisusb_xferdonelist, &nd->nd_donelist);
 	KeReleaseSpinLock(&sc->ndisusb_xferdonelock, irql);
 
 	IoQueueWorkItem(sc->ndisusb_xferdoneitem,
@@ -875,7 +875,7 @@ next:
 		    struct ndisusb_xfer, nx_next);
 		RemoveEntryList(&nx->nx_next);
 		/* Add a entry to the active queue's tail.  */
-		InsertTailList((&ne->ne_active), (&nx->nx_next));
+		InsertTailList(&ne->ne_active, &nx->nx_next);
 		KeReleaseSpinLock(&ne->ne_lock, irql);
 
 		ip = nx->nx_priv;
@@ -961,7 +961,7 @@ next:
 		    struct ndisusb_xfer, nx_next);
 		RemoveEntryList(&nx->nx_next);
 		/* Add a entry to the active queue's tail.  */
-		InsertTailList((&ne->ne_active), (&nx->nx_next));
+		InsertTailList(&ne->ne_active, &nx->nx_next);
 		KeReleaseSpinLock(&ne->ne_lock, irql);
 
 		ip = nx->nx_priv;
@@ -1174,7 +1174,7 @@ usbd_taskadd(struct irp *ip, unsigned type)
 	nt->nt_ctx = ip;
 
 	KeAcquireSpinLockAtDpcLevel(&sc->ndisusb_tasklock);
-	InsertTailList((&sc->ndisusb_tasklist), (&nt->nt_tasklist));
+	InsertTailList(&sc->ndisusb_tasklist, &nt->nt_tasklist);
 	KeReleaseSpinLockFromDpcLevel(&sc->ndisusb_tasklock);
 
 	IoQueueWorkItem(sc->ndisusb_taskitem,
@@ -1273,7 +1273,7 @@ usbd_func_bulkintr(struct irp *ip)
 	nx->nx_ep = ne;
 	nx->nx_priv = ip;
 	KeAcquireSpinLockAtDpcLevel(&ne->ne_lock);
-	InsertTailList((&ne->ne_pending), (&nx->nx_next));
+	InsertTailList(&ne->ne_pending, &nx->nx_next);
 	KeReleaseSpinLockFromDpcLevel(&ne->ne_lock);
 
 	/* We've done to setup xfer.  Let's transfer it.  */

@@ -95,7 +95,7 @@ struct work_queue {
 	struct list_entry	disp;
 	struct thread		*td;
 	int			exit;
-	unsigned long		lock;
+	struct mtx		lock;
 	struct nt_kevent	proc;
 	struct nt_kevent	done;
 };
@@ -276,6 +276,7 @@ static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static int32_t IoWMIRegistrationControl(struct device_object *, uint32_t);
 static int32_t IoWMIQueryAllData(void *, uint32_t *, void *);
 static int32_t IoWMIOpenBlock(void *, uint32_t, void **);
+static int32_t IoUnregisterPlugPlayNotification(void *);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
@@ -360,7 +361,7 @@ ntoskrnl_libinit(void)
 		panic("failed to launch scheduler thread");
 
 	InitializeListHead(&wq_queue->disp);
-	KeInitializeSpinLock(&wq_queue->lock);
+	mtx_init(&wq_queue->lock, "wq_queue", NULL, MTX_SPIN);
 	KeInitializeEvent(&wq_queue->proc, SYNCHRONIZATION_EVENT, FALSE);
 	KeInitializeEvent(&wq_queue->done, SYNCHRONIZATION_EVENT, FALSE);
 	if (kproc_kthread_add(ntoskrnl_worker_thread, wq_queue, &ndisproc,
@@ -412,6 +413,8 @@ ntoskrnl_libfini(void)
 	uma_zdestroy(mdl_zone);
 	uma_zdestroy(iw_zone);
 
+	mtx_destroy(&wq_queue->lock);
+	mtx_destroy(&nq_queue->lock);
 	mtx_destroy(&nt_dispatchlock);
 	mtx_destroy(&nt_interlock);
 #ifdef notdef
@@ -638,7 +641,7 @@ IoAllocateDriverObjectExtension(struct driver_object *drv, void *clid,
 		return (NDIS_STATUS_RESOURCES);
 
 	ce->ce_clid = clid;
-	InsertTailList((&drv->driver_extension->usrext), (&ce->ce_list));
+	InsertTailList(&drv->driver_extension->usrext, &ce->ce_list);
 
 	*ext = (void *)(ce + 1);
 
@@ -1210,7 +1213,7 @@ IoConnectInterrupt(struct nt_kinterrupt **iobj, void *func, void *ctx,
 		(*iobj)->lock = lock;
 
 	KeAcquireSpinLock(&nt_intlock, &curirql);
-	InsertHeadList((&nt_intlist), (&(*iobj)->list));
+	InsertHeadList(&nt_intlist, &(*iobj)->list);
 	KeReleaseSpinLock(&nt_intlock, curirql);
 
 	return (NDIS_STATUS_SUCCESS);
@@ -1225,7 +1228,7 @@ IoDisconnectInterrupt(struct nt_kinterrupt *iobj)
 		return;
 
 	KeAcquireSpinLock(&nt_intlock, &irql);
-	RemoveEntryList((&iobj->list));
+	RemoveEntryList(&iobj->list);
 	KeReleaseSpinLock(&nt_intlock, irql);
 
 	ExFreePool(iobj);
@@ -1565,7 +1568,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	w.wb_awakened = FALSE;
 	w.wb_oldpri = td->td_priority;
 
-	InsertTailList((&obj->wait_list_head), (&w.wb_waitlist));
+	InsertTailList(&obj->wait_list_head, &w.wb_waitlist);
 
 	/*
 	 * The timeout value is specified in 100 nanosecond units
@@ -1651,7 +1654,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatcher_header *obj[],
 	w = whead;
 
 	for (i = 0; i < cnt; i++) {
-		InsertTailList((&obj[i]->wait_list_head), (&w->wb_waitlist));
+		InsertTailList(&obj[i]->wait_list_head, &w->wb_waitlist);
 		w->wb_ext = &we;
 		w->wb_object = obj[i];
 		w->wb_waittype = wtype;
@@ -2424,32 +2427,28 @@ ntoskrnl_worker_thread(void *arg)
 	struct work_queue *wq = arg;
 	struct list_entry *l;
 	struct io_workitem *iw;
-	uint8_t irql;
 
 	wq->td = curthread;
 	wq->exit = FALSE;
 
 	for (;;) {
 		KeWaitForSingleObject(&wq->proc, 0, 0, TRUE, NULL);
-		KeAcquireSpinLock(&wq->lock, &irql);
 
 		if (wq->exit) {
 			wq->exit = FALSE;
-			KeReleaseSpinLock(&wq->lock, irql);
 			break;
 		}
 
 		while (!IsListEmpty(&wq->disp)) {
+			mtx_lock_spin(&wq->lock);
 			l = RemoveHeadList(&wq->disp);
+			mtx_unlock_spin(&wq->lock);
 			iw = CONTAINING_RECORD(l, struct io_workitem, list);
-			InitializeListHead((&iw->list));
+			InitializeListHead(&iw->list);
 			if (iw->func == NULL)
 				continue;
-			KeReleaseSpinLock(&wq->lock, irql);
 			MSCALL2(iw->func, iw->dobj, iw->ctx);
-			KeAcquireSpinLock(&wq->lock, &irql);
 		}
-		KeReleaseSpinLock(&wq->lock, irql);
 
 		KeSetEvent(&wq->done, IO_NO_INCREMENT, FALSE);
 	}
@@ -2472,7 +2471,7 @@ schedule_ndis_work_item(void *arg)
 	struct ndis_work_item *work = arg;
 
 	mtx_lock_spin(&nq_queue->lock);
-	InsertTailList((&nq_queue->disp), (&work->list));
+	InsertTailList(&nq_queue->disp, &work->list);
 	mtx_unlock_spin(&nq_queue->lock);
 
 	KeSetEvent(&nq_queue->proc, IO_NO_INCREMENT, FALSE);
@@ -2490,24 +2489,21 @@ ndis_worker_thread(void *arg)
 
 	for (;;) {
 		KeWaitForSingleObject(&nq->proc, 0, 0, TRUE, NULL);
-		mtx_lock_spin(&nq->lock);
 
 		if (nq->exit) {
 			nq->exit = FALSE;
-			mtx_unlock_spin(&nq->lock);
 			break;
 		}
 
 		while (!IsListEmpty(&nq->disp)) {
+			mtx_lock_spin(&nq->lock);
 			l = RemoveHeadList(&nq->disp);
+			mtx_unlock_spin(&nq->lock);
 			wi = CONTAINING_RECORD(l, struct ndis_work_item, list);
 			if (wi->func == NULL)
 				continue;
-			mtx_unlock_spin(&nq->lock);
 			MSCALL2(wi->func, wi, wi->ctx);
-			mtx_lock_spin(&nq->lock);
 		}
-		mtx_unlock_spin(&nq->lock);
 
 		KeSetEvent(&nq->done, IO_NO_INCREMENT, FALSE);
 	}
@@ -2535,10 +2531,7 @@ IoAllocateWorkItem(struct device_object *dobj)
 		return (NULL);
 
 	InitializeListHead(&iw->list);
-
-	mtx_lock(&nt_dispatchlock);
 	iw->dobj = dobj;
-	mtx_unlock(&nt_dispatchlock);
 
 	return (iw);
 }
@@ -2555,11 +2548,10 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
     enum work_queue_type type, void *ctx)
 {
 	struct list_entry *l;
-	uint8_t irql;
 
 	TRACE(NDBG_WORK, "iw %p func %p type %d ctx %p\n", iw, func, type, ctx);
 
-	KeAcquireSpinLock(&wq_queue->lock, &irql);
+	mtx_lock_spin(&wq_queue->lock);
 
 	/*
 	 * Traverse the list and make sure this workitem hasn't
@@ -2569,7 +2561,7 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
 	for (l = wq_queue->disp.flink; l != &wq_queue->disp; l = l->flink) {
 		if (CONTAINING_RECORD(l, struct io_workitem, list) == iw) {
 			/* Already queued -- do nothing. */
-			KeReleaseSpinLock(&wq_queue->lock, irql);
+			mtx_unlock_spin(&wq_queue->lock);
 			return;
 		}
 	}
@@ -2578,10 +2570,10 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
 	iw->ctx = ctx;
 
 	if (type == DELAYED)
-		InsertTailList((&wq_queue->disp), (&iw->list));
+		InsertTailList(&wq_queue->disp, &iw->list);
 	else
-		InsertHeadList((&wq_queue->disp), (&iw->list));
-	KeReleaseSpinLock(&wq_queue->lock, irql);
+		InsertHeadList(&wq_queue->disp, &iw->list);
+	mtx_unlock_spin(&wq_queue->lock);
 
 	KeSetEvent(&wq_queue->proc, IO_NO_INCREMENT, FALSE);
 }
@@ -3058,7 +3050,7 @@ IoGetDeviceProperty(struct device_object *devobj,
 static void
 KeInitializeMutex(struct nt_kmutex *kmutex, uint32_t level)
 {
-	InitializeListHead((&kmutex->header.wait_list_head));
+	InitializeListHead(&kmutex->header.wait_list_head);
 	kmutex->owner_thread = NULL;
 	kmutex->apc_disable = TRUE;
 	kmutex->abandoned = FALSE;
@@ -3101,7 +3093,7 @@ KeReadStateMutex(struct nt_kmutex *kmutex)
 void
 KeInitializeEvent(struct nt_kevent *kevent, enum event_type type, uint8_t state)
 {
-	InitializeListHead((&kevent->header.wait_list_head));
+	InitializeListHead(&kevent->header.wait_list_head);
 	kevent->header.signal_state = state;
 	kevent->header.type = NOTIFICATION_EVENT_OBJECT + type;
 	kevent->header.size = sizeof(struct nt_kevent);
@@ -3224,7 +3216,7 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 	if (nr == NULL)
 		return (NDIS_STATUS_RESOURCES);
 
-	InitializeListHead((&nr->header.wait_list_head));
+	InitializeListHead(&nr->header.wait_list_head);
 	nr->obj = handle;
 	nr->header.type = THREAD_OBJECT;
 	nr->header.signal_state = 0;
@@ -3333,6 +3325,12 @@ static int32_t
 IoWMIOpenBlock(void *data_block_guid, uint32_t access, void **data_block_object)
 {
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
+}
+
+static int32_t
+IoUnregisterPlugPlayNotification(void *entry)
+{
+	return (NDIS_STATUS_SUCCESS);
 }
 
 /*
@@ -3471,7 +3469,7 @@ void
 KeInitializeTimerEx(struct nt_ktimer *timer, enum timer_type type)
 {
 	KASSERT(timer != NULL, ("no timer"));
-	InitializeListHead((&timer->header.wait_list_head));
+	InitializeListHead(&timer->header.wait_list_head);
 	timer->header.signal_state = FALSE;
 	timer->header.type = NOTIFICATION_TIMER_OBJECT + type;
 	timer->header.size = sizeof(struct nt_ktimer);
@@ -3526,9 +3524,9 @@ ntoskrnl_dpc_thread(void *arg)
 		}
 
 		while (!IsListEmpty(&kq->disp)) {
-			l = RemoveHeadList((&kq->disp));
+			l = RemoveHeadList(&kq->disp);
 			d = CONTAINING_RECORD(l, struct nt_kdpc, dpclistentry);
-			InitializeListHead((&d->dpclistentry));
+			InitializeListHead(&d->dpclistentry);
 			KeReleaseSpinLockFromDpcLevel(&kq->lock);
 			MSCALL4(d->deferedfunc, d, d->deferredctx,
 			    d->sysarg1, d->sysarg2);
@@ -3566,9 +3564,9 @@ ntoskrnl_insert_dpc(struct list_entry *head, struct nt_kdpc *dpc)
 			return (FALSE);
 
 	if (dpc->importance == IMPORTANCE_LOW)
-		InsertTailList((head), (&dpc->dpclistentry));
+		InsertTailList(head, &dpc->dpclistentry);
 	else
-		InsertHeadList((head), (&dpc->dpclistentry));
+		InsertHeadList(head, &dpc->dpclistentry);
 
 	return (TRUE);
 }
@@ -3583,7 +3581,7 @@ KeInitializeDpc(struct nt_kdpc *dpc, void *dpcfunc, void *dpcctx)
 	dpc->deferredctx = dpcctx;
 	dpc->num = KDPC_CPU_DEFAULT;
 	dpc->importance = IMPORTANCE_MEDIUM;
-	InitializeListHead((&dpc->dpclistentry));
+	InitializeListHead(&dpc->dpclistentry);
 }
 
 uint8_t
@@ -3625,8 +3623,8 @@ KeRemoveQueueDpc(struct nt_kdpc *dpc)
 		return (FALSE);
 	}
 
-	RemoveEntryList((&dpc->dpclistentry));
-	InitializeListHead((&dpc->dpclistentry));
+	RemoveEntryList(&dpc->dpclistentry);
+	InitializeListHead(&dpc->dpclistentry);
 
 	KeReleaseSpinLock(&kq->lock, irql);
 
@@ -3953,6 +3951,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(IoWMIOpenBlock, 3),
 	IMPORT_SFUNC(IoWMIQueryAllData, 3),
 	IMPORT_SFUNC(IoWMIRegistrationControl, 2),
+	IMPORT_SFUNC(IoUnregisterPlugPlayNotification, 1),
 	IMPORT_SFUNC(KeAcquireInterruptSpinLock, 1),
 	IMPORT_SFUNC(KeBugCheck, 1),
 	IMPORT_SFUNC(KeBugCheckEx, 5),

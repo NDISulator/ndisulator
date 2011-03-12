@@ -105,6 +105,8 @@ static void NdisInitializeWrapper(void **, struct driver_object *, void *,
 static int32_t NdisMRegisterMiniport(struct driver_object *,
     struct ndis_miniport_characteristics *, uint32_t);
 static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
+static int32_t NdisAllocateTimerObject(struct ndis_miniport_block *,
+    struct ndis_timer_characteristics *, void **);
 static struct io_workitem * NdisAllocateIoWorkItem(struct device_object *);
 static void NdisFreeIoWorkItem(struct io_workitem *);
 static void NdisQueueIoWorkItem(struct io_workitem *, io_workitem_func, void *);
@@ -157,7 +159,9 @@ static void NdisMInitializeTimer(struct ndis_miniport_timer *,
 static void NdisInitializeTimer(struct ndis_timer *, ndis_timer_function,
     void *);
 static void NdisCancelTimer(struct ndis_timer *, uint8_t *);
+static uint8_t NdisCancelTimerObject(struct ndis_timer *);
 static void NdisSetTimer(struct ndis_timer *, uint32_t);
+static uint8_t NdisSetTimerObject(struct ndis_timer *, int64_t, uint32_t, void *);
 static int32_t NdisScheduleWorkItem(struct ndis_work_item *);
 static void NdisMSetPeriodicTimer(struct ndis_miniport_timer *, uint32_t);
 static void NdisMSleep(uint32_t);
@@ -249,6 +253,7 @@ static void NdisInitializeString(struct unicode_string *, char *);
 static void NdisInitAnsiString(struct ansi_string *, char *);
 static void NdisInitUnicodeString(struct unicode_string *, uint16_t *);
 static void NdisFreeString(struct unicode_string *);
+static void NdisFreeTimerObject(struct ndis_timer *);
 static int32_t NdisMRemoveMiniport(struct ndis_miniport_block *);
 static void NdisTerminateWrapper(struct driver_object *, void *);
 static void NdisMGetDeviceProperty(struct ndis_miniport_block *block,
@@ -363,10 +368,24 @@ NdisAllocateIoWorkItem(struct device_object *dobj)
 	return (IoAllocateWorkItem(dobj));
 }
 
+static int32_t
+NdisAllocateTimerObject(struct ndis_miniport_block *block,
+    struct ndis_timer_characteristics *timer_chars, void **timer_object)
+{
+	TRACE(NDBG_TIMER, "block %p timer_chars %p\n", block, timer_chars);
+	return (NDIS_STATUS_SUCCESS);
+}
+
 static void
 NdisFreeIoWorkItem(struct io_workitem *iw)
 {
 	IoFreeWorkItem(iw);
+}
+
+static void
+NdisFreeTimerObject(struct ndis_timer *timer)
+{
+	TRACE(NDBG_TIMER, "timer %p\n", timer);
 }
 
 static void
@@ -453,7 +472,7 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (np == NULL)
 		return (NDIS_STATUS_RESOURCES);
-	InsertHeadList((&block->parmlist), (&np->list));
+	InsertHeadList(&block->parmlist, &np->list);
 	*parm = p = &np->parm;
 	p->type = type;
 
@@ -929,12 +948,29 @@ NdisCancelTimer(struct ndis_timer *timer, uint8_t *cancelled)
 	TRACE(NDBG_TIMER, "timer %p cancelled %u\n", timer, *cancelled);
 }
 
+static uint8_t
+NdisCancelTimerObject(struct ndis_timer *timer)
+{
+	KASSERT(timer != NULL, ("no timer"));
+	TRACE(NDBG_TIMER, "timer %p\n", timer);
+	return (KeCancelTimer(&timer->ktimer));
+}
+
 static void
 NdisSetTimer(struct ndis_timer *timer, uint32_t msecs)
 {
 	TRACE(NDBG_TIMER, "timer %p msecs %u\n", timer, msecs);
 	KASSERT(timer != NULL, ("no timer"));
 	KeSetTimer(&timer->ktimer, ((int64_t)msecs * -10000), &timer->kdpc);
+}
+
+static uint8_t
+NdisSetTimerObject(struct ndis_timer *timer, int64_t duetime, uint32_t msecs,
+    void *ctx)
+{
+	TRACE(NDBG_TIMER, "timer %p duetime %llu msecs %u ctx %p\n",
+	    timer, duetime, msecs, ctx);
+	return (TRUE);
 }
 
 static void
@@ -1132,7 +1168,7 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 	InitializeListHead(&sh->ndis_list);
 
 	if (bus_dma_tag_create(sc->ndis_parent_tag,
-			64, 0,
+			ETHER_ALIGN, 0,
 			BUS_SPACE_MAXADDR_32BIT,
 			BUS_SPACE_MAXADDR,
 			NULL, NULL,
@@ -1173,7 +1209,7 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 	NDIS_LOCK(sc);
 	sh->ndis_paddr = *paddr;
 	sh->ndis_saddr = *vaddr;
-	InsertHeadList((&sc->ndis_shlist), (&sh->ndis_list));
+	InsertHeadList(&sc->ndis_shlist, &sh->ndis_list);
 	NDIS_UNLOCK(sc);
 }
 
@@ -1326,7 +1362,7 @@ NdisMUnmapIoSpace(struct ndis_miniport_block *block, void *vaddr, uint32_t len)
 static uint32_t
 NdisGetCacheFillSize(void)
 {
-	return (128);
+	return (ETHER_ALIGN);
 }
 
 static void *
@@ -1343,7 +1379,7 @@ NdisGetRoutineAddress(struct unicode_string *ustr)
 static uint32_t
 NdisMGetDmaAlignment(struct ndis_miniport_block *block)
 {
-	return (16);
+	return (ETHER_ALIGN);
 }
 
 /*
@@ -2555,11 +2591,13 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisAllocatePacketPool, 4),
 	IMPORT_SFUNC(NdisAllocatePacketPoolEx, 5),
 	IMPORT_SFUNC(NdisAllocateSpinLock, 1),
+	IMPORT_SFUNC(NdisAllocateTimerObject, 3),
 	IMPORT_SFUNC(NdisAnsiStringToUnicodeString, 2),
 	IMPORT_SFUNC(NdisBufferLength, 1),
 	IMPORT_SFUNC(NdisBufferVirtualAddress, 1),
 	IMPORT_SFUNC(NdisBufferVirtualAddressSafe, 2),
 	IMPORT_SFUNC(NdisCancelTimer, 2),
+	IMPORT_SFUNC(NdisCancelTimerObject, 1),
 	IMPORT_SFUNC(NdisCloseConfiguration, 1),
 	IMPORT_SFUNC(NdisCloseFile, 1),
 	IMPORT_SFUNC(NdisCopyFromPacketToPacket, 6),
@@ -2574,6 +2612,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisFreePacketPool, 1),
 	IMPORT_SFUNC(NdisFreeSpinLock, 1),
 	IMPORT_SFUNC(NdisFreeString, 1),
+	IMPORT_SFUNC(NdisFreeTimerObject, 1),
 	IMPORT_SFUNC(NdisGetBufferPhysicalArraySize, 2),
 	IMPORT_SFUNC(NdisGetCacheFillSize, 0),
 	IMPORT_SFUNC(NdisGetCurrentProcessorCounts, 3),
@@ -2651,6 +2690,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisScheduleWorkItem, 1),
 	IMPORT_SFUNC(NdisSetEvent, 1),
 	IMPORT_SFUNC(NdisSetTimer, 2),
+	IMPORT_SFUNC(NdisSetTimerObject, 4 + 1),
 	IMPORT_SFUNC(NdisSystemProcessorCount, 0),
 	IMPORT_SFUNC(NdisTerminateWrapper, 2),
 	IMPORT_SFUNC(NdisUnchainBufferAtBack, 2),

@@ -338,9 +338,9 @@ ndis_return_packet_nic(struct device_object *dobj,
 	KASSERT(ch->return_packet_func != NULL, ("no return_packet"));
 	KeAcquireSpinLock(&block->returnlock, &irql);
 	while (!IsListEmpty(&block->returnlist)) {
-		l = RemoveHeadList((&block->returnlist));
+		l = RemoveHeadList(&block->returnlist);
 		p = CONTAINING_RECORD(l, struct ndis_packet, list);
-		InitializeListHead((&p->list));
+		InitializeListHead(&p->list);
 		KeReleaseSpinLock(&block->returnlock, irql);
 		MSCALL2(ch->return_packet_func, block->miniport_adapter_ctx, p);
 		KeAcquireSpinLock(&block->returnlock, &irql);
@@ -360,8 +360,8 @@ ndis_return_packet(void *buf, void *arg)
 
 	block = ((struct ndis_softc *)p->softc)->ndis_block;
 	KeAcquireSpinLockAtDpcLevel(&block->returnlock);
-	InitializeListHead((&p->list));
-	InsertHeadList((&block->returnlist), (&p->list));
+	InitializeListHead(&p->list);
+	InsertHeadList(&block->returnlist, &p->list);
 	KeReleaseSpinLockFromDpcLevel(&block->returnlock);
 
 	IoQueueWorkItem(block->returnitem,
@@ -999,7 +999,7 @@ ndis_load_driver(struct driver_object *drv, struct device_object *pdo)
 			IoDeleteDevice(fdo);
 			return (status);
 		}
-		InitializeListHead((&block->packet_list));
+		InitializeListHead(&block->packet_list);
 	}
 
 	/* Give interrupt handling priority over timers. */

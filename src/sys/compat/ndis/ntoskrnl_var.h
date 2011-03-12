@@ -149,70 +149,79 @@ struct list_entry {
 	struct list_entry	*blink;
 };
 
-#define	InitializeListHead(l) (l)->flink = (l)->blink = (l)
-#define	IsListEmpty(h) ((h)->flink == (h))
-
-#define	RemoveEntryList(e)		\
-	do {				\
-		struct list_entry *b;	\
-		struct list_entry *f;	\
-					\
-		f = (e)->flink;		\
-		b = (e)->blink;		\
-		b->flink = f;		\
-		f->blink = b;		\
-	} while (0)
-
-/* These two have to be inlined since they return things. */
-static __inline__ struct list_entry *
-RemoveHeadList(struct list_entry *l)
+static inline void
+InitializeListHead(struct list_entry *head)
 {
-	struct list_entry *f;
-	struct list_entry *e;
-
-	e = l->flink;
-	f = e->flink;
-	l->flink = f;
-	f->blink = l;
-
-	return (e);
+	head->flink = head->blink = head;
 }
 
-static __inline__ struct list_entry *
-RemoveTailList(struct list_entry *l)
+static inline uint8_t
+IsListEmpty(struct list_entry *head)
 {
-	struct list_entry *b;
-	struct list_entry *e;
-
-	e = l->blink;
-	b = e->blink;
-	l->blink = b;
-	b->flink = l;
-
-	return (e);
+	if (head->flink == head)
+		return TRUE;
+	else
+		return FALSE;
 }
 
-#define	InsertTailList(l, e)		\
-	do {				\
-		struct list_entry *b;	\
-					\
-		b = l->blink;		\
-		e->flink = l;		\
-		e->blink = b;		\
-		b->flink = (e);		\
-		l->blink = (e);		\
-	} while (0)
+static inline void
+RemoveEntryList(struct list_entry *entry)
+{
+	entry->blink->flink = entry->flink;
+	entry->flink->blink = entry->blink;
+}
 
-#define	InsertHeadList(l, e)		\
-	do {				\
-		struct list_entry *f;	\
-					\
-		f = l->flink;		\
-		e->flink = f;		\
-		e->blink = l;		\
-		f->blink = e;		\
-		l->flink = e;		\
-	} while (0)
+static inline struct list_entry *
+RemoveHeadList(struct list_entry *head)
+{
+	struct list_entry *flink;
+	struct list_entry *entry;
+
+	entry = head->flink;
+	flink = entry->flink;
+	head->flink = flink;
+	flink->blink = head;
+
+	return (entry);
+}
+
+static inline struct list_entry *
+RemoveTailList(struct list_entry *head)
+{
+	struct list_entry *blink;
+	struct list_entry *entry;
+
+	entry = head->blink;
+	blink = entry->blink;
+	head->blink = blink;
+	blink->flink = head;
+
+	return (entry);
+}
+
+static inline void
+InsertHeadList(struct list_entry *head, struct list_entry *entry)
+{
+	struct list_entry *flink;
+
+	flink = head->flink;
+	entry->flink = flink;
+	entry->blink = head;
+	flink->blink = entry;
+	head->flink = entry;
+}
+
+static inline void
+InsertTailList(struct list_entry *head, struct list_entry *entry)
+{
+	struct list_entry *blink;
+
+	blink = head->blink;
+	entry->flink = head;
+	entry->blink = blink;
+	blink->flink = entry;
+	head->blink = entry;
+}
 
 #define	CONTAINING_RECORD(addr, type, field)	\
 	((type *)((vm_offset_t)(addr) - (vm_offset_t)(&((type *)0)->field)))
@@ -238,26 +247,9 @@ enum dispatcher_header_type {
 	SYNCHRONIZATION_TIMER_OBJECT
 };
 
-/* Windows dispatcher levels. */
 #define	PASSIVE_LEVEL	0
-#define	LOW_LEVEL	0
 #define	APC_LEVEL	1
 #define	DISPATCH_LEVEL	2
-#define	DEVICE_LEVEL	(DISPATCH_LEVEL + 1)
-#define	PROFILE_LEVEL	27
-#define	CLOCK1_LEVEL	28
-#define	CLOCK2_LEVEL	28
-#define	IPI_LEVEL	29
-#define	POWER_LEVEL	30
-#define	HIGH_LEVEL	31
-
-#define	SYNC_LEVEL_UP DISPATCH_LEVEL
-#define	SYNC_LEVEL_MP (IPI_LEVEL - 1)
-
-#define	AT_PASSIVE_LEVEL(td) ((td)->td_proc->p_flag & P_KTHREAD == FALSE)
-#define	AT_DISPATCH_LEVEL(td) ((td)->td_base_pri == PI_REALTIME)
-#define	AT_DIRQL_LEVEL(td) ((td)->td_priority <= PI_NET)
-#define	AT_HIGH_LEVEL(td) ((td)->td_critnest != 0)
 
 struct nt_objref {
 	struct nt_dispatcher_header	header;

@@ -1204,7 +1204,7 @@ NdisMEthIndicateReceive(struct ndis_miniport_block *block, void *ctx,
 
 	if (!NDIS_SERIALIZED(block))
 		KeAcquireSpinLock(&block->lock, &irql);
-	InsertTailList((&block->packet_list), (&p->list));
+	InsertTailList(&block->packet_list, &p->list);
 	if (!NDIS_SERIALIZED(block))
 		KeReleaseSpinLock(&block->lock, irql);
 }
@@ -1244,9 +1244,9 @@ ndis_rxeof_xfr(struct nt_kdpc *dpc, struct ndis_miniport_block *block,
 
 	l = block->packet_list.flink;
 	while (!IsListEmpty(&block->packet_list)) {
-		l = RemoveHeadList((&block->packet_list));
+		l = RemoveHeadList(&block->packet_list);
 		p = CONTAINING_RECORD(l, struct ndis_packet, list);
-		InitializeListHead((&p->list));
+		InitializeListHead(&p->list);
 
 		priv = (struct ndis_ethpriv *)&p->protocol_reserved;
 		m = p->m0;
