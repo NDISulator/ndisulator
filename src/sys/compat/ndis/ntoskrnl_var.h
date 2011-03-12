@@ -247,26 +247,9 @@ enum dispatcher_header_type {
 	SYNCHRONIZATION_TIMER_OBJECT
 };
 
-/* Windows dispatcher levels. */
 #define	PASSIVE_LEVEL	0
-#define	LOW_LEVEL	0
 #define	APC_LEVEL	1
 #define	DISPATCH_LEVEL	2
-#define	DEVICE_LEVEL	(DISPATCH_LEVEL + 1)
-#define	PROFILE_LEVEL	27
-#define	CLOCK1_LEVEL	28
-#define	CLOCK2_LEVEL	28
-#define	IPI_LEVEL	29
-#define	POWER_LEVEL	30
-#define	HIGH_LEVEL	31
-
-#define	SYNC_LEVEL_UP DISPATCH_LEVEL
-#define	SYNC_LEVEL_MP (IPI_LEVEL - 1)
-
-#define	AT_PASSIVE_LEVEL(td) ((td)->td_proc->p_flag & P_KTHREAD == FALSE)
-#define	AT_DISPATCH_LEVEL(td) ((td)->td_base_pri == PI_REALTIME)
-#define	AT_DIRQL_LEVEL(td) ((td)->td_priority <= PI_NET)
-#define	AT_HIGH_LEVEL(td) ((td)->td_critnest != 0)
 
 struct nt_objref {
 	struct nt_dispatcher_header	header;
