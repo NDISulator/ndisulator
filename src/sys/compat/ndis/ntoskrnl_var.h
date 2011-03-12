@@ -149,69 +149,79 @@ struct list_entry {
 	struct list_entry	*blink;
 };
 
-#define	InitializeListHead(l) (l)->flink = (l)->blink = (l)
-#define	IsListEmpty(h) ((h)->flink == (h))
-
-#define	RemoveEntryList(e)		\
-	do {				\
-		struct list_entry *b;	\
-		struct list_entry *f;	\
-					\
-		f = (e)->flink;		\
-		b = (e)->blink;		\
-		b->flink = f;		\
-		f->blink = b;		\
-	} while (0)
-
-static inline struct list_entry *
-RemoveHeadList(struct list_entry *l)
+static inline void
+InitializeListHead(struct list_entry *head)
 {
-	struct list_entry *f;
-	struct list_entry *e;
+	head->flink = head->blink = head;
+}
 
-	e = l->flink;
-	f = e->flink;
-	l->flink = f;
-	f->blink = l;
+static inline uint8_t
+IsListEmpty(struct list_entry *head)
+{
+	if (head->flink == head)
+		return TRUE;
+	else
+		return FALSE;
+}
 
-	return (e);
+static inline void
+RemoveEntryList(struct list_entry *entry)
+{
+	entry->blink->flink = entry->flink;
+	entry->flink->blink = entry->blink;
 }
 
 static inline struct list_entry *
-RemoveTailList(struct list_entry *l)
+RemoveHeadList(struct list_entry *head)
 {
-	struct list_entry *b;
-	struct list_entry *e;
+	struct list_entry *flink;
+	struct list_entry *entry;
 
-	e = l->blink;
-	b = e->blink;
-	l->blink = b;
-	b->flink = l;
+	entry = head->flink;
+	flink = entry->flink;
+	head->flink = flink;
+	flink->blink = head;
 
-	return (e);
+	return (entry);
 }
 
-#define	InsertTailList(l, e)		\
-	do {				\
-		struct list_entry *b;	\
-					\
-		b = l->blink;		\
-		e->flink = l;		\
-		e->blink = b;		\
-		b->flink = (e);		\
-		l->blink = (e);		\
-	} while (0)
+static inline struct list_entry *
+RemoveTailList(struct list_entry *head)
+{
+	struct list_entry *blink;
+	struct list_entry *entry;
 
-#define	InsertHeadList(l, e)		\
-	do {				\
-		struct list_entry *f;	\
-					\
-		f = l->flink;		\
-		e->flink = f;		\
-		e->blink = l;		\
-		f->blink = e;		\
-		l->flink = e;		\
-	} while (0)
+	entry = head->blink;
+	blink = entry->blink;
+	head->blink = blink;
+	blink->flink = head;
+
+	return (entry);
+}
+
+static inline void
+InsertHeadList(struct list_entry *head, struct list_entry *entry)
+{
+        struct list_entry *flink;
+
+	flink = head->flink;
+	entry->flink = flink;
+	entry->blink = head;
+	flink->blink = entry;
+	head->flink = entry;
+}
+
+static inline void
+InsertTailList(struct list_entry *head, struct list_entry *entry)
+{
+        struct list_entry *blink;
+
+	blink = head->blink;
+        entry->flink = head;
+        entry->blink = blink;
+        blink->flink = entry;
+        head->blink = entry;
+}
 
 #define	CONTAINING_RECORD(addr, type, field)	\
 	((type *)((vm_offset_t)(addr) - (vm_offset_t)(&((type *)0)->field)))
