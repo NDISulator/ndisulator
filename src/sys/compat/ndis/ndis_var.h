@@ -1703,16 +1703,16 @@ struct ndis_packet_extension {
 };
 
 struct ndis_packet_private {
-	uint32_t	physcnt;
-	uint32_t	totlen;
+	uint32_t	physical_count;
+	uint32_t	total_length;
 	struct mdl	*head;
 	struct mdl	*tail;
 	void		*pool;
 	uint32_t	count;
 	uint32_t	flags;
-	uint8_t		validcounts;
-	uint8_t		ndispktflags;
-	uint16_t	packetooboffset;
+	uint8_t		valid_counts;
+	uint8_t		ndis_packet_flags;
+	uint16_t	ndis_packet_oob_offset;
 };
 
 #define	NDIS_FLAGS_PROTOCOL_ID_MASK		0x0000000F
@@ -1745,15 +1745,15 @@ struct ndis_mediaspecific_info {
 	uint8_t			classinfo[1];
 };
 
-struct ndis_packet_oob {
+struct ndis_packet_oob_data {
 	union {
-		uint64_t	timetotx;
-		uint64_t	timetxed;
+		uint64_t	time_to_send;
+		uint64_t	time_sent;
 	} u;
-	uint64_t	timerxed;
-	uint32_t	hdrlen;
-	uint32_t	mediaspecific_len;
-	void		*mediaspecific;
+	uint64_t	time_received;
+	uint32_t	header_size;
+	uint32_t	size_media_specific_info;
+	void		*media_specific_information;
 	int32_t		status;
 };
 
@@ -1794,7 +1794,7 @@ struct ndis_packet {
 	 * This next part is probably wrong, but we need some place
 	 * to put the out of band data structure...
 	 */
-	struct ndis_packet_oob		oob;
+	struct ndis_packet_oob_data	oob;
 	struct ndis_packet_extension	ext;
 	struct ndis_sc_list		sclist;
 

@@ -1498,7 +1498,7 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 	pkt->private.pool = pool;
 
 	/* Set the oob offset pointer. Lots of things expect this. */
-	pkt->private.packetooboffset = offsetof(struct ndis_packet, oob);
+	pkt->private.ndis_packet_oob_offset = offsetof(struct ndis_packet, oob);
 
 	/*
 	 * We must initialize the packet flags correctly in order
@@ -1506,8 +1506,8 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 	 * NDIS_GET_PACKET_MEDIA_SPECIFIC_INFO() macros to work
 	 * correctly.
 	 */
-	pkt->private.ndispktflags = NDIS_PACKET_ALLOCATED_BY_NDIS;
-	pkt->private.validcounts = FALSE;
+	pkt->private.ndis_packet_flags = NDIS_PACKET_ALLOCATED_BY_NDIS;
+	pkt->private.valid_counts = FALSE;
 
 	*packet = pkt;
 	*status = NDIS_STATUS_SUCCESS;
@@ -1531,7 +1531,7 @@ NdisUnchainBufferAtFront(struct ndis_packet *packet, struct mdl **buf)
 	if (packet == NULL || buf == NULL)
 		return;
 	priv = &packet->private;
-	priv->validcounts = FALSE;
+	priv->valid_counts = FALSE;
 	if (priv->head == priv->tail) {
 		*buf = priv->head;
 		priv->head = priv->tail = NULL;
@@ -1550,7 +1550,7 @@ NdisUnchainBufferAtBack(struct ndis_packet *packet, struct mdl **buf)
 	if (packet == NULL || buf == NULL)
 		return;
 	priv = &packet->private;
-	priv->validcounts = FALSE;
+	priv->valid_counts = FALSE;
 	if (priv->head == priv->tail) {
 		*buf = priv->head;
 		priv->head = priv->tail = NULL;

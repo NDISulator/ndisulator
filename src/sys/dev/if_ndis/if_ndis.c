@@ -1196,7 +1196,7 @@ NdisMEthIndicateReceive(struct ndis_miniport_block *block, void *ctx,
 	}
 
 	p->private.head = p->private.tail = b;
-	p->private.totlen = m->m_pkthdr.len;
+	p->private.total_length = m->m_pkthdr.len;
 
 	/* Save the packet RX context somewhere. */
 	priv = (struct ndis_ethpriv *)&p->protocol_reserved;
@@ -1255,7 +1255,7 @@ ndis_rxeof_xfr(struct nt_kdpc *dpc, struct ndis_miniport_block *block,
 
 		KeReleaseSpinLockFromDpcLevel(&block->lock);
 		status = MSCALL6(sc->ndis_chars->transfer_data_func,
-		    p, &p->private.totlen, block, priv->ctx,
+		    p, &p->private.total_length, block, priv->ctx,
 		    m->m_len, m->m_pkthdr.len - m->m_len);
 		KeAcquireSpinLockAtDpcLevel(&block->lock);
 
