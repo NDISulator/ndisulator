@@ -1168,7 +1168,7 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 	InitializeListHead(&sh->ndis_list);
 
 	if (bus_dma_tag_create(sc->ndis_parent_tag,
-			64, 0,
+			ETHER_ALIGN, 0,
 			BUS_SPACE_MAXADDR_32BIT,
 			BUS_SPACE_MAXADDR,
 			NULL, NULL,
@@ -1362,7 +1362,7 @@ NdisMUnmapIoSpace(struct ndis_miniport_block *block, void *vaddr, uint32_t len)
 static uint32_t
 NdisGetCacheFillSize(void)
 {
-	return (128);
+	return (ETHER_ALIGN);
 }
 
 static void *
@@ -1379,7 +1379,7 @@ NdisGetRoutineAddress(struct unicode_string *ustr)
 static uint32_t
 NdisMGetDmaAlignment(struct ndis_miniport_block *block)
 {
-	return (16);
+	return (ETHER_ALIGN);
 }
 
 /*
