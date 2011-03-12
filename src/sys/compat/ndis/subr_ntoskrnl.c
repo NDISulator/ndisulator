@@ -276,6 +276,7 @@ static int32_t WmiTraceMessage(uint64_t, uint32_t, void *, uint16_t, ...);
 static int32_t IoWMIRegistrationControl(struct device_object *, uint32_t);
 static int32_t IoWMIQueryAllData(void *, uint32_t *, void *);
 static int32_t IoWMIOpenBlock(void *, uint32_t, void **);
+static int32_t IoUnregisterPlugPlayNotification(void *);
 static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
@@ -3332,6 +3333,12 @@ IoWMIOpenBlock(void *data_block_guid, uint32_t access, void **data_block_object)
 	return (NDIS_STATUS_NOT_IMPLEMENTED);
 }
 
+static int32_t
+IoUnregisterPlugPlayNotification(void *entry)
+{
+	return (NDIS_STATUS_SUCCESS);
+}
+
 /*
  * This is here just in case the thread returns without calling
  * PsTerminateSystemThread().
@@ -3950,6 +3957,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(IoWMIOpenBlock, 3),
 	IMPORT_SFUNC(IoWMIQueryAllData, 3),
 	IMPORT_SFUNC(IoWMIRegistrationControl, 2),
+	IMPORT_SFUNC(IoUnregisterPlugPlayNotification, 1),
 	IMPORT_SFUNC(KeAcquireInterruptSpinLock, 1),
 	IMPORT_SFUNC(KeBugCheck, 1),
 	IMPORT_SFUNC(KeBugCheckEx, 5),
