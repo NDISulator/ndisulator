@@ -472,7 +472,7 @@ ndis_encode_parm(struct ndis_miniport_block *block, struct sysctl_oid *oid,
 	    M_NDIS_SUBR, M_NOWAIT|M_ZERO);
 	if (np == NULL)
 		return (NDIS_STATUS_RESOURCES);
-	InsertHeadList((&block->parmlist), (&np->list));
+	InsertHeadList(&block->parmlist, &np->list);
 	*parm = p = &np->parm;
 	p->type = type;
 
@@ -1209,7 +1209,7 @@ NdisMAllocateSharedMemory(struct ndis_miniport_block *block, uint32_t len,
 	NDIS_LOCK(sc);
 	sh->ndis_paddr = *paddr;
 	sh->ndis_saddr = *vaddr;
-	InsertHeadList((&sc->ndis_shlist), (&sh->ndis_list));
+	InsertHeadList(&sc->ndis_shlist, &sh->ndis_list);
 	NDIS_UNLOCK(sc);
 }
 

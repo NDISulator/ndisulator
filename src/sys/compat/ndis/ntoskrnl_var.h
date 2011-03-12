@@ -202,7 +202,7 @@ RemoveTailList(struct list_entry *head)
 static inline void
 InsertHeadList(struct list_entry *head, struct list_entry *entry)
 {
-        struct list_entry *flink;
+	struct list_entry *flink;
 
 	flink = head->flink;
 	entry->flink = flink;
@@ -214,13 +214,13 @@ InsertHeadList(struct list_entry *head, struct list_entry *entry)
 static inline void
 InsertTailList(struct list_entry *head, struct list_entry *entry)
 {
-        struct list_entry *blink;
+	struct list_entry *blink;
 
 	blink = head->blink;
-        entry->flink = head;
-        entry->blink = blink;
-        blink->flink = entry;
-        head->blink = entry;
+	entry->flink = head;
+	entry->blink = blink;
+	blink->flink = entry;
+	head->blink = entry;
 }
 
 #define	CONTAINING_RECORD(addr, type, field)	\
