@@ -105,6 +105,8 @@ static void NdisInitializeWrapper(void **, struct driver_object *, void *,
 static int32_t NdisMRegisterMiniport(struct driver_object *,
     struct ndis_miniport_characteristics *, uint32_t);
 static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
+static void *NdisAllocateMemoryWithTagPriority(struct ndis_miniport_block *,
+    uint32_t, uint32_t, uint32_t);
 static int32_t NdisAllocateTimerObject(struct ndis_miniport_block *,
     struct ndis_timer_characteristics *, void **);
 static struct io_workitem * NdisAllocateIoWorkItem(struct device_object *);
@@ -402,6 +404,15 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
 	return (NDIS_STATUS_SUCCESS);
+}
+
+static void *
+NdisAllocateMemoryWithTagPriority(struct ndis_miniport_block *block,
+    uint32_t len, uint32_t tag, uint32_t priority)
+{
+	TRACE(NDBG_MEM, "block %p len %u tag %u priority %u\n",
+	    block, len, tag, priority);
+	return (malloc(len, M_NDIS_SUBR, M_NOWAIT|M_ZERO));
 }
 
 static int32_t
@@ -2587,6 +2598,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisAllocateIoWorkItem, 1),
 	IMPORT_SFUNC(NdisAllocateMemory, 4 + 1),
 	IMPORT_SFUNC(NdisAllocateMemoryWithTag, 3),
+	IMPORT_SFUNC(NdisAllocateMemoryWithTagPriority, 4),
 	IMPORT_SFUNC(NdisAllocatePacket, 3),
 	IMPORT_SFUNC(NdisAllocatePacketPool, 4),
 	IMPORT_SFUNC(NdisAllocatePacketPoolEx, 5),
