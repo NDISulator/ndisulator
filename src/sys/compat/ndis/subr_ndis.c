@@ -148,6 +148,10 @@ static uint32_t NdisReadPciSlotInformation(struct ndis_miniport_block *,
     uint32_t, uint32_t, void *, uint32_t);
 static uint32_t NdisWritePciSlotInformation(struct ndis_miniport_block *,
     uint32_t, uint32_t, void *, uint32_t);
+static void NdisMCloseLog(void *);
+static int32_t NdisMCreateLog(void *, uint32_t, void *);
+static void NdisMFlushLog(void *);
+static int32_t NdisMWriteLogData(void *, void *, uint32_t);
 static void NdisWriteErrorLogEntry(struct ndis_miniport_block *,
     uint32_t, uint32_t, ...);
 static bus_addr_t ndis_dmasize(uint8_t dmasize);
@@ -771,6 +775,26 @@ NdisWritePciSlotInformation(struct ndis_miniport_block *block, uint32_t slot,
 		pci_write_config(block->physdeviceobj->devext,
 		    i + offset, dest[i], 1);
 	return (len);
+}
+
+static void NdisMCloseLog(void *log)
+{
+}
+
+static int32_t
+NdisMCreateLog(void *handle, uint32_t size, void *log)
+{
+	return (NDIS_STATUS_SUCCESS);
+}
+
+static int32_t
+NdisMWriteLogData(void *log, void *buffer, uint32_t size)
+{
+	return (NDIS_STATUS_SUCCESS);
+}
+
+static void NdisMFlushLog(void *log)
+{
 }
 
 static void
@@ -2652,7 +2676,11 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisMAllocateSharedMemory, 5),
 	IMPORT_SFUNC(NdisMAllocateSharedMemoryAsync, 4),
 	IMPORT_SFUNC(NdisMCancelTimer, 2),
+	IMPORT_SFUNC(NdisMCloseLog, 1),
 	IMPORT_SFUNC(NdisMCompleteBufferPhysicalMapping, 3),
+	IMPORT_SFUNC(NdisMCreateLog, 3),
+	IMPORT_SFUNC(NdisMFlushLog, 1),
+	IMPORT_SFUNC(NdisMWriteLogData, 3),
 	IMPORT_SFUNC(NdisMDeregisterAdapterShutdownHandler, 1),
 	IMPORT_SFUNC(NdisMDeregisterDevice, 1),
 	IMPORT_SFUNC(NdisMDeregisterInterrupt, 1),
