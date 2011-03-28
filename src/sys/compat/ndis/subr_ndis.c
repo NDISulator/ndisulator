@@ -105,6 +105,8 @@ static void NdisInitializeWrapper(void **, struct driver_object *, void *,
 static int32_t NdisMRegisterMiniport(struct driver_object *,
     struct ndis_miniport_characteristics *, uint32_t);
 static int32_t NdisAllocateMemoryWithTag(void **, uint32_t, uint32_t);
+static void *NdisAllocateMemoryWithTagPriority(struct ndis_miniport_block *,
+    uint32_t, uint32_t, uint32_t);
 static int32_t NdisAllocateTimerObject(struct ndis_miniport_block *,
     struct ndis_timer_characteristics *, void **);
 static struct io_workitem * NdisAllocateIoWorkItem(struct device_object *);
@@ -146,6 +148,10 @@ static uint32_t NdisReadPciSlotInformation(struct ndis_miniport_block *,
     uint32_t, uint32_t, void *, uint32_t);
 static uint32_t NdisWritePciSlotInformation(struct ndis_miniport_block *,
     uint32_t, uint32_t, void *, uint32_t);
+static void NdisMCloseLog(void *);
+static int32_t NdisMCreateLog(void *, uint32_t, void *);
+static void NdisMFlushLog(void *);
+static int32_t NdisMWriteLogData(void *, void *, uint32_t);
 static void NdisWriteErrorLogEntry(struct ndis_miniport_block *,
     uint32_t, uint32_t, ...);
 static bus_addr_t ndis_dmasize(uint8_t dmasize);
@@ -402,6 +408,15 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 	if (*vaddr == NULL)
 		return (NDIS_STATUS_FAILURE);
 	return (NDIS_STATUS_SUCCESS);
+}
+
+static void *
+NdisAllocateMemoryWithTagPriority(struct ndis_miniport_block *block,
+    uint32_t len, uint32_t tag, uint32_t priority)
+{
+	TRACE(NDBG_MEM, "block %p len %u tag %u priority %u\n",
+	    block, len, tag, priority);
+	return (malloc(len, M_NDIS_SUBR, M_NOWAIT|M_ZERO));
 }
 
 static int32_t
@@ -760,6 +775,26 @@ NdisWritePciSlotInformation(struct ndis_miniport_block *block, uint32_t slot,
 		pci_write_config(block->physdeviceobj->devext,
 		    i + offset, dest[i], 1);
 	return (len);
+}
+
+static void NdisMCloseLog(void *log)
+{
+}
+
+static int32_t
+NdisMCreateLog(void *handle, uint32_t size, void *log)
+{
+	return (NDIS_STATUS_SUCCESS);
+}
+
+static int32_t
+NdisMWriteLogData(void *log, void *buffer, uint32_t size)
+{
+	return (NDIS_STATUS_SUCCESS);
+}
+
+static void NdisMFlushLog(void *log)
+{
 }
 
 static void
@@ -1498,7 +1533,7 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 	pkt->private.pool = pool;
 
 	/* Set the oob offset pointer. Lots of things expect this. */
-	pkt->private.packetooboffset = offsetof(struct ndis_packet, oob);
+	pkt->private.ndis_packet_oob_offset = offsetof(struct ndis_packet, oob);
 
 	/*
 	 * We must initialize the packet flags correctly in order
@@ -1506,8 +1541,8 @@ NdisAllocatePacket(int32_t *status, struct ndis_packet **packet,
 	 * NDIS_GET_PACKET_MEDIA_SPECIFIC_INFO() macros to work
 	 * correctly.
 	 */
-	pkt->private.ndispktflags = NDIS_PACKET_ALLOCATED_BY_NDIS;
-	pkt->private.validcounts = FALSE;
+	pkt->private.ndis_packet_flags = NDIS_PACKET_ALLOCATED_BY_NDIS;
+	pkt->private.valid_counts = FALSE;
 
 	*packet = pkt;
 	*status = NDIS_STATUS_SUCCESS;
@@ -1531,7 +1566,7 @@ NdisUnchainBufferAtFront(struct ndis_packet *packet, struct mdl **buf)
 	if (packet == NULL || buf == NULL)
 		return;
 	priv = &packet->private;
-	priv->validcounts = FALSE;
+	priv->valid_counts = FALSE;
 	if (priv->head == priv->tail) {
 		*buf = priv->head;
 		priv->head = priv->tail = NULL;
@@ -1550,7 +1585,7 @@ NdisUnchainBufferAtBack(struct ndis_packet *packet, struct mdl **buf)
 	if (packet == NULL || buf == NULL)
 		return;
 	priv = &packet->private;
-	priv->validcounts = FALSE;
+	priv->valid_counts = FALSE;
 	if (priv->head == priv->tail) {
 		*buf = priv->head;
 		priv->head = priv->tail = NULL;
@@ -2587,6 +2622,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisAllocateIoWorkItem, 1),
 	IMPORT_SFUNC(NdisAllocateMemory, 4 + 1),
 	IMPORT_SFUNC(NdisAllocateMemoryWithTag, 3),
+	IMPORT_SFUNC(NdisAllocateMemoryWithTagPriority, 4),
 	IMPORT_SFUNC(NdisAllocatePacket, 3),
 	IMPORT_SFUNC(NdisAllocatePacketPool, 4),
 	IMPORT_SFUNC(NdisAllocatePacketPoolEx, 5),
@@ -2640,7 +2676,11 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisMAllocateSharedMemory, 5),
 	IMPORT_SFUNC(NdisMAllocateSharedMemoryAsync, 4),
 	IMPORT_SFUNC(NdisMCancelTimer, 2),
+	IMPORT_SFUNC(NdisMCloseLog, 1),
 	IMPORT_SFUNC(NdisMCompleteBufferPhysicalMapping, 3),
+	IMPORT_SFUNC(NdisMCreateLog, 3),
+	IMPORT_SFUNC(NdisMFlushLog, 1),
+	IMPORT_SFUNC(NdisMWriteLogData, 3),
 	IMPORT_SFUNC(NdisMDeregisterAdapterShutdownHandler, 1),
 	IMPORT_SFUNC(NdisMDeregisterDevice, 1),
 	IMPORT_SFUNC(NdisMDeregisterInterrupt, 1),

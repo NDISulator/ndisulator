@@ -549,7 +549,7 @@ ndis_mtop(struct mbuf *m0, struct ndis_packet **p)
 
 	KASSERT(*p != NULL, ("no packet"));
 	priv = &(*p)->private;
-	priv->totlen = m0->m_pkthdr.len;
+	priv->total_length = m0->m_pkthdr.len;
 
 	for (m = m0; m != NULL; m = m->m_next) {
 		if (m->m_len == 0)
