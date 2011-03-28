@@ -621,7 +621,8 @@ enum ndis_request_type {
 	NDIS_REQUEST_GENERIC_1,
 	NDIS_REQUEST_GENERIC_2,
 	NDIS_REQUEST_GENERIC_3,
-	NDIS_REQUEST_GENERIC_4
+	NDIS_REQUEST_GENERIC_4,
+	NDIS_REQUEST_METHOD
 };
 
 struct ndis_object_header {
@@ -1146,6 +1147,81 @@ struct ndis_miniport_adapter_native_802_11_attributes {
 	struct dot11_extsta_attributes	*extsta_attributes;
 	struct dot11_vwifi_attributes	*vwifi_attributes;
 	struct dot11_extap_attributes	*extap_attributes;
+};
+
+typedef uint8_t (*isr_handler)(void *, uint8_t *, uint32_t *);
+typedef void (*interrupt_dpc_handler)(void *, void *, void *, void *);
+typedef void (*disable_interrupt_handler)(void *);
+typedef void (*enable_interrupt_handler)(void *);
+typedef uint8_t (*msi_isr_handler)(void *, uint32_t, uint8_t *, uint32_t *);
+typedef void (*msi_interrupt_dpc_handler)(void *, uint32_t, void *, uint32_t *, uint32_t *);
+typedef void (*disable_msi_interrupt_handler)(void *, uint32_t);
+typedef void (*enable_msi_interrupt_handler)(void *, uint32_t);
+
+enum ndis_interrupt_type {
+	NDIS_CONNECT_LINE_BASED = 1,
+	NDIS_CONNECT_MESSAGE_BASED
+};
+
+struct ndis_miniport_interrupt_characteristics {
+	struct ndis_object_header		header;
+	isr_handler				interrupt;
+	interrupt_dpc_handler			interrupt_dpc;
+	disable_interrupt_handler		disable_interrupt;
+	enable_interrupt_handler		enable_interrupt;
+	uint8_t					msi_supported;
+	uint8_t					msi_sync_with_all_messages;
+	msi_isr_handler				message_interrupt;
+	msi_interrupt_dpc_handler		message_interrupt_dpc;
+	disable_msi_interrupt_handler		disable_message_interrupt;
+	enable_msi_interrupt_handler		enable_message_interrupt;
+	enum ndis_interrupt_type		interrupt_type;
+	struct io_interrupt_message_info	*message_info_table;
+};
+
+#define	NDIS_OID_REQUEST_REVISION		1
+#define	NDIS_OID_REQUEST_TIMEOUT_INFINITE	0
+#define	NDIS_OID_REQUEST_NDIS_RESERVED_SIZE	16
+
+struct ndis_oid_request {
+	struct ndis_object_header	header;
+	enum ndis_request_type		type;
+	uint32_t			port_number;
+	uint32_t			timeout;
+	void				*id;
+	void				*handle;
+	union request_data {
+		struct query {
+			uint32_t	oid;
+			void		*buffer;
+			uint32_t	length;
+			uint32_t	written;
+			uint32_t	needed;
+		} query;
+		struct set {
+			uint32_t	oid;
+			void		*buffer;
+			uint32_t	length;
+			uint32_t	read;
+			uint32_t	needed;
+		} set;
+		struct method {
+			uint32_t	oid;
+			void		*buffer;
+			uint32_t	in_length;
+			uint32_t	out_length;
+			uint32_t	method_id;
+			uint32_t	written;
+			uint32_t	read;
+			uint32_t	needed;
+		} method;
+	} data;
+	uint8_t		ndis_reserved[NDIS_OID_REQUEST_NDIS_RESERVED_SIZE * sizeof(void *)];
+	uint8_t		miniport_reserved[2 * sizeof(void *)];
+	uint8_t		source_reserved[2 * sizeof(void *)];
+	uint8_t		supported_revision;
+	uint8_t		reserved1;
+	uint16_t	reserved2
 };
 
 struct ndis_80211_network_type_list {
