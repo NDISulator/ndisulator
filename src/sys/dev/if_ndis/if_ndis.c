@@ -2114,8 +2114,10 @@ ndis_get_bssid_list(struct ndis_softc *sc, struct ndis_80211_bssid_list_ex **bl)
 			return;
 		rval = ndis_get(sc, OID_802_11_BSSID_LIST, *bl, len);
 	}
-	if (rval)
+	if (rval) {
 		free(*bl, M_NDIS_DEV);
+		*bl = NULL;
+	}
 }
 
 static void
