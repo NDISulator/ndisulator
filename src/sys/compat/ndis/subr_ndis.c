@@ -150,6 +150,8 @@ static void NdisMFlushLog(void *);
 static int32_t NdisMWriteLogData(void *, void *, uint32_t);
 static void NdisWriteErrorLogEntry(struct ndis_miniport_block *,
     uint32_t, uint32_t, ...);
+static int32_t NdisWriteEventLogEntry(void *, int32_t, uint32_t, uint16_t,
+    void *, uint32_t, void *);
 static bus_addr_t ndis_dmasize(uint8_t dmasize);
 static void ndis_map_cb(void *, bus_dma_segment_t *, int, int);
 static void NdisMStartBufferPhysicalMapping(struct ndis_miniport_block *,
@@ -749,22 +751,35 @@ NdisWritePciSlotInformation(struct ndis_miniport_block *block, uint32_t slot,
 
 static void NdisMCloseLog(void *log)
 {
+	TRACE(NDBG_LOG, "log %p\n", log);
 }
 
 static int32_t
 NdisMCreateLog(void *handle, uint32_t size, void *log)
 {
+	TRACE(NDBG_LOG, "handle %p size %u log %p\n", handle, size, log);
 	return (NDIS_STATUS_SUCCESS);
 }
 
 static int32_t
 NdisMWriteLogData(void *log, void *buffer, uint32_t size)
 {
+	TRACE(NDBG_LOG, "log %p size %u\n", log, size);
 	return (NDIS_STATUS_SUCCESS);
 }
 
 static void NdisMFlushLog(void *log)
 {
+	TRACE(NDBG_LOG, "log %p\n", log);
+}
+
+static int32_t
+NdisWriteEventLogEntry(void *handle, int32_t code, uint32_t value, uint16_t n,
+    void *strings, uint32_t datasize, void *data)
+{
+	TRACE(NDBG_LOG, "handle %p code 0x%x value 0x%x n %u datasize %u\n",
+	    handle, code, value, n, datasize);
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static void
@@ -2693,6 +2708,7 @@ struct image_patch_table ndis_functbl[] = {
 	IMPORT_SFUNC(NdisUpcaseUnicodeString, 2),
 	IMPORT_SFUNC(NdisWaitEvent, 2),
 	IMPORT_SFUNC(NdisWriteConfiguration, 4),
+	IMPORT_SFUNC(NdisWriteEventLogEntry, 7),
 	IMPORT_SFUNC(NdisWritePciSlotInformation, 5),
 	IMPORT_SFUNC(NdisWritePcmciaAttributeMemory, 4),
 	IMPORT_SFUNC_MAP(NdisDprAllocatePacket, NdisAllocatePacket, 3),
