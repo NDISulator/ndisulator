@@ -1107,8 +1107,7 @@ IofCompleteRequest(struct irp *ip, uint8_t prioboost)
 		struct mdl *m;
 
 		masterirp = ip->assoc.master;
-		masterirpcnt =
-		    InterlockedDecrement(&masterirp->assoc.irpcnt);
+		masterirpcnt = InterlockedDecrement(&masterirp->assoc.irpcnt);
 
 		while ((m = ip->mdl) != NULL) {
 			ip->mdl = m->next;

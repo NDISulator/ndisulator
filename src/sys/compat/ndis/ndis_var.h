@@ -57,6 +57,7 @@ enum {
 	NDBG_PACKET	= 0x00008000,
 	NDBG_ZW		= 0x00010000,
 	NDBG_WORK	= 0x00020000,
+	NDBG_LOG	= 0x80000000,
 	NDBG_ANY	= 0xffffffff
 };
 extern int ndis_debug;
