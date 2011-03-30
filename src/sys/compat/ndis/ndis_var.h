@@ -1222,7 +1222,7 @@ struct ndis_oid_request {
 	uint8_t		source_reserved[2 * sizeof(void *)];
 	uint8_t		supported_revision;
 	uint8_t		reserved1;
-	uint16_t	reserved2
+	uint16_t	reserved2;
 };
 
 struct ndis_80211_network_type_list {
