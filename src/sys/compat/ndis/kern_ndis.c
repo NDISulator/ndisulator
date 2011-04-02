@@ -731,8 +731,7 @@ ndis_send_packet(struct ndis_softc *sc, struct ndis_packet *packet)
 			KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 		return (0);
 	}
-	MSCALL3(sc->ndis_block->send_done_func,
-	    sc->ndis_block, packet, status);
+	MSCALL3(sc->ndis_block->send_done_func, sc->ndis_block, packet, status);
 	if (NDIS_SERIALIZED(sc->ndis_block))
 		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 	return (status);

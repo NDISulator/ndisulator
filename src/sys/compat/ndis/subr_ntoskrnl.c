@@ -3542,15 +3542,14 @@ ntoskrnl_dpc_thread(void *arg)
 static void
 ntoskrnl_destroy_dpc_thread(void)
 {
-	struct kdpc_queue *kq = kq_queue;
 	struct nt_kdpc dpc;
 
-	kq->exit = TRUE;
+	kq_queue->exit = TRUE;
 	KeInitializeDpc(&dpc, NULL, NULL);
 	KeSetTargetProcessorDpc(&dpc, 0);
 	KeInsertQueueDpc(&dpc, NULL, NULL);
-	while (kq->exit)
-		tsleep(kq->td->td_proc, PWAIT, "dpcw", hz/10);
+	while (kq_queue->exit)
+		tsleep(kq_queue->td->td_proc, PWAIT, "dpcw", hz/10);
 }
 
 static uint8_t
