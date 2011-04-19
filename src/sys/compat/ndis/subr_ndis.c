@@ -1964,8 +1964,13 @@ NdisQueryBufferOffset(struct mdl *buf, uint32_t *off, uint32_t *len)
 static void
 NdisMSleep(uint32_t usecs)
 {
+	struct nt_ktimer timer;
+
 	TRACE(NDBG_INTR, "usecs %u\n", usecs);
-	DELAY(usecs);
+
+	KeInitializeTimer(&timer);
+	KeSetTimer(&timer, ((int64_t)usecs * -10), NULL);
+	KeWaitForSingleObject(&timer, 0, 0, FALSE, NULL);
 }
 
 static uint32_t
