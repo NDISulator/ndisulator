@@ -3255,6 +3255,7 @@ ZwCreateFile(void **handle, uint32_t access, struct object_attributes *attr,
     uint32_t share_access, uint32_t create_disposition,
     uint32_t create_options, void *ea_buf, uint32_t ea_len)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
@@ -3263,12 +3264,14 @@ ZwCreateKey(void **handle, uint32_t access, struct object_attributes *attr,
     uint32_t title_index, struct unicode_string *class, uint32_t create_options,
     uint32_t *create_disposition)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
 static int32_t
 ZwDeleteKey(void *handle)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
@@ -3276,12 +3279,14 @@ static int32_t
 ZwOpenFile(void **handle, uint32_t access, struct object_attributes *attr,
     struct io_status_block *iosb, uint32_t share_access, uint32_t options)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
 static int32_t
 ZwOpenKey(void **handle, uint32_t access, struct object_attributes *attr)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
@@ -3290,6 +3295,7 @@ ZwReadFile(void *handle, struct nt_kevent *event, void *apc_func,
     void *apc_ctx, struct io_status_block *iosb, void *buffer, uint32_t len,
     int64_t *byte_offset, uint32_t *key)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
@@ -3298,6 +3304,7 @@ ZwWriteFile(void *handle, struct nt_kevent *event, void *apc_func,
     void *apc_ctx, struct io_status_block *iosb, void *buffer, uint32_t len,
     int64_t *byte_offset, uint32_t *key)
 {
+	TRACE(NDBG_ZW, "handle %p\n", handle);
 	return (NDIS_STATUS_FAILURE);
 }
 
