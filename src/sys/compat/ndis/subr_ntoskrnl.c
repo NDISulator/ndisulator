@@ -3138,7 +3138,7 @@ ObReferenceObjectByHandle(void *handle, uint32_t reqaccess, void *otype,
 	nr->obj = handle;
 	nr->header.type = THREAD_OBJECT;
 	nr->header.signal_state = 0;
-	nr->header.size = sizeof(struct thread);
+	nr->header.size = sizeof(struct thread) / 8;
 	TAILQ_INSERT_TAIL(&nt_reflist, nr, link);
 	*object = nr;
 

@@ -138,7 +138,7 @@ ndis_attach_pccard(device_t dev)
 	struct ndis_pccard_type *t;
 	struct drvdb_ent *db;
 	const char *prodstr, *vendstr;
-	int devidx = 0, error = 0, rid;
+	int devidx = 0, error = 0, rid = 0;
 
 	sc = device_get_softc(dev);
 	sc->ndis_dev = dev;
@@ -162,7 +162,6 @@ ndis_attach_pccard(device_t dev)
 	    rman_get_start(sc->ndis_res_io), rman_get_end(sc->ndis_res_io),
 	    rman_get_size(sc->ndis_res_io));
 
-	rid = 0;
 	sc->ndis_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, &rid,
 	    RF_SHAREABLE | RF_ACTIVE);
 	if (sc->ndis_irq == NULL) {
