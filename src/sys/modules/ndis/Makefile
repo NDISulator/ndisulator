@@ -8,6 +8,8 @@ SRCS+=	kern_windrv.c subr_usbd.c
 SRCS+=	device_if.h bus_if.h pci_if.h vnode_if.h opt_usb.h
 SRCS+=	winx_wrap.S
 
+CFLAGS+=-I${.CURDIR}/../../../sys/dev/if_ndis
+
 WERROR=
 
 .include <bsd.kmod.mk>

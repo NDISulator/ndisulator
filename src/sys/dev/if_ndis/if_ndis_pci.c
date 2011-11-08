@@ -52,11 +52,11 @@ __FBSDID("$FreeBSD$");
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 
-#include <compat/ndis/pe_var.h>
-#include <compat/ndis/resource_var.h>
-#include <compat/ndis/ntoskrnl_var.h>
-#include <compat/ndis/ndis_var.h>
-#include <dev/if_ndis/if_ndisvar.h>
+#include "pe_var.h"
+#include "resource_var.h"
+#include "ntoskrnl_var.h"
+#include "ndis_var.h"
+#include "if_ndisvar.h"
 
 MODULE_DEPEND(ndis, pci, 1, 1, 1);
 

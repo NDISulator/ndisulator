@@ -64,7 +64,7 @@ __FBSDID("$FreeBSD$");
 } while (0)
 #endif
 
-#include <compat/ndis/pe_var.h>
+#include "pe_var.h"
 
 static int	pe_is_nt_image(vm_offset_t);
 static void	pe_get_nt_header(vm_offset_t, struct image_nt_header **);

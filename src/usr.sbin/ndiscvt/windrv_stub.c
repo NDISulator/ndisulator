@@ -43,10 +43,10 @@ __FBSDID("$FreeBSD$");
 #include <machine/resource.h>
 #include <sys/bus.h>
 
-#include <compat/ndis/pe_var.h>
-#include <compat/ndis/resource_var.h>
-#include <compat/ndis/ntoskrnl_var.h>
-#include <compat/ndis/ndis_var.h>
+#include "pe_var.h"
+#include "resource_var.h"
+#include "ntoskrnl_var.h"
+#include "ndis_var.h"
 #include "windrv.h"
 
 #ifdef NDIS_PCI_DEV_TABLE

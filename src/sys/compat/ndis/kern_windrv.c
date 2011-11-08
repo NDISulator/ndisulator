@@ -55,12 +55,12 @@ __FBSDID("$FreeBSD$");
 
 #include <dev/usb/usb.h>
 
-#include <compat/ndis/pe_var.h>
-#include <compat/ndis/resource_var.h>
-#include <compat/ndis/ntoskrnl_var.h>
-#include <compat/ndis/ndis_var.h>
-#include <compat/ndis/hal_var.h>
-#include <compat/ndis/usbd_var.h>
+#include "pe_var.h"
+#include "resource_var.h"
+#include "ntoskrnl_var.h"
+#include "ndis_var.h"
+#include "hal_var.h"
+#include "usbd_var.h"
 
 static struct mtx drvdb_mtx;
 static STAILQ_HEAD(drvdb, drvdb_ent) drvdb_head;

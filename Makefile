@@ -1,34 +1,20 @@
 all:
-	@echo "targets: attach detach build install clean load unload"
-attach:
-	@echo "mounting NDISulator code on top of FreeBSD code"
-	mount_nullfs src/sys/compat/ndis /usr/src/sys/compat/ndis
-	mount_nullfs src/sys/dev/if_ndis /usr/src/sys/dev/if_ndis
-	mount_nullfs src/sys/modules/ndis /usr/src/sys/modules/ndis
-	mount_nullfs src/sys/modules/if_ndis /usr/src/sys/modules/if_ndis
-	mount_nullfs src/usr.sbin/ndiscvt /usr/src/usr.sbin/ndiscvt
-detach:
-	@echo "umounting NDISulator code"
-	umount /usr/src/sys/compat/ndis
-	umount /usr/src/sys/dev/if_ndis
-	umount /usr/src/sys/modules/ndis
-	umount /usr/src/sys/modules/if_ndis
-	umount /usr/src/usr.sbin/ndiscvt
+	@echo "targets: build install clean load unload"
 build:
-	cd /usr/src/sys/modules/ndis && make
-	cd /usr/src/sys/modules/if_ndis && make
-	cd /usr/src/usr.sbin/ndiscvt && make
+	cd src/sys/modules/ndis && make
+	cd src/sys/modules/if_ndis && make
+	cd src/usr.sbin/ndiscvt && make
 install:
-	cd /usr/src/sys/modules/ndis && make install
-	cd /usr/src/sys/modules/if_ndis && make install
-	cd /usr/src/usr.sbin/ndiscvt && make install
+	cd src/sys/modules/ndis && make install
+	cd src/sys/modules/if_ndis && make install
+	cd src/usr.sbin/ndiscvt && make install
 clean:
-	cd /usr/src/sys/modules/ndis && make clean
-	cd /usr/src/sys/modules/if_ndis && make clean
-	cd /usr/src/usr.sbin/ndiscvt && make clean
+	cd src/sys/modules/ndis && make clean
+	cd src/sys/modules/if_ndis && make clean
+	cd src/usr.sbin/ndiscvt && make clean
 load:
-	cd /usr/src/sys/modules/ndis && make load
-	cd /usr/src/sys/modules/if_ndis && make load
+	cd src/sys/modules/ndis && make load
+	cd src/sys/modules/if_ndis && make load
 unload:
-	cd /usr/src/sys/modules/ndis && make unload
-	cd /usr/src/sys/modules/if_ndis && make unload
+	cd src/sys/modules/ndis && make unload
+	cd src/sys/modules/if_ndis && make unload

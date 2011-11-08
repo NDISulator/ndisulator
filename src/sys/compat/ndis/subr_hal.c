@@ -45,11 +45,11 @@ __FBSDID("$FreeBSD$");
 #include <sys/systm.h>
 #include <machine/bus.h>
 
-#include <compat/ndis/pe_var.h>
-#include <compat/ndis/resource_var.h>
-#include <compat/ndis/ntoskrnl_var.h>
-#include <compat/ndis/hal_var.h>
-#include <compat/ndis/ndis_var.h>
+#include "pe_var.h"
+#include "resource_var.h"
+#include "ntoskrnl_var.h"
+#include "hal_var.h"
+#include "ndis_var.h"
 
 static uint64_t	KeQueryPerformanceCounter(uint64_t *);
 static uint8_t	KeRaiseIrqlToDpcLevel(void);

@@ -15,7 +15,7 @@ LDADD=  -ll
 
 YFLAGS+=-v
 
-CFLAGS+=-I. -I${.CURDIR} -I${.CURDIR}/../../sys
+CFLAGS+=-I. -I${.CURDIR} -I${.CURDIR}/../../sys/compat/ndis
 
 CLEANFILES= y.output
 

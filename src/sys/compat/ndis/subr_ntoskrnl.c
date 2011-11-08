@@ -67,11 +67,11 @@ __FBSDID("$FreeBSD$");
 #include <vm/vm_kern.h>
 #include <vm/vm_map.h>
 
-#include <compat/ndis/pe_var.h>
-#include <compat/ndis/resource_var.h>
-#include <compat/ndis/ntoskrnl_var.h>
-#include <compat/ndis/hal_var.h>
-#include <compat/ndis/ndis_var.h>
+#include "pe_var.h"
+#include "resource_var.h"
+#include "ntoskrnl_var.h"
+#include "hal_var.h"
+#include "ndis_var.h"
 
 struct kdpc_queue {
 	struct list_entry	disp;

@@ -59,13 +59,13 @@ __FBSDID("$FreeBSD$");
 #include <dev/usb/usb_device.h>
 #include <dev/usb/usb_request.h>
 
-#include <compat/ndis/pe_var.h>
-#include <compat/ndis/resource_var.h>
-#include <compat/ndis/ntoskrnl_var.h>
-#include <compat/ndis/ndis_var.h>
-#include <compat/ndis/hal_var.h>
-#include <compat/ndis/usbd_var.h>
-#include <dev/if_ndis/if_ndisvar.h>
+#include "pe_var.h"
+#include "resource_var.h"
+#include "ntoskrnl_var.h"
+#include "ndis_var.h"
+#include "hal_var.h"
+#include "usbd_var.h"
+#include "if_ndisvar.h"
 
 static struct driver_object usbd_driver;
 static usb_callback_t usbd_non_isoc_callback;

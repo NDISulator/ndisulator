@@ -47,7 +47,7 @@ __FBSDID("$FreeBSD$");
 #include <err.h>
 #include <ctype.h>
 
-#include <compat/ndis/pe_var.h>
+#include "pe_var.h"
 
 #include "inf.h"
 
