@@ -1,6 +1,4 @@
 all:
-	@echo "targets: build install clean load unload"
-build:
 	cd src/sys/modules/ndis && make
 	cd src/sys/modules/if_ndis && make
 	cd src/usr.sbin/ndiscvt && make

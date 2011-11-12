@@ -3,28 +3,14 @@ How to use:
 Make sure that you use recent FreeBSD CURRENT kernel and world.
 FreeBSD source tree must be available in /usr/src.
 
-To build and install new NDISulator you will need to login as root and run:
+To build and install new NDISulator you will need to run:
 
-# make attach
-
-This will attach NDISulator code on top of /usr/src. Now you just follow
-usual procedure for installing new kernel & world, or just run:
-
-# make build
+# make
 
 To build NDISulator files. And to install NDISulator files, run as root:
 
 # make install
 
-Now and only now you can use installed ndisgen(8) to generate miniport
-modules. Using new ndisgen(8) with old source code or vice versa will not work.
-
 To clean files run:
 
 # make clean
-
-When you are done, run as root:
-
-# make detach
-
-This will detach NDISulator code from /usr/src.
