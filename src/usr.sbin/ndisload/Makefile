@@ -5,6 +5,8 @@
 PROG=	ndisload
 SRCS=	ndisload.c
 
+MAN=	ndisload.8
+
 DPADD=  ${LIBL}
 LDADD=  -ll
 

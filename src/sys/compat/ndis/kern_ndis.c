@@ -44,6 +44,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/conf.h>
+#include <sys/ioccom.h>
 
 #include <sys/kernel.h>
 #include <sys/module.h>
@@ -61,6 +62,7 @@ __FBSDID("$FreeBSD$");
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 
+#include "loader.h"
 #include "pe_var.h"
 #include "resource_var.h"
 #include "ntoskrnl_var.h"
@@ -69,59 +71,40 @@ __FBSDID("$FreeBSD$");
 #include "usbd_var.h"
 #include "if_ndisvar.h"
 
-static d_close_t ndis_close;
-static d_read_t ndis_read;
-static d_write_t ndis_write;
-static d_ioctl_t ndis_ioctl;
-static d_poll_t ndis_poll;
+static d_ioctl_t ndisload_ioctl;
 
 static struct cdev *ndis_dev;
 
 static struct cdevsw ndis_cdevsw = {
 	.d_version = D_VERSION,
-	.d_close = ndis_close,
-	.d_read = ndis_read,
-	.d_write = ndis_write,
-	.d_ioctl = ndis_ioctl,
-	.d_poll = ndis_poll,
+	.d_ioctl = ndisload_ioctl,
 	.d_name = "ndis",
 };
 
 /* ARGSUSED */
 static int
-ndis_close(struct cdev *dev __unused, int flags, int fmt __unused,
-    struct thread *td)
-{
-	return (0);
-}
-
-/* ARGSUSED */
-static int
-ndis_read(struct cdev *dev __unused, struct uio *uio, int flag)
-{
-	return (0);
-}
-
-/* ARGSUSED */
-static int
-ndis_write(struct cdev *dev __unused, struct uio *uio, int flag __unused)
-{
-	return (0);
-}
-
-/* ARGSUSED */
-static int
-ndis_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t addr __unused,
+ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
     int flags __unused, struct thread *td __unused)
 {
-	return (0);
-}
+	int ret;
+	ndis_load_driver_args_t *l;
+	ndis_unload_driver_args_t *u;
 
-/* ARGSUSED */
-static int
-ndis_poll(struct cdev *dev __unused, int events, struct thread *td)
-{
-	return (0);
+	switch (cmd) {
+	case NDIS_LOAD_DRIVER:
+		l = (ndis_load_driver_args_t *)data;
+		ret = windrv_load(l->img, l->len,
+		    l->bustype, l->devlist, l->regvals);
+		break;
+	case NDIS_UNLOAD_DRIVER:
+		u = (ndis_unload_driver_args_t *)data;
+		ret = windrv_unload(u->img);
+		break;
+	default:
+		ret = EINVAL;
+		break;
+	}
+	return (ret);
 }
 
 #ifdef NDIS_DEBUG

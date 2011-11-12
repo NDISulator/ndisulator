@@ -146,15 +146,15 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 			break;
 		windrv_loaded = 1;
 #ifdef NDIS_PCI_DEV_TABLE
-		windrv_load(mod, drv_data_start, drv_data_len, NDIS_PCIBUS,
+		windrv_load(drv_data_start, drv_data_len, NDIS_PCIBUS,
 		    ndis_devs_pci, &ndis_regvals);
 #endif
 #ifdef NDIS_PCMCIA_DEV_TABLE
-		windrv_load(mod, drv_data_start, drv_data_len, NDIS_PCMCIABUS,
+		windrv_load(drv_data_start, drv_data_len, NDIS_PCMCIABUS,
 		    ndis_devs_pccard, &ndis_regvals);
 #endif
 #ifdef NDIS_USB_DEV_TABLE
-		windrv_load(mod, drv_data_start, drv_data_len, NDIS_PNPBUS,
+		windrv_load(drv_data_start, drv_data_len, NDIS_PNPBUS,
 		   ndis_devs_usb, &ndis_regvals);
 #endif
 		break;
@@ -163,13 +163,13 @@ windrv_modevent(module_t mod, int cmd, void *arg)
 			break;
 		windrv_loaded = 0;
 #ifdef NDIS_PCI_DEV_TABLE
-		windrv_unload(mod, drv_data_start);
+		windrv_unload(drv_data_start);
 #endif
 #ifdef NDIS_PCMCIA_DEV_TABLE
-		windrv_unload(mod, drv_data_start);
+		windrv_unload(drv_data_start);
 #endif
 #ifdef NDIS_USB_DEV_TABLE
-		windrv_unload(mod, drv_data_start);
+		windrv_unload(drv_data_start);
 #endif
 		break;
 	case MOD_SHUTDOWN:

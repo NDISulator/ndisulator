@@ -171,7 +171,7 @@ windrv_match(matchfuncptr matchfunc, void *ctx)
  * away any custom driver extension info that may have been added.
  */
 int
-windrv_unload(module_t mod, vm_offset_t img)
+windrv_unload(vm_offset_t img)
 {
 	struct drvdb_ent *db, *r = NULL;
 	struct driver_object *drv;
@@ -265,7 +265,7 @@ patch_user_shared_data_address(vm_offset_t img, size_t len)
  * calls the driver's DriverEntry() routine.
  */
 int
-windrv_load(module_t mod, vm_offset_t img, size_t len,
+windrv_load(vm_offset_t img, size_t len,
     uint32_t bustype, void *devlist, void *regvals)
 {
 	struct ansi_string as;
