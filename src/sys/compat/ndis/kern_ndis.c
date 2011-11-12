@@ -69,6 +69,61 @@ __FBSDID("$FreeBSD$");
 #include "usbd_var.h"
 #include "if_ndisvar.h"
 
+static d_close_t ndis_close;
+static d_read_t ndis_read;
+static d_write_t ndis_write;
+static d_ioctl_t ndis_ioctl;
+static d_poll_t ndis_poll;
+
+static struct cdev *ndis_dev;
+
+static struct cdevsw ndis_cdevsw = {
+	.d_version = D_VERSION,
+	.d_close = ndis_close,
+	.d_read = ndis_read,
+	.d_write = ndis_write,
+	.d_ioctl = ndis_ioctl,
+	.d_poll = ndis_poll,
+	.d_name = "ndis",
+};
+
+/* ARGSUSED */
+static int
+ndis_close(struct cdev *dev __unused, int flags, int fmt __unused,
+    struct thread *td)
+{
+	return (0);
+}
+
+/* ARGSUSED */
+static int
+ndis_read(struct cdev *dev __unused, struct uio *uio, int flag)
+{
+	return (0);
+}
+
+/* ARGSUSED */
+static int
+ndis_write(struct cdev *dev __unused, struct uio *uio, int flag __unused)
+{
+	return (0);
+}
+
+/* ARGSUSED */
+static int
+ndis_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t addr __unused,
+    int flags __unused, struct thread *td __unused)
+{
+	return (0);
+}
+
+/* ARGSUSED */
+static int
+ndis_poll(struct cdev *dev __unused, int events, struct thread *td)
+{
+	return (0);
+}
+
 #ifdef NDIS_DEBUG
 int ndis_debug = 0;
 SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug,
@@ -142,10 +197,13 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		windrv_wrap_table(kernndis_functbl);
 
 		TAILQ_INIT(&ndis_devhead);
+		ndis_dev = make_dev_credf(0, &ndis_cdevsw, 0,
+		    NULL, UID_ROOT, GID_WHEEL, 0600, "ndis");
 		break;
 	case MOD_SHUTDOWN:
 		break;
 	case MOD_UNLOAD:
+		destroy_dev(ndis_dev);
 		usbd_libfini();
 		ndis_libfini();
 		windrv_libfini();
