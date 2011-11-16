@@ -97,16 +97,16 @@ static int
 ndis_devcompare_pccard(enum ndis_bus_type bustype,
     struct ndis_pccard_type *t, device_t dev)
 {
-	const char *prodstr, *vendstr;
+	uint32_t product, vendor;
 
 	if (bustype != NDIS_PCMCIABUS ||
-	    pccard_get_product_str(dev, &prodstr) ||
-	    pccard_get_vendor_str(dev, &vendstr))
+	    pccard_get_product(dev, &product) ||
+	    pccard_get_vendor(dev, &vendor))
 		return (FALSE);
 
 	for (; t->name != NULL; t++) {
-		if (strcasecmp(vendstr, t->vendor) == 0 &&
-		    strcasecmp(prodstr, t->device) == 0) {
+		if ((vendor == t->vendor) &&
+		    (product == t->device)) {
 			device_set_desc(dev, t->name);
 			return (TRUE);
 		}
@@ -137,7 +137,7 @@ ndis_attach_pccard(device_t dev)
 	struct ndis_softc *sc;
 	struct ndis_pccard_type *t;
 	struct drvdb_ent *db;
-	const char *prodstr, *vendstr;
+	uint32_t product, vendor;
 	int devidx = 0, error = 0, rid = 0;
 
 	sc = device_get_softc(dev);
@@ -173,16 +173,16 @@ ndis_attach_pccard(device_t dev)
 	    rman_get_start(sc->ndis_irq), rman_get_start(sc->ndis_irq), 1);
 	sc->ndis_bus_type = NDIS_PCMCIABUS;
 
-	error = pccard_get_product_str(dev, &prodstr);
+	error = pccard_get_product(dev, &product);
 	if (error)
 		return (error);
-	error = pccard_get_vendor_str(dev, &vendstr);
+	error = pccard_get_vendor(dev, &vendor);
 	if (error)
 		return (error);
 	/* Figure out exactly which device we matched. */
 	for (t = db->windrv_devlist; t->name != NULL; t++, devidx++) {
-		if (strcasecmp(vendstr, t->vendor) == 0 &&
-		    strcasecmp(prodstr, t->device) == 0)
+		if ((vendor == t->vendor) &&
+		    (product == t->device))
 			break;
 	}
 	sc->ndis_devidx = devidx;

@@ -1,7 +1,7 @@
 all:
+	cd src/usr.sbin/ndisload && make
 	cd src/sys/modules/ndis && make
 	cd src/sys/modules/if_ndis && make
-	cd src/usr.sbin/ndisload && make
 install:
 	cd src/sys/modules/ndis && make install
 	cd src/sys/modules/if_ndis && make install

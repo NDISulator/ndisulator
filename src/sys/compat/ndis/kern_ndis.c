@@ -81,32 +81,6 @@ static struct cdevsw ndis_cdevsw = {
 	.d_name = "ndis",
 };
 
-/* ARGSUSED */
-static int
-ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
-    int flags __unused, struct thread *td __unused)
-{
-	int ret;
-	ndis_load_driver_args_t *l;
-	ndis_unload_driver_args_t *u;
-
-	switch (cmd) {
-	case NDIS_LOAD_DRIVER:
-		l = (ndis_load_driver_args_t *)data;
-		ret = windrv_load(l->img, l->len,
-		    l->bustype, l->devlist, l->regvals);
-		break;
-	case NDIS_UNLOAD_DRIVER:
-		u = (ndis_unload_driver_args_t *)data;
-		ret = windrv_unload(u->img);
-		break;
-	default:
-		ret = EINVAL;
-		break;
-	}
-	return (ret);
-}
-
 #ifdef NDIS_DEBUG
 int ndis_debug = 0;
 SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug,
@@ -146,6 +120,48 @@ static struct image_patch_table kernndis_functbl[] = {
 static struct nd_head ndis_devhead;
 
 MALLOC_DEFINE(M_NDIS_KERN, "ndis_kern", "ndis_kern buffers");
+
+/* ARGSUSED */
+static int
+ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
+    int flags __unused, struct thread *td __unused)
+{
+	int ret;
+	ndis_load_driver_args_t *l;
+	ndis_unload_driver_args_t *u;
+	enum ndis_bus_type bustype = NDIS_INTERNAL;
+	void *devlist;
+
+	switch (cmd) {
+	case NDIS_LOAD_DRIVER:
+		l = (ndis_load_driver_args_t *)data;
+		switch (l->bustype) {
+		case 'p':
+			bustype = NDIS_PCIBUS;
+			break;
+		case 'P':
+			bustype = NDIS_PCMCIABUS;
+			break;
+		case 'u':
+			bustype = NDIS_PNPBUS;
+			break;
+		default:
+			return (EINVAL);
+			break;
+		}
+		ret = windrv_load((vm_offset_t)l->img, l->len,
+		    bustype, devlist, l->regvals);
+		break;
+	case NDIS_UNLOAD_DRIVER:
+		u = (ndis_unload_driver_args_t *)data;
+		ret = windrv_unload((vm_offset_t)u->img);
+		break;
+	default:
+		ret = EINVAL;
+		break;
+	}
+	return (ret);
+}
 
 /*
  * This allows us to export our symbols to other modules.

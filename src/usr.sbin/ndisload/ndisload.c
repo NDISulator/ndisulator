@@ -44,13 +44,15 @@ __FBSDID("$FreeBSD$");
 #include <fcntl.h>
 #include <ctype.h>
 
-#include "loader.h"
 #include "pe_var.h"
+#include "loader.h"
 
 static void
 usage(void)
 {
-	fprintf(stderr, "Usage: ndisload -s <sysfile> [-f <firmfile>]\n");
+	fprintf(stderr, "Usage: ndisload -p -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
+	fprintf(stderr, "Usage: ndisload -P -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
+	fprintf(stderr, "Usage: ndisload -u -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
 
 	exit(1);
 }
@@ -83,17 +85,16 @@ load_file(char *filename, ndis_load_driver_args_t *driver)
 }
 
 static void
-load_driver(char *filename)
+load_driver(char *filename, ndis_load_driver_args_t *driver)
 {
 	int fd, error;
-	ndis_load_driver_args_t driver;
 
-	if (load_file(filename, &driver))
+	if (load_file(filename, driver))
 		err(-1, "failed to load file");
 	fd = open("/dev/ndis", O_RDONLY);
 	if (fd < 0)
 		err(-1, "ndis module not loaded");
-	error = ioctl(fd, NDIS_LOAD_DRIVER, &driver);
+	error = ioctl(fd, NDIS_LOAD_DRIVER, driver);
 	if (error < 0)
 		err(-1, "loading driver failed");
 	close(fd);
@@ -104,8 +105,12 @@ main(int argc, char *argv[])
 {
 	int ch;
 	char *sysfile = NULL, *firmfile = NULL;
+	char bustype;
+	ndis_load_driver_args_t driver;
 
-	while ((ch = getopt(argc, argv, "s:f")) != -1) {
+	bzero(&driver, sizeof(driver));
+
+	while ((ch = getopt(argc, argv, "s:f:pPuv:d:n:")) != -1) {
 		switch (ch) {
 		case 's':
 			sysfile = optarg;
@@ -113,15 +118,29 @@ main(int argc, char *argv[])
 		case 'f':
 			firmfile = optarg;
 			break;
+		case 'p':
+		case 'P':
+		case 'u':
+			driver.bustype = ch;
+			break;
+		case 'v':
+			driver.vendor = strtol(optarg, NULL, 0);
+			break;
+		case 'd':
+			driver.device = strtol(optarg, NULL, 0);
+			break;
+		case 'n':
+			driver.name = optarg;
+			break;
 		default:
 			usage();
 		}
 	}
 
-	if (sysfile == NULL)
+	if (sysfile == NULL || driver.bustype == 0 || driver.vendor == 0 || driver.device == 0 || driver.name == NULL)
 		usage();
 
-	load_driver(sysfile);
+	load_driver(sysfile, &driver);
 
 	return (0);
 }

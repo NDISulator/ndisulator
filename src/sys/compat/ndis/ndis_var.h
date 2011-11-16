@@ -2170,8 +2170,8 @@ struct ndis_pci_type {
 };
 
 struct ndis_pccard_type {
-	const char	*vendor;
-	const char	*device;
+	uint32_t	vendor;
+	uint32_t	device;
 	char		*name;
 };
 

@@ -27,18 +27,22 @@
 #define _LOADER_H_
 
 typedef struct {
-	vm_offset_t	img;
+	void		*img;
 	size_t		len;
-	uint32_t	bustype;
+	char		bustype;
+	uint16_t	vendor;
+	uint16_t	device;
+	uint32_t	subsys;
+	char		*name;
 	void		*devlist;
 	void		*regvals;
 } ndis_load_driver_args_t;
 
 typedef struct {
-	vm_offset_t	img;
+	void		*img;
 } ndis_unload_driver_args_t;
 
 #define NDIS_LOAD_DRIVER	_IOWR('c', 1, ndis_load_driver_args_t)
 #define NDIS_UNLOAD_DRIVER	_IOWR('c', 2, ndis_unload_driver_args_t)
 
-#endif /* LOADER_H */
+#endif /* _LOADER_H_ */
