@@ -5,6 +5,7 @@
 PROG=	ndisload
 SRCS=	ndisload.c
 SRCS+=	subr_pe.c
+BINDIR=	/usr/sbin
 
 MAN=	ndisload.8
 
