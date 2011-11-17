@@ -62,7 +62,7 @@ MODULE_DEPEND(ndis, pci, 1, 1, 1);
 
 static int	ndis_attach_pci(device_t);
 static int	ndis_devcompare_pci(enum ndis_bus_type,
-		    struct ndis_pci_type *, device_t);
+		    struct ndis_device_type *, device_t);
 static int	ndis_probe_pci(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
@@ -89,7 +89,7 @@ DRIVER_MODULE(ndis, pci, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
 ndis_devcompare_pci(enum ndis_bus_type bustype,
-    struct ndis_pci_type *t, device_t dev)
+    struct ndis_device_type *t, device_t dev)
 {
 
 	if (bustype != NDIS_PCIBUS)
@@ -128,7 +128,7 @@ static int
 ndis_attach_pci(device_t dev)
 {
 	struct ndis_softc *sc;
-	struct ndis_pci_type *t;
+	struct ndis_device_type *t;
 	struct resource_list *rl;
 	struct resource_list_entry *rle;
 	struct drvdb_ent *db;

@@ -2162,22 +2162,10 @@ struct ndis_miniport_block {
 };
 TAILQ_HEAD(nd_head, ndis_miniport_block);
 
-struct ndis_pci_type {
-	uint16_t	vendor;
-	uint16_t	device;
-	uint32_t	subsys;
-	char		*name;
-};
-
-struct ndis_pccard_type {
+struct ndis_device_type {
 	uint32_t	vendor;
 	uint32_t	device;
-	char		*name;
-};
-
-struct ndis_usb_type {
-	uint16_t	vendor;
-	uint16_t	device;
+	uint32_t	subsys;
 	char		*name;
 };
 

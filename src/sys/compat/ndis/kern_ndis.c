@@ -129,8 +129,7 @@ ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 	int ret;
 	ndis_load_driver_args_t *l;
 	ndis_unload_driver_args_t *u;
-	enum ndis_bus_type bustype = NDIS_INTERNAL;
-	void *devlist;
+	enum ndis_bus_type bustype;
 
 	switch (cmd) {
 	case NDIS_LOAD_DRIVER:
@@ -150,7 +149,7 @@ ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 			break;
 		}
 		ret = windrv_load((vm_offset_t)l->img, l->len,
-		    bustype, devlist, l->regvals);
+		    bustype, l->devlist, l->regvals);
 		break;
 	case NDIS_UNLOAD_DRIVER:
 		u = (ndis_unload_driver_args_t *)data;

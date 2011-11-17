@@ -64,7 +64,7 @@ MODULE_DEPEND(ndis, pccard, 1, 1, 1);
 static int	ndis_alloc_amem(struct ndis_softc *);
 static int	ndis_attach_pccard(device_t);
 static int	ndis_devcompare_pccard(enum ndis_bus_type,
-		    struct ndis_pccard_type *, device_t);
+		    struct ndis_device_type *, device_t);
 static int	ndis_probe_pccard(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
@@ -95,7 +95,7 @@ DRIVER_MODULE(ndis, pccard, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
 ndis_devcompare_pccard(enum ndis_bus_type bustype,
-    struct ndis_pccard_type *t, device_t dev)
+    struct ndis_device_type *t, device_t dev)
 {
 	uint32_t product, vendor;
 
@@ -135,7 +135,7 @@ static int
 ndis_attach_pccard(device_t dev)
 {
 	struct ndis_softc *sc;
-	struct ndis_pccard_type *t;
+	struct ndis_device_type *t;
 	struct drvdb_ent *db;
 	uint32_t product, vendor;
 	int devidx = 0, error = 0, rid = 0;
