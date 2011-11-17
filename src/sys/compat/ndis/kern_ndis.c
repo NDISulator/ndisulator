@@ -130,6 +130,9 @@ ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 	ndis_load_driver_args_t *l;
 	ndis_unload_driver_args_t *u;
 	enum ndis_bus_type bustype;
+	struct ndis_device_type *devlist;
+	void *image;
+	char *name;
 
 	switch (cmd) {
 	case NDIS_LOAD_DRIVER:
@@ -148,8 +151,45 @@ ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 			return (EINVAL);
 			break;
 		}
-		ret = windrv_load((vm_offset_t)l->img, l->len,
-		    bustype, l->devlist, l->regvals);
+		if (l->img == NULL || l->len == 0 || l->namelen == 0 ||
+		    l->vendor == 0 || l->device == 0 || l->name == NULL)
+			return (EINVAL);
+
+		image = malloc(l->len, M_NDIS_KERN, M_NOWAIT|M_ZERO);
+		if (image == NULL)
+			return (ENOMEM);
+
+		ret = copyin(l->img, image, l->len);
+		if (ret) {
+			free(image, M_NDIS_KERN);
+			return (ret);
+		}
+
+		name = malloc(l->namelen, M_NDIS_KERN, M_NOWAIT|M_ZERO);
+		if (name == NULL) {
+			free(image, M_NDIS_KERN);
+			return (ENOMEM);
+		}
+
+		ret = copyin(l->name, name, l->namelen);
+		if (ret) {
+			free(name, M_NDIS_KERN);
+			free(image, M_NDIS_KERN);
+			return (ret);
+		}
+
+		devlist = malloc(sizeof(struct ndis_device_type), M_NDIS_KERN,
+		    M_NOWAIT|M_ZERO);
+		if (devlist == NULL) {
+			free(name, M_NDIS_KERN);
+			free(image, M_NDIS_KERN);
+			return (ENOMEM);
+		}
+		devlist->vendor = l->vendor;
+		devlist->device = l->device;
+		devlist->name = name;
+		ret = windrv_load((vm_offset_t)image, l->len,
+		    bustype, devlist, NULL);
 		break;
 	case NDIS_UNLOAD_DRIVER:
 		u = (ndis_unload_driver_args_t *)data;
@@ -268,7 +308,7 @@ ndis_create_sysctls(struct ndis_softc *sc)
 	TAILQ_INIT(&sc->ndis_cfglist_head);
 
 	/* Add the driver-specific registry keys. */
-	for (;;) {
+	for (; cfg != NULL;) {
 		if (cfg->key == NULL)
 			break;
 		if (cfg->idx != sc->ndis_devidx) {

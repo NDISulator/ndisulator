@@ -34,6 +34,7 @@ typedef struct {
 	uint16_t	device;
 	uint32_t	subsys;
 	char		*name;
+	size_t		namelen;
 	void		*devlist;
 	void		*regvals;
 } ndis_load_driver_args_t;

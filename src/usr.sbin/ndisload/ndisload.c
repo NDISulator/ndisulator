@@ -131,6 +131,7 @@ main(int argc, char *argv[])
 			break;
 		case 'n':
 			driver.name = optarg;
+			driver.namelen = strlen(optarg);
 			break;
 		default:
 			usage();
