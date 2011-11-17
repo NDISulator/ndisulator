@@ -1142,7 +1142,7 @@ enum windrv_wrap_type {
 
 struct drvdb_ent {
 	struct driver_object		*windrv_object;
-	void				*windrv_devlist;
+	struct ndis_device_type		*windrv_devlist;
 	struct ndis_cfg			*windrv_regvals;
 	uint32_t			windrv_bustype;
 	STAILQ_ENTRY(drvdb_ent)	link;

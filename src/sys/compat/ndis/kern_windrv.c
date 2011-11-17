@@ -234,7 +234,10 @@ windrv_unload(vm_offset_t img)
 
 	free(drv->driver_extension, M_NDIS_WINDRV);
 	RtlFreeUnicodeString(&drv->driver_name);
+	free(drv->driver_start, M_DEVBUF);
 	free(drv, M_NDIS_WINDRV);
+	free(r->windrv_devlist->name, M_DEVBUF);
+	free(r->windrv_devlist, M_DEVBUF);
 	free(r, M_NDIS_WINDRV);		/* Free our DB handle */
 
 	return (0);

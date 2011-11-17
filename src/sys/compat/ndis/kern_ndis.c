@@ -155,34 +155,34 @@ ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 		    l->vendor == 0 || l->device == 0 || l->name == NULL)
 			return (EINVAL);
 
-		image = malloc(l->len, M_NDIS_KERN, M_NOWAIT|M_ZERO);
+		image = malloc(l->len, M_DEVBUF, M_NOWAIT|M_ZERO);
 		if (image == NULL)
 			return (ENOMEM);
 
 		ret = copyin(l->img, image, l->len);
 		if (ret) {
-			free(image, M_NDIS_KERN);
+			free(image, M_DEVBUF);
 			return (ret);
 		}
 
-		name = malloc(l->namelen, M_NDIS_KERN, M_NOWAIT|M_ZERO);
+		name = malloc(l->namelen, M_DEVBUF, M_NOWAIT|M_ZERO);
 		if (name == NULL) {
-			free(image, M_NDIS_KERN);
+			free(image, M_DEVBUF);
 			return (ENOMEM);
 		}
 
 		ret = copyin(l->name, name, l->namelen);
 		if (ret) {
-			free(name, M_NDIS_KERN);
-			free(image, M_NDIS_KERN);
+			free(name, M_DEVBUF);
+			free(image, M_DEVBUF);
 			return (ret);
 		}
 
-		devlist = malloc(sizeof(struct ndis_device_type), M_NDIS_KERN,
+		devlist = malloc(sizeof(struct ndis_device_type), M_DEVBUF,
 		    M_NOWAIT|M_ZERO);
 		if (devlist == NULL) {
-			free(name, M_NDIS_KERN);
-			free(image, M_NDIS_KERN);
+			free(name, M_DEVBUF);
+			free(image, M_DEVBUF);
 			return (ENOMEM);
 		}
 		devlist->vendor = l->vendor;
