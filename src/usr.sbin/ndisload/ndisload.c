@@ -26,23 +26,14 @@
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <sys/queue.h>
-#include <sys/socket.h>
-#include <sys/mman.h>
-#include <net/if.h>
 #include <stdlib.h>
-#include <stddef.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <libgen.h>
 #include <err.h>
 #include <fcntl.h>
-#include <ctype.h>
 
 #include "pe_var.h"
 #include "loader.h"
