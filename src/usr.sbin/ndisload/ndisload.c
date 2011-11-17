@@ -140,6 +140,7 @@ load_file(char *filename, ndis_load_driver_args_t *driver)
 	FILE *fp;
 	size_t size;
 	void *image = NULL;
+	int ret = 0;
 
 	fp = fopen(filename, "r");
 	if (fp == NULL)
@@ -151,27 +152,28 @@ load_file(char *filename, ndis_load_driver_args_t *driver)
 	fread(image, size, 1, fp);
 	fclose(fp);
 
-	if (insert_padding(&image, &size)) {
+	ret = insert_padding(&image, &size);
+	if (ret) {
 		fprintf(stderr, "section relocation failed\n");
-		return (EINVAL);
+	} else {
+		driver->img = image;
+		driver->len = size;
 	}
-	driver->img = image;
-	driver->len = size;
-	return (0);
+	return (ret);
 }
 
 static void
 load_driver(char *filename, ndis_load_driver_args_t *driver)
 {
-	int fd, error;
+	int fd, ret;
 
 	if (load_file(filename, driver))
 		err(-1, "failed to load file");
 	fd = open("/dev/ndis", O_RDONLY);
 	if (fd < 0)
 		err(-1, "ndis module not loaded");
-	error = ioctl(fd, NDIS_LOAD_DRIVER, driver);
-	if (error < 0)
+	ret = ioctl(fd, NDIS_LOAD_DRIVER, driver);
+	if (ret < 0)
 		err(-1, "loading driver failed");
 	close(fd);
 }
