@@ -51,34 +51,119 @@ static void
 usage(void)
 {
 	fprintf(stderr, "Usage: ndisload -p -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
-	fprintf(stderr, "Usage: ndisload -P -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
-	fprintf(stderr, "Usage: ndisload -u -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
+	fprintf(stderr, "       ndisload -P -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
+	fprintf(stderr, "       ndisload -u -s <sysfile> -n <devicedescr> -v <vendorid> -d <deviceid> [-f <firmfile>]\n");
 
 	exit(1);
+}
+
+/*
+ * Sections within Windows PE files are defined using virtual
+ * and physical address offsets and virtual and physical sizes.
+ * The physical values define how the section data is stored in
+ * the executable file while the virtual values describe how the
+ * sections will look once loaded into memory. It happens that
+ * the linker in the Microsoft(r) DDK will tend to generate
+ * binaries where the virtual and physical values are identical,
+ * which means in most cases we can just transfer the file
+ * directly to memory without any fixups. This is not always
+ * the case though, so we have to be prepared to handle files
+ * where the in-memory section layout differs from the disk file
+ * section layout.
+ *
+ * There are two kinds of variations that can occur: the relative
+ * virtual address of the section might be different from the
+ * physical file offset, and the virtual section size might be
+ * different from the physical size (for example, the physical
+ * size of the .data section might be 1024 bytes, but the virtual
+ * size might be 1384 bytes, indicating that the data section should
+ * actually use up 1384 bytes in RAM and be padded with zeros). What we
+ * do is read the original file into memory and then make an in-memory
+ * copy with all of the sections relocated, re-sized and zero padded
+ * according to the virtual values specified in the section headers.
+ * We then emit the fixed up image file for use by the if_ndis driver.
+ * This way, we don't have to do the fixups inside the kernel.
+ */
+
+#define	ROUND_DOWN(n, align)	(((uintptr_t)n) & ~((align) - 1l))
+#define	ROUND_UP(n, align)	ROUND_DOWN(((uintptr_t)n) + (align) - 1l, \
+				(align))
+static int
+insert_padding(void **imgbase, size_t *imglen)
+{
+	struct image_section_header *sect_hdr;
+	struct image_optional_header *opt_hdr;
+	int i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
+	uint8_t *newimg, *tmp;
+
+	newimg = malloc(*imglen);
+	if (newimg == NULL)
+		return (ENOMEM);
+
+	bcopy(*imgbase, newimg, *imglen);
+	curlen = *imglen;
+
+	if (pe_validate_header((vm_offset_t)newimg))
+		return (EINVAL);
+	sections = pe_numsections((vm_offset_t)newimg);
+	pe_get_optional_header((vm_offset_t)newimg, &opt_hdr);
+	pe_get_section_header((vm_offset_t)newimg, &sect_hdr);
+
+	for (i = 0; i < sections; i++) {
+		oldraddr = sect_hdr->pointer_to_raw_data;
+		oldrlen = sect_hdr->size_of_raw_data;
+		sect_hdr->pointer_to_raw_data = sect_hdr->virtual_address;
+		offaccum += ROUND_UP(sect_hdr->virtual_address - oldraddr,
+		    opt_hdr->file_aligment);
+		offaccum += ROUND_UP(sect_hdr->misc.virtual_size,
+		    opt_hdr->file_aligment) -
+		    ROUND_UP(sect_hdr->size_of_raw_data,
+		    opt_hdr->file_aligment);
+		tmp = realloc(newimg, *imglen + offaccum);
+		if (tmp == NULL) {
+			free(newimg);
+			return (ENOMEM);
+		}
+		newimg = tmp;
+		pe_get_section_header((vm_offset_t)newimg, &sect_hdr);
+		sect_hdr += i;
+		bzero(newimg + sect_hdr->pointer_to_raw_data,
+		    ROUND_UP(sect_hdr->misc.virtual_size,
+		    opt_hdr->file_aligment));
+		bcopy((uint8_t *)(*imgbase) + oldraddr,
+		    newimg + sect_hdr->pointer_to_raw_data, oldrlen);
+		sect_hdr++;
+	}
+
+	free(*imgbase);
+
+	*imgbase = newimg;
+	*imglen += offaccum;
+
+	return (0);
 }
 
 static int
 load_file(char *filename, ndis_load_driver_args_t *driver)
 {
-	int file;
+	FILE *fp;
 	size_t size;
 	void *image = NULL;
-	struct stat sb;
 
-	file = open(filename, O_RDONLY, 0);
-	if (file < 0)
+	fp = fopen(filename, "r");
+	if (fp == NULL)
 		err(-1, "open(%s)", filename);
-	if (fstat(file, &sb) < 0) {
-		close(file);
-		err(-1, "fstat(%s)", filename);
-	}
-	size = sb.st_size;
-	image = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file, 0);
-	if (image == MAP_FAILED) {
-		close(file);
-		err(-1, "mmap(%s)", filename);
-	}
+	fseek(fp, 0L, SEEK_END);
+	size = ftell(fp);
+	rewind(fp);
+	image = calloc(size, 1);
+	fread(image, size, 1, fp);
+	fclose(fp);
 
+	if (insert_padding(&image, &size)) {
+		fprintf(stderr, "section relocation failed\n");
+		return (EINVAL);
+	}
 	driver->img = image;
 	driver->len = size;
 	return (0);

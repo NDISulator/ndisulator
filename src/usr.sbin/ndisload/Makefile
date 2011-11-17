@@ -4,6 +4,7 @@
 
 PROG=	ndisload
 SRCS=	ndisload.c
+SRCS+=	subr_pe.c
 
 MAN=	ndisload.8
 
