@@ -44,7 +44,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/conf.h>
-#include <sys/ioccom.h>
 
 #include <sys/kernel.h>
 #include <sys/module.h>
@@ -62,7 +61,6 @@ __FBSDID("$FreeBSD$");
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
 
-#include "loader.h"
 #include "pe_var.h"
 #include "resource_var.h"
 #include "ntoskrnl_var.h"
@@ -70,16 +68,6 @@ __FBSDID("$FreeBSD$");
 #include "hal_var.h"
 #include "usbd_var.h"
 #include "if_ndisvar.h"
-
-static d_ioctl_t ndisload_ioctl;
-
-static struct cdev *ndis_dev;
-
-static struct cdevsw ndis_cdevsw = {
-	.d_version = D_VERSION,
-	.d_ioctl = ndisload_ioctl,
-	.d_name = "ndis",
-};
 
 #ifdef NDIS_DEBUG
 int ndis_debug = 0;
@@ -121,87 +109,6 @@ static struct nd_head ndis_devhead;
 
 MALLOC_DEFINE(M_NDIS_KERN, "ndis_kern", "ndis_kern buffers");
 
-/* ARGSUSED */
-static int
-ndisload_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
-    int flags __unused, struct thread *td __unused)
-{
-	int ret;
-	ndis_load_driver_args_t *l;
-	ndis_unload_driver_args_t *u;
-	enum ndis_bus_type bustype;
-	struct ndis_device_type *devlist;
-	void *image;
-	char *name;
-
-	switch (cmd) {
-	case NDIS_LOAD_DRIVER:
-		l = (ndis_load_driver_args_t *)data;
-		switch (l->bustype) {
-		case 'p':
-			bustype = NDIS_PCIBUS;
-			break;
-		case 'P':
-			bustype = NDIS_PCMCIABUS;
-			break;
-		case 'u':
-			bustype = NDIS_PNPBUS;
-			break;
-		default:
-			return (EINVAL);
-			break;
-		}
-		if (l->img == NULL || l->len == 0 || l->namelen == 0 ||
-		    l->vendor == 0 || l->device == 0 || l->name == NULL)
-			return (EINVAL);
-
-		image = malloc(l->len, M_DEVBUF, M_NOWAIT|M_ZERO);
-		if (image == NULL)
-			return (ENOMEM);
-
-		ret = copyin(l->img, image, l->len);
-		if (ret) {
-			free(image, M_DEVBUF);
-			return (ret);
-		}
-
-		name = malloc(l->namelen, M_DEVBUF, M_NOWAIT|M_ZERO);
-		if (name == NULL) {
-			free(image, M_DEVBUF);
-			return (ENOMEM);
-		}
-
-		ret = copyin(l->name, name, l->namelen);
-		if (ret) {
-			free(name, M_DEVBUF);
-			free(image, M_DEVBUF);
-			return (ret);
-		}
-
-		devlist = malloc(sizeof(struct ndis_device_type), M_DEVBUF,
-		    M_NOWAIT|M_ZERO);
-		if (devlist == NULL) {
-			free(name, M_DEVBUF);
-			free(image, M_DEVBUF);
-			return (ENOMEM);
-		}
-		devlist->vendor = l->vendor;
-		devlist->device = l->device;
-		devlist->name = name;
-		ret = windrv_load((vm_offset_t)image, l->len,
-		    bustype, devlist, NULL);
-		break;
-	case NDIS_UNLOAD_DRIVER:
-		u = (ndis_unload_driver_args_t *)data;
-		ret = windrv_unload((vm_offset_t)u->img);
-		break;
-	default:
-		ret = EINVAL;
-		break;
-	}
-	return (ret);
-}
-
 /*
  * This allows us to export our symbols to other modules.
  * Note that we call ourselves 'ndisapi' to avoid a namespace
@@ -235,13 +142,10 @@ ndis_modevent(module_t mod, int cmd, void *arg)
 		windrv_wrap_table(kernndis_functbl);
 
 		TAILQ_INIT(&ndis_devhead);
-		ndis_dev = make_dev_credf(0, &ndis_cdevsw, 0,
-		    NULL, UID_ROOT, GID_WHEEL, 0600, "ndis");
 		break;
 	case MOD_SHUTDOWN:
 		break;
 	case MOD_UNLOAD:
-		destroy_dev(ndis_dev);
 		usbd_libfini();
 		ndis_libfini();
 		windrv_libfini();

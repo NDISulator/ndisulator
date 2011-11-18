@@ -43,6 +43,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/mutex.h>
 #include <sys/module.h>
 #include <sys/conf.h>
+#include <sys/ioccom.h>
 #include <sys/mbuf.h>
 #include <sys/bus.h>
 #include <sys/proc.h>
@@ -61,6 +62,17 @@ __FBSDID("$FreeBSD$");
 #include "ndis_var.h"
 #include "hal_var.h"
 #include "usbd_var.h"
+#include "loader.h"
+
+static d_ioctl_t windrv_ioctl;
+
+static struct cdev *ndis_dev;
+
+static struct cdevsw ndis_cdevsw = {
+	.d_version = D_VERSION,
+	.d_ioctl = windrv_ioctl,
+	.d_name = "ndis",
+};
 
 static struct mtx drvdb_mtx;
 static STAILQ_HEAD(drvdb, drvdb_ent) drvdb_head;
@@ -78,6 +90,8 @@ windrv_libinit(void)
 	STAILQ_INIT(&drvdb_head);
 	mtx_init(&drvdb_mtx, "drvdb_mtx", NULL, MTX_DEF);
 
+	ndis_dev = make_dev_credf(0, &ndis_cdevsw, 0, NULL,
+	    UID_ROOT, GID_WHEEL, 0600, "ndis");
 	/*
 	 * PCI and pccard devices don't need to use IRPs to
 	 * interact with their bus drivers (usually), so our
@@ -95,6 +109,8 @@ void
 windrv_libfini(void)
 {
 	struct drvdb_ent *d;
+
+	destroy_dev(ndis_dev);
 
 	mtx_lock(&drvdb_mtx);
 	while (STAILQ_FIRST(&drvdb_head) != NULL) {
@@ -170,7 +186,7 @@ windrv_match(matchfuncptr matchfunc, void *ctx)
  * Remove a driver_object from our datatabase and destroy it. Throw
  * away any custom driver extension info that may have been added.
  */
-int
+static int
 windrv_unload(vm_offset_t img)
 {
 	struct drvdb_ent *db, *r = NULL;
@@ -267,7 +283,7 @@ patch_user_shared_data_address(vm_offset_t img, size_t len)
  * Loader routine for actual Windows driver modules, ultimately
  * calls the driver's DriverEntry() routine.
  */
-int
+static int
 windrv_load(vm_offset_t img, size_t len,
     uint32_t bustype, void *devlist, void *regvals)
 {
@@ -370,6 +386,87 @@ skipreloc:
 	mtx_unlock(&drvdb_mtx);
 
 	return (0);
+}
+
+/* ARGSUSED */
+static int
+windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
+    int flags __unused, struct thread *td __unused)
+{
+	int ret;
+	ndis_load_driver_args_t *l;
+	ndis_unload_driver_args_t *u;
+	enum ndis_bus_type bustype;
+	struct ndis_device_type *devlist;
+	void *image;
+	char *name;
+
+	switch (cmd) {
+	case NDIS_LOAD_DRIVER:
+		l = (ndis_load_driver_args_t *)data;
+		switch (l->bustype) {
+		case 'p':
+			bustype = NDIS_PCIBUS;
+			break;
+		case 'P':
+			bustype = NDIS_PCMCIABUS;
+			break;
+		case 'u':
+			bustype = NDIS_PNPBUS;
+			break;
+		default:
+			return (EINVAL);
+			break;
+		}
+		if (l->img == NULL || l->len == 0 || l->namelen == 0 ||
+		    l->vendor == 0 || l->device == 0 || l->name == NULL)
+			return (EINVAL);
+
+		image = malloc(l->len, M_DEVBUF, M_NOWAIT|M_ZERO);
+		if (image == NULL)
+			return (ENOMEM);
+
+		ret = copyin(l->img, image, l->len);
+		if (ret) {
+			free(image, M_DEVBUF);
+			return (ret);
+		}
+
+		name = malloc(l->namelen, M_DEVBUF, M_NOWAIT|M_ZERO);
+		if (name == NULL) {
+			free(image, M_DEVBUF);
+			return (ENOMEM);
+		}
+
+		ret = copyin(l->name, name, l->namelen);
+		if (ret) {
+			free(name, M_DEVBUF);
+			free(image, M_DEVBUF);
+			return (ret);
+		}
+
+		devlist = malloc(sizeof(struct ndis_device_type), M_DEVBUF,
+		    M_NOWAIT|M_ZERO);
+		if (devlist == NULL) {
+			free(name, M_DEVBUF);
+			free(image, M_DEVBUF);
+			return (ENOMEM);
+		}
+		devlist->vendor = l->vendor;
+		devlist->device = l->device;
+		devlist->name = name;
+		ret = windrv_load((vm_offset_t)image, l->len,
+		    bustype, devlist, NULL);
+		break;
+	case NDIS_UNLOAD_DRIVER:
+		u = (ndis_unload_driver_args_t *)data;
+		ret = windrv_unload((vm_offset_t)u->img);
+		break;
+	default:
+		ret = EINVAL;
+		break;
+	}
+	return (ret);
 }
 
 /*
