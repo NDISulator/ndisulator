@@ -681,6 +681,8 @@ IoCreateDevice(struct driver_object *drv, uint32_t devextlen,
 {
 	struct device_object *dev;
 
+	TRACE(NDBG_IO, "drv %p devtype %d\n", drv, devtype);
+
 	dev = ExAllocatePool(sizeof(struct device_object));
 	if (dev == NULL)
 		return (NDIS_STATUS_RESOURCES);
