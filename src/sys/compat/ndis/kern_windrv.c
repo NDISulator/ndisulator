@@ -250,10 +250,10 @@ windrv_unload(vm_offset_t img)
 
 	free(drv->driver_extension, M_NDIS_WINDRV);
 	RtlFreeUnicodeString(&drv->driver_name);
-	free(drv->driver_start, M_DEVBUF);
+	free(drv->driver_start, M_NDIS_WINDRV);
 	free(drv, M_NDIS_WINDRV);
-	free(r->windrv_devlist->name, M_DEVBUF);
-	free(r->windrv_devlist, M_DEVBUF);
+	free(r->windrv_devlist->name, M_NDIS_WINDRV);
+	free(r->windrv_devlist, M_NDIS_WINDRV);
 	free(r, M_NDIS_WINDRV);		/* Free our DB handle */
 
 	return (0);
@@ -422,34 +422,34 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 		    l->vendor == 0 || l->device == 0 || l->name == NULL)
 			return (EINVAL);
 
-		image = malloc(l->len, M_DEVBUF, M_NOWAIT|M_ZERO);
+		image = malloc(l->len, M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 		if (image == NULL)
 			return (ENOMEM);
 
 		ret = copyin(l->img, image, l->len);
 		if (ret) {
-			free(image, M_DEVBUF);
+			free(image, M_NDIS_WINDRV);
 			return (ret);
 		}
 
-		name = malloc(l->namelen, M_DEVBUF, M_NOWAIT|M_ZERO);
+		name = malloc(l->namelen, M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 		if (name == NULL) {
-			free(image, M_DEVBUF);
+			free(image, M_NDIS_WINDRV);
 			return (ENOMEM);
 		}
 
 		ret = copyin(l->name, name, l->namelen);
 		if (ret) {
-			free(name, M_DEVBUF);
-			free(image, M_DEVBUF);
+			free(name, M_NDIS_WINDRV);
+			free(image, M_NDIS_WINDRV);
 			return (ret);
 		}
 
-		devlist = malloc(sizeof(struct ndis_device_type), M_DEVBUF,
+		devlist = malloc(sizeof(struct ndis_device_type), M_NDIS_WINDRV,
 		    M_NOWAIT|M_ZERO);
 		if (devlist == NULL) {
-			free(name, M_DEVBUF);
-			free(image, M_DEVBUF);
+			free(name, M_NDIS_WINDRV);
+			free(image, M_NDIS_WINDRV);
 			return (ENOMEM);
 		}
 		devlist->vendor = l->vendor;
