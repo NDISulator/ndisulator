@@ -3,11 +3,11 @@ How to use:
 Make sure that you use recent FreeBSD CURRENT kernel and world.
 FreeBSD source tree must be available in /usr/src.
 
-To build and install new NDISulator you will need to run:
+To build new NDISulator you will need to run:
 
 # make
 
-To build NDISulator files. And to install NDISulator files, run as root:
+To install NDISulator files, run as root:
 
 # make install
 
