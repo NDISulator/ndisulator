@@ -2554,12 +2554,8 @@ static size_t
 RtlCompareMemory(const void *s1, const void *s2, size_t len)
 {
 	size_t i;
-	char *m1, *m2;
 
-	m1 = (char *)s1;
-	m2 = (char *)s2;
-
-	for (i = 0; i < len && m1[i] == m2[i]; i++);
+	for (i = 0; (i < len) && (((const char*)s1)[i] == ((const char*)s2)[i]); i++);
 	return (i);
 }
 
