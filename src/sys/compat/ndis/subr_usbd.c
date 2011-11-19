@@ -641,6 +641,9 @@ usbd_setup_endpoint(struct irp *ip, uint8_t ifidx,
 	}
 	xfer = ne->ne_xfer[0];
 	usbd_xfer_set_priv(xfer, ne);
+#define	NDISUSB_NO_TIMEOUT	0
+#define	NDISUSB_INTR_TIMEOUT	1000
+#define	NDISUSB_TX_TIMEOUT	10000
 	if (UE_GET_DIR(ep->bEndpointAddress) == UE_DIR_IN)
 		usbd_xfer_set_timeout(xfer, NDISUSB_NO_TIMEOUT);
 	else {

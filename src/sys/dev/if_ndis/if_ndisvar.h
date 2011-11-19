@@ -91,10 +91,6 @@ struct ndis_vap {
 
 #define	NDISUSB_CONFIG_NO			0
 #define	NDISUSB_IFACE_INDEX			0
-/* XXX at USB2 there's no USBD_NO_TIMEOUT macro anymore  */
-#define	NDISUSB_NO_TIMEOUT			0
-#define	NDISUSB_INTR_TIMEOUT			1000
-#define	NDISUSB_TX_TIMEOUT			10000
 
 struct ndisusb_ep {
 	struct usb_xfer		*ne_xfer[1];
