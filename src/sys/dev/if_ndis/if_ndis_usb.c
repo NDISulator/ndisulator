@@ -69,7 +69,7 @@ static int	ndis_devcompare_usb(enum ndis_bus_type,
 static int	ndis_probe_usb(device_t);
 static struct resource_list *ndis_get_resource_list(device_t, device_t);
 
-static device_method_t ndis_methods[] = {
+static device_method_t ndis_usb_methods[] = {
 	DEVMETHOD(device_probe,		ndis_probe_usb),
 	DEVMETHOD(device_attach,	ndis_attach_usb),
 	DEVMETHOD(device_detach,	ndis_detach_usb),
@@ -80,15 +80,15 @@ static device_method_t ndis_methods[] = {
 	{ 0, 0 }
 };
 
-static driver_t ndis_driver = {
+static driver_t ndis_usb_driver = {
 	"ndis",
-	ndis_methods,
+	ndis_usb_methods,
 	sizeof(struct ndis_softc)
 };
 
 static devclass_t ndis_devclass;
 
-DRIVER_MODULE(ndis, uhub, ndis_driver, ndis_devclass, ndisdrv_modevent, 0);
+DRIVER_MODULE(ndis, uhub, ndis_usb_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int
 ndis_devcompare_usb(enum ndis_bus_type bustype,
