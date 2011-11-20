@@ -116,6 +116,13 @@ windrv_libfini(void)
 	while (STAILQ_FIRST(&drvdb_head) != NULL) {
 		d = STAILQ_FIRST(&drvdb_head);
 		STAILQ_REMOVE_HEAD(&drvdb_head, link);
+		if (d->windrv_devlist) {
+			free(d->windrv_object->driver_extension, M_NDIS_WINDRV);
+			free(d->windrv_object->driver_start, M_NDIS_WINDRV);
+			free(d->windrv_object, M_NDIS_WINDRV);
+			free(d->windrv_devlist->name, M_NDIS_WINDRV);
+			free(d->windrv_devlist, M_NDIS_WINDRV);
+		}
 		free(d, M_NDIS_WINDRV);
 	}
 	mtx_unlock(&drvdb_mtx);
