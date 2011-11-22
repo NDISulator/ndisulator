@@ -74,7 +74,7 @@ static device_method_t ndis_methods[] = {
 	DEVMETHOD(device_suspend,	ndis_suspend),
 	DEVMETHOD(device_resume,	ndis_resume),
 	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
-	{ 0, 0 }
+	DEVMETHOD_END
 };
 
 static driver_t ndis_driver = {

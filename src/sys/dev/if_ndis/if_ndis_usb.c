@@ -74,10 +74,8 @@ static device_method_t ndis_methods[] = {
 	DEVMETHOD(device_attach,	ndis_attach_usb),
 	DEVMETHOD(device_detach,	ndis_detach_usb),
 	DEVMETHOD(device_shutdown,	ndis_shutdown),
-	DEVMETHOD(bus_print_child,	bus_generic_print_child),
-	DEVMETHOD(bus_driver_added,	bus_generic_driver_added),
 	DEVMETHOD(bus_get_resource_list, ndis_get_resource_list),
-	{ 0, 0 }
+	DEVMETHOD_END
 };
 
 static driver_t ndis_driver = {
