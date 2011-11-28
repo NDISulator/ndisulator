@@ -89,8 +89,6 @@ static driver_t ndis_pccard_driver = {
 	sizeof(struct ndis_softc)
 };
 
-static devclass_t ndis_devclass;
-
 DRIVER_MODULE(ndis, pccard, ndis_pccard_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int

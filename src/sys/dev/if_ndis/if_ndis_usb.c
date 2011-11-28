@@ -84,8 +84,6 @@ static driver_t ndis_usb_driver = {
 	sizeof(struct ndis_softc)
 };
 
-static devclass_t ndis_devclass;
-
 DRIVER_MODULE(ndis, uhub, ndis_usb_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int

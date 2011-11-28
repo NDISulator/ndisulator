@@ -83,8 +83,6 @@ static driver_t ndis_pci_driver = {
 	sizeof(struct ndis_softc)
 };
 
-static devclass_t ndis_devclass;
-
 DRIVER_MODULE(ndis, pci, ndis_pci_driver, ndis_devclass, ndisdrv_modevent, 0);
 
 static int

@@ -37,6 +37,8 @@
 
 #include <net80211/ieee80211_var.h>
 
+extern devclass_t ndis_devclass;
+
 int	ndis_attach(device_t);
 int	ndis_detach(device_t);
 int	ndis_resume(device_t);

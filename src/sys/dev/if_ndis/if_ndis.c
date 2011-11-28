@@ -72,6 +72,8 @@ __FBSDID("$FreeBSD$");
 #include "if_ndisvar.h"
 #include <net80211/ieee80211_regdomain.h>
 
+devclass_t ndis_devclass;
+
 /* 0 - 30 dBm to mW conversion table */
 static const uint16_t dBm2mW[] = {
 	1, 1, 1, 1, 2, 2, 2, 2, 3, 3,
