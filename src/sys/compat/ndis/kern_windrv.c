@@ -464,6 +464,12 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 		devlist->name = name;
 		ret = windrv_load((vm_offset_t)image, l->len,
 		    bustype, devlist, NULL);
+		if (ret) {
+			free(name, M_NDIS_WINDRV);
+			free(image, M_NDIS_WINDRV);
+			free(devlist, M_NDIS_WINDRV);
+			return (ret);
+		}
 		break;
 	case NDIS_UNLOAD_DRIVER:
 		u = (ndis_unload_driver_args_t *)data;
