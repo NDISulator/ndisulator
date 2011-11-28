@@ -64,6 +64,11 @@ __FBSDID("$FreeBSD$");
 #include "usbd_var.h"
 #include "loader.h"
 
+extern devclass_t ndis_devclass;
+extern driver_t ndis_pccard_driver;
+extern driver_t ndis_pci_driver;
+extern driver_t ndis_usb_driver;
+
 static d_ioctl_t windrv_ioctl;
 
 static struct cdev *ndis_dev;
@@ -407,6 +412,8 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 	struct ndis_device_type *devlist;
 	void *image;
 	char *name;
+	devclass_t *dcp = NULL;
+	driver_t *driver = NULL;
 
 	switch (cmd) {
 	case NDIS_LOAD_DRIVER:
@@ -414,12 +421,15 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 		switch (l->bustype) {
 		case 'p':
 			bustype = NDIS_PCIBUS;
+			driver = &ndis_pci_driver;
 			break;
 		case 'P':
 			bustype = NDIS_PCMCIABUS;
+			driver = &ndis_pccard_driver;
 			break;
 		case 'u':
 			bustype = NDIS_PNPBUS;
+			driver = &ndis_usb_driver;
 			break;
 		default:
 			return (EINVAL);
@@ -470,6 +480,7 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 			free(devlist, M_NDIS_WINDRV);
 			return (ret);
 		}
+		ret = devclass_add_driver(ndis_devclass, driver, __INT_MAX, dcp);
 		break;
 	case NDIS_UNLOAD_DRIVER:
 		u = (ndis_unload_driver_args_t *)data;

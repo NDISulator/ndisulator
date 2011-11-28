@@ -77,7 +77,7 @@ static device_method_t ndis_pci_methods[] = {
 	DEVMETHOD_END
 };
 
-static driver_t ndis_pci_driver = {
+driver_t ndis_pci_driver = {
 	"ndis",
 	ndis_pci_methods,
 	sizeof(struct ndis_softc)

@@ -78,7 +78,7 @@ static device_method_t ndis_usb_methods[] = {
 	DEVMETHOD_END
 };
 
-static driver_t ndis_usb_driver = {
+driver_t ndis_usb_driver = {
 	"ndis",
 	ndis_usb_methods,
 	sizeof(struct ndis_softc)

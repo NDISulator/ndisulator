@@ -83,7 +83,7 @@ static device_method_t ndis_pccard_methods[] = {
 	DEVMETHOD_END
 };
 
-static driver_t ndis_pccard_driver = {
+driver_t ndis_pccard_driver = {
 	"ndis",
 	ndis_pccard_methods,
 	sizeof(struct ndis_softc)
