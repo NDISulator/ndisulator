@@ -158,7 +158,7 @@ ndis_attach_pccard(device_t dev)
 		return (ENXIO);
 	}
 	sc->ndis_rescnt++;
-	resource_list_add(&sc->ndis_rl, SYS_RES_IOPORT, rid,
+	resource_list_add(&sc->ndis_rl, SYS_RES_IOPORT, sc->ndis_io_rid,
 	    rman_get_start(sc->ndis_res_io), rman_get_end(sc->ndis_res_io),
 	    rman_get_size(sc->ndis_res_io));
 
