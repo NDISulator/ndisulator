@@ -69,10 +69,6 @@ TAILQ_HEAD(nch, ndis_cfglist);
 #define	NDIS_80211(sc)		\
 	(sc->ndis_physical_medium == NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN)
 
-#define	NDIS_TXPKTS	16
-#define	NDIS_INC(x)		\
-	(x)->ndis_txidx = ((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
-
 #define	NDIS_EVENTS	4
 #define	NDIS_EVTINC(x)	(x) = ((x) + 1) % NDIS_EVENTS
 
