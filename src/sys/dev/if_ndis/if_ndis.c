@@ -695,7 +695,7 @@ ndis_attach(device_t dev)
 	}
 
 	if (!NDIS_SERIALIZED(sc->ndis_block))
-		sc->ndis_maxpkts = NDIS_TXPKTS;
+		sc->ndis_maxpkts = 256; // FIXME sysctl
 
 	sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 
@@ -1750,7 +1750,15 @@ ndis_start(struct ifnet *ifp)
 			p->private.flags = NDIS_PROTOCOL_ID_TCP_IP;
 		}
 
-		NDIS_INC(sc);
+#define	NDIS_NEXT_TXIDX(x)	((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
+		/*
+		 * Don't reuse txarray element which points to the packet
+		 * which is not yet processed by miniport driver.
+		 */
+		if (sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)])
+			break;
+
+		sc->ndis_txidx = NDIS_NEXT_TXIDX(sc);
 		sc->ndis_txpending--;
 
 		pcnt++;
