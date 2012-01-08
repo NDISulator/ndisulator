@@ -119,9 +119,9 @@ static funcptr ndis_ticktask_wrap;
 static funcptr ndis_txeof_wrap;
 
 static struct ieee80211vap *ndis_vap_create(struct ieee80211com *,
-		    const char name[IFNAMSIZ], int unit, int opmode,
-		    int flags, const uint8_t bssid[IEEE80211_ADDR_LEN],
-		    const uint8_t mac[IEEE80211_ADDR_LEN]);
+		    const char [IFNAMSIZ], int, enum ieee80211_opmode, int,
+		    const uint8_t [IEEE80211_ADDR_LEN],
+		    const uint8_t [IEEE80211_ADDR_LEN]);
 static void	ndis_vap_delete(struct ieee80211vap *);
 static int	ndis_reset_vap(struct ieee80211vap *, u_long);
 static int	ndis_auth_mode(uint32_t);
@@ -1009,7 +1009,8 @@ fail:
 
 static struct ieee80211vap *
 ndis_vap_create(struct ieee80211com *ic, const char name[IFNAMSIZ], int unit,
-    int opmode, int flags, const uint8_t bssid[IEEE80211_ADDR_LEN],
+    enum ieee80211_opmode opmode, int flags,
+    const uint8_t bssid[IEEE80211_ADDR_LEN],
     const uint8_t mac[IEEE80211_ADDR_LEN])
 {
 	struct ndis_softc *sc = ic->ic_ifp->if_softc;
