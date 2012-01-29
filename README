@@ -1,6 +1,6 @@
 How to use:
 
-Make sure that you use recent FreeBSD CURRENT kernel and world.
+Make sure that you use recent FreeBSD 9-STABLE kernel and world.
 FreeBSD source tree must be available in /usr/src.
 
 To build and install new NDISulator you will need to login as root and run:
