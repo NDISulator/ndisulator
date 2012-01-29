@@ -37,15 +37,6 @@
 
 extern struct image_patch_table hal_functbl[];
 
-#ifdef __i386__
-#define	X86_BUS_SPACE_IO	I386_BUS_SPACE_IO
-#define	X86_BUS_SPACE_MEM	I386_BUS_SPACE_MEM
-#endif
-#ifdef __amd64__
-#define	X86_BUS_SPACE_IO	AMD64_BUS_SPACE_IO
-#define	X86_BUS_SPACE_MEM	AMD64_BUS_SPACE_MEM
-#endif
-
 void	hal_libfini(void);
 void	hal_libinit(void);
 uint8_t	KeGetCurrentIrql(void);
