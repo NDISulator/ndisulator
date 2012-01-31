@@ -412,8 +412,8 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 	struct ndis_device_type *devlist;
 	void *image;
 	char *name;
-	devclass_t *dcp = NULL;
 	driver_t *driver = NULL;
+	devclass_t bus_devclass;
 
 	switch (cmd) {
 	case NDIS_LOAD_DRIVER:
@@ -422,14 +422,17 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 		case 'p':
 			bustype = NDIS_PCIBUS;
 			driver = &ndis_pci_driver;
+			bus_devclass = devclass_find("pci");
 			break;
 		case 'P':
 			bustype = NDIS_PCMCIABUS;
 			driver = &ndis_pccard_driver;
+			bus_devclass = devclass_find("pccard");
 			break;
 		case 'u':
 			bustype = NDIS_PNPBUS;
 			driver = &ndis_usb_driver;
+			bus_devclass = devclass_find("uhub");
 			break;
 		default:
 			return (EINVAL);
@@ -480,7 +483,9 @@ windrv_ioctl(struct cdev *dev __unused, u_long cmd, caddr_t data,
 			free(devlist, M_NDIS_WINDRV);
 			return (ret);
 		}
-		ret = devclass_add_driver(ndis_devclass, driver, __INT_MAX, dcp);
+		mtx_lock(&Giant);
+		ret = devclass_add_driver(bus_devclass, driver, __INT_MAX, &ndis_devclass);
+		mtx_unlock(&Giant);
 		break;
 	case NDIS_UNLOAD_DRIVER:
 		u = (ndis_unload_driver_args_t *)data;
