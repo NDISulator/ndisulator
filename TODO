@@ -1,10 +1,13 @@
+improve/extend ndisload utility:
+ - adding registry entries
+ - unloading drivers
+ - list loaded drivers
+
 tx path may panic kernel
 SMP support is buggy
 PCMCIA support? Does it work for you?
 USB support is broken, additionaly detaching device will panic or deadlock kernel
-It should be possible to load Windows(r) drivers directly - no need to create kernel module via ndisgen(8)
 Auto roaming is broken: if association timeouts we may be in ASSOC state forever - add callout?
-Some vendors publish useless .INF files. NDISulator cannot create device then.
 Suspend/Resume support? Does device still work after suspend/resume?
 Improve and test: wpa_supplicant -Dbsd
 Support 6.X NDIS API
