@@ -1482,7 +1482,15 @@ NdisMSendComplete(struct ndis_miniport_block *block, struct ndis_packet *packet,
 	else
 		ifp->if_oerrors++;
 
-	sc->ndis_tx_timer = 0;
+	/*
+	 * Stop watchdog if there are no pending packets or restart timer if
+	 * there are.
+	 */
+	if (sc->ndis_txpending == sc->ndis_maxpkts)
+		sc->ndis_tx_timer = 0;
+	else
+		sc->ndis_tx_timer = NDIS_PACKET_TX_TIMEOUT;
+
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	NDIS_UNLOCK(sc);
 
@@ -1792,9 +1800,10 @@ ndis_start(struct ifnet *ifp)
 		ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 
 	/*
-	 * Set a timeout in case the chip goes out to lunch.
+	 * Activate a watchdog timer if it was stopped.
 	 */
-	sc->ndis_tx_timer = NDIS_PACKET_TX_TIMEOUT;
+	if(sc->ndis_tx_timer == 0)
+		sc->ndis_tx_timer = NDIS_PACKET_TX_TIMEOUT;
 
 	NDIS_UNLOCK(sc);
 
