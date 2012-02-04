@@ -697,7 +697,7 @@ ndis_attach(device_t dev)
 	}
 
 	if (!NDIS_SERIALIZED(sc->ndis_block))
-		sc->ndis_maxpkts = 256; // FIXME sysctl
+		sc->ndis_maxpkts = 64; // FIXME sysctl
 
 	sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 
