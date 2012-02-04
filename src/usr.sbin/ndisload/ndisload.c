@@ -84,7 +84,7 @@ insert_padding(void **imgbase, size_t *imglen)
 {
 	struct image_section_header *sect_hdr;
 	struct image_optional_header *opt_hdr;
-	int i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
+	int ret, i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
 	uint8_t *newimg, *tmp;
 
 	newimg = malloc(*imglen);
@@ -94,8 +94,8 @@ insert_padding(void **imgbase, size_t *imglen)
 	bcopy(*imgbase, newimg, *imglen);
 	curlen = *imglen;
 
-	if (pe_validate_header((vm_offset_t)newimg))
-		return (EINVAL);
+	if ((ret = pe_validate_header((vm_offset_t)newimg)) < 0)
+		return (ret);
 	sections = pe_numsections((vm_offset_t)newimg);
 	pe_get_optional_header((vm_offset_t)newimg, &opt_hdr);
 	pe_get_section_header((vm_offset_t)newimg, &sect_hdr);
