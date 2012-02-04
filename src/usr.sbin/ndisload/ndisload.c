@@ -84,7 +84,7 @@ insert_padding(void **imgbase, size_t *imglen)
 {
 	struct image_section_header *sect_hdr;
 	struct image_optional_header *opt_hdr;
-	int ret, i = 0, sections, curlen = 0, offaccum = 0, oldraddr, oldrlen;
+	int ret, i, sections, curlen, offaccum = 0, oldraddr, oldrlen;
 	uint8_t *newimg, *tmp;
 
 	newimg = malloc(*imglen);
