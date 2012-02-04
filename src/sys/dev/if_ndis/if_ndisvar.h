@@ -89,6 +89,8 @@ struct ndis_vap {
 
 #define	NDIS_VAP(vap)	((struct ndis_vap *)(vap))
 
+#define	NDIS_PACKET_TX_TIMEOUT			5
+
 #define	NDISUSB_CONFIG_NO			0
 #define	NDISUSB_IFACE_INDEX			0
 

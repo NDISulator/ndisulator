@@ -1794,7 +1794,7 @@ ndis_start(struct ifnet *ifp)
 	/*
 	 * Set a timeout in case the chip goes out to lunch.
 	 */
-	sc->ndis_tx_timer = 5;
+	sc->ndis_tx_timer = NDIS_PACKET_TX_TIMEOUT;
 
 	NDIS_UNLOCK(sc);
 
