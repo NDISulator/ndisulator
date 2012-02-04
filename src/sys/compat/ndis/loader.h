@@ -43,7 +43,20 @@ typedef struct {
 	void		*img;
 } ndis_unload_driver_args_t;
 
+typedef struct {
+	void		*img;
+	char		bustype;
+	uint16_t	vendor;
+	uint16_t	device;
+	uint32_t	subsys;
+	char		*name;
+	size_t		namelen;
+	void		*devlist;
+	void		*regvals;
+} ndis_list_drivers_args_t;
+
 #define NDIS_LOAD_DRIVER	_IOWR('c', 1, ndis_load_driver_args_t)
 #define NDIS_UNLOAD_DRIVER	_IOWR('c', 2, ndis_unload_driver_args_t)
+#define NDIS_LIST_DRIVERS	_IOR('c', 3, ndis_list_drivers_args_t)
 
 #endif /* _LOADER_H_ */
