@@ -141,8 +141,8 @@ load_file(char *filename, ndis_load_driver_args_t *driver)
 {
 	FILE *fp;
 	size_t size;
-	void *image = NULL;
-	int ret = 0;
+	void *image;
+	int ret;
 
 	fp = fopen(filename, "r");
 	if (fp == NULL)
@@ -151,6 +151,8 @@ load_file(char *filename, ndis_load_driver_args_t *driver)
 	size = ftell(fp);
 	rewind(fp);
 	image = calloc(size, 1);
+	if (image == NULL)
+		err(-1, "calloc(%u)", size);
 	fread(image, size, 1, fp);
 	fclose(fp);
 
