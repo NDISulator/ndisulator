@@ -1753,7 +1753,6 @@ ndis_start(struct ifnet *ifp)
 			p->private.flags = NDIS_PROTOCOL_ID_TCP_IP;
 		}
 
-#define	NDIS_NEXT_TXIDX(x)	((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
 		/*
 		 * Don't reuse txarray element which points to the packet
 		 * which is not yet processed by miniport driver.
