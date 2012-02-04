@@ -1491,7 +1491,17 @@ NdisMSendComplete(struct ndis_miniport_block *block, struct ndis_packet *packet,
 	else
 		sc->ndis_tx_timer = NDIS_PACKET_TX_TIMEOUT;
 
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+	/*
+	 * Drop/set "tx hardware queue is full" flag if ndis_txarray can/can't
+	 * fit more packets.
+	 */
+	if (ifp->if_drv_flags & IFF_DRV_OACTIVE &&
+	    !sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)])
+		ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+	if (!ifp->if_drv_flags & IFF_DRV_OACTIVE &&
+	    sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)])
+		ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+
 	NDIS_UNLOCK(sc);
 
 	IoQueueWorkItem(sc->ndis_startitem,
@@ -1712,10 +1722,13 @@ ndis_start(struct ifnet *ifp)
 	while (sc->ndis_txpending) {
 		/*
 		 * Don't reuse txarray element which points to the packet
-		 * which is not yet processed by miniport driver.
+		 * which is not yet processed by miniport driver. Set
+		 * "tx queue is full" flag.
 		 */
-		if (sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)])
+		if (sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)]) {
+			ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 			break;
+		}
 
 		IFQ_DRV_DEQUEUE(&ifp->if_snd, m);
 		if (m == NULL)
