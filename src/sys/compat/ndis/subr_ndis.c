@@ -1628,8 +1628,7 @@ NdisUnchainBufferAtBack(struct ndis_packet *packet, struct mdl **buf)
  * them, and IoAllocateMdl() just grabs them out of the heap.
  */
 static void
-NdisAllocateBufferPool(int32_t *status, void **pool,
-    uint32_t descnum)
+NdisAllocateBufferPool(int32_t *status, void **pool, uint32_t descnum)
 {
 	/*
 	 * The only thing we can really do here is verify that descnum
