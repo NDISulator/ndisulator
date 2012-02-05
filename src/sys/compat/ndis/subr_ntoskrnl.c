@@ -406,6 +406,9 @@ ntoskrnl_libfini(void)
 	ndis_destroy_worker_thread();
 	ntoskrnl_destroy_dpc_thread();
 
+	mtx_destroy(&wq_queue->lock);
+	mtx_destroy(&nq_queue->lock);
+
 	ExFreePool(kq_queue);
 	ExFreePool(nq_queue);
 	ExFreePool(wq_queue);
@@ -413,8 +416,6 @@ ntoskrnl_libfini(void)
 	uma_zdestroy(mdl_zone);
 	uma_zdestroy(iw_zone);
 
-	mtx_destroy(&wq_queue->lock);
-	mtx_destroy(&nq_queue->lock);
 	mtx_destroy(&nt_dispatchlock);
 	mtx_destroy(&nt_interlock);
 #ifdef notdef
