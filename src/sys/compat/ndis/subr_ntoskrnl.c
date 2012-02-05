@@ -2433,22 +2433,25 @@ ntoskrnl_worker_thread(void *arg)
 
 	for (;;) {
 		KeWaitForSingleObject(&wq->proc, 0, 0, TRUE, NULL);
+		mtx_lock_spin(&wq->lock);
 
 		if (wq->exit) {
 			wq->exit = FALSE;
+			mtx_unlock_spin(&wq->lock);
 			break;
 		}
 
 		while (!IsListEmpty(&wq->disp)) {
-			mtx_lock_spin(&wq->lock);
 			l = RemoveHeadList(&wq->disp);
-			mtx_unlock_spin(&wq->lock);
 			iw = CONTAINING_RECORD(l, struct io_workitem, list);
 			InitializeListHead(&iw->list);
 			if (iw->func == NULL)
 				continue;
+			mtx_unlock_spin(&wq->lock);
 			MSCALL2(iw->func, iw->dobj, iw->ctx);
+			mtx_lock_spin(&wq->lock);
 		}
+		mtx_unlock_spin(&wq->lock);
 
 		KeSetEvent(&wq->done, IO_NO_INCREMENT, FALSE);
 	}
