@@ -2492,21 +2492,24 @@ ndis_worker_thread(void *arg)
 
 	for (;;) {
 		KeWaitForSingleObject(&nq->proc, 0, 0, TRUE, NULL);
+		mtx_lock_spin(&nq->lock);
 
 		if (nq->exit) {
 			nq->exit = FALSE;
+			mtx_unlock_spin(&nq->lock);
 			break;
 		}
 
 		while (!IsListEmpty(&nq->disp)) {
-			mtx_lock_spin(&nq->lock);
 			l = RemoveHeadList(&nq->disp);
-			mtx_unlock_spin(&nq->lock);
 			wi = CONTAINING_RECORD(l, struct ndis_work_item, list);
 			if (wi->func == NULL)
 				continue;
+			mtx_unlock_spin(&nq->lock);
 			MSCALL2(wi->func, wi, wi->ctx);
+			mtx_lock_spin(&nq->lock);
 		}
+		mtx_unlock_spin(&nq->lock);
 
 		KeSetEvent(&nq->done, IO_NO_INCREMENT, FALSE);
 	}
