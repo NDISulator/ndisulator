@@ -1699,6 +1699,14 @@ ndis_start(struct ifnet *ifp)
 	p0 = &sc->ndis_txarray[sc->ndis_txidx];
 
 	while (sc->ndis_txpending) {
+#define	NDIS_NEXT_TXIDX(x)	((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
+		/*
+		 * Don't reuse txarray element which points to the packet
+		 * which is not yet processed by miniport driver.
+		 */
+		if (sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)])
+			break;
+
 		IFQ_DRV_DEQUEUE(&ifp->if_snd, m);
 		if (m == NULL)
 			break;
@@ -1749,14 +1757,6 @@ ndis_start(struct ifnet *ifp)
 				csum->u.txflags |= NDIS_TXCSUM_DO_UDP;
 			p->private.flags = NDIS_PROTOCOL_ID_TCP_IP;
 		}
-
-#define	NDIS_NEXT_TXIDX(x)	((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
-		/*
-		 * Don't reuse txarray element which points to the packet
-		 * which is not yet processed by miniport driver.
-		 */
-		if (sc->ndis_txarray[NDIS_NEXT_TXIDX(sc)])
-			break;
 
 		sc->ndis_txidx = NDIS_NEXT_TXIDX(sc);
 		sc->ndis_txpending--;
