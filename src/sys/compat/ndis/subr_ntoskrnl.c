@@ -51,6 +51,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/smp.h>
 #include <sys/sched.h>
 
+#include <machine/_inttypes.h>
 #include <machine/atomic.h>
 #include <machine/bus.h>
 #include <machine/stdarg.h>
@@ -2186,7 +2187,7 @@ IoFreeMdl(struct mdl *m)
 static void *
 MmAllocateContiguousMemory(uint32_t size, uint64_t highest)
 {
-	TRACE(NDBG_MM, "size %u highest %llu\n", size, highest);
+	TRACE(NDBG_MM, "size %u highest %"PRIu64"\n", size, highest);
 	return (ExAllocatePool(roundup(size, PAGE_SIZE)));
 }
 
@@ -2208,8 +2209,8 @@ MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
 {
 	void *ret;
 
-	TRACE(NDBG_MM, "size %u lowest %llu highest %llu boundary %llu"
-	    "type %d\n", size, lowest, highest, boundary, type);
+	TRACE(NDBG_MM, "size %u lowest %"PRIu64" highest %"PRIu64" boundary "
+	    "%"PRIu64" type %d\n", size, lowest, highest, boundary, type);
 	ret = (void *)kmem_alloc_contig(kernel_map, size, M_ZERO|M_NOWAIT,
 	    lowest, highest, PAGE_SIZE, boundary, cnvmct(type));
 	if (ret != NULL)
