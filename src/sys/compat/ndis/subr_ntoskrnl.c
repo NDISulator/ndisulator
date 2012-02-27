@@ -2027,12 +2027,18 @@ KefAcquireSpinLockAtDpcLevel(unsigned long *lock)
 {
 	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0)
 		/* sit and spin */;
+	thread_lock(curthread);
+	sched_prio(curthread, PRI_MIN_KERN);
+	thread_unlock(curthread);
 }
 
 void
 KefReleaseSpinLockFromDpcLevel(unsigned long *lock)
 {
 	atomic_store_rel_int((volatile unsigned int *)lock, 0);
+	thread_lock(curthread);
+	sched_prio(curthread, PRI_MIN_KERN + 20);
+	thread_unlock(curthread);
 }
 
 uint8_t
@@ -2051,12 +2057,18 @@ KeAcquireSpinLockAtDpcLevel(unsigned long *lock)
 {
 	while (atomic_cmpset_acq_int((volatile unsigned int *)lock, 0, 1) == 0)
 		/* sit and spin */;
+	thread_lock(curthread);
+	sched_prio(curthread, PRI_MIN_KERN);
+	thread_unlock(curthread);
 }
 
 void
 KeReleaseSpinLockFromDpcLevel(unsigned long *lock)
 {
 	atomic_store_rel_int((volatile unsigned int *)lock, 0);
+	thread_lock(curthread);
+	sched_prio(curthread, PRI_MIN_KERN + 20);
+	thread_unlock(curthread);
 }
 #endif /* __i386__ */
 
@@ -3408,7 +3420,7 @@ ntoskrnl_dpc_thread(void *arg)
 	 * once scheduled by an ISR.
 	 */
 	thread_lock(curthread);
-	sched_prio(curthread, PRI_MIN_KERN);
+	sched_prio(curthread, PRI_MIN_KERN + 20);
 	thread_unlock(curthread);
 
 	for (;;) {
