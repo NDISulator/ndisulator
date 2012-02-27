@@ -229,10 +229,8 @@ KfRaiseIrql(uint8_t newirql)
 	TRACE(NDBG_HAL, "newirql %u\n", newirql);
 	oldirql = KeGetCurrentIrql();
 	KASSERT(oldirql <= newirql, ("newirql not less"));
-	if (oldirql != DISPATCH_LEVEL) {
-		sched_pin();
+	if (oldirql != DISPATCH_LEVEL)
 		mtx_lock(&disp_lock);
-	}
 	return (oldirql);
 }
 
@@ -245,7 +243,6 @@ KfLowerIrql(uint8_t oldirql)
 
 	KASSERT(KeGetCurrentIrql() == DISPATCH_LEVEL, ("irql not greater"));
 	mtx_unlock(&disp_lock);
-	sched_unpin();
 }
 
 static uint8_t
