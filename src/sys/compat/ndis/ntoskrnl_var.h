@@ -1125,8 +1125,8 @@ struct io_workitem {
 };
 
 enum work_queue_type {
-	CRITICAL,
 	DELAYED,
+	CRITICAL,
 	HYPERCRITICAL
 };
 
