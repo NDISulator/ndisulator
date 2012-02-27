@@ -2295,7 +2295,8 @@ NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_file_handle *file)
 	struct thread *td = curthread;
 	linker_file_t lf;
 	caddr_t kldstart;
-	int error, resid, vfslocked;
+	int error, vfslocked;
+	ssize_t resid;
 
 	if (file == NULL) {
 		*status = NDIS_STATUS_FAILURE;
