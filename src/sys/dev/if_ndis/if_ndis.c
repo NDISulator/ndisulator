@@ -2133,6 +2133,7 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	int chanflag = 0, i = 0;
 	uint32_t arg;
 
+	bzero(&ssid, sizeof(struct ndis_80211_ssid));
 	ni = ieee80211_ref_node(vap->iv_bss);
 	ndis_get(sc, OID_802_11_BSSID, ni->ni_bssid, IEEE80211_ADDR_LEN);
 
