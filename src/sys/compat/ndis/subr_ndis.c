@@ -73,6 +73,7 @@ __FBSDID("$FreeBSD$");
 #include <net/if_dl.h>
 #include <net/if_media.h>
 
+#include <machine/_inttypes.h>
 #include <machine/atomic.h>
 #include <machine/bus.h>
 #include <machine/resource.h>
@@ -413,7 +414,7 @@ NdisAllocateMemoryWithTag(void **vaddr, uint32_t len, uint32_t tag)
 static int32_t
 NdisAllocateMemory(void **vaddr, uint32_t len, uint32_t flags, uint64_t high)
 {
-	TRACE(NDBG_MEM, "len %u flags %u high %llu\n", len, flags, high);
+	TRACE(NDBG_MEM, "len %u flags %u high %"PRIu64"\n", len, flags, high);
 	return (NdisAllocateMemoryWithTag(vaddr, len, 0));
 }
 
@@ -1007,7 +1008,7 @@ static uint8_t
 NdisSetTimerObject(struct ndis_timer *timer, int64_t duetime, uint32_t msecs,
     void *ctx)
 {
-	TRACE(NDBG_TIMER, "timer %p duetime %llu msecs %u ctx %p\n",
+	TRACE(NDBG_TIMER, "timer %p duetime %"PRIu64" msecs %u ctx %p\n",
 	    timer, duetime, msecs, ctx);
 	return (TRUE);
 }
@@ -1325,7 +1326,7 @@ NdisMFreeSharedMemory(struct ndis_miniport_block *block,
 	struct ndis_shmem *sh = NULL;
 	struct list_entry *l;
 
-	TRACE(NDBG_DMA, "block %p len %u cached %u vaddr %p paddr %llu\n",
+	TRACE(NDBG_DMA, "block %p len %u cached %u vaddr %p paddr %"PRIu64"\n",
 	    block, len, cached, vaddr, paddr);
 	KASSERT(block != NULL, ("no block"));
 	KASSERT(block->physdeviceobj != NULL, ("no physdeviceobj"));
