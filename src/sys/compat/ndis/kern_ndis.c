@@ -578,7 +578,7 @@ static int
 ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
     void *buf, uint32_t buflen, uint32_t *written, uint32_t *needed)
 {
-	uint64_t duetime;
+	int64_t duetime;
 	int32_t rval, w = 0, n = 0;
 	uint8_t irql;
 
