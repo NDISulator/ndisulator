@@ -50,6 +50,8 @@ __FBSDID("$FreeBSD$");
 #include <sys/module.h>
 #include <sys/smp.h>
 #include <sys/sched.h>
+#include <sys/queue.h>
+#include <sys/taskqueue.h>
 
 #include <machine/_inttypes.h>
 #include <machine/atomic.h>
@@ -86,6 +88,11 @@ struct kdpc_queue {
 struct wb_ext {
 	struct cv		we_cv;
 	struct thread		*we_td;
+};
+
+struct ndis_work_item_task {
+	struct ndis_work_item *work;
+	struct task tq_item;
 };
 
 static struct list_entry nt_intlist;
@@ -131,13 +138,13 @@ static void ntoskrnl_satisfy_wait(struct nt_dispatcher_header *,
 static void ntoskrnl_satisfy_multiple_waits(struct wait_block *);
 static int ntoskrnl_is_signalled(struct nt_dispatcher_header *,
     struct thread *);
-static void ndis_worker_thread(void *);
 static void ntoskrnl_ascii_to_unicode(char *, uint16_t *, int);
 static void ntoskrnl_destroy_dpc_thread(void);
 static void ntoskrnl_dpc_thread(void *);
 static void ntoskrnl_timercall(void *);
 static void ntoskrnl_unicode_to_ascii(uint16_t *, char *, int);
-static void ntoskrnl_worker_thread(void *);
+static void run_ndis_work_item(struct ndis_work_item_task *, int);
+static void IORunWorkItem(struct io_workitem *iw, int pending);
 static uint8_t ntoskrnl_insert_dpc(struct list_entry *, struct nt_kdpc *);
 static void WRITE_REGISTER_USHORT(uint16_t *, uint16_t);
 static uint16_t READ_REGISTER_USHORT(uint16_t *);
@@ -294,6 +301,8 @@ static struct nt_objref_head nt_reflist;
 static uma_zone_t mdl_zone;
 static uma_zone_t iw_zone;
 static struct kdpc_queue *kq_queue;
+static struct taskqueue *nq_queue;
+static struct taskqueue *wq_queue;
 
 MALLOC_DEFINE(M_NDIS_NTOSKRNL, "ndis_ntoskrnl", "ndis_ntoskrnl buffers");
 
@@ -321,6 +330,18 @@ ntoskrnl_libinit(void)
 	if (kproc_kthread_add(ntoskrnl_dpc_thread, kq_queue, &ndisproc,
 	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "dpc"))
 		panic("failed to launch dpc thread");
+
+	if ((nq_queue = taskqueue_create("ndis queue", M_WAITOK,
+	    taskqueue_thread_enqueue, &nq_queue)) == NULL)
+		panic("failed to allocate taskqueue for nq_queue");
+	taskqueue_start_threads(&nq_queue, 1, PRI_MIN_KERN + 20,
+	    "ndis nq_queue");
+
+	if ((wq_queue = taskqueue_create("work queue", M_WAITOK,
+	    taskqueue_thread_enqueue, &wq_queue)) == NULL)
+		panic("failed to allocate taskqueue for wq_queue");
+	taskqueue_start_threads(&wq_queue, 1, PRI_MIN_KERN + 20,
+	    "ndis wq_queue");
 
 	windrv_wrap_table(ntoskrnl_functbl);
 	ExAllocatePoolWithTag_wrap = ntoskrnl_findwrap(ExAllocatePoolWithTag);
@@ -357,6 +378,8 @@ ntoskrnl_libfini(void)
 
 	ntoskrnl_destroy_dpc_thread();
 
+	taskqueue_free(wq_queue);
+	taskqueue_free(nq_queue);
 	ExFreePool(kq_queue);
 
 	uma_zdestroy(mdl_zone);
@@ -2364,19 +2387,32 @@ ntoskrnl_finddev(device_t dev, uint64_t paddr, struct resource **res)
 	return (NULL);
 }
 
-/*
- * Workers are unlike DPCs, in that they run in a user-mode thread
- * context rather than at DISPATCH_LEVEL in kernel context. In our
- * case we run them in kernel context anyway.
- */
 static void
-ntoskrnl_worker_thread(void *arg)
+run_ndis_work_item(struct ndis_work_item_task *arg, int pending)
 {
-	struct io_workitem *iw = arg;
+	struct ndis_work_item *work = arg->work;
 
-	MSCALL2(iw->func, iw->dobj, iw->ctx);
-	kthread_exit();
-	/* notreached */
+	if(!work->func)
+		return;
+	MSCALL2(work->func, work, work->ctx);
+	free(arg, M_NDIS_NTOSKRNL);
+}
+
+void
+schedule_ndis_work_item(void *arg)
+{
+	struct ndis_work_item_task *task;
+
+	task = malloc(sizeof(struct ndis_work_item_task), M_NDIS_NTOSKRNL,
+	    M_NOWAIT | M_ZERO);
+	if (!task) {
+		printf("schedule_ndis_work_item: malloc failed\n");
+		return;
+	}
+	TASK_INIT(&task->tq_item, 0, (task_fn_t *)run_ndis_work_item, task);
+	task->work = arg;
+
+	taskqueue_enqueue(nq_queue, &task->tq_item);
 }
 
 struct io_workitem *
@@ -2402,19 +2438,39 @@ IoFreeWorkItem(struct io_workitem *iw)
 	uma_zfree(iw_zone, iw);
 }
 
+static void
+IORunWorkItem(struct io_workitem *iw, int pending)
+{
+	if(iw->func == NULL)
+		return;
+	MSCALL2(iw->func, iw->dobj, iw->ctx);
+}
+
 void
 IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
     enum work_queue_type type, void *ctx)
 {
-	struct thread *t;
-
 	TRACE(NDBG_WORK, "iw %p func %p type %d ctx %p\n", iw, func, type, ctx);
+
+	if (!func)
+		return;
+
+	/* don't readd task which is already queued */
+	if (iw->tq_item.ta_pending)
+		return;
+
+	if (iw->func && iw->func != func)
+		printf("IoQueueWorkItem: warning iw->func got redefined\n");
+	if (iw->ctx && iw->ctx != ctx)
+		printf("IoQueueWorkItem: warning iw->ctx got redefined\n");
 
 	iw->func = func;
 	iw->ctx = ctx;
+	iw->tq_item.ta_priority = type;
+	iw->tq_item.ta_func = (task_fn_t *)IORunWorkItem;
+	iw->tq_item.ta_context = iw;
 
-	kproc_kthread_add(ntoskrnl_worker_thread, iw, &ndisproc,
-	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "worker");
+	taskqueue_enqueue(wq_queue, &iw->tq_item);
 }
 
 static int32_t
@@ -3488,28 +3544,20 @@ KeSetTargetProcessorDpc(struct nt_kdpc *dpc, uint8_t cpu)
 }
 
 static void
-ndis_worker_thread(void *arg)
-{
-	struct ndis_work_item *work = arg;
-
-	MSCALL2(work->func, work, work->ctx);
-
-	kthread_exit();
-	/* notreached */
-}
-
-void
-schedule_ndis_work_item(void *arg)
-{
-	struct thread *t;
-
-	kproc_kthread_add(ndis_worker_thread, arg, &ndisproc,
-	    &t, RFHIGHPID, NDIS_KSTACK_PAGES, "ndis", "sched");
+do_nothing_task(void *ptr, int pending) {
 }
 
 void
 flush_queue(void)
 {
+	struct task t_item;
+	bzero(&t_item, sizeof(struct task));
+	t_item.ta_func = (task_fn_t *)do_nothing_task;
+	t_item.ta_context = NULL;
+	taskqueue_enqueue(wq_queue, &t_item);
+	taskqueue_drain(wq_queue, &t_item);
+	taskqueue_enqueue(nq_queue, &t_item);
+	taskqueue_drain(nq_queue, &t_item);
 	KeSetEvent(&kq_queue->proc, IO_NO_INCREMENT, FALSE);
 	KeWaitForSingleObject(&kq_queue->done, 0, 0, TRUE, NULL);
 }

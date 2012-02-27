@@ -1122,6 +1122,7 @@ struct io_workitem {
 	void			*ctx;
 	struct list_entry	list;
 	struct device_object	*dobj;
+	struct task		tq_item;
 };
 
 enum work_queue_type {
