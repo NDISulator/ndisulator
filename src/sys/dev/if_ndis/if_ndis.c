@@ -2128,21 +2128,21 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 {
 	struct ieee80211com *ic = sc->ndis_ifp->if_l2com;
 	struct ieee80211_node *ni;
-	struct ndis_80211_config config;
-	struct ndis_80211_ssid ssid;
+	struct ndis_80211_config *config;
+	struct ndis_80211_ssid *ssid;
 	int chanflag = 0, i = 0;
 	uint32_t arg;
 
-	bzero(&ssid, sizeof(struct ndis_80211_ssid));
 	ni = ieee80211_ref_node(vap->iv_bss);
+	ssid = malloc(sizeof(struct ndis_80211_ssid), M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	if (ssid == NULL)
+	    goto fail;
 	ndis_get(sc, OID_802_11_BSSID, ni->ni_bssid, IEEE80211_ADDR_LEN);
 
-	if (ndis_get(sc, OID_802_11_SSID, &ssid, sizeof(ssid))) {
-		ieee80211_free_node(ni);
-		return;
-	}
-	memcpy(ni->ni_essid, ssid.ssid, ssid.len);
-	ni->ni_esslen = ssid.len;
+	if (ndis_get(sc, OID_802_11_SSID, ssid, sizeof(struct ndis_80211_ssid)))
+	    goto fail;
+	memcpy(ni->ni_essid, ssid->ssid, ssid->len);
+	ni->ni_esslen = ssid->len;
 	if (vap->iv_opmode == IEEE80211_M_STA)
 		ni->ni_associd = 1 | 0xc000; /* fake associd */
 
@@ -2189,15 +2189,22 @@ ndis_getstate_80211(struct ndis_softc *sc, struct ieee80211vap *vap)
 	if (!ndis_get_int(sc, OID_802_11_NETWORK_TYPE_IN_USE, &arg))
 		chanflag = ndis_nettype_chan(arg);
 
-	memset(&config, 0, sizeof(config));
-	if (!ndis_get(sc, OID_802_11_CONFIGURATION, &config, sizeof(config))) {
+	config = malloc(sizeof(struct ndis_80211_config),
+	    M_NDIS_DEV, M_NOWAIT|M_ZERO);
+	if (config == NULL)
+	    goto fail;
+	if (!ndis_get(sc, OID_802_11_CONFIGURATION, config,
+	    sizeof(struct ndis_80211_config))) {
 		ic->ic_curchan = ieee80211_find_channel(ic,
-		    config.dsconfig / 1000, chanflag);
+		    config->dsconfig / 1000, chanflag);
 		if (ic->ic_curchan == NULL)
 			ic->ic_curchan = &ic->ic_channels[0];
 		ni->ni_chan = ic->ic_bsschan = ic->ic_curchan;
-		ni->ni_intval = config.beaconperiod;
+		ni->ni_intval = config->beaconperiod;
 	}
+	free(config, M_NDIS_DEV);
+fail:
+	free(ssid, M_NDIS_DEV);
 	ieee80211_free_node(ni);
 }
 
