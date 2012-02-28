@@ -590,7 +590,7 @@ ndis_attach(device_t dev)
 	struct device_object *pdo;
 	struct ifnet *ifp = NULL;
 	uint32_t rval, len, *ndis_oids, ndis_oidcnt;
-	int mode, i = 0;
+	int mode, i;
 	uint8_t bands = 0;
 
 	sc = device_get_softc(dev);
@@ -837,7 +837,6 @@ nonettypes:
 		 */
 #define	TESTSETRATE(x, y)						\
 	do {								\
-		int i;							\
 		for (i = 0; i < ic->ic_sup_rates[x].rs_nrates; i++) {	\
 			if (ic->ic_sup_rates[x].rs_rates[i] == (y))	\
 				break;					\
