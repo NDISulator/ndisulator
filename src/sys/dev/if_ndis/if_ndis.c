@@ -1244,7 +1244,6 @@ ndis_rxeof_xfr(struct nt_kdpc *dpc, struct ndis_miniport_block *block,
 
 	KeAcquireSpinLockAtDpcLevel(&block->lock);
 
-	l = block->packet_list.flink;
 	while (!IsListEmpty(&block->packet_list)) {
 		l = RemoveHeadList(&block->packet_list);
 		p = CONTAINING_RECORD(l, struct ndis_packet, list);
@@ -1281,9 +1280,6 @@ ndis_rxeof_xfr(struct nt_kdpc *dpc, struct ndis_miniport_block *block,
 
 		if (status == NDIS_STATUS_FAILURE)
 			m_freem(m);
-
-		/* Advance to next packet */
-		l = block->packet_list.flink;
 	}
 
 	KeReleaseSpinLockFromDpcLevel(&block->lock);
