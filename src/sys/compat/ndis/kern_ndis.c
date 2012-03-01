@@ -580,7 +580,6 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 {
 	int64_t duetime;
 	int32_t rval, w = 0, n = 0;
-	uint8_t irql;
 
 	if (!written)
 		written = &w;
@@ -598,32 +597,32 @@ ndis_request_info(uint32_t req, struct ndis_softc *sc, uint32_t oid,
 	 * finish before allowing another request to proceed.
 	 */
 	if (req == NDIS_REQUEST_QUERY_INFORMATION) {
-		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+		KeAcquireSpinLockAtDpcLevel(&sc->ndis_block->lock);
 		rval = MSCALL6(sc->ndis_chars->query_info_func,
 		    sc->ndis_block->miniport_adapter_ctx,
 		    oid, buf, buflen, written, needed);
-		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 		if (rval == NDIS_STATUS_PENDING) {
 			duetime = (5 * 1000000) * -10;
 			KeWaitForSingleObject(&sc->ndis_block->getevent,
 			    0, 0, FALSE, &duetime);
 			rval = sc->ndis_block->getstat;
 		}
+		KeReleaseSpinLockFromDpcLevel(&sc->ndis_block->lock);
 		TRACE(NDBG_GET, "req %u sc %p oid %08X buf %p buflen %u "
 		    "written %u needed %u rval %08X\n",
 		    req, sc, oid, buf, buflen, *written, *needed, rval);
 	} else if (req == NDIS_REQUEST_SET_INFORMATION) {
-		KeAcquireSpinLock(&sc->ndis_block->lock, &irql);
+		KeAcquireSpinLockAtDpcLevel(&sc->ndis_block->lock);
 		rval = MSCALL6(sc->ndis_chars->set_info_func,
 		    sc->ndis_block->miniport_adapter_ctx,
 		    oid, buf, buflen, written, needed);
-		KeReleaseSpinLock(&sc->ndis_block->lock, irql);
 		if (rval == NDIS_STATUS_PENDING) {
 			duetime = (5 * 1000000) * -10;
 			KeWaitForSingleObject(&sc->ndis_block->setevent,
 			    0, 0, FALSE, &duetime);
 			rval = sc->ndis_block->setstat;
 		}
+		KeReleaseSpinLockFromDpcLevel(&sc->ndis_block->lock);
 		TRACE(NDBG_SET, "req %u sc %p oid %08X buf %p buflen %u "
 		    "written %u needed %u rval %08X\n",
 		    req, sc, oid, buf, buflen, *written, *needed, rval);
