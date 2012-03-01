@@ -273,8 +273,6 @@ windrv_unload(vm_offset_t img)
 	return (0);
 }
 
-#define	WINDRV_LOADED		htonl(0x42534F44)
-
 #ifdef __amd64__
 static void
 patch_user_shared_data_address(vm_offset_t img, size_t len)
@@ -306,7 +304,6 @@ windrv_load(vm_offset_t img, size_t len,
 	driver_entry entry;
 	struct drvdb_ent *new;
 	struct driver_object *drv;
-	uint32_t *ptr;
 	int32_t ret;
 
 	if (pe_validate_header(img))
@@ -315,9 +312,6 @@ windrv_load(vm_offset_t img, size_t len,
 	 * First step: try to relocate and dynalink the executable
 	 * driver image.
 	 */
-	ptr = (uint32_t *)(img + 8);
-	if (*ptr == WINDRV_LOADED)
-		goto skipreloc;
 
 	/* Perform text relocation */
 	if (pe_relocate(img))
@@ -338,8 +332,6 @@ windrv_load(vm_offset_t img, size_t len,
 #ifdef __amd64__
 	patch_user_shared_data_address(img, len);
 #endif
-	*ptr = WINDRV_LOADED;
-skipreloc:
 	/* Next step: find the driver entry point. */
 	pe_get_optional_header(img, &opt_hdr);
 	entry = (driver_entry)pe_translate_addr(img,
