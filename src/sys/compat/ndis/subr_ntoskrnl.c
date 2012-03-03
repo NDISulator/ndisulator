@@ -2835,7 +2835,7 @@ srand(unsigned int seed)
 	srandom(seed);
 }
 
-uint16_t *
+static uint16_t *
 wcscat(uint16_t *s, const uint16_t *append)
 {
 	uint16_t *save = s;
@@ -2864,7 +2864,7 @@ wcscpy(uint16_t *to, const uint16_t *from)
 	return (save);
 }
 
-int
+static int
 wcsicmp(const uint16_t *s1, const uint16_t *s2)
 {
 	while (*s1 && tolower((char)*s1) == tolower((char)*s2)) {
