@@ -69,7 +69,7 @@ TAILQ_HEAD(nch, ndis_cfglist);
 
 #define	NDIS_INITIALIZED(sc)	(sc->ndis_block->device_ctx != NULL)
 #define	NDIS_80211(sc)		\
-	(sc->ndis_physical_medium == NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN)
+	sc->ndis_physical_medium == NDIS_PHYSICAL_MEDIUM_WIRELESS_LAN
 
 #define	NDIS_NEXT_TXIDX(x)	((x)->ndis_txidx + 1) % (x)->ndis_maxpkts
 
