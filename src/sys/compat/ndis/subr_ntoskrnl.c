@@ -462,7 +462,7 @@ RtlEqualString(const struct ansi_string *str1, const struct ansi_string *str2,
 
 static uint8_t
 RtlEqualUnicodeString(const struct unicode_string *str1,
-     const struct unicode_string *str2, uint8_t case_in_sensitive)
+    const struct unicode_string *str2, uint8_t case_in_sensitive)
 {
 	if (str1->len != str2->len)
 		return (FALSE);
@@ -2404,7 +2404,7 @@ run_ndis_work_item(struct ndis_work_item_task *arg, int pending)
 {
 	struct ndis_work_item *work = arg->work;
 
-	if(!work->func)
+	if (work->func == NULL)
 		return;
 	MSCALL2(work->func, work, work->ctx);
 	free(arg, M_NDIS_NTOSKRNL);
@@ -2417,7 +2417,7 @@ schedule_ndis_work_item(void *arg)
 
 	task = malloc(sizeof(struct ndis_work_item_task), M_NDIS_NTOSKRNL,
 	    M_NOWAIT | M_ZERO);
-	if (!task) {
+	if (task == NULL) {
 		printf("schedule_ndis_work_item: malloc failed\n");
 		return;
 	}
@@ -2453,7 +2453,7 @@ IoFreeWorkItem(struct io_workitem *iw)
 static void
 IORunWorkItem(struct io_workitem *iw, int pending)
 {
-	if(iw->func == NULL)
+	if (iw->func == NULL)
 		return;
 	MSCALL2(iw->func, iw->dobj, iw->ctx);
 }
@@ -2464,7 +2464,7 @@ IoQueueWorkItem(struct io_workitem *iw, io_workitem_func func,
 {
 	TRACE(NDBG_WORK, "iw %p func %p type %d ctx %p\n", iw, func, type, ctx);
 
-	if (!func)
+	if (func == NULL)
 		return;
 
 	/* don't readd task which is already queued */
@@ -3556,7 +3556,8 @@ KeSetTargetProcessorDpc(struct nt_kdpc *dpc, uint8_t cpu)
 }
 
 static void
-do_nothing_task(void *ptr, int pending) {
+do_nothing_task(void *ptr, int pending)
+{
 }
 
 void

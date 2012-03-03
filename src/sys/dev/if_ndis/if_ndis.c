@@ -1810,7 +1810,7 @@ ndis_start(struct ifnet *ifp)
 	/*
 	 * Activate a watchdog timer if it was stopped.
 	 */
-	if(sc->ndis_tx_timer == 0)
+	if (sc->ndis_tx_timer == 0)
 		sc->ndis_tx_timer = NDIS_PACKET_TX_TIMEOUT;
 
 	NDIS_UNLOCK(sc);
