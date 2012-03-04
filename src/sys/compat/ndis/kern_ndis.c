@@ -477,7 +477,6 @@ ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 
 	KASSERT(p != NULL, ("no packet"));
 	priv = &p->private;
-	buf = priv->head;
 	p->refcnt = 0;
 
 	for (buf = priv->head; buf != NULL; buf = buf->next) {
