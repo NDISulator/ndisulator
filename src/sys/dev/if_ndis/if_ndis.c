@@ -1569,7 +1569,7 @@ NdisMIndicateStatus(struct ndis_miniport_block *block, int32_t status,
 	if (sc->ndis_evt[sc->ndis_evtpidx].ne_sts)
 		return;
 	/* Cache the event. */
-	if (len) {
+	if (len && (buf != NULL)) {
 		sc->ndis_evt[sc->ndis_evtpidx].ne_buf =
 		    malloc(len, M_NDIS_DEV, M_NOWAIT|M_ZERO);
 		if (sc->ndis_evt[sc->ndis_evtpidx].ne_buf == NULL)
