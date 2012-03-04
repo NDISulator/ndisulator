@@ -15,6 +15,8 @@ SRCS+=	opt_usb.h opt_ndis.h opt_wlan.h
 CFLAGS+=-I${.CURDIR}/../../../sys/dev/if_ndis
 CFLAGS+=-I${.CURDIR}/../../../sys/compat/ndis
 
+CLEANFILES+=@ machine x86
+
 WERROR=
 
 .include <bsd.kmod.mk>
