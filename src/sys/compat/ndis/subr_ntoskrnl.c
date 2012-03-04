@@ -3019,7 +3019,6 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 	int32_t prevstate;
 	struct wait_block *w;
 	struct nt_dispatcher_header *dh;
-	struct thread *td;
 	struct wb_ext *we;
 
 	mtx_lock(&nt_dispatchlock);
@@ -3045,7 +3044,6 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		w = CONTAINING_RECORD(dh->wait_list_head.flink,
 		    struct wait_block, wb_waitlist);
 		we = w->wb_ext;
-		td = we->we_td;
 		if (kevent->header.type == NOTIFICATION_EVENT_OBJECT ||
 		    w->wb_waittype == WAIT_ALL) {
 			if (prevstate == FALSE) {
