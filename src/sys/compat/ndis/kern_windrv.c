@@ -358,7 +358,7 @@ windrv_load(vm_offset_t img, size_t len,
 		return (ENOMEM);
 	}
 
-	InitializeListHead((&drv->driver_extension->usrext));
+	InitializeListHead(&drv->driver_extension->usrext);
 
 	drv->driver_start = (void *)img;
 	drv->driver_size = len;
@@ -606,12 +606,12 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt,
 	wrapcall = (vm_offset_t)&x86_64_wrap_call;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
+	p = malloc(wrapend - wrapstart, M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
-	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
+	bcopy((char *)wrapstart, p, wrapend - wrapstart);
 
 	/* Insert the function address into the new wrapper instance. */
 	calladdr = (vm_offset_t *)((char *)p + (wrapcall - wrapstart) + 2);
@@ -747,7 +747,7 @@ windrv_wrap_fastcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	wraparg = (vm_offset_t)&x86_fastcall_wrap_arg;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
+	p = malloc(wrapend - wrapstart, M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
@@ -787,12 +787,12 @@ windrv_wrap_stdcall(funcptr func, funcptr *wrap, uint8_t argcnt)
 	wraparg = (vm_offset_t)&x86_stdcall_wrap_arg;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
+	p = malloc(wrapend - wrapstart, M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
-	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
+	bcopy((char *)wrapstart, p, wrapend - wrapstart);
 
 	/* Insert the function address into the new wrapper instance. */
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));
@@ -819,12 +819,12 @@ windrv_wrap_regparm(funcptr func, funcptr *wrap)
 	wrapcall = (vm_offset_t)&x86_regparm_wrap_call;
 
 	/* Allocate a new wrapper instance. */
-	p = malloc((wrapend - wrapstart), M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
+	p = malloc(wrapend - wrapstart, M_NDIS_WINDRV, M_NOWAIT|M_ZERO);
 	if (p == NULL)
 		panic("failed to allocate new wrapper instance");
 
 	/* Copy over the code. */
-	bcopy((char *)wrapstart, p, (wrapend - wrapstart));
+	bcopy((char *)wrapstart, p, wrapend - wrapstart);
 
 	/* Insert the function address into the new wrapper instance. */
 	calladdr = (vm_offset_t *)((char *)p + ((wrapcall - wrapstart) + 1));

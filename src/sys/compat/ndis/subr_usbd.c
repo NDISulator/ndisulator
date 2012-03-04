@@ -852,7 +852,7 @@ usbd_non_isoc_callback(struct usb_xfer *xfer, usb_error_t error)
 			/* Check remainder */
 			if (nx->nx_urblen > 0) {
 				KeAcquireSpinLock(&ne->ne_lock, &irql);
-				InsertHeadList((&ne->ne_active), (&nx->nx_next));
+				InsertHeadList(&ne->ne_active, &nx->nx_next);
 				KeReleaseSpinLock(&ne->ne_lock, irql);
 
 				ip = nx->nx_priv;
