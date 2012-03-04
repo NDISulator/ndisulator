@@ -2458,47 +2458,57 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 {
 	struct ifnet *ifp = vap->iv_ic->ic_ifp;
 	struct ndis_softc *sc = ifp->if_softc;
-	struct ndis_80211_wep wep;
-	struct ndis_80211_key nkey;
+	struct ndis_80211_wep *wep;
+	struct ndis_80211_key *nkey;
 	int error = 0;
 
 	switch (key->wk_cipher->ic_cipher) {
 	case IEEE80211_CIPHER_AES_CCM:
 	case IEEE80211_CIPHER_TKIP:
-		memset(&nkey, 0, sizeof(nkey));
-		nkey.keylen = key->wk_keylen;
-		nkey.len = sizeof(nkey) - sizeof(nkey.keydata) + nkey.keylen;
-		memcpy(nkey.bssid, key->wk_macaddr, IEEE80211_ADDR_LEN);
+		nkey = malloc(sizeof(struct ndis_80211_key),
+		    M_NDIS_DEV, M_NOWAIT|M_ZERO);
+		if (nkey == NULL)
+		    return (0);
+		nkey->keylen = key->wk_keylen;
+		nkey->len = sizeof(struct ndis_80211_key) -
+		    sizeof(nkey->keydata) + nkey->keylen;
+		memcpy(nkey->bssid, key->wk_macaddr, IEEE80211_ADDR_LEN);
 		if (key->wk_keyix != IEEE80211_KEYIX_NONE)
-			nkey.keyidx = key->wk_keyix;
+			nkey->keyidx = key->wk_keyix;
 		else
-			nkey.keyidx = 0;
+			nkey->keyidx = 0;
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
-			nkey.keyidx |= 1 << 31;
+			nkey->keyidx |= 1 << 31;
 		if (!(key->wk_flags & IEEE80211_KEY_GROUP))
-			nkey.keyidx |= 1 << 30;
+			nkey->keyidx |= 1 << 30;
 
-		nkey.keyrsc = key->wk_keyrsc[IEEE80211_NONQOS_TID];
-		if (nkey.keyrsc)
-			nkey.keyidx |= 1 << 29;
+		nkey->keyrsc = key->wk_keyrsc[IEEE80211_NONQOS_TID];
+		if (nkey->keyrsc)
+			nkey->keyidx |= 1 << 29;
 		if (key->wk_cipher->ic_cipher == IEEE80211_CIPHER_TKIP &&
 		    key->wk_keylen == 32) {
-			memcpy(nkey.keydata, key->wk_key, 16);
-			memcpy(nkey.keydata + 24, key->wk_key + 16, 8);
-			memcpy(nkey.keydata + 16, key->wk_key + 24, 8);
+			memcpy(nkey->keydata, key->wk_key, 16);
+			memcpy(nkey->keydata + 24, key->wk_key + 16, 8);
+			memcpy(nkey->keydata + 16, key->wk_key + 24, 8);
 		} else
-			memcpy(nkey.keydata, key->wk_key, key->wk_keylen);
-		error = ndis_set(sc, OID_802_11_ADD_KEY, &nkey, nkey.len);
+			memcpy(nkey->keydata, key->wk_key, key->wk_keylen);
+		error = ndis_set(sc, OID_802_11_ADD_KEY, nkey, nkey->len);
+		free(nkey, M_NDIS_DEV);
 		break;
 	case IEEE80211_CIPHER_WEP:
-		memset(&wep, 0, sizeof(wep));
-		wep.keylen = key->wk_keylen;
-		wep.keyidx = key->wk_keyix;
-		wep.len = sizeof(wep) - sizeof(wep.keydata) + wep.keylen;
+		wep = malloc(sizeof(struct ndis_80211_wep),
+		    M_NDIS_DEV, M_NOWAIT|M_ZERO);
+		if (wep == NULL)
+		    return (0);
+		wep->keylen = key->wk_keylen;
+		wep->keyidx = key->wk_keyix;
+		wep->len = sizeof(struct ndis_80211_wep) -
+		    sizeof(wep->keydata) + wep->keylen;
 		if (key->wk_flags & IEEE80211_KEY_XMIT)
-			wep.keyidx |= 1 << 31;
-		memcpy(wep.keydata, key->wk_key, wep.keylen);
-		error = ndis_set(sc, OID_802_11_ADD_WEP, &wep, wep.len);
+			wep->keyidx |= 1 << 31;
+		memcpy(wep->keydata, key->wk_key, wep->keylen);
+		error = ndis_set(sc, OID_802_11_ADD_WEP, wep, wep->len);
+		free(wep, M_NDIS_DEV);
 		break;
 	default:
 		error = ENOTSUP;
