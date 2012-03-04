@@ -1359,7 +1359,6 @@ ntoskrnl_waittest(struct nt_dispatcher_header *obj, uint32_t increment)
 		w = CONTAINING_RECORD(e, struct wait_block, wb_waitlist);
 		we = w->wb_ext;
 		td = we->we_td;
-		satisfied = FALSE;
 		if (w->wb_waittype == WAIT_ANY) {
 			/*
 			 * Thread can be awakened if
