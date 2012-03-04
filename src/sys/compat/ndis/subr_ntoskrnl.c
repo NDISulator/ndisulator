@@ -1359,13 +1359,13 @@ ntoskrnl_waittest(struct nt_dispatcher_header *obj, uint32_t increment)
 		w = CONTAINING_RECORD(e, struct wait_block, wb_waitlist);
 		we = w->wb_ext;
 		td = we->we_td;
+		satisfied = TRUE;
 		if (w->wb_waittype == WAIT_ANY) {
 			/*
 			 * Thread can be awakened if
 			 * any wait is satisfied.
 			 */
 			ntoskrnl_satisfy_wait(obj, td);
-			satisfied = TRUE;
 			w->wb_awakened = TRUE;
 		} else {
 			/*
@@ -1376,7 +1376,6 @@ ntoskrnl_waittest(struct nt_dispatcher_header *obj, uint32_t increment)
 			 * through the wb_next pointers in the
 			 * wait blocks.
 			 */
-			satisfied = TRUE;
 			next = w->wb_next;
 			while (next != w) {
 				if (ntoskrnl_is_signalled(obj, td) == FALSE) {
