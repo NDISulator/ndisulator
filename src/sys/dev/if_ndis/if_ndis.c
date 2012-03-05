@@ -2255,7 +2255,7 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 {
 	struct ndis_softc *sc = ifp->if_softc;
 	struct ifreq *ifr = (struct ifreq *) data;
-	int error = 0;
+	int error;
 
 	switch (command) {
 	case SIOCSIFFLAGS:
@@ -2460,7 +2460,7 @@ ndis_key_set(struct ieee80211vap *vap, const struct ieee80211_key *key,
 	struct ndis_softc *sc = ifp->if_softc;
 	struct ndis_80211_wep *wep;
 	struct ndis_80211_key *nkey;
-	int error = 0;
+	int error;
 
 	switch (key->wk_cipher->ic_cipher) {
 	case IEEE80211_CIPHER_AES_CCM:
