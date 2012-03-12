@@ -81,6 +81,16 @@ static struct cdevsw ndis_cdevsw = {
 	.d_name = "ndis",
 };
 
+#ifdef __amd64__
+struct fpu_cc_ent {
+	char		used;
+	struct fpu_kern_ctx *ctx;
+	SLIST_ENTRY(fpu_cc_ent) link;
+};
+static SLIST_HEAD(fpu_ctx_cache, fpu_cc_ent) fpu_cc_head;
+static struct mtx fpu_cache_mtx;
+#endif
+
 static struct mtx drvdb_mtx;
 static STAILQ_HEAD(drvdb, drvdb_ent) drvdb_head;
 
@@ -96,6 +106,11 @@ windrv_libinit(void)
 {
 	STAILQ_INIT(&drvdb_head);
 	mtx_init(&drvdb_mtx, "drvdb_mtx", NULL, MTX_DEF);
+
+#ifdef __amd64__
+	SLIST_INIT(&fpu_cc_head);
+	mtx_init(&fpu_cache_mtx, "fpu context cache lock", NULL, MTX_DEF);
+#endif
 
 	ndis_dev = make_dev_credf(0, &ndis_cdevsw, 0, NULL,
 	    UID_ROOT, GID_WHEEL, 0600, "ndis");
@@ -116,6 +131,9 @@ void
 windrv_libfini(void)
 {
 	struct drvdb_ent *d;
+#ifdef __amd64__
+	struct fpu_cc_ent *ent;
+#endif
 
 	destroy_dev(ndis_dev);
 
@@ -138,6 +156,16 @@ windrv_libfini(void)
 	RtlFreeUnicodeString(&fake_pccard_driver.driver_name);
 
 	mtx_destroy(&drvdb_mtx);
+
+#ifdef __amd64__
+	while ((ent = SLIST_FIRST(&fpu_cc_head)) != NULL) {
+		SLIST_REMOVE_HEAD(&fpu_cc_head, link);
+		fpu_kern_free_ctx(ent->ctx);
+		free(ent, M_NDIS_WINDRV);
+	}
+
+	mtx_destroy(&fpu_cache_mtx);
+#endif
 }
 
 /*
@@ -620,19 +648,56 @@ windrv_wrap(funcptr func, funcptr *wrap, uint8_t argcnt,
 	*wrap = p;
 }
 
+static struct fpu_cc_ent *
+request_fpu_cc_ent(void)
+{
+	struct fpu_cc_ent *ent;
+
+	mtx_lock(&fpu_cache_mtx);
+	SLIST_FOREACH(ent, &fpu_cc_head, link) {
+		if(ent->used == 0) {
+			ent->used = 1;
+			mtx_unlock(&fpu_cache_mtx);
+			return (ent);
+		}
+	}
+	mtx_unlock(&fpu_cache_mtx);
+
+	if ((ent = malloc(sizeof(struct fpu_cc_ent), M_NDIS_WINDRV, M_NOWAIT |
+	    M_ZERO)) != NULL) {
+		ent->ctx = fpu_kern_alloc_ctx(FPU_KERN_NORMAL |
+		    FPU_KERN_NOWAIT);
+		if (ent->ctx != NULL) {
+			ent->used = 1;
+			mtx_lock(&fpu_cache_mtx);
+			SLIST_INSERT_HEAD(&fpu_cc_head, ent, link);
+			mtx_unlock(&fpu_cache_mtx);
+		} else
+			free(ent, M_NDIS_WINDRV);
+	}
+
+	return (ent);
+}
+
+static void
+release_fpu_cc_ent(struct fpu_cc_ent * ent)
+{
+
+	ent->used = 0;
+}
+
 uint64_t
 _x86_64_call1(void *fn, uint64_t a)
 {
-	struct fpu_kern_ctx *fpu_ctx_save;
+	struct fpu_cc_ent *ent;
 	uint64_t ret;
 
-	fpu_ctx_save = fpu_kern_alloc_ctx(FPU_KERN_NORMAL | FPU_KERN_NOWAIT);
-	if (fpu_ctx_save == NULL)
+	if ((ent = request_fpu_cc_ent()) == NULL)
 		return (ENOMEM);
-	fpu_kern_enter(curthread, fpu_ctx_save, FPU_KERN_NORMAL);
+	fpu_kern_enter(curthread, ent->ctx, FPU_KERN_NORMAL);
 	ret = x86_64_call1(fn, a);
-	fpu_kern_leave(curthread, fpu_ctx_save);
-	fpu_kern_free_ctx(fpu_ctx_save);
+	fpu_kern_leave(curthread, ent->ctx);
+	release_fpu_cc_ent(ent);
 
 	return (ret);
 }
@@ -640,16 +705,15 @@ _x86_64_call1(void *fn, uint64_t a)
 uint64_t
 _x86_64_call2(void *fn, uint64_t a, uint64_t b)
 {
-	struct fpu_kern_ctx *fpu_ctx_save;
+	struct fpu_cc_ent *ent;
 	uint64_t ret;
 
-	fpu_ctx_save = fpu_kern_alloc_ctx(FPU_KERN_NORMAL | FPU_KERN_NOWAIT);
-	if (fpu_ctx_save == NULL)
+	if ((ent = request_fpu_cc_ent()) == NULL)
 		return (ENOMEM);
-	fpu_kern_enter(curthread, fpu_ctx_save, FPU_KERN_NORMAL);
+	fpu_kern_enter(curthread, ent->ctx, FPU_KERN_NORMAL);
 	ret = x86_64_call2(fn, a, b);
-	fpu_kern_leave(curthread, fpu_ctx_save);
-	fpu_kern_free_ctx(fpu_ctx_save);
+	fpu_kern_leave(curthread, ent->ctx);
+	release_fpu_cc_ent(ent);
 
 	return (ret);
 }
@@ -657,16 +721,15 @@ _x86_64_call2(void *fn, uint64_t a, uint64_t b)
 uint64_t
 _x86_64_call3(void *fn, uint64_t a, uint64_t b, uint64_t c)
 {
-	struct fpu_kern_ctx *fpu_ctx_save;
+	struct fpu_cc_ent *ent;
 	uint64_t ret;
 
-	fpu_ctx_save = fpu_kern_alloc_ctx(FPU_KERN_NORMAL | FPU_KERN_NOWAIT);
-	if (fpu_ctx_save == NULL)
+	if ((ent = request_fpu_cc_ent()) == NULL)
 		return (ENOMEM);
-	fpu_kern_enter(curthread, fpu_ctx_save, FPU_KERN_NORMAL);
+	fpu_kern_enter(curthread, ent->ctx, FPU_KERN_NORMAL);
 	ret = x86_64_call3(fn, a, b, c);
-	fpu_kern_leave(curthread, fpu_ctx_save);
-	fpu_kern_free_ctx(fpu_ctx_save);
+	fpu_kern_leave(curthread, ent->ctx);
+	release_fpu_cc_ent(ent);
 
 	return (ret);
 }
@@ -674,16 +737,15 @@ _x86_64_call3(void *fn, uint64_t a, uint64_t b, uint64_t c)
 uint64_t
 _x86_64_call4(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d)
 {
-	struct fpu_kern_ctx *fpu_ctx_save;
+	struct fpu_cc_ent *ent;
 	uint64_t ret;
 
-	fpu_ctx_save = fpu_kern_alloc_ctx(FPU_KERN_NORMAL | FPU_KERN_NOWAIT);
-	if (fpu_ctx_save == NULL)
+	if ((ent = request_fpu_cc_ent()) == NULL)
 		return (ENOMEM);
-	fpu_kern_enter(curthread, fpu_ctx_save, FPU_KERN_NORMAL);
+	fpu_kern_enter(curthread, ent->ctx, FPU_KERN_NORMAL);
 	ret = x86_64_call4(fn, a, b, c, d);
-	fpu_kern_leave(curthread, fpu_ctx_save);
-	fpu_kern_free_ctx(fpu_ctx_save);
+	fpu_kern_leave(curthread, ent->ctx);
+	release_fpu_cc_ent(ent);
 
 	return (ret);
 }
@@ -692,16 +754,15 @@ uint64_t
 _x86_64_call5(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
     uint64_t e)
 {
-	struct fpu_kern_ctx *fpu_ctx_save;
+	struct fpu_cc_ent *ent;
 	uint64_t ret;
 
-	fpu_ctx_save = fpu_kern_alloc_ctx(FPU_KERN_NORMAL | FPU_KERN_NOWAIT);
-	if (fpu_ctx_save == NULL)
+	if ((ent = request_fpu_cc_ent()) == NULL)
 		return (ENOMEM);
-	fpu_kern_enter(curthread, fpu_ctx_save, FPU_KERN_NORMAL);
+	fpu_kern_enter(curthread, ent->ctx, FPU_KERN_NORMAL);
 	ret = x86_64_call5(fn, a, b, c, d, e);
-	fpu_kern_leave(curthread, fpu_ctx_save);
-	fpu_kern_free_ctx(fpu_ctx_save);
+	fpu_kern_leave(curthread, ent->ctx);
+	release_fpu_cc_ent(ent);
 
 	return (ret);
 }
@@ -710,16 +771,15 @@ uint64_t
 _x86_64_call6(void *fn, uint64_t a, uint64_t b, uint64_t c, uint64_t d,
     uint64_t e, uint64_t f)
 {
-	struct fpu_kern_ctx *fpu_ctx_save;
+	struct fpu_cc_ent *ent;
 	uint64_t ret;
 
-	fpu_ctx_save = fpu_kern_alloc_ctx(FPU_KERN_NORMAL | FPU_KERN_NOWAIT);
-	if (fpu_ctx_save == NULL)
+	if ((ent = request_fpu_cc_ent()) == NULL)
 		return (ENOMEM);
-	fpu_kern_enter(curthread, fpu_ctx_save, FPU_KERN_NORMAL);
+	fpu_kern_enter(curthread, ent->ctx, FPU_KERN_NORMAL);
 	ret = x86_64_call6(fn, a, b, c, d, e, f);
-	fpu_kern_leave(curthread, fpu_ctx_save);
-	fpu_kern_free_ctx(fpu_ctx_save);
+	fpu_kern_leave(curthread, ent->ctx);
+	release_fpu_cc_ent(ent);
 
 	return (ret);
 }
