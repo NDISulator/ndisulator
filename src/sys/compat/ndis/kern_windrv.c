@@ -680,7 +680,7 @@ request_fpu_cc_ent(void)
 }
 
 static void
-release_fpu_cc_ent(struct fpu_cc_ent * ent)
+release_fpu_cc_ent(struct fpu_cc_ent *ent)
 {
 
 	ent->used = 0;
