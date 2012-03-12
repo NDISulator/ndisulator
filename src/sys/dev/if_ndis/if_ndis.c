@@ -2255,7 +2255,7 @@ ndis_ioctl(struct ifnet *ifp, u_long command, caddr_t data)
 {
 	struct ndis_softc *sc = ifp->if_softc;
 	struct ifreq *ifr = (struct ifreq *) data;
-	int error;
+	int error = 0;
 
 	switch (command) {
 	case SIOCSIFFLAGS:
