@@ -3,8 +3,6 @@ improve/extend ndisload utility:
  - unloading drivers
  - list loaded drivers
 
-tx path may panic kernel
-SMP support is buggy
 PCMCIA support? Does it work for you?
 USB support is broken, additionaly detaching device will panic or deadlock kernel
 Auto roaming is broken: if association timeouts we may be in ASSOC state forever - add callout?
