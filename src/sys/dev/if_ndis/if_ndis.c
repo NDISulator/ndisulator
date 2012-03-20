@@ -189,8 +189,6 @@ static void	ndis_ticktask(struct device_object *, void *);
 static void	ndis_update_mcast(struct ifnet *ifp);
 static void	ndis_update_promisc(struct ifnet *ifp);
 
-static int ndisdrv_loaded = 0;
-
 MALLOC_DEFINE(M_NDIS_DEV, "ndis_dev", "if_ndis buffers");
 
 /*
@@ -203,9 +201,6 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 {
 	switch (cmd) {
 	case MOD_LOAD:
-		if (ndisdrv_loaded == 1)
-			break;
-		ndisdrv_loaded = 1;
 		windrv_wrap((funcptr)NdisMIndicateReceivePacket,
 		    &ndis_rxeof_wrap, 3, STDCALL);
 		windrv_wrap((funcptr)NdisMEthIndicateReceive,
@@ -232,9 +227,6 @@ ndisdrv_modevent(module_t mod, int cmd, void *arg)
 		    2, STDCALL);
 		break;
 	case MOD_UNLOAD:
-		if (ndisdrv_loaded == 0)
-			break;
-		ndisdrv_loaded = 0;
 		windrv_unwrap(ndis_inputtask_wrap);
 		windrv_unwrap(ndis_linksts_done_wrap);
 		windrv_unwrap(ndis_linksts_wrap);
