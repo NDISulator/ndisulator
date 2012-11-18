@@ -2804,6 +2804,40 @@ RtlFreeAnsiString(struct ansi_string *str)
 	str->buf = NULL;
 }
 
+static int32_t
+RtlGUIDFromString(struct unicode_string *guid_string, struct guid *guid)
+{
+	struct ansi_string ansi;
+	int32_t ret;
+	int i, j, k, l, m;
+
+	ret = RtlUnicodeStringToAnsiString(&ansi, guid_string, TRUE);
+	if (ret != NDIS_STATUS_SUCCESS)
+		return (ret);
+	if (ansi.len != 37 || ansi.buf[0] != '{' ||
+	    ansi.buf[36] != '}' || ansi.buf[9] != '-' ||
+	    ansi.buf[14] != '-' || ansi.buf[19] != '-' ||
+	    ansi.buf[24] != '-') {
+		RtlFreeAnsiString(&ansi);
+		return (NDIS_STATUS_INVALID_PARAMETER);
+	}
+	memcpy(&guid->data4, &ansi.buf[29], sizeof(guid->data3));
+	ansi.buf[29] = 0;
+	if (sscanf(&ansi.buf[1], "%x", &i) == 1 &&
+	    sscanf(&ansi.buf[10], "%x", &j) == 1 &&
+	    sscanf(&ansi.buf[15], "%x", &k) == 1 &&
+	    sscanf(&ansi.buf[20], "%x", &l) == 1 &&
+	    sscanf(&ansi.buf[25], "%x", &m) == 1) {
+		guid->data1 = (i << 16) | (j < 8) | k;
+		guid->data2 = l;
+		guid->data3 = m;
+		ret = NDIS_STATUS_SUCCESS;
+	} else
+		ret = NDIS_STATUS_INVALID_PARAMETER;
+	RtlFreeAnsiString(&ansi);
+	return (ret);
+}
+
 static int
 atoi(const char *str)
 {
@@ -3941,6 +3975,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_SFUNC(RtlFillMemory, 3),
 	IMPORT_SFUNC(RtlFreeAnsiString, 1),
 	IMPORT_SFUNC(RtlFreeUnicodeString, 1),
+	IMPORT_SFUNC(RtlGUIDFromString, 2),
 	IMPORT_SFUNC(RtlInitAnsiString, 2),
 	IMPORT_SFUNC(RtlInitUnicodeString, 2),
 	IMPORT_SFUNC(RtlMoveMemory, 3),

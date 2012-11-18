@@ -47,6 +47,13 @@ struct ansi_string {
 	char		*buf;
 };
 
+struct guid {
+	uint32_t	data1;
+	uint16_t	data2;
+	uint16_t	data3;
+	unsigned char	data4[8];
+};
+
 /*
  * Windows memory descriptor list. In Windows, it's possible for
  * buffers to be passed between user and kernel contexts without
