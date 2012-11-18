@@ -2263,7 +2263,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	struct ndis_module nc;
 	struct vattr vat, *vap = &vat;
 	struct ndis_file_handle *fh;
-	int flags, vfslocked;
+	int flags;
 
 	if (RtlUnicodeStringToAnsiString(&as, filename, TRUE)) {
 		*status = NDIS_STATUS_RESOURCES;
@@ -2305,7 +2305,7 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	if (td->td_proc->p_fd->fd_cdir == NULL)
 		td->td_proc->p_fd->fd_cdir = rootvnode;
 
-	NDINIT(&nd, LOOKUP, FOLLOW | MPSAFE, UIO_SYSSPACE, path, td);
+	NDINIT(&nd, LOOKUP, FOLLOW, UIO_SYSSPACE, path, td);
 
 	flags = FREAD;
 	if (vn_open(&nd, &flags, 0, NULL) != 0) {
@@ -2316,7 +2316,6 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 		free(afilename, M_NDIS_SUBR);
 		return;
 	}
-	vfslocked = NDHASGIANT(&nd);
 
 	free(path, M_NDIS_SUBR);
 
@@ -2325,7 +2324,6 @@ NdisOpenFile(int32_t *status, struct ndis_file_handle **filehandle,
 	/* Get the file size. */
 	VOP_GETATTR(nd.ni_vp, vap, td->td_ucred);
 	VOP_UNLOCK(nd.ni_vp, 0);
-	VFS_UNLOCK_GIANT(vfslocked);
 
 	fh->vp = nd.ni_vp;
 	fh->map = NULL;
@@ -2342,7 +2340,7 @@ NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_file_handle *file)
 	struct thread *td = curthread;
 	linker_file_t lf;
 	caddr_t kldstart;
-	int error, vfslocked;
+	int error;
 	ssize_t resid;
 
 	if (file == NULL) {
@@ -2376,10 +2374,8 @@ NdisMapFile(int32_t *status, void **mappedbuffer, struct ndis_file_handle *file)
 	}
 
 	vp = file->vp;
-	vfslocked = VFS_LOCK_GIANT(vp->v_mount);
 	error = vn_rdwr(UIO_READ, vp, file->map, file->maplen, 0,
 	    UIO_SYSSPACE, 0, td->td_ucred, NOCRED, &resid, td);
-	VFS_UNLOCK_GIANT(vfslocked);
 	if (error)
 		*status = NDIS_STATUS_FAILURE;
 	else {
@@ -2403,7 +2399,6 @@ NdisCloseFile(struct ndis_file_handle *file)
 {
 	struct vnode *vp;
 	struct thread *td = curthread;
-	int vfslocked;
 
 	if (file == NULL)
 		return;
@@ -2416,9 +2411,7 @@ NdisCloseFile(struct ndis_file_handle *file)
 		return;
 	if (file->type == NDIS_FILE_HANDLE_TYPE_VFS) {
 		vp = file->vp;
-		vfslocked = VFS_LOCK_GIANT(vp->v_mount);
 		vn_close(vp, FREAD, td->td_ucred, td);
-		VFS_UNLOCK_GIANT(vfslocked);
 	}
 	file->vp = NULL;
 	free(file->name, M_NDIS_SUBR);
