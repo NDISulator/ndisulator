@@ -465,9 +465,15 @@ static void
 NdisOpenConfigurationKeyByName(int32_t *status, void *cfg,
     struct unicode_string *subkey, void **subhandle)
 {
-	TRACE(NDBG_CFG, "cfg %p\n", cfg);
-	*subhandle = cfg;
-	*status = NDIS_STATUS_SUCCESS;
+	struct ansi_string astr;
+
+	if (RtlUnicodeStringToAnsiString(&astr, subkey, TRUE)) {
+	    *status = NDIS_STATUS_FAILURE;
+	    return;
+	}
+	TRACE(NDBG_CFG, "cfg %p key %s\n", cfg, astr.buf);
+	*status = NDIS_STATUS_FAILURE;
+	RtlFreeAnsiString(&astr);
 }
 
 static void
