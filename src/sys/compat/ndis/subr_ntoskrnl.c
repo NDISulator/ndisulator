@@ -2189,7 +2189,7 @@ MmAllocateContiguousMemorySpecifyCache(uint32_t size, uint64_t lowest,
 
 	TRACE(NDBG_MM, "size %u lowest %"PRIu64" highest %"PRIu64" boundary "
 	    "%"PRIu64" type %d\n", size, lowest, highest, boundary, type);
-	ret = (void *)kmem_alloc_contig(kernel_map, size, M_ZERO|M_NOWAIT,
+	ret = (void *)kmem_alloc_contig(kernel_arena, size, M_ZERO|M_NOWAIT,
 	    lowest, highest, PAGE_SIZE, boundary, cnvmct(type));
 	if (ret != NULL)
 		malloc_type_allocated(M_NDIS_NTOSKRNL, round_page(size));
@@ -2210,7 +2210,7 @@ MmFreeContiguousMemorySpecifyCache(void *base, uint32_t size,
 	TRACE(NDBG_MM, "base %p size %u type %d\n", base, size, type);
 	if (base == NULL)
 		return;
-	kmem_free(kernel_map, (vm_offset_t)base, size);
+	kmem_free(kernel_arena, (vm_offset_t)base, size);
 	malloc_type_freed(M_NDIS_NTOSKRNL, round_page(size));
 }
 
