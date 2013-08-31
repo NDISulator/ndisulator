@@ -1350,7 +1350,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 			p = packets[i];
 			if (p->oob.status == NDIS_STATUS_SUCCESS) {
 				p->refcnt++;
-				ndis_return_packet(block, p);
+				ndis_return_packet(NULL, block, p);
 			}
 		}
 		return;
@@ -1363,7 +1363,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 		if (ndis_ptom(&m0, p)) {
 			device_printf(sc->ndis_dev, "ptom failed\n");
 			if (p->oob.status == NDIS_STATUS_SUCCESS)
-				ndis_return_packet(block, p);
+				ndis_return_packet(NULL, block, p);
 		} else {
 			m = m_dup(m0, M_DONTWAIT);
 			if (p->oob.status == NDIS_STATUS_RESOURCES)

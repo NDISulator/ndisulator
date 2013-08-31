@@ -348,15 +348,15 @@ ndis_return_packet_nic(struct device_object *dobj,
 	KeReleaseSpinLock(&block->returnlock, irql);
 }
 
-void
-ndis_return_packet(void *buf, void *arg)
+int
+ndis_return_packet(struct mbuf *m, void *buf, void *arg)
 {
 	struct ndis_packet *p = arg;
 	struct ndis_miniport_block *block;
 
 	p->refcnt--;
 	if (p->refcnt)
-		return;
+		return (EXT_FREE_OK);
 
 	block = ((struct ndis_softc *)p->softc)->ndis_block;
 	KeAcquireSpinLockAtDpcLevel(&block->returnlock);
@@ -366,6 +366,8 @@ ndis_return_packet(void *buf, void *arg)
 
 	IoQueueWorkItem(block->returnitem,
 	    (io_workitem_func)kernndis_functbl[7].wrap, CRITICAL, block);
+
+	return (EXT_FREE_OK);
 }
 
 static void
