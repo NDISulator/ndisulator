@@ -1337,13 +1337,13 @@ ntoskrnl_waittest(struct nt_dispatcher_header *obj, uint32_t increment)
 	 *
 	 * The rules work like this:
 	 *
-	 * If a wait block is marked as WAIT_ANY, then
+	 * If a wait block is marked as NDIS_WAIT_ANY, then
 	 * we can satisfy the wait conditions on the current
 	 * object and wake the thread right away. Satisfying
 	 * the wait also has the effect of breaking us out
 	 * of the search loop.
 	 *
-	 * If the object is marked as WAITTYLE_ALL, then the
+	 * If the object is marked as NDIS_WAIT_ALL, then the
 	 * wait block will be part of a circularly linked
 	 * list of wait blocks belonging to a waiting thread
 	 * that's sleeping in KeWaitForMultipleObjects(). In
@@ -1360,7 +1360,7 @@ ntoskrnl_waittest(struct nt_dispatcher_header *obj, uint32_t increment)
 		we = w->wb_ext;
 		td = we->we_td;
 		satisfied = TRUE;
-		if (w->wb_waittype == WAIT_ANY) {
+		if (w->wb_waittype == NDIS_WAIT_ANY) {
 			/*
 			 * Thread can be awakened if
 			 * any wait is satisfied.
@@ -1531,7 +1531,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 	bzero((char *)&w, sizeof(struct wait_block));
 	w.wb_object = obj;
 	w.wb_ext = &we;
-	w.wb_waittype = WAIT_ANY;
+	w.wb_waittype = NDIS_WAIT_ANY;
 	w.wb_next = &w;
 	w.wb_waitkey = 0;
 	w.wb_awakened = FALSE;
@@ -1582,7 +1582,7 @@ KeWaitForSingleObject(void *arg, uint32_t reason, uint32_t mode,
 
 	return (NDIS_STATUS_SUCCESS);
 /*
-	return (KeWaitForMultipleObjects(1, &obj, WAIT_ALL, reason,
+	return (KeWaitForMultipleObjects(1, &obj, NDIS_WAIT_ALL, reason,
 	    mode, alertable, duetime, &w));
 */
 }
@@ -1647,11 +1647,11 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatcher_header *obj[],
 			}
 
 			/*
-			 * If this is a WAIT_ANY wait, then
+			 * If this is a NDIS_WAIT_ANY wait, then
 			 * satisfy the waited object and exit
 			 * right now.
 			 */
-			if (wtype == WAIT_ANY) {
+			if (wtype == NDIS_WAIT_ANY) {
 				ntoskrnl_satisfy_wait(obj[i], td);
 				status = NDIS_STATUS_WAIT_0 + i;
 				goto wait_done;
@@ -1665,10 +1665,10 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatcher_header *obj[],
 	}
 
 	/*
-	 * If this is a WAIT_ALL wait and all objects are
+	 * If this is a NDIS_WAIT_ALL wait and all objects are
 	 * already signalled, satisfy the waits and exit now.
 	 */
-	if (wtype == WAIT_ALL && wcnt == 0) {
+	if (wtype == NDIS_WAIT_ALL && wcnt == 0) {
 		for (i = 0; i < cnt; i++)
 			ntoskrnl_satisfy_wait(obj[i], td);
 		status = NDIS_STATUS_SUCCESS;
@@ -1730,7 +1730,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatcher_header *obj[],
 					panic("mutant limit exceeded");
 				}
 				wcnt--;
-				if (wtype == WAIT_ANY) {
+				if (wtype == NDIS_WAIT_ANY) {
 					status = w->wb_waitkey &
 					    NDIS_STATUS_WAIT_0;
 					goto wait_done;
@@ -1741,7 +1741,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatcher_header *obj[],
 
 		/*
 		 * If all objects have been signalled, or if this
-		 * is a WAIT_ANY wait and we were woke up by
+		 * is a NDIS_WAIT_ANY wait and we were woke up by
 		 * someone, we can bail.
 		 */
 		if (wcnt == 0) {
@@ -1750,7 +1750,7 @@ KeWaitForMultipleObjects(uint32_t cnt, struct nt_dispatcher_header *obj[],
 		}
 
 		/*
-		 * If this is WAIT_ALL wait, and there's still
+		 * If this is NDIS_WAIT_ALL wait, and there's still
 		 * objects that haven't been signalled, deduct the
 		 * time that's elapsed so far from the timeout and
 		 * wait again (or continue waiting indefinitely if
@@ -3071,14 +3071,14 @@ KeSetEvent(struct nt_kevent *kevent, int32_t increment, uint8_t kwait)
 		 * to automatically clear synchronization events anyway).
 		 *
 		 * If it's a notification event, or the first
-		 * waiter is doing a WAIT_ALL wait, go through
+		 * waiter is doing a NDIS_WAIT_ALL wait, go through
 		 * the full wait satisfaction process.
 		 */
 		w = CONTAINING_RECORD(dh->wait_list_head.flink,
 		    struct wait_block, wb_waitlist);
 		we = w->wb_ext;
 		if (kevent->header.type == NOTIFICATION_EVENT_OBJECT ||
-		    w->wb_waittype == WAIT_ALL) {
+		    w->wb_waittype == NDIS_WAIT_ALL) {
 			if (prevstate == FALSE) {
 				dh->signal_state = TRUE;
 				ntoskrnl_waittest(dh, increment);

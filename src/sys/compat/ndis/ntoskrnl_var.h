@@ -496,8 +496,8 @@ enum timer_type {
 };
 
 enum wait_type {
-	WAIT_ALL,
-	WAIT_ANY
+	NDIS_WAIT_ALL,
+	NDIS_WAIT_ANY
 };
 
 enum alt_arch_type {
