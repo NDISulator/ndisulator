@@ -152,7 +152,7 @@ load_file(char *filename, ndis_load_driver_args_t *driver)
 	rewind(fp);
 	image = calloc(size, 1);
 	if (image == NULL)
-		err(-1, "calloc(%u)", size);
+		err(-1, "calloc(%zu)", size);
 	fread(image, size, 1, fp);
 	fclose(fp);
 
