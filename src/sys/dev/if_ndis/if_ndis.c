@@ -1164,7 +1164,7 @@ NdisMEthIndicateReceive(struct ndis_miniport_block *block, void *ctx,
 	struct mbuf *m;
 	struct ndis_ethpriv *priv;
 
-	m = m_getcl(M_DONTWAIT, MT_DATA, M_PKTHDR);
+	m = m_getcl(M_NOWAIT, MT_DATA, M_PKTHDR);
 	if (m == NULL)
 		return;
 
@@ -1366,7 +1366,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 			if (p->oob.status == NDIS_STATUS_SUCCESS)
 				ndis_return_packet(NULL, block, p);
 		} else {
-			m = m_dup(m0, M_DONTWAIT);
+			m = m_dup(m0, M_NOWAIT);
 			if (p->oob.status == NDIS_STATUS_RESOURCES)
 				p->refcnt++;
 			else
