@@ -484,9 +484,9 @@ ndis_ptom(struct mbuf **m0, struct ndis_packet *p)
 
 	for (buf = priv->head; buf != NULL; buf = buf->next) {
 		if (buf == priv->head)
-			MGETHDR(m, M_DONTWAIT, MT_HEADER);
+			MGETHDR(m, M_NOWAIT, MT_HEADER);
 		else
-			MGET(m, M_DONTWAIT, MT_DATA);
+			MGET(m, M_NOWAIT, MT_DATA);
 		if (m == NULL) {
 			m_freem(*m0);
 			*m0 = NULL;
