@@ -2200,7 +2200,7 @@ void	ndis_shutdown_nic(struct ndis_softc *);
 void	ndis_pnp_event_nic(struct ndis_softc *, uint32_t, uint32_t);
 uint8_t	ndis_check_for_hang_nic(struct ndis_softc *);
 int32_t	ndis_init_nic(struct ndis_softc *);
-int	ndis_return_packet(struct mbuf *, void *, void *);
+void	ndis_return_packet(struct mbuf *, void *, void *);
 int	ndis_init_dma(struct ndis_softc *);
 void	ndis_destroy_dma(struct ndis_softc *);
 int	ndis_add_sysctl(struct ndis_softc *, char *, char *, char *, int);
