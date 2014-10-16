@@ -1373,7 +1373,7 @@ NdisMIndicateReceivePacket(struct ndis_miniport_block *block,
 				p->oob.status = NDIS_STATUS_PENDING;
 			m_freem(m0);
 			if (m == NULL) {
-				ifp->if_ierrors++;
+				if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 				continue;
 			}
 			m0 = m;
@@ -1466,9 +1466,9 @@ NdisMSendComplete(struct ndis_miniport_block *block, struct ndis_packet *packet,
 	sc->ndis_txpending++;
 
 	if (status == NDIS_STATUS_SUCCESS)
-		ifp->if_opackets++;
+		f_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	else
-		ifp->if_oerrors++;
+		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 
 	/*
 	 * Stop watchdog if there are no pending packets or restart timer if
@@ -1604,7 +1604,7 @@ ndis_tick(void *xsc)
 		sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	}
 	if (sc->ndis_tx_timer && --sc->ndis_tx_timer == 0) {
-		sc->ndis_ifp->if_oerrors++;
+		if_inc_counter(sc->ifp, IFCOUNTER_OERRORS, 1);
 		device_printf(sc->ndis_dev, "watchdog timeout\n");
 		IoQueueWorkItem(sc->ndis_resetitem,
 		    (io_workitem_func)ndis_resettask_wrap, CRITICAL, sc);
