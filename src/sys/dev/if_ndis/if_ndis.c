@@ -1466,7 +1466,7 @@ NdisMSendComplete(struct ndis_miniport_block *block, struct ndis_packet *packet,
 	sc->ndis_txpending++;
 
 	if (status == NDIS_STATUS_SUCCESS)
-		f_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
+		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	else
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 
@@ -1604,7 +1604,7 @@ ndis_tick(void *xsc)
 		sc->ndis_hang_timer = sc->ndis_block->check_for_hang_secs;
 	}
 	if (sc->ndis_tx_timer && --sc->ndis_tx_timer == 0) {
-		if_inc_counter(sc->ifp, IFCOUNTER_OERRORS, 1);
+		if_inc_counter(sc->ndis_ifp, IFCOUNTER_OERRORS, 1);
 		device_printf(sc->ndis_dev, "watchdog timeout\n");
 		IoQueueWorkItem(sc->ndis_resetitem,
 		    (io_workitem_func)ndis_resettask_wrap, CRITICAL, sc);
