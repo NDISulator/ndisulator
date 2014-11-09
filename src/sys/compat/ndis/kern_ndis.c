@@ -70,6 +70,8 @@ __FBSDID("$FreeBSD$");
 #include "usbd_var.h"
 #include "if_ndisvar.h"
 
+#define	NDIS_FLAG_RDONLY 1
+
 #ifdef NDIS_DEBUG
 int ndis_debug = 0;
 SYSCTL_INT(_debug, OID_AUTO, ndis, CTLFLAG_RW, &ndis_debug,
@@ -243,33 +245,33 @@ ndis_create_sysctls(struct ndis_softc *sc)
 	 * Environment can be either Windows (0) or WindowsNT (1).
 	 * We qualify as the latter.
 	 */
-	ndis_add_sysctl(sc, "Environment", "Environment", "1", CTLFLAG_RD);
+	ndis_add_sysctl(sc, "Environment", "Environment", "1", NDIS_FLAG_RDONLY);
 	/* NDIS version should be 5.1. */
 	ndis_add_sysctl(sc, "NdisVersion", "NDIS API Version",
-	    "0x00050001", CTLFLAG_RD);
-	ndis_add_sysctl(sc, "SlotNumber", "Slot Number", "01", CTLFLAG_RD);
+	    "0x00050001", NDIS_FLAG_RDONLY);
+	ndis_add_sysctl(sc, "SlotNumber", "Slot Number", "01", NDIS_FLAG_RDONLY);
 	ndis_add_sysctl(sc, "NetCfgInstanceId", "NetCfgInstanceId",
-	    "{12345678-1234-5678-CAFE0-123456789ABC}", CTLFLAG_RD);
+	    "{12345678-1234-5678-CAFE0-123456789ABC}", NDIS_FLAG_RDONLY);
 	ndis_add_sysctl(sc, "DriverDesc", "Driver Description",
-	    "NDIS Network Adapter", CTLFLAG_RD);
+	    "NDIS Network Adapter", NDIS_FLAG_RDONLY);
 	/* Bus type (PCI, PCMCIA, etc...) */
 	sprintf(buf, "%d", sc->ndis_bus_type);
-	ndis_add_sysctl(sc, "BusType", "Bus Type", buf, CTLFLAG_RD);
+	ndis_add_sysctl(sc, "BusType", "Bus Type", buf, NDIS_FLAG_RDONLY);
 	if (sc->ndis_res_io != NULL) {
 		sprintf(buf, "0x%lx", rman_get_start(sc->ndis_res_io));
 		ndis_add_sysctl(sc, "IOBaseAddress",
-		    "Base I/O Address", buf, CTLFLAG_RD);
+		    "Base I/O Address", buf, NDIS_FLAG_RDONLY);
 	}
 	if (sc->ndis_irq != NULL) {
 		sprintf(buf, "%lu", rman_get_start(sc->ndis_irq));
 		ndis_add_sysctl(sc, "InterruptNumber",
-		    "Interrupt Number", buf, CTLFLAG_RD);
+		    "Interrupt Number", buf, NDIS_FLAG_RDONLY);
 	}
 }
 
 int
 ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
-    int flag)
+    int flag_rdonly)
 {
 	struct ndis_cfglist *cfg;
 
@@ -284,12 +286,21 @@ ndis_add_sysctl(struct ndis_softc *sc, char *key, char *desc, char *val,
 	cfg->ndis_cfg.val = strdup(val, M_NDIS_KERN);
 
 	TAILQ_INSERT_TAIL(&sc->ndis_cfglist_head, cfg, link);
-
-	cfg->ndis_oid = SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
-	    SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
-	    OID_AUTO, cfg->ndis_cfg.key, flag, cfg->ndis_cfg.val,
-	    sizeof(cfg->ndis_cfg.val), cfg->ndis_cfg.desc);
-
+	if (flag_rdonly != 0) {
+	    cfg->ndis_oid =
+		SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
+		SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
+		OID_AUTO, cfg->ndis_cfg.key, CTLFLAG_RD,
+		cfg->ndis_cfg.val, sizeof(cfg->ndis_cfg.val),
+		cfg->ndis_cfg.desc);
+	} else {
+	    cfg->ndis_oid =
+		SYSCTL_ADD_STRING(device_get_sysctl_ctx(sc->ndis_dev),
+		SYSCTL_CHILDREN(device_get_sysctl_tree(sc->ndis_dev)),
+		OID_AUTO, cfg->ndis_cfg.key, CTLFLAG_RW,
+		cfg->ndis_cfg.val, sizeof(cfg->ndis_cfg.val),
+		cfg->ndis_cfg.desc);
+	}
 	return (0);
 }
 
