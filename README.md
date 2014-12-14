@@ -5,27 +5,27 @@ This software has some fixes and improvements comparing to ndis module available
 This software supports NDIS version 5.1 what means it can be used with Windows XP and Windows Server 2000/2003 drivers.
 
 ### Requirements
-* make sure you use recent FreeBSD CURRENT kernel and world
+* make sure you use recent **FreeBSD CURRENT** kernel and world (this git branch last tested at **13 Dec 2014** with **FreeBSD 11.0-CURRENT r275742**)
 * make sure FreeBSD source tree is available in /usr/src
 * make sure you use the same "arch" of MS Windows drivers as your FreeBSD installation (i.e. 64 bit driver for amd64 case; 32 bit driver for i386 case)
 
 ### How to use:
-1. To build NDISulator you have to run:
+* To build NDISulator you have to run:
 ```
 	make
 ```
 
-2. To install NDISulator (**ndis** kernel module + **ndisload** binary) you have to run as root:
+* To install NDISulator (**ndis** kernel module + **ndisload** binary) you have to run as root:
 ```
 	make install
 ```
 
-3. To load ndis kernel module you have to run following command as root:
+* To load ndis kernel module you have to run following command as root:
 ```
 	kldload ndis
 ```
 
-4. To load windows miniport driver (.sys file) you have to use **ndisload** binary (there is no need to generate kernel module based on .inf + .sys files like it is necessary for ndis from FreeBSD base system)
+* To load windows miniport driver (.sys file) you have to use **ndisload** binary (there is no need to generate kernel module based on .inf + .sys files like it is necessary for ndis from FreeBSD base system)
 ```
 	ndisload [-p|-u|-P -s <PATH> -n <NAME> -v <VENDOR_ID> -d <DEVICE_ID>]
 	ndisload flags:
@@ -34,10 +34,11 @@ This software supports NDIS version 5.1 what means it can be used with Windows X
 		-P = PCMCIA device
 		-s PATH = path to windows miniport driver (.sys file)
 		-n NAME = device name (any name you like)
-		-v VENDOR_ID = vendor id (last 4 hex digits of "chip" value in "pciconf" output)
-		-d DEVICE_ID = device id (first 4 hex digits of "chip" value in "pciconf" output)
-Remember to add "0x" prefix if you are just copying vendor/device id values from pciconf output
+		-v VENDOR_ID = last 4 hex digits of "chip" value in "pciconf" output
+		-d DEVICE_ID = first 4 hex digits of "chip" value in "pciconf" output
 ```
+Don't forget to add "0x" prefix if you just copying vendor/device id values from pciconf output
+
 **Example of ndisload use:**
 ```
 	none@pci0:0:3:0: class=0x020000 card=0x11001af4 chip=0x813910ec rev=0x20 hdr=0x00
@@ -51,7 +52,7 @@ Correct ndisload command for device above:
 	ndisload -p -s /root/rl8139/Rtnic64.sys -n test_dev -v 0x10ec -d 0x8139
 ```
 
-5. If all steps completed successfully at this point you should see new interface named **ndis0**
+* If all steps completed successfully at this point you should see new interface named **ndis0**
 
 
 ### How to revert to stock ndis:
