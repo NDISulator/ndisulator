@@ -11,9 +11,9 @@ This software supports NDIS version 5.1 what means it can be used with Windows X
 
 ### Git branches
 Please select proper ndisulator branch for your FreeBSD system:
-**master** branch is intended to be used with **FreeBSD CURRENT**
-**freebsd-10-stable** branch is intended to be used with **FreeBSD 10-STABLE**
-**freebsd-9-stable** branch is intended to be used with **FreeBSD 9-STABLE**
+- **master** branch is intended to be used with **FreeBSD CURRENT**
+- **freebsd-10-stable** branch is intended to be used with **FreeBSD 10-STABLE**
+- **freebsd-9-stable** branch is intended to be used with **FreeBSD 9-STABLE**
 
 ### How to use:
 * To build NDISulator you have to run:
