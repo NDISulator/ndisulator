@@ -2809,33 +2809,39 @@ RtlGUIDFromString(struct unicode_string *guid_string, struct guid *guid)
 {
 	struct ansi_string ansi;
 	int32_t ret;
-	int i, j, k, l, m;
+	int i, a, b, c, d1, d2, e1, e2, e3, e4, e5, e6;
+	char *pattern = "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}";
 
 	ret = RtlUnicodeStringToAnsiString(&ansi, guid_string, TRUE);
 	if (ret != NDIS_STATUS_SUCCESS)
 		return (ret);
-	if (ansi.len != 37 || ansi.buf[0] != '{' ||
-	    ansi.buf[36] != '}' || ansi.buf[9] != '-' ||
-	    ansi.buf[14] != '-' || ansi.buf[19] != '-' ||
-	    ansi.buf[24] != '-') {
+	if (ansi.as_len != strlen(pattern)) {
 		RtlFreeAnsiString(&ansi);
 		return (NDIS_STATUS_INVALID_PARAMETER);
 	}
-	memcpy(&guid->data4, &ansi.buf[29], sizeof(guid->data3));
-	ansi.buf[29] = 0;
-	if (sscanf(&ansi.buf[1], "%x", &i) == 1 &&
-	    sscanf(&ansi.buf[10], "%x", &j) == 1 &&
-	    sscanf(&ansi.buf[15], "%x", &k) == 1 &&
-	    sscanf(&ansi.buf[20], "%x", &l) == 1 &&
-	    sscanf(&ansi.buf[25], "%x", &m) == 1) {
-		guid->data1 = (i << 16) | (j < 8) | k;
-		guid->data2 = l;
-		guid->data3 = m;
-		ret = NDIS_STATUS_SUCCESS;
-	} else
-		ret = NDIS_STATUS_INVALID_PARAMETER;
+	for (i = 0; i < ansi.as_len; i++)
+		if (pattern[i] != 'X' && ansi.as_buf[i] != pattern[i]) {
+			RtlFreeAnsiString(&ansi);
+			return (NDIS_STATUS_INVALID_PARAMETER);
+		}
+	ret = sscanf(ansi.as_buf,
+	    "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}", &a, &b, &c,
+	    &d1, &d2, &e1, &e2, &e3, &e4, &e5, &e6);
 	RtlFreeAnsiString(&ansi);
-	return (ret);
+	if (ret != 11)
+		return (NDIS_STATUS_INVALID_PARAMETER);
+	guid->data1 = a;
+	guid->data2 = b;
+	guid->data3 = c;
+	guid->data4[0] = d1;
+	guid->data4[1] = d2;
+	guid->data4[2] = e1;
+	guid->data4[3] = e2;
+	guid->data4[4] = e3;
+	guid->data4[5] = e4;
+	guid->data4[6] = e5;
+	guid->data4[7] = e6;
+	return (NDIS_STATUS_SUCCESS);
 }
 
 static int
