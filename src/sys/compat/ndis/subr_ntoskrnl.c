@@ -269,6 +269,8 @@ static void *ntoskrnl_memchr(void *, unsigned char, size_t);
 static char *ntoskrnl_strncat(char *, const char *, size_t);
 static int ntoskrnl_toupper(int);
 static int ntoskrnl_tolower(int);
+static int vsprintf_wrap(char *, const char *, va_list);
+static int vsnprintf_wrap(char *, size_t, const char *, va_list);
 static funcptr ntoskrnl_findwrap(void *);
 static int32_t DbgPrint(const char *, ...);
 static void DbgBreakPoint(void);
@@ -449,6 +451,29 @@ static int
 ntoskrnl_tolower(int c)
 {
 	return (tolower(c));
+}
+
+static int
+vsprintf_wrap(char *str, const char *format, va_list ap)
+{
+#ifdef __amd64__
+	struct x86_64_va_list wrap_va = { 6 * 8, 6 * 8 + 16 * 16, (void *)ap, NULL };
+	return vsprintf(str, format, (void *)&wrap_va);
+#else
+	return vsprintf(str, format, ap);
+#endif
+
+}
+
+static int
+vsnprintf_wrap(char *str, size_t size, const char *format, va_list ap)
+{
+#ifdef __amd64__
+	struct x86_64_va_list wrap_va = { 6 * 8, 6 * 8 + 16 * 16, (void *)ap, NULL };
+	return vsnprintf(str, size, format, (void *)&wrap_va);
+#else
+	return vsnprintf(str, size, format, ap);
+#endif
 }
 
 static uint8_t
@@ -3813,7 +3838,6 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC(strncmp, 0),
 	IMPORT_CFUNC(strncpy, 0),
 	IMPORT_CFUNC(strstr, 0),
-	IMPORT_CFUNC(vsprintf, 0),
 	IMPORT_CFUNC(wcscat, 0),
 	IMPORT_CFUNC(wcscmp, 0),
 	IMPORT_CFUNC(wcscpy, 0),
@@ -3821,7 +3845,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC(wcslen, 0),
 	IMPORT_CFUNC(wcsncpy, 0),
 	IMPORT_CFUNC_MAP(_snprintf, snprintf, 0),
-	IMPORT_CFUNC_MAP(_vsnprintf, vsnprintf, 0),
+	IMPORT_CFUNC_MAP(_vsnprintf, vsnprintf_wrap, 0),
 	IMPORT_CFUNC_MAP(memchr, ntoskrnl_memchr, 0),
 	IMPORT_CFUNC_MAP(strchr, index, 0),
 	IMPORT_CFUNC_MAP(stricmp, strcasecmp, 0),
@@ -3829,6 +3853,7 @@ struct image_patch_table ntoskrnl_functbl[] = {
 	IMPORT_CFUNC_MAP(strrchr, rindex, 0),
 	IMPORT_CFUNC_MAP(tolower, ntoskrnl_tolower, 0),
 	IMPORT_CFUNC_MAP(toupper, ntoskrnl_toupper, 0),
+	IMPORT_CFUNC_MAP(vsprintf, vsprintf_wrap, 0),
 	IMPORT_FFUNC(ExInterlockedAddLargeStatistic, 2),
 	IMPORT_FFUNC(ExInterlockedPopEntrySList, 2),
 	IMPORT_FFUNC(ExInterlockedPushEntrySList, 3),

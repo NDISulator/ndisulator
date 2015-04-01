@@ -54,6 +54,15 @@ struct guid {
 	unsigned char	data4[8];
 };
 
+#ifdef __amd64__
+struct x86_64_va_list {
+	int		gp_offset;
+	int		fp_offset;
+	void		*overflow_arg_area;
+	void		*reg_save_area;
+};
+#endif
+
 /*
  * Windows memory descriptor list. In Windows, it's possible for
  * buffers to be passed between user and kernel contexts without
