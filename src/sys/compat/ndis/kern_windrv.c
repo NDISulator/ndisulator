@@ -83,12 +83,15 @@ static struct cdevsw ndis_cdevsw = {
 
 #ifdef __amd64__
 struct fpu_cc_ent {
-	char		used;
-	struct fpu_kern_ctx *ctx;
-	SLIST_ENTRY(fpu_cc_ent) link;
+	struct fpu_kern_ctx	*ctx;
+	LIST_ENTRY(fpu_cc_ent)	entries;
 };
-static SLIST_HEAD(fpu_ctx_cache, fpu_cc_ent) fpu_cc_head;
-static struct mtx fpu_cache_mtx;
+static LIST_HEAD(fpu_ctx_free, fpu_cc_ent) fpu_free_head =
+    LIST_HEAD_INITIALIZER(fpu_free_head);
+static LIST_HEAD(fpu_ctx_busy, fpu_cc_ent) fpu_busy_head =
+    LIST_HEAD_INITIALIZER(fpu_busy_head);
+static struct mtx fpu_free_mtx;
+static struct mtx fpu_busy_mtx;
 #endif
 
 static struct mtx drvdb_mtx;
@@ -108,8 +111,10 @@ windrv_libinit(void)
 	mtx_init(&drvdb_mtx, "drvdb_mtx", NULL, MTX_DEF);
 
 #ifdef __amd64__
-	SLIST_INIT(&fpu_cc_head);
-	mtx_init(&fpu_cache_mtx, "fpu context cache lock", NULL, MTX_DEF);
+	LIST_INIT(&fpu_free_head);
+	LIST_INIT(&fpu_busy_head);
+	mtx_init(&fpu_free_mtx, "free fpu context list lock", NULL, MTX_DEF);
+	mtx_init(&fpu_busy_mtx, "busy fpu context list lock", NULL, MTX_DEF);
 #endif
 
 	ndis_dev = make_dev_credf(0, &ndis_cdevsw, 0, NULL,
@@ -132,7 +137,7 @@ windrv_libfini(void)
 {
 	struct drvdb_ent *d;
 #ifdef __amd64__
-	struct fpu_cc_ent *ent;
+	struct fpu_cc_ent	*ent;
 #endif
 
 	destroy_dev(ndis_dev);
@@ -158,13 +163,16 @@ windrv_libfini(void)
 	mtx_destroy(&drvdb_mtx);
 
 #ifdef __amd64__
-	while ((ent = SLIST_FIRST(&fpu_cc_head)) != NULL) {
-		SLIST_REMOVE_HEAD(&fpu_cc_head, link);
+	while ((ent = LIST_FIRST(&fpu_free_head)) != NULL) {
+		LIST_REMOVE(ent, entries);
 		fpu_kern_free_ctx(ent->ctx);
-		free(ent, M_NDIS_WINDRV);
+		free(ent, M_DEVBUF);
 	}
+	mtx_destroy(&fpu_free_mtx);
 
-	mtx_destroy(&fpu_cache_mtx);
+	ent = LIST_FIRST(&fpu_busy_head);
+	KASSERT(ent == NULL, ("busy fpu context list is not empty"));
+	mtx_destroy(&fpu_busy_mtx);
 #endif
 }
 
@@ -653,27 +661,29 @@ request_fpu_cc_ent(void)
 {
 	struct fpu_cc_ent *ent;
 
-	mtx_lock(&fpu_cache_mtx);
-	SLIST_FOREACH(ent, &fpu_cc_head, link) {
-		if(ent->used == 0) {
-			ent->used = 1;
-			mtx_unlock(&fpu_cache_mtx);
-			return (ent);
-		}
+	mtx_lock(&fpu_free_mtx);
+	if ((ent = LIST_FIRST(&fpu_free_head)) != NULL) {
+		LIST_REMOVE(ent, entries);
+		mtx_unlock(&fpu_free_mtx);
+		mtx_lock(&fpu_busy_mtx);
+		LIST_INSERT_HEAD(&fpu_busy_head, ent, entries);
+		mtx_unlock(&fpu_busy_mtx);
+		return (ent);
 	}
-	mtx_unlock(&fpu_cache_mtx);
+	mtx_unlock(&fpu_free_mtx);
 
-	if ((ent = malloc(sizeof(struct fpu_cc_ent), M_NDIS_WINDRV, M_NOWAIT |
+	if ((ent = malloc(sizeof(struct fpu_cc_ent), M_DEVBUF, M_NOWAIT |
 	    M_ZERO)) != NULL) {
 		ent->ctx = fpu_kern_alloc_ctx(FPU_KERN_NORMAL |
 		    FPU_KERN_NOWAIT);
 		if (ent->ctx != NULL) {
-			ent->used = 1;
-			mtx_lock(&fpu_cache_mtx);
-			SLIST_INSERT_HEAD(&fpu_cc_head, ent, link);
-			mtx_unlock(&fpu_cache_mtx);
-		} else
-			free(ent, M_NDIS_WINDRV);
+			mtx_lock(&fpu_busy_mtx);
+			LIST_INSERT_HEAD(&fpu_busy_head, ent, entries);
+			mtx_unlock(&fpu_busy_mtx);
+		} else {
+			free(ent, M_DEVBUF);
+			ent = NULL;
+		}
 	}
 
 	return (ent);
@@ -682,8 +692,12 @@ request_fpu_cc_ent(void)
 static void
 release_fpu_cc_ent(struct fpu_cc_ent *ent)
 {
-
-	ent->used = 0;
+	mtx_lock(&fpu_busy_mtx);
+	LIST_REMOVE(ent, entries);
+	mtx_unlock(&fpu_busy_mtx);
+	mtx_lock(&fpu_free_mtx);
+	LIST_INSERT_HEAD(&fpu_free_head, ent, entries);
+	mtx_unlock(&fpu_free_mtx);
 }
 
 uint64_t
