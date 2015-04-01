@@ -251,7 +251,7 @@ ndis_create_sysctls(struct ndis_softc *sc)
 	    "0x00050001", NDIS_FLAG_RDONLY);
 	ndis_add_sysctl(sc, "SlotNumber", "Slot Number", "01", NDIS_FLAG_RDONLY);
 	ndis_add_sysctl(sc, "NetCfgInstanceId", "NetCfgInstanceId",
-	    "{12345678-1234-5678-CAFE0-123456789ABC}", NDIS_FLAG_RDONLY);
+	    "{12345678-1234-5678-CAFE-123456789ABC}", NDIS_FLAG_RDONLY);
 	ndis_add_sysctl(sc, "DriverDesc", "Driver Description",
 	    "NDIS Network Adapter", NDIS_FLAG_RDONLY);
 	/* Bus type (PCI, PCMCIA, etc...) */
