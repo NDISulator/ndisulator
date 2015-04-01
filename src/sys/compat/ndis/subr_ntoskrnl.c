@@ -2815,16 +2815,16 @@ RtlGUIDFromString(struct unicode_string *guid_string, struct guid *guid)
 	ret = RtlUnicodeStringToAnsiString(&ansi, guid_string, TRUE);
 	if (ret != NDIS_STATUS_SUCCESS)
 		return (ret);
-	if (ansi.as_len != strlen(pattern)) {
+	if (ansi.len != strlen(pattern)) {
 		RtlFreeAnsiString(&ansi);
 		return (NDIS_STATUS_INVALID_PARAMETER);
 	}
-	for (i = 0; i < ansi.as_len; i++)
-		if (pattern[i] != 'X' && ansi.as_buf[i] != pattern[i]) {
+	for (i = 0; i < ansi.len; i++)
+		if (pattern[i] != 'X' && ansi.buf[i] != pattern[i]) {
 			RtlFreeAnsiString(&ansi);
 			return (NDIS_STATUS_INVALID_PARAMETER);
 		}
-	ret = sscanf(ansi.as_buf,
+	ret = sscanf(ansi.buf,
 	    "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}", &a, &b, &c,
 	    &d1, &d2, &e1, &e2, &e3, &e4, &e5, &e6);
 	RtlFreeAnsiString(&ansi);
