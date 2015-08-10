@@ -5,7 +5,7 @@ This software has some fixes and improvements comparing to ndis module available
 This software supports NDIS version 5.1 what means it can be used with Windows XP and Windows Server 2000/2003 drivers.
 
 ### Requirements
-* make sure you use recent **FreeBSD CURRENT** kernel and world (this git branch last tested at **01 Apr 2015** with **FreeBSD 11.0-CURRENT r280958**)
+* make sure you use recent **FreeBSD CURRENT** kernel and world (this git branch last tested at **10 Aug 2015** with **FreeBSD 11.0-CURRENT r286579**)
 * make sure FreeBSD source tree is available in /usr/src
 * make sure you use the same "arch" of MS Windows drivers as your FreeBSD installation (i.e. 64 bit driver for amd64 case; 32 bit driver for i386 case)
 
