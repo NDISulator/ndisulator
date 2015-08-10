@@ -597,7 +597,7 @@ ndis_attach(device_t dev)
 	InitializeListHead(&sc->ndis_shlist);
 	InitializeListHead(&sc->ndisusb_tasklist);
 	InitializeListHead(&sc->ndisusb_xferdonelist);
-	callout_init(&sc->ndis_stat_callout, CALLOUT_MPSAFE);
+	callout_init(&sc->ndis_stat_callout, 1);
 
 	/* Find the PDO for this device instance. */
 	if (sc->ndis_bus_type == NDIS_PCIBUS)
@@ -773,7 +773,7 @@ ndis_attach(device_t dev)
 		struct ndis_80211_network_type_list *ntl;
 		uint32_t arg;
 
-		callout_init(&sc->ndis_scan_callout, CALLOUT_MPSAFE);
+		callout_init(&sc->ndis_scan_callout, 1);
 
 		ifp->if_ioctl = ndis_ioctl_80211;
 		ic->ic_ifp = ifp;

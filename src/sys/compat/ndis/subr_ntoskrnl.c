@@ -368,7 +368,7 @@ ntoskrnl_libinit(void)
 	    NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
 
 #ifdef notdef
-	callout_init(&update_kuser, CALLOUT_MPSAFE);
+	callout_init(&update_kuser, 1);
 	callout_reset(&update_kuser, hz / 40, ntoskrnl_update_kuser, 0);
 #endif
 }
@@ -3445,7 +3445,7 @@ KeInitializeTimerEx(struct nt_ktimer *timer, enum timer_type type)
 	timer->header.type = NOTIFICATION_TIMER_OBJECT + type;
 	timer->header.size = sizeof(struct nt_ktimer);
 	timer->u.callout = ExAllocatePool(sizeof(struct callout));
-	callout_init(timer->u.callout, CALLOUT_MPSAFE);
+	callout_init(timer->u.callout, 1);
 }
 
 /*
