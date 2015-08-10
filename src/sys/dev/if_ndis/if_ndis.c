@@ -187,8 +187,8 @@ static void	ndis_starttask(struct device_object *, void *);
 static void	ndis_stop(struct ndis_softc *);
 static void	ndis_tick(void *);
 static void	ndis_ticktask(struct device_object *, void *);
-static void	ndis_update_mcast(struct ifnet *ifp);
-static void	ndis_update_promisc(struct ifnet *ifp);
+static void	ndis_update_mcast(struct ieee80211com *);
+static void	ndis_update_promisc(struct ieee80211com *);
 
 MALLOC_DEFINE(M_NDIS_DEV, "ndis_dev", "if_ndis buffers");
 
@@ -1662,13 +1662,14 @@ ndis_raw_xmit(struct ieee80211_node *ni, struct mbuf *m,
 }
 
 static void
-ndis_update_mcast(struct ifnet *ifp)
+ndis_update_mcast(struct ieee80211com *ic)
 {
-	ndis_set_multi(ifp->if_softc);
+	struct ndis_softc *sc = ic->ic_softc;
+	ndis_set_multi(sc);
 }
 
 static void
-ndis_update_promisc(struct ifnet *ifp)
+ndis_update_promisc(struct ieee80211com *ic)
 {
 	/* not supported */
 }
