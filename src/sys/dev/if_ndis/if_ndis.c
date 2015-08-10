@@ -777,6 +777,7 @@ ndis_attach(device_t dev)
 
 		ifp->if_ioctl = ndis_ioctl_80211;
 		ic->ic_ifp = ifp;
+		ic->ic_name = device_get_nameunit(dev);
 		ic->ic_caps =
 			IEEE80211_C_8023ENCAP |
 			IEEE80211_C_STA |
