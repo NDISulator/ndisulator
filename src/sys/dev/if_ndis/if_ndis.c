@@ -2751,7 +2751,7 @@ ndis_scan_end(struct ieee80211com *ic)
 			sp.ies_len = efrm - frm;
 		}
 done:
-		ieee80211_add_scan(vap, &sp, &wh, 0, rssi, -96);
+		ieee80211_add_scan(vap, ic->ic_curchan, &sp, &wh, 0, rssi, -96);
 		wb = (struct ndis_wlan_bssid_ex *)((char *)wb + wb->len);
 	}
 	free(bl, M_NDIS_DEV);
